@@ -1,8 +1,9 @@
 {
-  "name": "enterprise-commerce-frontend",
+  "name": "vanom-ecommerce",
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "author": "Ramesh Ayyala",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
