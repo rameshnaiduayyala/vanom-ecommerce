@@ -10,7 +10,7 @@ import {
   MOCK_ADMIN_METRICS,
 } from "./mock-data.js";
 
-const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === "true";
+const USE_MOCK = import.meta.env.VITE_USE_MOCK_API !== "false";
 
 const delay = (ms = 150) => new Promise((resolve) => setTimeout(resolve, ms));
 

@@ -26,7 +26,8 @@ export function ProductsPage() {
     queryFn: () => Api.catalog.getProducts({ category: currentCategory, search: currentSearch }),
   });
 
-  const products = productsData?.items || [];
+  const catList = Array.isArray(categories) ? categories : (categories?.items || []);
+  const products = Array.isArray(productsData?.items) ? productsData.items : (Array.isArray(productsData) ? productsData : []);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -75,7 +76,7 @@ export function ProductsPage() {
               >
                 All Categories
               </button>
-              {categories.map((cat) => (
+              {catList.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => {

@@ -30,7 +30,10 @@ export function TrendingSection({ products = [], categories = [], isLoading = fa
   const [viewMode, setViewMode] = useState("scroll");
   const scrollContainerRef = useRef(null);
 
-  const filteredProducts = products.filter((p) => {
+  const productList = Array.isArray(products) ? products : (products?.items || []);
+  const catList = Array.isArray(categories) ? categories : (categories?.items || []);
+
+  const filteredProducts = productList.filter((p) => {
     if (activeFilter === "ALL") return true;
     return p.categoryId === activeFilter || p.category === activeFilter;
   });
@@ -150,10 +153,10 @@ export function TrendingSection({ products = [], categories = [], isLoading = fa
               : "bg-white text-text-secondary hover:text-text-primary border border-border hover:border-brand-300"
           }`}
         >
-          All Items ({products.length})
+          All Items ({productList.length})
         </button>
 
-        {categories.map((cat) => (
+        {catList.map((cat) => (
           <button
             key={cat.id}
             onClick={() => setActiveFilter(cat.id)}

@@ -70,7 +70,9 @@ export function CategorySection({ categories = [] }) {
   const scrollLeft = () => scrollRef.current?.scrollBy({ left: -320, behavior: "smooth" });
   const scrollRight = () => scrollRef.current?.scrollBy({ left: 320, behavior: "smooth" });
 
-  const enriched = categories.map((cat) => {
+  const catList = Array.isArray(categories) ? categories : (categories?.items || []);
+
+  const enriched = catList.map((cat) => {
     const meta = CATEGORY_DATA.find((d) => d.id === cat.id) || CATEGORY_DATA[0];
     return { ...cat, ...meta };
   });
