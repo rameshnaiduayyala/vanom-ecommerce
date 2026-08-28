@@ -6,7 +6,7 @@ import {
   UtensilsCrossed,
   Boxes,
   CookingPot,
-  Shirt,
+  ShieldCheck,
   Hammer,
   ArrowRight,
   ChevronLeft,
