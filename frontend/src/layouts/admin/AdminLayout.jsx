@@ -33,14 +33,9 @@ export function AdminHeader() {
           </Link>
         </div>
 
-        {/* Admin Status & Actions */}
+        {/* Admin Actions */}
         <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full font-medium">
-            <Activity className="w-3.5 h-3.5 animate-pulse" />
-            <span>PostgreSQL Operational</span>
-          </div>
-
-          <div className="flex items-center gap-2 border-l border-border pl-3">
+          <div className="flex items-center gap-2">
             <Link
               to={ROUTES.HOME}
               className="text-xs text-text-secondary hover:text-text-primary bg-surface-muted px-2.5 py-1.5 rounded-lg border border-border flex items-center gap-1 transition-colors"
@@ -101,12 +96,11 @@ export function AdminSidebar() {
       ],
     },
     {
-      title: "Operations & Audit",
+      title: "Operations & Financials",
       items: [
         { label: "Inventory Tracking", to: ROUTES.ADMIN.INVENTORY },
         { label: "Payments & Webhooks", to: ROUTES.ADMIN.PAYMENTS },
         { label: "Reports & Financials", to: ROUTES.ADMIN.REPORTS },
-        { label: "Audit Logs", to: ROUTES.ADMIN.AUDIT_LOGS },
       ],
     },
   ];
