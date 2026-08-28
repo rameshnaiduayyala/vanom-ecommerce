@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCountryStore } from "../../../stores/country.store.js";
+import { formatPrice } from "../../../utils/formatters.js";
+import { getLiveProducts } from "../../../services/api/mock-data.js";
 import { ROUTES } from "../../../constants/routes.js";
 import {
   ArrowRight,
@@ -8,80 +11,95 @@ import {
   ChevronRight,
   Building2,
   Boxes,
-  Zap,
   Users,
   Globe2,
-  TrendingUp,
-  Star,
   ShieldCheck,
+  Zap,
 } from "lucide-react";
-
-const SLIDES = [
-  {
-    id: 1,
-    eyebrow: "Global Multi-Jurisdiction Marketplace",
-    title: "Retail & Wholesale,\nOne Platform",
-    highlight: "One Platform",
-    description: "B2C delivery + B2B pallet trade across the US $ and UK £ with automated tax compliance.",
-    primaryCta: { label: "Shop Now", to: ROUTES.PRODUCTS },
-    secondaryCta: { label: "B2B Wholesale", to: ROUTES.B2B.ROOT },
-    pill: { text: "Up to 35% off bulk orders", color: "bg-emerald-500" },
-    bg: "from-[#020c1b] via-[#021a0a] to-[#020c1b]",
-    accent: "#00c136",
-    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=85",
-    stats: [
-      { icon: Users, value: "50K+", label: "Buyers" },
-      { icon: Globe2, value: "30+", label: "Countries" },
-      { icon: ShieldCheck, value: "ISO", label: "Certified" },
-    ],
-  },
-  {
-    id: 2,
-    eyebrow: "FMCG & Commercial Foodservice",
-    title: "Royal Basmati Rice\n& Bulk Commodities",
-    highlight: "Bulk Commodities",
-    description: "25 KG moisture-sealed sacks and 1-ton pallet consignments for chains, retailers and distributors.",
-    primaryCta: { label: "Explore Groceries", to: `${ROUTES.PRODUCTS}?category=cat-2` },
-    secondaryCta: { label: "Wholesale Tiers", to: ROUTES.B2B.CATALOG },
-    pill: { text: "$28.00 / sack — Tier 3", color: "bg-amber-500" },
-    bg: "from-[#1a0c00] via-[#0f0800] to-[#020c1b]",
-    accent: "#f59e0b",
-    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=1400&q=85",
-    stats: [
-      { icon: Star, value: "4.9★", label: "Rating" },
-      { icon: Boxes, value: "500+", label: "FMCG SKUs" },
-      { icon: TrendingUp, value: "10T+", label: "Monthly" },
-    ],
-  },
-  {
-    id: 3,
-    eyebrow: "Industrial & Enterprise Hardware",
-    title: "Packaging & POS\nHardware Catalog",
-    highlight: "POS\nHardware Catalog",
-    description: "3-ply corrugated cartons, stretch films, and smart Android POS tablets for retail operations.",
-    primaryCta: { label: "View Catalog", to: `${ROUTES.PRODUCTS}?category=cat-3` },
-    secondaryCta: { label: "Request Quote", to: ROUTES.B2B.BULK_ORDER },
-    pill: { text: "48hr dispatch SLA", color: "bg-blue-600" },
-    bg: "from-[#020c1b] via-[#030f2a] to-[#020c1b]",
-    accent: "#3b82f6",
-    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=85",
-    stats: [
-      { icon: Boxes, value: "200+", label: "Industrial SKUs" },
-      { icon: Globe2, value: "ISO", label: "9001:2015" },
-      { icon: TrendingUp, value: "48hr", label: "Dispatch" },
-    ],
-  },
-];
 
 const SLIDE_DURATION = 5500;
 
-export function HeroSlider() {
+export function HeroSlider({ products = [] }) {
+  const { country } = useCountryStore();
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  // Dynamic live catalog extraction
+  const catalogList = useMemo(() => {
+    const raw = products.length > 0 ? products : getLiveProducts();
+    return raw.slice(0, 4).map((p, idx) => {
+      const pricingObj = p.pricing?.[country.code] || p.pricing?.US || {};
+      const retailPrice = Number(pricingObj.retailPrice || 42.0);
+      const wholesalePrice = Number(
+        pricingObj.wholesaleTiers?.[0]?.unitPrice || retailPrice * 0.72
+      );
+      const discountPct = Math.max(10, Math.round(((retailPrice - wholesalePrice) / retailPrice) * 100));
+
+      const themes = [
+        {
+          accent: "#00c136",
+          bg: "from-[#011409] via-[#021f0f] to-[#010c06]",
+          pillColor: "bg-[#008522]",
+          stats: [
+            { icon: Users, value: "50K+", label: "Buyers" },
+            { icon: Globe2, value: "US & UK", label: "Markets" },
+            { icon: ShieldCheck, value: "ISO", label: "Certified" },
+          ],
+        },
+        {
+          accent: "#F5B800",
+          bg: "from-[#160e01] via-[#241703] to-[#0d0800]",
+          pillColor: "bg-[#D9A000]",
+          stats: [
+            { icon: Boxes, value: "5,000+", label: "In Stock" },
+            { icon: Globe2, value: "Direct", label: "Millers" },
+            { icon: Zap, value: "Tier 3", label: "Wholesale" },
+          ],
+        },
+        {
+          accent: "#10B981",
+          bg: "from-[#021812] via-[#04281e] to-[#01100b]",
+          pillColor: "bg-emerald-600",
+          stats: [
+            { icon: Boxes, value: "3-Ply", label: "Corrugated" },
+            { icon: ShieldCheck, value: "24-Hr", label: "Dispatch" },
+            { icon: Zap, value: "MOQ 10", label: "Bundles" },
+          ],
+        },
+        {
+          accent: "#EAB308",
+          bg: "from-[#0f1710] via-[#162419] to-[#070e08]",
+          pillColor: "bg-amber-600",
+          stats: [
+            { icon: ShieldCheck, value: "4K UHD", label: "Night Vision" },
+            { icon: Globe2, value: "PoE", label: "Plug & Play" },
+            { icon: Users, value: "3-Yr", label: "Warranty" },
+          ],
+        },
+      ];
+
+      const theme = themes[idx % themes.length];
+
+      return {
+        id: p.id,
+        name: p.name,
+        slug: p.slug || p.id,
+        category: p.category || "General Catalog",
+        brand: p.brand || "Vanom",
+        description: p.description || "B2C delivery + B2B pallet trade across the US $ and UK £ with automated tax compliance.",
+        image: p.image || "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=85",
+        packaging: p.packaging?.unitName || "Unit",
+        retailPrice,
+        wholesalePrice,
+        discountPct,
+        ...theme,
+      };
+    });
+  }, [products, country.code]);
+
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || catalogList.length <= 1) return;
     setProgress(0);
     const start = Date.now();
     const tick = setInterval(() => {
@@ -89,165 +107,179 @@ export function HeroSlider() {
       setProgress(pct);
       if (pct >= 100) {
         clearInterval(tick);
-        setCurrent((p) => (p + 1) % SLIDES.length);
+        setCurrent((prev) => (prev + 1) % catalogList.length);
       }
     }, 40);
     return () => clearInterval(tick);
-  }, [current, isPaused]);
+  }, [current, isPaused, catalogList.length]);
 
-  const slide = SLIDES[current];
+  if (!catalogList.length) return null;
 
+  const s = catalogList[current];
   const go = (idx) => { setCurrent(idx); setProgress(0); };
+
+  const handlePrev = () => {
+    go((current - 1 + catalogList.length) % catalogList.length);
+  };
+
+  const handleNext = () => {
+    go((current + 1) % catalogList.length);
+  };
 
   return (
     <section
-      className="relative overflow-hidden select-none text-white"
-      style={{ height: "clamp(360px, 46vw, 500px)" }}
+      className="relative overflow-hidden select-none text-white bg-slate-950 border-b border-slate-800"
+      style={{ height: "clamp(380px, 46vw, 500px)" }}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      {/* ── Background layer ── */}
+      {/* ── Background Layer with Dimmed Vignette ── */}
       <AnimatePresence mode="sync">
         <motion.div
-          key={`bg-${slide.id}`}
+          key={`bg-${s.id}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.7 }}
-          className={`absolute inset-0 bg-gradient-to-br ${slide.bg}`}
+          className={`absolute inset-0 bg-gradient-to-br ${s.bg}`}
         >
           <img
-            src={slide.image}
+            src={s.image}
             alt=""
-            aria-hidden
-            className="absolute inset-0 w-full h-full object-cover opacity-[0.18]"
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover opacity-[0.20] filter saturate-125"
           />
-          {/* vignette */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
-          {/* subtle dot grid */}
+          {/* Subtle vignette gradients */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          
+          {/* Dot matrix texture */}
           <div
-            className="absolute inset-0 opacity-[0.06]"
+            className="absolute inset-0 opacity-[0.05]"
             style={{
-              backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.6) 1px, transparent 1px)",
+              backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.7) 1px, transparent 1px)",
               backgroundSize: "28px 28px",
             }}
           />
         </motion.div>
       </AnimatePresence>
 
-      {/* ── Content ── */}
+      {/* ── Main Content Grid ── */}
       <div className="relative z-10 h-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 flex items-center">
-        <div className="grid lg:grid-cols-2 gap-8 w-full items-center">
+        <div className="grid lg:grid-cols-12 gap-8 w-full items-center">
 
-          {/* LEFT */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`left-${slide.id}`}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.45, ease: "easeOut" }}
-              className="space-y-4 max-w-xl"
-            >
-              {/* Eyebrow + pill */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/50">
-                  {slide.eyebrow}
-                </span>
-                <span className={`${slide.pill.color} text-[10px] font-black px-2.5 py-0.5 rounded-full text-white`}>
-                  {slide.pill.text}
-                </span>
-              </div>
-
-              {/* Headline */}
-              <h1
-                className="font-black tracking-tight leading-[1.1] text-white"
-                style={{ fontSize: "clamp(1.75rem, 3.5vw, 3rem)" }}
-              >
-                {slide.title.split("\n").map((line, i) => (
-                  <span key={i} className="block">{line}</span>
-                ))}
-              </h1>
-
-              {/* Description */}
-              <p className="text-sm text-white/60 leading-relaxed max-w-md">
-                {slide.description}
-              </p>
-
-              {/* CTAs */}
-              <div className="flex items-center gap-3 pt-1">
-                <Link
-                  to={slide.primaryCta.to}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-slate-950 transition-all hover:scale-105 hover:shadow-lg"
-                  style={{ backgroundColor: slide.accent }}
-                >
-                  {slide.primaryCta.label}
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  to={slide.secondaryCta.to}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white border border-white/20 hover:bg-white/10 backdrop-blur-sm transition-all"
-                >
-                  <Building2 className="w-4 h-4" />
-                  {slide.secondaryCta.label}
-                </Link>
-              </div>
-
-              {/* Stats row */}
-              <div className="flex items-center gap-5 pt-1">
-                {slide.stats.map(({ icon: Icon, value, label }, i) => (
-                  <React.Fragment key={i}>
-                    {i > 0 && <div className="w-px h-6 bg-white/10" />}
-                    <div className="flex items-center gap-1.5">
-                      <Icon className="w-3.5 h-3.5 opacity-50" />
-                      <span className="text-xs font-black text-white">{value}</span>
-                      <span className="text-[10px] text-white/40 uppercase tracking-wider">{label}</span>
-                    </div>
-                  </React.Fragment>
-                ))}
-              </div>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* RIGHT — Image card (desktop only) */}
-          <div className="hidden lg:flex justify-end items-center">
+          {/* ─── LEFT: Editorial Headline & Actions ─── */}
+          <div className="lg:col-span-7 space-y-4 max-w-xl">
             <AnimatePresence mode="wait">
               <motion.div
-                key={`img-${slide.id}`}
-                initial={{ opacity: 0, scale: 0.94, y: 16 }}
+                key={`left-${s.id}`}
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 16 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="space-y-4"
+              >
+                {/* Eyebrow + Pill */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/50">
+                    {s.category}
+                  </span>
+                  <span className={`${s.pillColor} text-[10px] font-black px-2.5 py-0.5 rounded-full text-white shadow-xs`}>
+                    Up to {s.discountPct}% off bulk orders
+                  </span>
+                </div>
+
+                {/* Main Headline */}
+                <h1
+                  className="font-black tracking-tight leading-[1.1] text-white"
+                  style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.9rem)" }}
+                >
+                  {s.name}
+                </h1>
+
+                {/* Description */}
+                <p className="text-xs sm:text-sm text-white/60 leading-relaxed max-w-md line-clamp-2">
+                  {s.description}
+                </p>
+
+                {/* CTAs */}
+                <div className="flex items-center gap-3 pt-1">
+                  <Link
+                    to={`/products/${s.slug}`}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-950 transition-all hover:scale-105 hover:shadow-lg cursor-pointer"
+                    style={{ backgroundColor: s.accent }}
+                  >
+                    <span>Shop Now</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+
+                  <Link
+                    to={ROUTES.B2B.ROOT}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white border border-white/20 hover:bg-white/10 backdrop-blur-sm transition-all cursor-pointer"
+                  >
+                    <Building2 className="w-4 h-4" />
+                    <span>B2B Wholesale</span>
+                  </Link>
+                </div>
+
+                {/* Stats Row */}
+                <div className="flex items-center gap-5 pt-1">
+                  {s.stats.map(({ icon: Icon, value, label }, i) => (
+                    <React.Fragment key={i}>
+                      {i > 0 && <div className="w-px h-5 bg-white/10" />}
+                      <div className="flex items-center gap-1.5">
+                        <Icon className="w-3.5 h-3.5 opacity-60" style={{ color: s.accent }} />
+                        <span className="text-xs font-black text-white">{value}</span>
+                        <span className="text-[10px] text-white/40 uppercase tracking-wider">{label}</span>
+                      </div>
+                    </React.Fragment>
+                  ))}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* ─── RIGHT: Clean Floating Product Card ─── */}
+          <div className="lg:col-span-5 hidden lg:flex justify-end items-center">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`img-${s.id}`}
+                initial={{ opacity: 0, scale: 0.94, y: 12 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.96, y: -10 }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
+                transition={{ duration: 0.45, ease: "easeOut" }}
                 className="relative"
               >
-                {/* Main image */}
-                <div className="w-[340px] h-[260px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+                {/* Main Image Container */}
+                <div className="w-[340px] h-[240px] rounded-2xl overflow-hidden border border-white/15 shadow-2xl bg-slate-900">
                   <img
-                    src={slide.image}
-                    alt={slide.eyebrow}
+                    src={s.image}
+                    alt={s.name}
                     className="w-full h-full object-cover"
                   />
                 </div>
 
-                {/* Floating badge — bottom left */}
+                {/* Floating Bottom Badge */}
                 <motion.div
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                  className="absolute -bottom-4 -left-6 flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-white/10 backdrop-blur-2xl border border-white/20 shadow-xl"
+                  animate={{ y: [0, -5, 0] }}
+                  transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
+                  className="absolute -bottom-4 -left-6 flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-black/70 backdrop-blur-xl border border-white/20 shadow-xl"
                 >
                   <div
                     className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: slide.accent + "30", border: `1px solid ${slide.accent}50` }}
+                    style={{ backgroundColor: s.accent + "30", border: `1px solid ${s.accent}60` }}
                   >
-                    <Boxes className="w-4 h-4" style={{ color: slide.accent }} />
+                    <Boxes className="w-4 h-4" style={{ color: s.accent }} />
                   </div>
                   <div>
-                    <p className="text-[11px] font-black text-white leading-tight">{slide.pill.text}</p>
+                    <p className="text-[11px] font-black text-white leading-tight">
+                      {formatPrice(s.wholesalePrice, country.currency, country.symbol)} / {s.packaging}
+                    </p>
                     <p className="text-[10px] text-white/50">MOQ available · NET 30</p>
                   </div>
                 </motion.div>
 
-                {/* Top-right live badge */}
+                {/* Top-Right Live Pricing Badge */}
                 <div className="absolute -top-3 -right-3 flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black shadow-lg">
                   <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                   Live Pricing
@@ -255,53 +287,56 @@ export function HeroSlider() {
               </motion.div>
             </AnimatePresence>
           </div>
+
         </div>
       </div>
 
-      {/* ── Bottom bar — progress + controls ── */}
+      {/* ── Clean Minimalist Bottom Controls Bar (As Shown in Screenshot) ── */}
       <div className="absolute bottom-0 left-0 right-0 z-20">
-        {/* Progress bar */}
-        <div className="h-[2px] bg-white/10">
+        {/* Continuous Progress Line */}
+        <div className="h-[2px] bg-white/10 w-full">
           <motion.div
             className="h-full"
-            style={{ width: `${progress}%`, backgroundColor: slide.accent }}
+            style={{ width: `${progress}%`, backgroundColor: s.accent }}
             transition={{ ease: "linear" }}
           />
         </div>
 
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-3 flex items-center justify-between">
-          {/* Dot indicators */}
-          <div className="flex items-center gap-1.5">
-            {SLIDES.map((_, idx) => (
+          {/* Dot / Pill Indicators on the Left */}
+          <div className="flex items-center gap-2">
+            {catalogList.map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => go(idx)}
-                className={`rounded-full transition-all duration-300 ${
-                  current === idx ? "w-6 h-1.5" : "w-1.5 h-1.5 bg-white/25 hover:bg-white/40"
+                className={`rounded-full transition-all duration-300 cursor-pointer ${
+                  current === idx
+                    ? "w-6 h-1.5"
+                    : "w-1.5 h-1.5 bg-white/30 hover:bg-white/50"
                 }`}
-                style={current === idx ? { backgroundColor: slide.accent } : {}}
+                style={current === idx ? { backgroundColor: s.accent } : {}}
                 aria-label={`Slide ${idx + 1}`}
               />
             ))}
           </div>
 
-          {/* Slide counter + arrows */}
+          {/* Minimalist Slide Counter & Arrow Buttons on the Right */}
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-white/30 font-mono tabular-nums">
-              {String(current + 1).padStart(2, "0")} / {String(SLIDES.length).padStart(2, "0")}
+            <span className="text-[11px] text-white/40 font-mono tabular-nums">
+              0{current + 1} / 0{catalogList.length}
             </span>
-            <div className="flex items-center gap-1 ml-2">
+            <div className="flex items-center gap-1.5 ml-2">
               <button
-                onClick={() => go((current - 1 + SLIDES.length) % SLIDES.length)}
-                className="w-8 h-8 rounded-lg bg-white/8 hover:bg-white/15 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all"
-                aria-label="Previous"
+                onClick={handlePrev}
+                className="w-8 h-8 rounded-lg bg-white/8 hover:bg-white/15 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all cursor-pointer"
+                aria-label="Previous Slide"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
-                onClick={() => go((current + 1) % SLIDES.length)}
-                className="w-8 h-8 rounded-lg bg-white/8 hover:bg-white/15 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all"
-                aria-label="Next"
+                onClick={handleNext}
+                className="w-8 h-8 rounded-lg bg-white/8 hover:bg-white/15 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all cursor-pointer"
+                aria-label="Next Slide"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -312,3 +347,5 @@ export function HeroSlider() {
     </section>
   );
 }
+
+export default HeroSlider;

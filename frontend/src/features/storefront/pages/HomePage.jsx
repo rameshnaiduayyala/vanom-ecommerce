@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { useCountryStore } from "../../../stores/country.store.js";
@@ -28,7 +28,7 @@ export function HomePage() {
   return (
     <div className="pb-24">
       {/* 1. Hero Multi-Slide Carousel */}
-      <HeroSlider />
+      <HeroSlider products={products} />
 
       {/* 2. Flash Deal Ad Banner */}
       <div className="pt-10 sm:pt-14">
