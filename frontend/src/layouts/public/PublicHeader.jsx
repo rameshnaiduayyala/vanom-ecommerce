@@ -138,12 +138,13 @@ export function PublicHeader() {
             <button
               onMouseEnter={() => setShowMegaMenu(true)}
               onClick={() => setShowMegaMenu((v) => !v)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border transition-all ${showMegaMenu
-                  ? "bg-brand-600 text-white border-brand-600"
-                  : "text-text-primary border-border hover:bg-surface-muted"
-                }`}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
+                showMegaMenu
+                  ? "bg-brand-600 text-white border-brand-600 shadow-xs"
+                  : "text-text-primary border-slate-200 hover:border-brand-400 hover:bg-brand-50/50 hover:text-brand-700"
+              }`}
             >
-              <LayoutGrid className="w-4 h-4" />
+              <LayoutGrid className={`w-4 h-4 ${showMegaMenu ? "text-white" : "text-brand-600"}`} />
               <span>All Categories</span>
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showMegaMenu ? "rotate-180" : ""}`} />
             </button>
@@ -175,7 +176,7 @@ export function PublicHeader() {
                               <Link
                                 to={cat.href}
                                 onClick={() => setShowMegaMenu(false)}
-                                className="text-[11px] text-text-secondary hover:text-text-primary transition-colors"
+                                className="text-[11px] text-text-secondary hover:text-brand-700 transition-colors"
                               >
                                 {sub}
                               </Link>
@@ -207,8 +208,8 @@ export function PublicHeader() {
 
           {/* Global Search Bar */}
           <form onSubmit={handleSearch} className="flex-1 max-w-xl hidden md:block">
-            <div className={`relative flex items-center rounded-xl border-2 transition-all ${searchFocused ? "border-brand-500 shadow-sm shadow-brand-100" : "border-border"}`}>
-              <Search className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <div className={`relative flex items-center rounded-xl border-2 transition-all ${searchFocused ? "border-brand-600 ring-2 ring-brand-500/15 shadow-sm" : "border-slate-200 hover:border-slate-300"}`}>
+              <Search className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${searchFocused ? "text-brand-600" : "text-slate-400"}`} />
               <input
                 type="text"
                 value={searchQuery}
@@ -216,20 +217,21 @@ export function PublicHeader() {
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
                 placeholder="Search products, SKUs, categories, brands..."
-                className="w-full pl-9 pr-10 py-2.5 text-sm bg-transparent focus:outline-none text-text-primary placeholder:text-text-muted"
+                className="w-full pl-10 pr-11 py-2.5 text-sm bg-transparent focus:outline-none text-text-primary placeholder:text-text-muted"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-10 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-surface-muted text-text-muted"
+                  className="absolute right-11 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-surface-muted text-text-muted cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
               <button
                 type="submit"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-lg bg-brand-500 hover:bg-brand-600 text-white transition-colors"
+                aria-label="Search"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white transition-colors cursor-pointer"
               >
                 <Search className="w-3.5 h-3.5" />
               </button>
@@ -242,7 +244,7 @@ export function PublicHeader() {
             <div className="relative" ref={countryRef}>
               <button
                 onClick={() => setShowCountryMenu(!showCountryMenu)}
-                className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-border text-xs font-medium hover:bg-surface-muted text-text-secondary transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium hover:border-brand-400 hover:bg-brand-50/50 hover:text-brand-700 text-text-secondary transition-all cursor-pointer"
               >
                 <span className="text-base leading-none">{country.flag}</span>
                 <span className="font-bold text-text-primary hidden sm:inline">{country.code}</span>
@@ -261,14 +263,15 @@ export function PublicHeader() {
                         setCountry(c);
                         setShowCountryMenu(false);
                       }}
-                      className={`w-full text-left px-3 py-2.5 text-xs flex items-center justify-between hover:bg-surface-muted transition-colors ${c.code === country.code ? "bg-brand-50 text-brand-700" : ""
-                        }`}
+                      className={`w-full text-left px-3 py-2.5 text-xs flex items-center justify-between hover:bg-brand-50 hover:text-brand-800 transition-colors cursor-pointer ${
+                        c.code === country.code ? "bg-brand-50 text-brand-700 font-bold" : ""
+                      }`}
                     >
                       <span className="flex items-center gap-2">
                         <span className="text-base">{c.flag}</span>
                         <span className="font-semibold">{c.name}</span>
                       </span>
-                      <span className="font-bold text-text-muted font-mono text-[11px]">
+                      <span className="font-bold text-brand-700 font-mono text-[11px]">
                         {c.currency} {c.symbol}
                       </span>
                     </button>
@@ -280,7 +283,7 @@ export function PublicHeader() {
             {/* Wishlist */}
             <Link
               to={ROUTES.WISHLIST}
-              className="p-2 rounded-lg text-text-secondary hover:text-rose-500 hover:bg-rose-50 transition-colors relative"
+              className="p-2 rounded-xl text-text-secondary hover:text-brand-700 hover:bg-brand-50/60 transition-colors relative"
               title="Wishlist"
             >
               <Heart className="w-5 h-5" />
