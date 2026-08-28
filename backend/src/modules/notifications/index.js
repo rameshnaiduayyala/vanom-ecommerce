@@ -1,4 +1,3 @@
-import { NotificationRepository, NotificationService } from "./routes.js";
-
-export { NotificationRepository, NotificationService };
+export { NotificationRepository } from "./notification.repository.js";
+export { NotificationService } from "./service.js";
 export { default as notificationRoutes } from "./routes.js";
