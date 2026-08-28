@@ -20,16 +20,11 @@ export function AdminHeader() {
       <div className="px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Admin Brand */}
         <div className="flex items-center gap-3">
-          <Link to={ROUTES.ADMIN.DASHBOARD} className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="font-bold text-sm text-text-primary tracking-tight">VANOM ADMIN</span>
-              <span className="ml-2 text-[10px] bg-red-50 text-red-700 border border-red-200 px-1.5 py-0.5 rounded font-semibold">
-                Control Plane
-              </span>
-            </div>
+          <Link to={ROUTES.ADMIN.DASHBOARD} className="flex items-center gap-2.5">
+            <img src="/logo.png" alt="Vanom" className="h-8 w-auto object-contain" />
+            <span className="text-[10px] bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+              Admin Console
+            </span>
           </Link>
         </div>
 

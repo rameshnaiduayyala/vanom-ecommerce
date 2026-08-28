@@ -1,13 +1,13 @@
-export const MOCK_CATEGORIES = [
-  { id: "cat-1", name: "Electronics & Tech", slug: "electronics-and-tech", count: 142 },
-  { id: "cat-2", name: "Groceries & FMCG Bulk", slug: "groceries-and-fmcg", count: 320 },
-  { id: "cat-3", name: "Industrial & Packaging", slug: "industrial-and-packaging", count: 85 },
-  { id: "cat-4", name: "Home & Commercial Kitchen", slug: "home-and-kitchen", count: 96 },
-  { id: "cat-5", name: "Fashion & Bulk Apparel", slug: "fashion-and-apparel", count: 210 },
-  { id: "cat-6", name: "Building & Hardware", slug: "building-and-hardware", count: 64 },
+const INITIAL_CATEGORIES = [
+  { id: "cat-1", name: "Electronics & Tech", slug: "electronics-and-tech", count: 142, description: "Smartphones, tablets, enterprise POS, cabling and commercial electronics." },
+  { id: "cat-2", name: "Groceries & FMCG Bulk", slug: "groceries-and-fmcg", count: 320, description: "Grains, basmati rice 25KG sacks, bulk cooking oils, pantry staples." },
+  { id: "cat-3", name: "Industrial & Packaging", slug: "industrial-and-packaging", count: 85, description: "Corrugated shipping master boxes, stretch wrap films, strapping and pallet goods." },
+  { id: "cat-4", name: "Home & Commercial Kitchen", slug: "home-and-kitchen", count: 96, description: "High-capacity induction burners, commercial cookware, restaurant appliances." },
+  { id: "cat-5", name: "Fashion & Bulk Apparel", slug: "fashion-and-apparel", count: 210, description: "Combed cotton pique polos, corporate uniforms, textiles, bulk garments." },
+  { id: "cat-6", name: "Building & Hardware", slug: "building-and-hardware", count: 64, description: "Fasteners, safety equipment, tools, and industrial materials." },
 ];
 
-export const MOCK_PRODUCTS = [
+const INITIAL_PRODUCTS = [
   {
     id: "prod-1",
     name: "Royal Heritage Aged Basmati Rice (25 KG Sack)",
@@ -346,6 +346,43 @@ export const MOCK_PRODUCTS = [
   },
 ];
 
+// In-memory live store with LocalStorage persistence for realistic Admin CRUD
+const STORAGE_KEYS = {
+  PRODUCTS: "vanom_mock_products_v1",
+  CATEGORIES: "vanom_mock_categories_v1",
+};
+
+export const getLiveProducts = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+    if (saved) return JSON.parse(saved);
+  } catch (e) {}
+  return [...INITIAL_PRODUCTS];
+};
+
+export const saveLiveProducts = (products) => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+  } catch (e) {}
+};
+
+export const getLiveCategories = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
+    if (saved) return JSON.parse(saved);
+  } catch (e) {}
+  return [...INITIAL_CATEGORIES];
+};
+
+export const saveLiveCategories = (categories) => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.CATEGORIES, JSON.stringify(categories));
+  } catch (e) {}
+};
+
+export const MOCK_CATEGORIES = getLiveCategories();
+export const MOCK_PRODUCTS = getLiveProducts();
+
 export const MOCK_COMPANIES = [
   {
     id: "comp-1",
@@ -446,9 +483,9 @@ export const MOCK_ORDERS = [
     status: "PROCESSING",
     currency: "INR",
     symbol: "₹",
-    subtotal: 175000, // 100 sacks rice @ ₹1750 (Tier 3)
-    taxAmount: 31500, // 18% GST
-    shippingCost: 4500, // Freight Pallet
+    subtotal: 175000,
+    taxAmount: 31500,
+    shippingCost: 4500,
     totalAmount: 211000,
     paymentTerms: "NET_30",
     itemsCount: 100,
@@ -483,7 +520,7 @@ export const MOCK_QUOTES = [
     currency: "INR",
     symbol: "₹",
     subtotal: 190000,
-    discountAmount: 9500, // 5% bulk concession
+    discountAmount: 9500,
     taxAmount: 32490,
     shippingCost: 5500,
     totalAmount: 218490,

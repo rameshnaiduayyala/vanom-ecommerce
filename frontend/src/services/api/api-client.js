@@ -1,7 +1,9 @@
 import { apiClient } from "./axios.js";
 import {
-  MOCK_PRODUCTS,
-  MOCK_CATEGORIES,
+  getLiveProducts,
+  saveLiveProducts,
+  getLiveCategories,
+  saveLiveCategories,
   MOCK_COMPANIES,
   MOCK_ORDERS,
   MOCK_QUOTES,
@@ -18,7 +20,6 @@ export const Api = {
     login: async (credentials) => {
       if (USE_MOCK) {
         await delay(200);
-        // Realistic mock logins:
         if (credentials.email?.includes("admin")) {
           return {
             user: {
@@ -33,7 +34,7 @@ export const Api = {
             tokens: { accessToken: "mock-admin-token", refreshToken: "mock-refresh-token" },
           };
         }
-        if (credentials.email?.includes("agro") || credentials.email?.includes("b2b") || credentials.email?.includes("wholesale")) {
+        if (credentials.email?.includes("apex") || credentials.email?.includes("agro") || credentials.email?.includes("b2b") || credentials.email?.includes("wholesale")) {
           return {
             user: {
               id: "usr-b2b-buyer",
@@ -94,20 +95,20 @@ export const Api = {
     getProducts: async (params = {}) => {
       if (USE_MOCK) {
         await delay(150);
-        let items = [...MOCK_PRODUCTS];
+        let items = getLiveProducts();
         if (params.search) {
           const q = params.search.toLowerCase();
           items = items.filter(
             (p) =>
-              p.name.toLowerCase().includes(q) ||
-              p.sku.toLowerCase().includes(q) ||
-              p.category.toLowerCase().includes(q)
+              p.name?.toLowerCase().includes(q) ||
+              p.sku?.toLowerCase().includes(q) ||
+              p.category?.toLowerCase().includes(q)
           );
         }
         if (params.category) {
-          items = items.filter((p) => p.categoryId === params.category || p.slug.includes(params.category));
+          items = items.filter((p) => p.categoryId === params.category || p.slug?.includes(params.category));
         }
-        return { items, total: items.length, page: 1, limit: 20 };
+        return { items, total: items.length, page: 1, limit: 50 };
       }
       return apiClient.get("/products", { params });
     },
@@ -115,7 +116,8 @@ export const Api = {
     getProductBySlug: async (slug) => {
       if (USE_MOCK) {
         await delay(150);
-        const product = MOCK_PRODUCTS.find((p) => p.slug === slug || p.id === slug);
+        const products = getLiveProducts();
+        const product = products.find((p) => p.slug === slug || p.id === slug);
         if (!product) throw new Error("Product not found");
         return product;
       }
@@ -125,7 +127,7 @@ export const Api = {
     getCategories: async () => {
       if (USE_MOCK) {
         await delay(100);
-        return MOCK_CATEGORIES;
+        return getLiveCategories();
       }
       return apiClient.get("/categories");
     },
@@ -204,47 +206,14 @@ export const Api = {
     },
   },
 
-  // --- B2B Wholesale Portal ---
+  // --- B2B Portal ---
   b2b: {
-    getCompanyProfile: async () => {
+    getCompany: async () => {
       if (USE_MOCK) {
         await delay(150);
         return MOCK_COMPANIES[0];
       }
-      return apiClient.get("/b2b/company");
-    },
-
-    registerCompany: async (payload) => {
-      if (USE_MOCK) {
-        await delay(300);
-        return {
-          id: `comp-${Date.now()}`,
-          ...payload,
-          status: "PENDING",
-        };
-      }
-      return apiClient.post("/companies", payload);
-    },
-
-    uploadDocument: async (companyId, payload) => {
-      if (USE_MOCK) {
-        await delay(300);
-        return {
-          id: `doc-${Date.now()}`,
-          ...payload,
-          status: "UPLOADED",
-          uploadedAt: new Date().toISOString(),
-        };
-      }
-      return apiClient.post(`/companies/${companyId}/documents`, payload);
-    },
-
-    submitVerification: async (companyId) => {
-      if (USE_MOCK) {
-        await delay(200);
-        return { status: "UNDER_REVIEW" };
-      }
-      return apiClient.post(`/companies/${companyId}/submit-verification`);
+      return apiClient.get("/companies/my");
     },
 
     getQuotes: async () => {
@@ -253,16 +222,6 @@ export const Api = {
         return MOCK_QUOTES;
       }
       return apiClient.get("/quotes");
-    },
-
-    getQuoteById: async (id) => {
-      if (USE_MOCK) {
-        await delay(150);
-        const quote = MOCK_QUOTES.find((q) => q.id === id || q.quoteNumber === id);
-        if (!quote) throw new Error("Quote not found");
-        return quote;
-      }
-      return apiClient.get(`/quotes/${id}`);
     },
 
     requestQuote: async (payload) => {
@@ -288,7 +247,7 @@ export const Api = {
     },
   },
 
-  // --- Admin Dashboard ---
+  // --- Admin Dashboard & Master Catalog Management ---
   admin: {
     getDashboardMetrics: async () => {
       if (USE_MOCK) {
@@ -325,12 +284,105 @@ export const Api = {
       return apiClient.post(`/admin/business-applications/${id}/reject`, { reason });
     },
 
+    // --- Product CRUD ---
     getProducts: async () => {
       if (USE_MOCK) {
         await delay(150);
-        return MOCK_PRODUCTS;
+        return getLiveProducts();
       }
       return apiClient.get("/admin/products");
+    },
+
+    createProduct: async (productData) => {
+      if (USE_MOCK) {
+        await delay(250);
+        const products = getLiveProducts();
+        const newProduct = {
+          id: `prod-${Date.now()}`,
+          slug: productData.slug || productData.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          rating: 5.0,
+          reviewsCount: 0,
+          ...productData,
+        };
+        const updated = [newProduct, ...products];
+        saveLiveProducts(updated);
+        return newProduct;
+      }
+      return apiClient.post("/admin/products", productData);
+    },
+
+    updateProduct: async (id, productData) => {
+      if (USE_MOCK) {
+        await delay(250);
+        const products = getLiveProducts();
+        const index = products.findIndex((p) => p.id === id);
+        if (index === -1) throw new Error("Product not found");
+        const updatedProduct = { ...products[index], ...productData };
+        products[index] = updatedProduct;
+        saveLiveProducts(products);
+        return updatedProduct;
+      }
+      return apiClient.put(`/admin/products/${id}`, productData);
+    },
+
+    deleteProduct: async (id) => {
+      if (USE_MOCK) {
+        await delay(200);
+        const products = getLiveProducts().filter((p) => p.id !== id);
+        saveLiveProducts(products);
+        return { success: true, id };
+      }
+      return apiClient.delete(`/admin/products/${id}`);
+    },
+
+    // --- Category CRUD ---
+    getCategories: async () => {
+      if (USE_MOCK) {
+        await delay(100);
+        return getLiveCategories();
+      }
+      return apiClient.get("/categories");
+    },
+
+    createCategory: async (categoryData) => {
+      if (USE_MOCK) {
+        await delay(200);
+        const categories = getLiveCategories();
+        const newCategory = {
+          id: `cat-${Date.now()}`,
+          slug: categoryData.slug || categoryData.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          count: 0,
+          ...categoryData,
+        };
+        const updated = [...categories, newCategory];
+        saveLiveCategories(updated);
+        return newCategory;
+      }
+      return apiClient.post("/admin/categories", categoryData);
+    },
+
+    updateCategory: async (id, categoryData) => {
+      if (USE_MOCK) {
+        await delay(200);
+        const categories = getLiveCategories();
+        const index = categories.findIndex((c) => c.id === id);
+        if (index === -1) throw new Error("Category not found");
+        const updatedCategory = { ...categories[index], ...categoryData };
+        categories[index] = updatedCategory;
+        saveLiveCategories(categories);
+        return updatedCategory;
+      }
+      return apiClient.put(`/admin/categories/${id}`, categoryData);
+    },
+
+    deleteCategory: async (id) => {
+      if (USE_MOCK) {
+        await delay(200);
+        const categories = getLiveCategories().filter((c) => c.id !== id);
+        saveLiveCategories(categories);
+        return { success: true, id };
+      }
+      return apiClient.delete(`/admin/categories/${id}`);
     },
 
     getOrders: async () => {
