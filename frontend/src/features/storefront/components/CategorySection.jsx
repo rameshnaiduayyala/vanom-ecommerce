@@ -33,7 +33,7 @@ const CATEGORY_DATA = [
   {
     id: "cat-3",
     icon: Boxes,
-    image: "https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=600&q=80",
+    image: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=600&q=80",
     gradient: "from-emerald-600/80 to-teal-900/90",
     accent: "bg-emerald-500",
     iconColor: "text-emerald-400",

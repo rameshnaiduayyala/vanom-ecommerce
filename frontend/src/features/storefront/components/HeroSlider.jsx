@@ -64,7 +64,7 @@ const SLIDES = [
     pill: { text: "48hr dispatch SLA", color: "bg-blue-600" },
     bg: "from-[#020c1b] via-[#030f2a] to-[#020c1b]",
     accent: "#3b82f6",
-    image: "https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=1400&q=85",
+    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=85",
     stats: [
       { icon: Boxes, value: "200+", label: "Industrial SKUs" },
       { icon: Globe2, value: "ISO", label: "9001:2015" },

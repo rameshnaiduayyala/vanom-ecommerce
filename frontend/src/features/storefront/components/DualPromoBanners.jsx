@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../../constants/routes.js";
 import { ArrowRight, Boxes, CookingPot, Sparkles, ShieldCheck } from "lucide-react";
@@ -11,7 +11,7 @@ export function DualPromoBanners() {
         {/* Ad Banner 1: Logistics & Master Packaging */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 border border-blue-500/30 p-8 text-white flex flex-col justify-between min-h-[280px] shadow-lg group">
           <img
-            src="https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=600&q=80"
+            src="https://images.unsplash.com/photo-1607344645866-009c320c5ab8?auto=format&fit=crop&w=800&q=80"
             alt="Packaging Depot"
             className="absolute -right-10 -bottom-10 w-64 h-64 object-cover rounded-full opacity-20 group-hover:scale-110 group-hover:opacity-30 transition-all duration-700 pointer-events-none"
           />

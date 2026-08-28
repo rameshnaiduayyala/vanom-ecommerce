@@ -74,7 +74,7 @@ const INITIAL_PRODUCTS = [
     brand: "PackPro",
     rating: 4.8,
     reviewsCount: 192,
-    image: "https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&w=800&q=80",
     description: "3-ply high burst test corrugated cardboard boxes for logistics, ecommerce fulfillment, and warehouse storage.",
     stock: 3400,
     packaging: {
@@ -242,7 +242,7 @@ const INITIAL_PRODUCTS = [
     brand: "PackPro",
     rating: 4.9,
     reviewsCount: 110,
-    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80",
+    image: "https://images.unsplash.com/photo-1587293852726-70cdb56c2866?auto=format&fit=crop&w=800&q=80",
     description: "High-cling 23-micron stretch film rolls for pallet wrapping, moisture protection, and secure logistics freight.",
     stock: 2800,
     packaging: {
@@ -348,8 +348,8 @@ const INITIAL_PRODUCTS = [
 
 // In-memory live store with LocalStorage persistence for realistic Admin CRUD
 const STORAGE_KEYS = {
-  PRODUCTS: "vanom_mock_products_v1",
-  CATEGORIES: "vanom_mock_categories_v1",
+  PRODUCTS: "vanom_mock_products_v2",
+  CATEGORIES: "vanom_mock_categories_v2",
 };
 
 export const getLiveProducts = () => {
