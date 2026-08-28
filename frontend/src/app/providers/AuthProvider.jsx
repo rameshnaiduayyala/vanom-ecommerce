@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuthStore } from "../../stores/auth.store.js";
-import { Api } from "../../services/api/api-client.js";
-import { TokenStorage } from "../../services/storage/token.storage.js";
+import { Api, TokenStorage } from "@/services/index.js";
 import { Spinner } from "../../components/ui/Alert.jsx";
 
 export function AuthProvider({ children }) {
