@@ -1,6 +1,6 @@
 import React from "react";
 import { Outlet, Link } from "react-router-dom";
-import { PublicHeader, PublicNavigation } from "./PublicHeader.jsx";
+import { PublicHeader } from "./PublicHeader.jsx";
 import { PublicFooter } from "./PublicFooter.jsx";
 import { useCartStore } from "../../stores/cart.store.js";
 import { useCountryStore } from "../../stores/country.store.js";
@@ -17,9 +17,8 @@ export function PublicLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-surface text-text-primary">
       <PublicHeader />
-      <PublicNavigation />
 
-      <main className="flex-1">
+      <main className="flex-1 bg-surface">
         <Outlet />
       </main>
 

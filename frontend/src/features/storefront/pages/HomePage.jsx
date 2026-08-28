@@ -26,31 +26,43 @@ export function HomePage() {
   const products = productsData?.items || [];
 
   return (
-    <div className="space-y-12 sm:space-y-16 pb-20">
+    <div className="pb-24">
       {/* 1. Hero Multi-Slide Carousel */}
       <HeroSlider />
 
-      {/* 2. Limited-Time Flash Deal Ad Banner with Countdown & Copy Coupon */}
-      <FlashDealsAdBanner />
+      {/* 2. Flash Deal Ad Banner */}
+      <div className="pt-10 sm:pt-14">
+        <FlashDealsAdBanner />
+      </div>
 
       {/* 3. Enterprise Trust Pillars */}
-      <TrustBadgesSection />
+      <div className="pt-12 sm:pt-16">
+        <TrustBadgesSection />
+      </div>
 
       {/* 4. Marketplace Categories Grid */}
-      <CategorySection categories={categories} />
+      <div className="pt-12 sm:pt-16">
+        <CategorySection categories={categories} />
+      </div>
 
-      {/* 5. Dual Category Promotion Ads (Packaging & Commercial Kitchen) */}
-      <DualPromoBanners />
+      {/* 5. Dual Category Promotion Ads */}
+      <div className="pt-12 sm:pt-16">
+        <DualPromoBanners />
+      </div>
 
-      {/* 6. Trending Deals & Full Product Catalog Showcase */}
-      <TrendingSection
-        products={products}
-        categories={categories}
-        isLoading={loadingProducts}
-      />
+      {/* 6. Trending Deals & Full Product Catalog */}
+      <div className="pt-12 sm:pt-16">
+        <TrendingSection
+          products={products}
+          categories={categories}
+          isLoading={loadingProducts}
+        />
+      </div>
 
-      {/* 7. Commercial Credit & Freight Sponsor Ad Banner */}
-      <SponsorBrandAd />
+      {/* 7. Sponsor / Freight Credit Ad */}
+      <div className="pt-12 sm:pt-16">
+        <SponsorBrandAd />
+      </div>
     </div>
   );
 }
