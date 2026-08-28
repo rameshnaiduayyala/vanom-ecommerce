@@ -66,9 +66,11 @@ export function LoginPage() {
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-xl bg-brand-500 text-white flex items-center justify-center font-black text-2xl mx-auto shadow-md">
-            V
-          </div>
+          <img
+            src="/logo.png"
+            alt="Vanom"
+            className="h-12 w-auto object-contain mx-auto mb-2"
+          />
           <h2 className="text-2xl font-bold text-text-primary">Sign in to Vanom</h2>
           <p className="text-xs text-text-muted">Enter your credentials or choose a quick demo role</p>
         </div>

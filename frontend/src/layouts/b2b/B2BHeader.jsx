@@ -29,13 +29,11 @@ export function B2BHeader() {
       <div className="px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* B2B Branding & Company Context */}
         <div className="flex items-center gap-4">
-          <Link to={ROUTES.B2B.DASHBOARD} className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gold-500 text-slate-900 flex items-center justify-center font-bold text-base shadow-xs">
-              B2B
-            </div>
-            <div>
+          <Link to={ROUTES.B2B.DASHBOARD} className="flex items-center gap-3">
+            <img src="/logo.png" alt="Vanom" className="h-8 w-auto object-contain" />
+            <div className="border-l border-slate-700 pl-3">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-sm tracking-tight text-white">VANOM WHOLESALE</span>
+                <span className="font-bold text-xs tracking-wider text-gold-400 uppercase">Wholesale</span>
                 <Badge variant={isApproved ? "gold" : "yellow"} size="sm">
                   {isApproved ? "Approved Tier" : "Pending Verification"}
                 </Badge>

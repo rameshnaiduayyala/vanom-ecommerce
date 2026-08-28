@@ -10,7 +10,6 @@ import {
   Building2,
   FileText,
   Users,
-  UserCircle,
 } from "lucide-react";
 import { cn } from "../../utils/cn.js";
 
@@ -65,19 +64,5 @@ export function B2BSidebar() {
         <p className="mt-0.5">wholesale@vanom.com</p>
       </div>
     </aside>
-  );
-}
-
-export function B2BLayout() {
-  return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
-      <B2BHeader />
-      <div className="flex flex-1">
-        <B2BSidebar />
-        <main className="flex-1 bg-slate-900/50 p-6 overflow-y-auto max-w-7xl">
-          <Outlet />
-        </main>
-      </div>
-    </div>
   );
 }

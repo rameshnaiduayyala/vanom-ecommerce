@@ -36,42 +36,15 @@ export function PublicHeader() {
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-border shadow-xs">
-      {/* Top Banner for Quick Switch to B2B or Admin */}
-      <div className="bg-surface-muted border-b border-border px-4 py-1.5 text-xs text-text-secondary flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <span className="font-medium text-brand-700">🌱 Vanom Retail Storefront</span>
-          <span className="hidden sm:inline text-text-muted">|</span>
-          <span className="hidden sm:inline">Fresh garden essentials & indoor foliage</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            to={ROUTES.B2B.ROOT}
-            className="flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-800 bg-brand-50 hover:bg-brand-100 px-2 py-0.5 rounded transition-colors"
-          >
-            <Building2 className="w-3.5 h-3.5" />
-            B2B Wholesale Portal
-          </Link>
-          <Link
-            to={ROUTES.ADMIN.ROOT}
-            className="flex items-center gap-1 text-xs font-semibold text-text-secondary hover:text-text-primary px-2 py-0.5 rounded transition-colors"
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            Admin Console
-          </Link>
-        </div>
-      </div>
-
       {/* Main Public Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         {/* Brand Logo */}
-        <Link to={ROUTES.HOME} className="flex items-center gap-2 shrink-0">
-          <div className="w-9 h-9 rounded-lg bg-brand-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
-            V
-          </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-bold tracking-tight text-text-primary leading-none">VANOM</span>
-            <span className="text-[10px] tracking-widest text-brand-600 font-semibold uppercase">Ecommerce</span>
-          </div>
+        <Link to={ROUTES.HOME} className="flex items-center gap-2 shrink-0 py-1">
+          <img
+            src="/logo.png"
+            alt="Vanom"
+            className="h-10 sm:h-11 w-auto object-contain hover:opacity-95 transition-opacity"
+          />
         </Link>
 
         {/* Global Search */}
