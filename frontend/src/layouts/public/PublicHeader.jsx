@@ -55,7 +55,7 @@ export function PublicHeader() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search soils, planters, fertilizers, plants..."
+              placeholder="Search products, electronics, groceries, apparel, industrial..."
               className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-border bg-surface-muted/50 focus:bg-white focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors"
             />
           </div>
@@ -189,12 +189,13 @@ export function PublicHeader() {
 
 export function PublicNavigation() {
   const categories = [
-    { label: "All Products", href: ROUTES.PRODUCTS },
-    { label: "Soil & Growing Media", href: `${ROUTES.PRODUCTS}?category=cat-1` },
-    { label: "Pots & Planters", href: `${ROUTES.PRODUCTS}?category=cat-2` },
-    { label: "Live Plants", href: `${ROUTES.PRODUCTS}?category=cat-3` },
-    { label: "Organic Fertilizers", href: `${ROUTES.PRODUCTS}?category=cat-4` },
-    { label: "Commercial Irrigation", href: `${ROUTES.PRODUCTS}?category=cat-5` },
+    { label: "All Categories", href: ROUTES.PRODUCTS },
+    { label: "Electronics & Tech", href: `${ROUTES.PRODUCTS}?category=cat-1` },
+    { label: "Groceries & FMCG Bulk", href: `${ROUTES.PRODUCTS}?category=cat-2` },
+    { label: "Industrial & Packaging", href: `${ROUTES.PRODUCTS}?category=cat-3` },
+    { label: "Home & Commercial Kitchen", href: `${ROUTES.PRODUCTS}?category=cat-4` },
+    { label: "Fashion & Bulk Apparel", href: `${ROUTES.PRODUCTS}?category=cat-5` },
+    { label: "Building & Hardware", href: `${ROUTES.PRODUCTS}?category=cat-6` },
   ];
 
   return (
@@ -224,7 +225,7 @@ export function PublicFooter() {
           <div>
             <h4 className="text-xs font-bold text-text-primary uppercase tracking-wider mb-3">About Vanom</h4>
             <p className="text-xs text-text-secondary leading-relaxed mb-3">
-              Direct-to-consumer organic soils, planters, foliage and agricultural inputs engineered for performance.
+              The premier all-in-one ecommerce platform supporting direct B2C retail shopping and enterprise B2B bulk wholesale ordering.
             </p>
             <div className="flex items-center gap-2 text-xs text-brand-700 font-semibold">
               <span>🇮🇳 India</span>

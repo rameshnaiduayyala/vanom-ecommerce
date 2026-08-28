@@ -138,10 +138,10 @@ export function B2BDashboard() {
           <div className="space-y-3">
             <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between gap-3">
               <div>
-                <h5 className="text-xs font-semibold text-white">Premium Organic Garden Soil (50 KG Sack)</h5>
-                <p className="text-[11px] text-slate-400 font-mono">MOQ: 20 sacks • Tier 3: ₹350/sack</p>
+                <h5 className="text-xs font-semibold text-white">Royal Heritage Aged Basmati Rice (25 KG Sack)</h5>
+                <p className="text-[11px] text-slate-400 font-mono">MOQ: 20 sacks • Tier 3: ₹1,750/sack</p>
               </div>
-              <Link to={`/b2b/catalog/premium-garden-soil`}>
+              <Link to={`/b2b/catalog/royal-basmati-rice-25kg`}>
                 <Button variant="gold" size="sm" className="font-bold text-slate-900 text-xs">
                   Reorder
                 </Button>
@@ -150,10 +150,10 @@ export function B2BDashboard() {
 
             <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-between gap-3">
               <div>
-                <h5 className="text-xs font-semibold text-white">Architectural Ceramic Planter (Box of 12)</h5>
-                <p className="text-[11px] text-slate-400 font-mono">MOQ: 10 boxes • Tier 3: ₹850/box</p>
+                <h5 className="text-xs font-semibold text-white">Heavy-Duty Corrugated Shipping Boxes (Bundle of 50)</h5>
+                <p className="text-[11px] text-slate-400 font-mono">MOQ: 10 bundles • Tier 3: ₹950/bundle</p>
               </div>
-              <Link to={`/b2b/catalog/architectural-ceramic-planter`}>
+              <Link to={`/b2b/catalog/corrugated-shipping-boxes-50`}>
                 <Button variant="gold" size="sm" className="font-bold text-slate-900 text-xs">
                   Reorder
                 </Button>
@@ -180,7 +180,7 @@ export function B2BDashboard() {
                   <span className="text-xs font-bold text-white font-mono">QTE-20260228-1094</span>
                   <Badge variant="green" size="sm">Quoted (v2)</Badge>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-0.5">400 Sacks Soil • Total: ₹1,62,940</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">200 Bundles Boxes • Total: ₹2,18,490</p>
               </div>
               <Link to={`/b2b/quotes/qte-201`}>
                 <Button variant="outline" size="sm" className="border-slate-600 text-slate-200 text-xs">

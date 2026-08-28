@@ -101,12 +101,12 @@ export function QuoteDetails() {
               <h1 className="text-2xl font-bold font-mono">QTE-20260228-1094</h1>
               <Badge variant="green" size="md">Quoted by Commercial Desk (v2)</Badge>
             </div>
-            <p className="text-xs text-slate-400 mt-1">Company: AgroWholesale India Pvt Ltd • Valid until March 15, 2026</p>
+            <p className="text-xs text-slate-400 mt-1">Company: Apex Global Wholesale Traders Pvt Ltd • Valid until March 15, 2026</p>
           </div>
 
           <div className="text-right">
             <span className="text-xs text-slate-400 block uppercase">Commercial Total</span>
-            <span className="text-2xl font-black text-gold-400">₹1,62,940.00</span>
+            <span className="text-2xl font-black text-gold-400">₹2,18,490.00</span>
           </div>
         </div>
 
@@ -125,10 +125,10 @@ export function QuoteDetails() {
               </thead>
               <tbody className="divide-y divide-slate-800 bg-slate-950/40 text-slate-200">
                 <tr>
-                  <td className="p-3 font-semibold">Premium Organic Garden Soil (50 KG Sack)</td>
-                  <td className="p-3 font-mono">400 Sacks (10 Pallets)</td>
-                  <td className="p-3 font-bold text-gold-400">₹350.00</td>
-                  <td className="p-3 font-black">₹1,40,000.00</td>
+                  <td className="p-3 font-semibold">Heavy-Duty Corrugated Shipping Boxes (Bundle of 50)</td>
+                  <td className="p-3 font-mono">200 Bundles (6.5 Pallets)</td>
+                  <td className="p-3 font-bold text-gold-400">₹950.00</td>
+                  <td className="p-3 font-black">₹1,90,000.00</td>
                 </tr>
               </tbody>
             </table>

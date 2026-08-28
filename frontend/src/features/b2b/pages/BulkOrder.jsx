@@ -16,19 +16,19 @@ export function BulkOrder() {
   const [rows, setRows] = useState([
     {
       id: "prod-1",
-      name: "Premium Organic Garden Soil (50 KG Sack)",
-      sku: "SOIL-50KG-SACK",
-      packaging: "50 KG Sack",
+      name: "Royal Heritage Aged Basmati Rice (25 KG Sack)",
+      sku: "FMCG-RICE-25KG",
+      packaging: "25 KG Poly Sack",
       quantity: 100, // Tier 3
-      unitPrice: 350,
+      unitPrice: 1750,
       moq: 20,
     },
     {
       id: "prod-2",
-      name: "Architectural Ceramic Planter (Box of 12)",
-      sku: "POT-CERAMIC-BOX12",
-      packaging: "Box of 12",
-      quantity: 50, // Tier 2
+      name: "Heavy-Duty Corrugated Shipping Boxes (Bundle of 50)",
+      sku: "PKG-BOX-50PK",
+      packaging: "Bundle (50 pcs)",
+      quantity: 80, // Tier 3
       unitPrice: 950,
       moq: 10,
     },
