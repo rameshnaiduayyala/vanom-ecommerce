@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../../constants/routes.js";
 import {
@@ -9,7 +9,8 @@ import {
   Shirt,
   Hammer,
   ArrowRight,
-  Sparkles,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 const CATEGORY_ICONS = {
@@ -31,26 +32,63 @@ const CATEGORY_COLORS = [
 ];
 
 export function CategorySection({ categories = [] }) {
+  const scrollRef = useRef(null);
+
+  const scrollLeft = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: -240, behavior: "smooth" });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: 240, behavior: "smooth" });
+    }
+  };
+
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-      {/* Section Heading */}
+      {/* Section Heading & Controls */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-black text-text-primary tracking-tight">
             Explore Marketplace Categories
           </h2>
         </div>
-        <Link
-          to={ROUTES.PRODUCTS}
-          className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 group"
-        >
-          <span>View All Categories</span>
-          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-        </Link>
+        <div className="flex items-center gap-3">
+          {/* Scroll Arrows */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={scrollLeft}
+              className="w-8 h-8 rounded-xl bg-white border border-border flex items-center justify-center text-text-secondary hover:text-text-primary hover:border-brand-500 shadow-2xs transition-colors"
+              aria-label="Scroll left"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={scrollRight}
+              className="w-8 h-8 rounded-xl bg-white border border-border flex items-center justify-center text-text-secondary hover:text-text-primary hover:border-brand-500 shadow-2xs transition-colors"
+              aria-label="Scroll right"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          <Link
+            to={ROUTES.PRODUCTS}
+            className="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center gap-1 group"
+          >
+            <span>View All</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        </div>
       </div>
 
-      {/* Category Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+      {/* Category Horizontal Scroll Rail */}
+      <div
+        ref={scrollRef}
+        className="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-3 scrollbar-none -mx-2 sm:-mx-0 px-2 sm:px-0"
+      >
         {categories.map((cat, idx) => {
           const Icon = CATEGORY_ICONS[cat.id] || Boxes;
           const colorClasses = CATEGORY_COLORS[idx % CATEGORY_COLORS.length];
@@ -59,7 +97,7 @@ export function CategorySection({ categories = [] }) {
             <Link
               key={cat.id}
               to={`${ROUTES.PRODUCTS}?category=${cat.id}`}
-              className={`p-5 rounded-2xl bg-gradient-to-br border transition-all duration-300 hover:-translate-y-1 hover:shadow-md flex flex-col items-center text-center group justify-between min-h-[140px] ${colorClasses}`}
+              className={`p-5 rounded-2xl bg-gradient-to-br border transition-all duration-300 hover:-translate-y-1 hover:shadow-md flex flex-col items-center text-center group justify-between min-h-[140px] min-w-[170px] sm:min-w-[190px] snap-start shrink-0 ${colorClasses}`}
             >
               <div className="w-12 h-12 rounded-xl bg-white shadow-2xs flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                 <Icon className="w-6 h-6" />

@@ -1,9 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useCountryStore } from "../../../stores/country.store.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { ProductCard } from "./ProductCard.jsx";
-import { ArrowRight, Flame, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Flame,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid,
+  Rows3,
+} from "lucide-react";
 import { Button } from "../../../components/ui/Button.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";
 import { Skeleton } from "../../../components/ui/Alert.jsx";
@@ -11,11 +18,25 @@ import { Skeleton } from "../../../components/ui/Alert.jsx";
 export function TrendingSection({ products = [], categories = [], isLoading = false }) {
   const { country } = useCountryStore();
   const [activeFilter, setActiveFilter] = useState("ALL");
+  const [viewMode, setViewMode] = useState("scroll"); // 'scroll' | 'grid'
+  const scrollContainerRef = useRef(null);
 
   const filteredProducts = products.filter((p) => {
     if (activeFilter === "ALL") return true;
     return p.categoryId === activeFilter || p.category === activeFilter;
   });
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -340, behavior: "smooth" });
+    }
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 340, behavior: "smooth" });
+    }
+  };
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
@@ -37,11 +58,55 @@ export function TrendingSection({ products = [], categories = [], isLoading = fa
           </div>
         </div>
 
-        <Link to={ROUTES.PRODUCTS}>
-          <Button variant="secondary" size="sm" icon={ArrowRight} iconPosition="right" className="text-xs font-bold">
-            Explore All Products
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* View Mode Toggle */}
+          <div className="flex items-center bg-surface-muted border border-border p-1 rounded-xl">
+            <button
+              onClick={() => setViewMode("scroll")}
+              title="Horizontal Carousel Rail"
+              className={`p-1.5 rounded-lg transition-colors ${
+                viewMode === "scroll" ? "bg-white text-brand-600 shadow-2xs" : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              <Rows3 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("grid")}
+              title="Grid View"
+              className={`p-1.5 rounded-lg transition-colors ${
+                viewMode === "grid" ? "bg-white text-brand-600 shadow-2xs" : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Navigation Arrows for Horizontal Scroll */}
+          {viewMode === "scroll" && (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={scrollLeft}
+                className="w-8 h-8 rounded-xl bg-white border border-border flex items-center justify-center text-text-secondary hover:text-text-primary hover:border-brand-500 shadow-2xs transition-colors"
+                aria-label="Scroll left"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={scrollRight}
+                className="w-8 h-8 rounded-xl bg-white border border-border flex items-center justify-center text-text-secondary hover:text-text-primary hover:border-brand-500 shadow-2xs transition-colors"
+                aria-label="Scroll right"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          <Link to={ROUTES.PRODUCTS}>
+            <Button variant="secondary" size="sm" icon={ArrowRight} iconPosition="right" className="text-xs font-bold">
+              Explore All
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Category Quick Filter Pills */}
@@ -72,18 +137,36 @@ export function TrendingSection({ products = [], categories = [], isLoading = fa
         ))}
       </div>
 
-      {/* Product Grid */}
+      {/* Products Display (Horizontal Scroll Rail vs Grid View) */}
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((n) => (
-            <Skeleton key={n} className="h-80 w-full rounded-2xl" />
+        <div className="flex gap-5 overflow-hidden">
+          {[1, 2, 3, 4].map((n) => (
+            <Skeleton key={n} className="h-80 min-w-[290px] sm:min-w-[320px] rounded-2xl shrink-0" />
           ))}
         </div>
       ) : filteredProducts.length === 0 ? (
         <div className="p-12 text-center bg-white rounded-2xl border border-border text-text-muted text-xs">
           No products found in this category.
         </div>
+      ) : viewMode === "scroll" ? (
+        /* HORIZONTAL SCROLL RAIL */
+        <div className="relative group">
+          <div
+            ref={scrollContainerRef}
+            className="flex gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-4 pt-1 px-1 scrollbar-none -mx-2 sm:-mx-0"
+          >
+            {filteredProducts.map((product) => (
+              <div
+                key={product.id}
+                className="snap-start shrink-0 min-w-[280px] sm:min-w-[320px] max-w-[320px]"
+              >
+                <ProductCard product={product} />
+              </div>
+            ))}
+          </div>
+        </div>
       ) : (
+        /* MULTI-COLUMN GRID VIEW */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product} />

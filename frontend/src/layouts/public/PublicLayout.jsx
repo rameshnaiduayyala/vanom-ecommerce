@@ -1,6 +1,7 @@
 import React from "react";
 import { Outlet, Link } from "react-router-dom";
-import { PublicHeader, PublicNavigation, PublicFooter } from "./PublicHeader.jsx";
+import { PublicHeader, PublicNavigation } from "./PublicHeader.jsx";
+import { PublicFooter } from "./PublicFooter.jsx";
 import { useCartStore } from "../../stores/cart.store.js";
 import { useCountryStore } from "../../stores/country.store.js";
 import { formatPrice } from "../../utils/formatters.js";
