@@ -1,6 +1,5 @@
 node_modules
-backend
-api
+/backend
 **/.env
 **/.env.local
 **/dist
