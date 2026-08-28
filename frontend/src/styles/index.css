@@ -1,10 +1,57 @@
 @import "tailwindcss";
 
-:root {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #17201a;
+@theme {
+  --color-brand-50: #F0F8F1;
+  --color-brand-100: #E0F1E2;
+  --color-brand-200: #C1E3C5;
+  --color-brand-300: #91CC98;
+  --color-brand-400: #5DBB68;
+  --color-brand-500: #008522;
+  --color-brand-600: #006B1B;
+  --color-brand-700: #005616;
+  --color-brand-800: #003D12;
+  --color-brand-900: #00290C;
+
+  --color-gold-50: #FFFBEA;
+  --color-gold-100: #FFF3BF;
+  --color-gold-200: #FFE78A;
+  --color-gold-300: #FFD34D;
+  --color-gold-400: #F5B800;
+  --color-gold-500: #D9A000;
+  --color-gold-600: #C89000;
+  --color-gold-700: #9A6F00;
+
+  --color-surface: #FFFFFF;
+  --color-surface-muted: #F8FAF8;
+  --color-surface-green: #EEF7EF;
+  --color-surface-gold: #FFF8DC;
+
+  --color-text-primary: #172117;
+  --color-text-secondary: #596359;
+  --color-text-muted: #7A847A;
+
+  --color-border: #E2E8E2;
 }
 
-html { scroll-behavior: smooth; }
-body { margin: 0; min-width: 320px; }
-button, input, select, textarea { font: inherit; }
+body {
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
