@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useUIStore, toast } from "../../stores/ui.store.js";
 import {
   CheckCircle2,
@@ -66,10 +67,15 @@ function ToastItem({ toastItem, onDismiss }) {
   const Icon = config.icon;
 
   return (
-    <div
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: -20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
       role="alert"
       className={cn(
-        "pointer-events-auto relative w-full max-w-sm overflow-hidden rounded-2xl border bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-4 shadow-[0_10px_35px_-4px_rgba(0,0,0,0.12)] transition-all duration-300 animate-in slide-in-from-top-3 sm:slide-in-from-bottom-3 fade-in",
+        "pointer-events-auto relative w-full max-w-sm overflow-hidden rounded-2xl border bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-4 shadow-[0_10px_35px_-4px_rgba(0,0,0,0.12)]",
         config.border,
         config.shadow
       )}
@@ -134,23 +140,23 @@ function ToastItem({ toastItem, onDismiss }) {
           />
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
 export function ToastContainer() {
   const { toasts, removeToast } = useUIStore();
 
-  if (!toasts || toasts.length === 0) return null;
-
   return (
     <div
       aria-live="polite"
       className="fixed top-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"
     >
-      {toasts.map((item) => (
-        <ToastItem key={item.id} toastItem={item} onDismiss={removeToast} />
-      ))}
+      <AnimatePresence mode="popLayout">
+        {toasts.map((item) => (
+          <ToastItem key={item.id} toastItem={item} onDismiss={removeToast} />
+        ))}
+      </AnimatePresence>
     </div>
   );
 }

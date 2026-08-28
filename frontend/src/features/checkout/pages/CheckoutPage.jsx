@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import confetti from "canvas-confetti";
 import { useCartStore } from "../../../stores/cart.store.js";
 import { useCountryStore } from "../../../stores/country.store.js";
 import { useUIStore } from "../../../stores/ui.store.js";
@@ -54,6 +55,17 @@ export function CheckoutPage() {
       });
 
       clearLocalCart();
+      
+      // Celebratory Confetti Cannon
+      try {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#008522", "#D9A000", "#5DBB68", "#FFD34D"],
+        });
+      } catch (e) {}
+
       addToast({
         title: "Order Placed Successfully!",
         message: `Order #${order.orderNumber || "ORD-20260228-8921"} has been confirmed.`,
