@@ -48,11 +48,11 @@ const CATEGORY_DATA = [
   },
   {
     id: "cat-5",
-    icon: Shirt,
-    image: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80",
-    gradient: "from-purple-600/80 to-violet-900/90",
-    accent: "bg-purple-500",
-    iconColor: "text-purple-400",
+    icon: ShieldCheck,
+    image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=600&q=80",
+    gradient: "from-cyan-600/80 to-blue-900/90",
+    accent: "bg-cyan-500",
+    iconColor: "text-cyan-400",
   },
   {
     id: "cat-6",

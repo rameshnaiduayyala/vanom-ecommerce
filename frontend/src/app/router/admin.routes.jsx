@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Navigate } from "react-router-dom";
 import { AdminLayout } from "../../layouts/admin/AdminLayout.jsx";
 import { Dashboard, BusinessApplications } from "../../features/admin/pages/Dashboard.jsx";
@@ -8,20 +8,22 @@ import { Inventory, Orders } from "../../features/admin/pages/Inventory.jsx";
 import {
   AdminQuotes,
   AdminPayments,
-  AdminReports,
+  AdmUSDeports,
   AdminAuditLogs,
   AdminUsers,
   AdminCompanies,
 } from "../../features/admin/pages/Quotes.jsx";
-import { AdminRoute } from "../guards/ProtectedRoute.jsx";
+import { AdmUSDoute } from "../guards/ProtectedRoute.jsx";
+import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
 
-export const adminRoutes = {
+export const admUSDoutes = {
   path: "/admin",
   element: (
-    <AdminRoute>
+    <AdmUSDoute>
       <AdminLayout />
-    </AdminRoute>
+    </AdmUSDoute>
   ),
+  errorElement: <RouteErrorBoundary />,
   children: [
     { index: true, element: <Navigate to="/admin/dashboard" replace /> },
     { path: "dashboard", element: <Dashboard /> },
@@ -35,7 +37,7 @@ export const adminRoutes = {
     { path: "orders", element: <Orders /> },
     { path: "quotes", element: <AdminQuotes /> },
     { path: "payments", element: <AdminPayments /> },
-    { path: "reports", element: <AdminReports /> },
+    { path: "reports", element: <AdmUSDeports /> },
     { path: "audit-logs", element: <AdminAuditLogs /> },
   ],
 };

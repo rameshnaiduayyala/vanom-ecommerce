@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { RouterProvider } from "react-router-dom";
 import { AppProviders } from "./app/providers/AppProviders.jsx";
 import { router } from "./app/router/index.jsx";

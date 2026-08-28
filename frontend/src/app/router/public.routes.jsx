@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { PublicLayout } from "../../layouts/public/PublicLayout.jsx";
 import { HomePage } from "../../features/storefront/pages/HomePage.jsx";
 import { ProductsPage } from "../../features/storefront/pages/ProductsPage.jsx";
@@ -10,9 +10,11 @@ import { OrderDetailsPage } from "../../features/orders/pages/OrderDetailsPage.j
 import { WishlistPage } from "../../features/wishlist/pages/WishlistPage.jsx";
 import { LoginPage } from "../../features/auth/pages/LoginPage.jsx";
 import { RegisterPage, ForgotPasswordPage } from "../../features/auth/pages/RegisterPage.jsx";
+import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
 
 export const publicRoutes = {
   element: <PublicLayout />,
+  errorElement: <RouteErrorBoundary />,
   children: [
     { path: "/", element: <HomePage /> },
     { path: "/products", element: <ProductsPage /> },

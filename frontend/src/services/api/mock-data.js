@@ -3,7 +3,7 @@ const INITIAL_CATEGORIES = [
   { id: "cat-2", name: "Groceries & FMCG Bulk", slug: "groceries-and-fmcg", count: 320, description: "Grains, basmati rice 25KG sacks, bulk cooking oils, pantry staples." },
   { id: "cat-3", name: "Industrial & Packaging", slug: "industrial-and-packaging", count: 85, description: "Corrugated shipping master boxes, stretch wrap films, strapping and pallet goods." },
   { id: "cat-4", name: "Home & Commercial Kitchen", slug: "home-and-kitchen", count: 96, description: "High-capacity induction burners, commercial cookware, restaurant appliances." },
-  { id: "cat-5", name: "Fashion & Bulk Apparel", slug: "fashion-and-apparel", count: 210, description: "Combed cotton pique polos, corporate uniforms, textiles, bulk garments." },
+  { id: "cat-5", name: "Commercial Safety & Security", slug: "safety-and-security", count: 180, description: "Surveillance camera systems, biometric access controllers, industrial alarms, and security hardware." },
   { id: "cat-6", name: "Building & Hardware", slug: "building-and-hardware", count: 64, description: "Fasteners, safety equipment, tools, and industrial materials." },
 ];
 
@@ -30,9 +30,9 @@ const INITIAL_PRODUCTS = [
     },
     pricing: {
       IN: {
-        currency: "INR",
-        symbol: "₹",
-        retailPrice: 2499,
+        currency: "USD",
+        symbol: "$",
+        retailPrice: 42.00,
         wholesaleTiers: [
           { minQuantity: 20, maxQuantity: 49, unitPrice: 2150 },
           { minQuantity: 50, maxQuantity: 99, unitPrice: 1950 },
@@ -86,8 +86,8 @@ const INITIAL_PRODUCTS = [
     },
     pricing: {
       IN: {
-        currency: "INR",
-        symbol: "₹",
+        currency: "USD",
+        symbol: "$",
         retailPrice: 1499,
         wholesaleTiers: [
           { minQuantity: 10, maxQuantity: 29, unitPrice: 1250 },
@@ -142,8 +142,8 @@ const INITIAL_PRODUCTS = [
     },
     pricing: {
       IN: {
-        currency: "INR",
-        symbol: "₹",
+        currency: "USD",
+        symbol: "$",
         retailPrice: 12999,
         wholesaleTiers: [
           { minQuantity: 10, maxQuantity: 29, unitPrice: 10800 },
@@ -198,8 +198,8 @@ const INITIAL_PRODUCTS = [
     },
     pricing: {
       IN: {
-        currency: "INR",
-        symbol: "₹",
+        currency: "USD",
+        symbol: "$",
         retailPrice: 6499,
         wholesaleTiers: [
           { minQuantity: 5, maxQuantity: 14, unitPrice: 5400 },
@@ -254,8 +254,8 @@ const INITIAL_PRODUCTS = [
     },
     pricing: {
       IN: {
-        currency: "INR",
-        symbol: "₹",
+        currency: "USD",
+        symbol: "$",
         retailPrice: 1899,
         wholesaleTiers: [
           { minQuantity: 10, maxQuantity: 29, unitPrice: 1550 },
@@ -290,28 +290,28 @@ const INITIAL_PRODUCTS = [
   },
   {
     id: "prod-6",
-    name: "100% Combed Cotton Premium Polo T-Shirts (Box of 20)",
-    slug: "cotton-polo-tshirts-box20",
-    sku: "APP-POLO-20PK",
-    category: "Fashion & Bulk Apparel",
+    name: "4K Ultra-HD 8-Channel Commercial PoE Surveillance System",
+    slug: "commercial-poe-surveillance-system-4k",
+    sku: "SEC-CAM-4K-8CH",
+    category: "Commercial Safety & Security",
     categoryId: "cat-5",
-    brand: "Vanom Apparel",
-    rating: 4.8,
-    reviewsCount: 94,
-    image: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80",
-    description: "220 GSM bio-washed pre-shrunk cotton pique polo shirts for retail merchandising and corporate uniforms.",
-    stock: 1500,
+    brand: "Vanom Security Systems",
+    rating: 4.9,
+    reviewsCount: 112,
+    image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=800&q=80",
+    description: "IP67 weatherproof night-vision commercial dome cameras with 2TB NVR storage and encrypted cloud remote streaming.",
+    stock: 850,
     packaging: {
-      unitName: "Box (20 pcs)",
-      weightKg: 6,
-      dimensionsCm: "40 x 30 x 20",
-      palletQuantity: 60,
+      unitName: "System Box (8 Cams + NVR)",
+      weightKg: 12,
+      dimensionsCm: "50 x 40 x 30",
+      palletQuantity: 30,
       palletWeightKg: 360,
     },
     pricing: {
       IN: {
-        currency: "INR",
-        symbol: "₹",
+        currency: "USD",
+        symbol: "$",
         retailPrice: 5999,
         wholesaleTiers: [
           { minQuantity: 5, maxQuantity: 14, unitPrice: 4800 },
@@ -447,12 +447,12 @@ export const MOCK_ORDERS = [
     type: "B2C",
     createdAt: "2026-02-27T14:20:00Z",
     status: "DELIVERED",
-    currency: "INR",
-    symbol: "₹",
-    subtotal: 2499,
+    currency: "USD",
+    symbol: "$",
+    subtotal: 42.00,
     taxAmount: 449.82,
     shippingCost: 80,
-    totalAmount: 3028.82,
+    totalAmount: 49.99,
     itemsCount: 1,
     shippingAddress: {
       name: "Ramesh Sharma",
@@ -463,7 +463,7 @@ export const MOCK_ORDERS = [
       country: "India",
     },
     items: [
-      { id: "oi-1", name: "Royal Heritage Aged Basmati Rice (25 KG Sack)", sku: "FMCG-RICE-25KG", quantity: 1, unitPrice: 2499, subtotal: 2499, image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=400&q=80" },
+      { id: "oi-1", name: "Royal Heritage Aged Basmati Rice (25 KG Sack)", sku: "FMCG-RICE-25KG", quantity: 1, unitPrice: 42.00, subtotal: 42.00, image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=400&q=80" },
     ],
     timeline: [
       { status: "PLACED", label: "Order Placed", date: "2026-02-27 14:20" },
@@ -481,9 +481,9 @@ export const MOCK_ORDERS = [
     companyName: "Apex Global Wholesale Traders Pvt Ltd",
     createdAt: "2026-02-28T10:15:00Z",
     status: "PROCESSING",
-    currency: "INR",
-    symbol: "₹",
-    subtotal: 175000,
+    currency: "USD",
+    symbol: "$",
+    subtotal: 2800,
     taxAmount: 31500,
     shippingCost: 4500,
     totalAmount: 211000,
@@ -498,7 +498,7 @@ export const MOCK_ORDERS = [
       country: "India",
     },
     items: [
-      { id: "oi-2", name: "Royal Heritage Aged Basmati Rice (25 KG Sack)", sku: "FMCG-RICE-25KG", quantity: 100, unitPrice: 1750, subtotal: 175000, packaging: "2.5 Pallets (40 Sacks / Pallet)", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=400&q=80" },
+      { id: "oi-2", name: "Royal Heritage Aged Basmati Rice (25 KG Sack)", sku: "FMCG-RICE-25KG", quantity: 100, unitPrice: 1750, subtotal: 2800, packaging: "2.5 Pallets (40 Sacks / Pallet)", image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=400&q=80" },
     ],
     timeline: [
       { status: "PLACED", label: "Purchase Order Received", date: "2026-02-28 10:15" },
@@ -517,22 +517,22 @@ export const MOCK_QUOTES = [
     version: 2,
     createdAt: "2026-02-25T09:00:00Z",
     validUntil: "2026-03-15T23:59:59Z",
-    currency: "INR",
-    symbol: "₹",
-    subtotal: 190000,
+    currency: "USD",
+    symbol: "$",
+    subtotal: 3200,
     discountAmount: 9500,
     taxAmount: 32490,
     shippingCost: 5500,
-    totalAmount: 218490,
+    totalAmount: 3500,
     notes: "Consignment of 200 Bundles Corrugated Boxes & 100 Stretch Wrap Cartons.",
     items: [
-      { id: "qi-1", name: "Heavy-Duty Corrugated Shipping Boxes (50 PK)", sku: "PKG-BOX-50PK", quantity: 200, unitPrice: 950, subtotal: 190000, requestedDeliveryDate: "2026-03-10" },
+      { id: "qi-1", name: "Heavy-Duty Corrugated Shipping Boxes (50 PK)", sku: "PKG-BOX-50PK", quantity: 200, unitPrice: 950, subtotal: 3200, requestedDeliveryDate: "2026-03-10" },
     ],
   },
 ];
 
 export const MOCK_ADMIN_METRICS = {
-  revenueToday: "₹12,85,400",
+  revenueToday: "$12,85,400",
   revenueGrowth: "+24.8%",
   activeOrdersCount: 68,
   b2bOrdersCount: 22,

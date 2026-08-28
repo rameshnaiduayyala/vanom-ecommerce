@@ -1,4 +1,4 @@
-export function formatPrice(amount, currency = "INR", symbol = "₹") {
+﻿export function formatPrice(amount, currency = "USD", symbol = "$") {
   if (amount === undefined || amount === null || isNaN(amount)) return `${symbol}0.00`;
   const num = Number(amount);
   const formatted = new Intl.NumberFormat("en-US", {

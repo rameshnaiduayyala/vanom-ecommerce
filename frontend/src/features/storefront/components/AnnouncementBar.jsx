@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { X, Truck, Zap, ShieldCheck, Globe2 } from "lucide-react";
 
 const ANNOUNCEMENTS = [
-  { icon: Truck, text: "Free shipping on orders above ₹2,999 / $49 / £39 — Delivered to 30+ countries" },
+  { icon: Truck, text: "Free shipping on orders above $2,999 / $49 / £39 — Delivered to 30+ countries" },
   { icon: Zap, text: "⚡ Flash Sale: Use code VANOM20 for 20% off bulk packaging & FMCG orders" },
   { icon: ShieldCheck, text: "🔒 PCI-DSS Level 1 Certified • ISO 9001:2015 Verified • Multi-currency secure checkout" },
   { icon: Globe2, text: "🌍 B2B Wholesale Portal open — NET 30 credit terms & pallet freight for registered businesses" },

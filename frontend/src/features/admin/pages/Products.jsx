@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { formatPrice } from "../../../utils/formatters.js";
@@ -61,8 +61,8 @@ export function Products() {
     },
     pricing: {
       IN: {
-        currency: "INR",
-        symbol: "₹",
+        currency: "USD",
+        symbol: "$",
         retailPrice: 1999,
         moq: 20,
         wholesaleTiers: [
@@ -415,7 +415,7 @@ export function Products() {
                           </span>
                         </td>
                         <td className="p-4 font-semibold">
-                          ₹{p.pricing?.IN?.retailPrice || 0} • ${p.pricing?.US?.retailPrice || 0} • £{p.pricing?.GB?.retailPrice || 0}
+                          ${p.pricing?.IN?.retailPrice || 0} • ${p.pricing?.US?.retailPrice || 0} • £{p.pricing?.GB?.retailPrice || 0}
                         </td>
                         <td className="p-4 font-mono font-bold text-gold-600">
                           {p.pricing?.IN?.moq || p.packaging?.palletQuantity || 20} {p.packaging?.unitName?.split(" ")[0] || "units"}
@@ -604,9 +604,9 @@ export function Products() {
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-3.5 rounded-xl bg-surface-muted border border-border space-y-3">
-                <span className="text-xs font-bold text-text-primary block">🇮🇳 India (INR • ₹)</span>
+                <span className="text-xs font-bold text-text-primary block">🇮🇳 India (USD • $)</span>
                 <Input
-                  label="Retail Price (₹)"
+                  label="Retail Price ($)"
                   type="number"
                   value={productForm.pricing.IN.retailPrice}
                   onChange={(e) =>
@@ -853,10 +853,10 @@ export function Products() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     <tr>
-                      <td className="p-3 font-semibold">India (INR)</td>
-                      <td className="p-3 font-bold text-text-primary">₹{viewingProduct.pricing?.IN?.retailPrice}</td>
+                      <td className="p-3 font-semibold">India (USD)</td>
+                      <td className="p-3 font-bold text-text-primary">${viewingProduct.pricing?.IN?.retailPrice}</td>
                       <td className="p-3 font-mono">{viewingProduct.pricing?.IN?.moq || 20}</td>
-                      <td className="p-3 font-bold text-gold-600">₹{viewingProduct.pricing?.IN?.wholesaleTiers?.[2]?.unitPrice || 1750}</td>
+                      <td className="p-3 font-bold text-gold-600">${viewingProduct.pricing?.IN?.wholesaleTiers?.[2]?.unitPrice || 1750}</td>
                     </tr>
                     <tr>
                       <td className="p-3 font-semibold">United States (USD)</td>
@@ -969,25 +969,25 @@ export function Pricing() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="p-6 rounded-xl bg-white border border-border space-y-4 shadow-2xs">
           <div className="flex items-center justify-between border-b border-border pb-3">
-            <h3 className="text-sm font-bold text-text-primary">India (INR • ₹)</h3>
+            <h3 className="text-sm font-bold text-text-primary">India (USD • $)</h3>
             <Badge variant="brand" size="sm">Active Matrix</Badge>
           </div>
           <div className="space-y-2 text-xs text-text-secondary">
             <div className="flex justify-between py-1 border-b border-border">
               <span>Standard Retail Price</span>
-              <strong className="text-text-primary">₹2,499 / unit</strong>
+              <strong className="text-text-primary">$2,499 / unit</strong>
             </div>
             <div className="flex justify-between py-1 border-b border-border">
               <span>Tier 1 (20 - 49 units)</span>
-              <strong className="text-gold-600 font-bold">₹2,150 / unit</strong>
+              <strong className="text-gold-600 font-bold">$2,150 / unit</strong>
             </div>
             <div className="flex justify-between py-1 border-b border-border">
               <span>Tier 2 (50 - 99 units)</span>
-              <strong className="text-gold-600 font-bold">₹1,950 / unit</strong>
+              <strong className="text-gold-600 font-bold">$1,950 / unit</strong>
             </div>
             <div className="flex justify-between py-1">
               <span>Tier 3 (100+ units)</span>
-              <strong className="text-gold-600 font-bold">₹1,750 / unit</strong>
+              <strong className="text-gold-600 font-bold">$1,750 / unit</strong>
             </div>
           </div>
         </div>

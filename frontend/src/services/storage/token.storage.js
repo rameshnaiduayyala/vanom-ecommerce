@@ -1,4 +1,4 @@
-const ACCESS_TOKEN_KEY = "vanom_access_token";
+﻿const ACCESS_TOKEN_KEY = "vanom_access_token";
 const REFRESH_TOKEN_KEY = "vanom_refresh_token";
 
 export const TokenStorage = {

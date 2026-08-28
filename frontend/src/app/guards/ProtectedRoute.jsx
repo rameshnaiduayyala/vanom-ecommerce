@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../../stores/auth.store.js";
 import { ROUTES } from "../../constants/routes.js";
@@ -25,7 +25,7 @@ export function B2BRoute({ children }) {
   return children;
 }
 
-export function AdminRoute({ children }) {
+export function AdmUSDoute({ children }) {
   const { isAuthenticated, hasRole } = useAuthStore();
   const location = useLocation();
 

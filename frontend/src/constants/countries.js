@@ -1,12 +1,5 @@
 export const SUPPORTED_COUNTRIES = [
   {
-    code: "IN",
-    name: "India",
-    currency: "INR",
-    symbol: "₹",
-    flag: "🇮🇳",
-  },
-  {
     code: "US",
     name: "United States",
     currency: "USD",

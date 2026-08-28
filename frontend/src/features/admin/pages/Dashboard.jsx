@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
@@ -44,7 +44,7 @@ const REVENUE_DATA = [
 ];
 
 const REGIONAL_SPLIT = [
-  { name: "India (INR)", value: 58, color: "#008522" },
+  { name: "India (USD)", value: 58, color: "#008522" },
   { name: "United States (USD)", value: 27, color: "#D9A000" },
   { name: "United Kingdom (GBP)", value: 15, color: "#2563EB" },
 ];
@@ -143,13 +143,13 @@ export function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8E2" />
                 <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="#7A847A" />
                 <YAxis
-                  tickFormatter={(val) => `₹${(val / 1000).toFixed(0)}k`}
+                  tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
                   tick={{ fontSize: 11 }}
                   stroke="#7A847A"
                 />
                 <Tooltip
                   formatter={(val, name) => [
-                    `₹${val.toLocaleString()}`,
+                    `$${val.toLocaleString()}`,
                     name === "b2b" ? "B2B Wholesale" : "B2C Retail",
                   ]}
                   contentStyle={{

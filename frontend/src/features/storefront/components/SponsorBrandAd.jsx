@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../../constants/routes.js";
 import {
@@ -29,11 +29,11 @@ export function SponsorBrandAd() {
             </div>
 
             <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
-              Unlock Up to <span className="text-gold-400">₹10,00,000</span> Commercial Credit with <span className="text-emerald-400">NET 30</span> Terms
+              Unlock Up to <span className="text-gold-400">$100,000</span> Commercial Credit with <span className="text-emerald-400">NET 30</span> Terms
             </h2>
 
             <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-              Verify your GSTIN / Tax ID in under 2 hours. Order full pallet truckloads with zero upfront payment, dedicated priority dispatch, and automated consolidated tax invoices.
+              Verify your Corporate Tax ID in under 2 hours. Order full pallet truckloads with zero upfront payment, dedicated priority dispatch, and automated consolidated tax invoices.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
@@ -43,7 +43,7 @@ export function SponsorBrandAd() {
               </div>
               <div className="flex items-center gap-2 text-xs text-slate-200">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>Consolidated GST / VAT Invoice</span>
+                <span>Consolidated Tax / VAT Invoice</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-slate-200">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -86,7 +86,7 @@ export function SponsorBrandAd() {
                   </div>
                   <div>
                     <span className="text-xs font-bold text-white block">Corporate Verification</span>
-                    <span className="text-[10px] text-slate-400">HSN 3101 Compliant</span>
+                    <span className="text-[10px] text-slate-400">Tax ID Compliant</span>
                   </div>
                 </div>
                 <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
@@ -97,7 +97,7 @@ export function SponsorBrandAd() {
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between py-1 text-slate-300">
                   <span>Credit Approved</span>
-                  <strong className="text-white">₹10,00,000.00</strong>
+                  <strong className="text-white">$100,000.00</strong>
                 </div>
                 <div className="flex justify-between py-1 text-slate-300">
                   <span>Payment Term</span>

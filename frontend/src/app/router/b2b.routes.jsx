@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Navigate } from "react-router-dom";
 import { B2BLayout } from "../../layouts/b2b/B2BLayout.jsx";
 import { B2BDashboard } from "../../features/b2b/pages/B2BDashboard.jsx";
@@ -13,6 +13,7 @@ import {
   CompanyMembers,
 } from "../../features/b2b/pages/B2BOrders.jsx";
 import { B2BRoute } from "../guards/ProtectedRoute.jsx";
+import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
 
 export const b2bRoutes = {
   path: "/b2b",
@@ -21,6 +22,7 @@ export const b2bRoutes = {
       <B2BLayout />
     </B2BRoute>
   ),
+  errorElement: <RouteErrorBoundary />,
   children: [
     { index: true, element: <Navigate to="/b2b/dashboard" replace /> },
     { path: "dashboard", element: <B2BDashboard /> },

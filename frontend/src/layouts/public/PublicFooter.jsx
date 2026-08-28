@@ -145,7 +145,7 @@ export function PublicFooter() {
               </li>
               <li>
                 <Link to={`${ROUTES.PRODUCTS}?category=cat-5`} className="text-slate-400 hover:text-white transition-colors">
-                  Fashion & Bulk Uniforms
+                  Safety & Security Systems
                 </Link>
               </li>
               <li>
@@ -243,24 +243,15 @@ export function PublicFooter() {
                       setCountry(c);
                       toast.info("Market Jurisdiction Changed", `Active marketplace set to ${c.name} (${c.currency})`);
                     }}
-                    className={`flex items-center justify-between p-2 rounded-lg text-xs font-semibold border transition-all ${
-                      country.code === c.code
+                    className={`flex items-center justify-between p-2 rounded-lg text-xs font-semibold border transition-all ${country.code === c.code
                         ? "bg-gold-500/15 border-gold-500/50 text-gold-300"
                         : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700"
-                    }`}
+                      }`}
                   >
                     <span>{c.flag} {c.name}</span>
                     <span className="font-mono text-[11px]">{c.currency}</span>
                   </button>
                 ))}
-              </div>
-
-              <div className="pt-2 border-t border-slate-800">
-                <Link to={ROUTES.ADMIN.ROOT}>
-                  <Button variant="outline" size="sm" className="w-full text-xs border-slate-700 text-slate-300 hover:bg-slate-900">
-                    Admin Control Plane
-                  </Button>
-                </Link>
               </div>
             </div>
           </div>

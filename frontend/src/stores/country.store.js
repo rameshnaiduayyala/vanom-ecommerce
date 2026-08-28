@@ -1,7 +1,7 @@
-import { create } from "zustand";
+﻿import { create } from "zustand";
 import { SUPPORTED_COUNTRIES } from "../constants/countries.js";
 
-const DEFAULT_COUNTRY = SUPPORTED_COUNTRIES[0]; // India (IN / INR)
+const DEFAULT_COUNTRY = SUPPORTED_COUNTRIES[0]; // US (USD / $)
 
 export const useCountryStore = create((set) => ({
   country: DEFAULT_COUNTRY,

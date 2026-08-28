@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Truck, ShieldCheck, Layers, CreditCard, Clock, Award } from "lucide-react";
 
 const ASSURANCES = [
@@ -32,7 +32,7 @@ const STATS = [
   { value: "50K+", label: "Active Buyers" },
   { value: "30+", label: "Countries" },
   { value: "1,200+", label: "SKUs" },
-  { value: "₹2Cr+", label: "Daily GMV" },
+  { value: "$2.5M+", label: "Daily GMV" },
   { value: "99.7%", label: "Dispatch SLA" },
 ];
 

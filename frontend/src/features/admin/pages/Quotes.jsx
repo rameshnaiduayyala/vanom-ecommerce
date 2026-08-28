@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { formatPrice, formatDate } from "../../../utils/formatters.js";
 import { Badge } from "../../../components/ui/Badge.jsx";
 import { Button } from "../../../components/ui/Button.jsx";
@@ -27,7 +27,7 @@ export function AdminQuotes() {
               <td className="p-4 font-mono font-bold">QTE-20260228-1094</td>
               <td className="p-4 font-semibold">Apex Global Wholesale Traders Pvt Ltd</td>
               <td className="p-4 font-mono">v2</td>
-              <td className="p-4 font-bold text-gold-600">₹2,18,490.00</td>
+              <td className="p-4 font-bold text-gold-600">$2,18,490.00</td>
               <td className="p-4"><Badge variant="green" size="sm">Quoted</Badge></td>
               <td className="p-4 text-right"><Button variant="secondary" size="sm">Review Terms</Button></td>
             </tr>
@@ -60,7 +60,7 @@ export function AdminPayments() {
             <tr className="hover:bg-surface-muted/50 transition-colors">
               <td className="p-4 font-mono font-bold">pay_rzp_98471928</td>
               <td className="p-4 font-semibold text-brand-700">Razorpay (India)</td>
-              <td className="p-4 font-bold">₹1,227.64</td>
+              <td className="p-4 font-bold">$1,227.64</td>
               <td className="p-4 font-mono text-text-muted">idem_1772288000_abc</td>
               <td className="p-4 text-right"><Badge variant="green" size="sm">CAPTURED</Badge></td>
             </tr>
@@ -78,7 +78,7 @@ export function AdminPayments() {
   );
 }
 
-export function AdminReports() {
+export function AdmUSDeports() {
   return (
     <div className="space-y-6">
       <div className="pb-6 border-b border-border">
@@ -88,7 +88,7 @@ export function AdminReports() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="p-5 rounded-xl bg-white border border-border space-y-2">
           <span className="text-xs font-semibold text-text-muted">India GST Collected (Q1 2026)</span>
-          <div className="text-2xl font-black text-brand-700">₹4,82,450.00</div>
+          <div className="text-2xl font-black text-brand-700">$4,82,450.00</div>
           <p className="text-[11px] text-text-muted">18% HSN Code 3101 compliant</p>
         </div>
         <div className="p-5 rounded-xl bg-white border border-border space-y-2">
@@ -209,7 +209,7 @@ export function AdminCompanies() {
               <td className="p-4 font-bold text-text-primary">Apex Global Wholesale Traders Pvt Ltd</td>
               <td className="p-4">India (IN)</td>
               <td className="p-4 font-mono text-text-secondary">27AAACA1234A1Z1</td>
-              <td className="p-4 font-bold text-gold-600">₹10,00,000 (NET 30)</td>
+              <td className="p-4 font-bold text-gold-600">$10,00,000 (NET 30)</td>
               <td className="p-4 text-right"><Badge variant="green" size="sm">APPROVED</Badge></td>
             </tr>
             <tr className="hover:bg-surface-muted/50 transition-colors">

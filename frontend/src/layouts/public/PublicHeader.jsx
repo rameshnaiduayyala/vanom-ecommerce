@@ -69,12 +69,12 @@ const MEGA_CATEGORIES = [
   },
   {
     id: "cat-5",
-    label: "Fashion & Apparel",
-    icon: Shirt,
-    color: "text-purple-600",
-    bg: "bg-purple-50",
+    label: "Safety & Security",
+    icon: ShieldCheck,
+    color: "text-cyan-600",
+    bg: "bg-cyan-50",
     href: `${ROUTES.PRODUCTS}?category=cat-5`,
-    subs: ["Bulk Uniforms & Workwear", "Corporate Polos & T-Shirts", "Safety Footwear", "Hi-Vis Vests & PPE", "Caps & Headwear"],
+    subs: ["PoE Surveillance Systems", "Biometric Access Control", "Fire Suppression Hardware", "Alarm Systems", "Security Domes"],
   },
   {
     id: "cat-6",

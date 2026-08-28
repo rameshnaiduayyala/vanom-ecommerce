@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../../constants/routes.js";
 import { ArrowRight, Boxes, CookingPot, Sparkles, ShieldCheck } from "lucide-react";
@@ -34,7 +34,7 @@ export function DualPromoBanners() {
           <div className="relative z-10 pt-4 flex items-center justify-between">
             <div>
               <span className="text-[10px] text-slate-400 uppercase block">Starting from</span>
-              <span className="text-lg font-black text-gold-400">₹950 / bundle</span>
+              <span className="text-lg font-black text-gold-400">$16.50 / bundle</span>
             </div>
 
             <Link to={`${ROUTES.PRODUCTS}?category=cat-3`}>
@@ -77,7 +77,7 @@ export function DualPromoBanners() {
           <div className="relative z-10 pt-4 flex items-center justify-between">
             <div>
               <span className="text-[10px] text-slate-400 uppercase block">Commercial Price</span>
-              <span className="text-lg font-black text-amber-400">₹4,300 (Wholesale)</span>
+              <span className="text-lg font-black text-amber-400">$85.00 (Wholesale)</span>
             </div>
 
             <Link to={`${ROUTES.PRODUCTS}?category=cat-4`}>

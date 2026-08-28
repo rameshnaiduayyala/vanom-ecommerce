@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { cn } from "../../utils/cn.js";
 
 export function Badge({ children, variant = "default", size = "md", className }) {

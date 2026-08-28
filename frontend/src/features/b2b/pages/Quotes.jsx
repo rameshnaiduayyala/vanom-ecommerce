@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
@@ -105,7 +105,7 @@ export function QuoteDetails() {
 
           <div className="text-right">
             <span className="text-xs text-slate-400 block uppercase">Commercial Total</span>
-            <span className="text-2xl font-black text-gold-400">₹2,18,490.00</span>
+            <span className="text-2xl font-black text-gold-400">$2,18,490.00</span>
           </div>
         </div>
 
@@ -126,8 +126,8 @@ export function QuoteDetails() {
                 <tr>
                   <td className="p-3 font-semibold">Heavy-Duty Corrugated Shipping Boxes (Bundle of 50)</td>
                   <td className="p-3 font-mono">200 Bundles (6.5 Pallets)</td>
-                  <td className="p-3 font-bold text-gold-400">₹950.00</td>
-                  <td className="p-3 font-black">₹1,90,000.00</td>
+                  <td className="p-3 font-bold text-gold-400">$950.00</td>
+                  <td className="p-3 font-black">$1,90,000.00</td>
                 </tr>
               </tbody>
             </table>
