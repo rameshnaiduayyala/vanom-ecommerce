@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { cn } from "../../utils/cn.js";
 import { Loader2 } from "lucide-react";
 
@@ -22,13 +22,13 @@ export const Button = React.forwardRef(
       "inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none";
 
     const variants = {
-      primary: "bg-brand-500 text-white hover:bg-brand-600 focus:ring-brand-500 shadow-sm",
-      secondary: "bg-white text-text-primary border border-border hover:bg-surface-muted focus:ring-brand-500 shadow-sm",
-      gold: "bg-gold-500 text-text-primary font-semibold hover:bg-gold-600 focus:ring-gold-500 shadow-sm",
-      outline: "bg-transparent text-brand-600 border border-brand-500 hover:bg-brand-50 focus:ring-brand-500",
-      danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm",
-      ghost: "bg-transparent text-text-secondary hover:text-text-primary hover:bg-surface-muted focus:ring-brand-500",
-      link: "bg-transparent text-brand-600 hover:underline p-0 focus:ring-0",
+      primary: "bg-[#008522] text-white hover:bg-[#006B1B] active:bg-[#005616] focus:ring-brand-500 font-bold shadow-xs hover:shadow-sm",
+      secondary: "bg-white text-slate-900 border border-slate-200 hover:border-brand-500 hover:bg-brand-50/50 hover:text-brand-800 focus:ring-brand-500 font-semibold shadow-xs",
+      gold: "bg-[#D9A000] text-slate-950 font-bold hover:bg-[#C89000] active:bg-[#9A6F00] focus:ring-gold-500 shadow-xs hover:shadow-sm",
+      outline: "bg-transparent text-[#008522] border-2 border-[#008522] hover:bg-brand-50 font-bold focus:ring-brand-500",
+      danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 font-bold shadow-xs",
+      ghost: "bg-transparent text-slate-700 hover:text-brand-700 hover:bg-brand-50/60 focus:ring-brand-500 font-semibold",
+      link: "bg-transparent text-[#008522] hover:underline p-0 focus:ring-0 font-bold",
     };
 
     const sizes = {
