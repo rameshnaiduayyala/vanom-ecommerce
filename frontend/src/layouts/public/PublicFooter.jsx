@@ -33,49 +33,6 @@ export function PublicFooter() {
 
   return (
     <footer className="bg-[#020e06] text-slate-300 border-t border-brand-900/60 mt-auto select-none">
-      {/* 1. Top Newsletter & Procurement Trade Ribbon */}
-      <div className="border-b border-brand-900/50 bg-[#04190c]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-            <div className="space-y-1.5 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-gold-500/15 border border-gold-500/30 text-gold-400 text-[11px] font-bold uppercase tracking-wider">
-                <Sparkles className="w-3 h-3 text-gold-400" />
-                <span>Vanom Global Enterprise Network</span>
-              </div>
-              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                Join 50,000+ Retail Buyers & Commercial Wholesalers
-              </h3>
-              <p className="text-xs text-slate-300">
-                Receive weekly commodity price indexes, container freight updates, and wholesale volume concessions.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row items-center gap-2.5 w-full lg:w-auto">
-              <div className="relative w-full sm:w-80">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="email"
-                  value={newsletterEmail}
-                  onChange={(e) => setNewsletterEmail(e.target.value)}
-                  placeholder="Enter business work email..."
-                  required
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[#020c06] border border-brand-800/80 text-xs text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-gold-500 focus:border-gold-500"
-                />
-              </div>
-              <Button
-                type="submit"
-                variant="gold"
-                size="md"
-                icon={ArrowRight}
-                iconPosition="right"
-                className="w-full sm:w-auto font-bold text-slate-950 shrink-0 bg-gold-400 hover:bg-gold-300 border-none shadow-md"
-              >
-                {subscribed ? "Subscribed!" : "Subscribe"}
-              </Button>
-            </form>
-          </div>
-        </div>
-      </div>
 
       {/* 2. Main 5-Column Enterprise Link Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
@@ -240,11 +197,10 @@ export function PublicFooter() {
                       setCountry(c);
                       toast.info("Market Jurisdiction Changed", `Active marketplace set to ${c.name} (${c.currency})`);
                     }}
-                    className={`flex items-center justify-between p-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
-                      country.code === c.code
-                        ? "bg-brand-900/80 border-brand-500 text-brand-300 shadow-xs"
-                        : "bg-[#03140a] border-brand-900/70 text-slate-300 hover:text-white hover:border-brand-600"
-                    }`}
+                    className={`flex items-center justify-between p-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${country.code === c.code
+                      ? "bg-brand-900/80 border-brand-500 text-brand-300 shadow-xs"
+                      : "bg-[#03140a] border-brand-900/70 text-slate-300 hover:text-white hover:border-brand-600"
+                      }`}
                   >
                     <span>{c.flag} {c.name}</span>
                     <span className="font-mono text-[11px] font-bold text-gold-400">{c.currency}</span>
