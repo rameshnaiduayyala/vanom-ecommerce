@@ -8,7 +8,6 @@ export function AdminQuotes() {
     <div className="space-y-6">
       <div className="pb-6 border-b border-border">
         <h1 className="text-2xl font-bold text-text-primary">B2B Quote Negotiation Desk</h1>
-        <p className="text-xs text-text-muted">Review incoming bulk inquiries and provide commercial discounts</p>
       </div>
 
       <div className="rounded-xl bg-white border border-border overflow-hidden text-xs">
@@ -26,9 +25,9 @@ export function AdminQuotes() {
           <tbody className="divide-y divide-border">
             <tr className="hover:bg-surface-muted/50 transition-colors">
               <td className="p-4 font-mono font-bold">QTE-20260228-1094</td>
-              <td className="p-4 font-semibold">AgroWholesale India Pvt Ltd</td>
+              <td className="p-4 font-semibold">Apex Global Wholesale Traders Pvt Ltd</td>
               <td className="p-4 font-mono">v2</td>
-              <td className="p-4 font-bold text-gold-600">₹1,62,940.00</td>
+              <td className="p-4 font-bold text-gold-600">₹2,18,490.00</td>
               <td className="p-4"><Badge variant="green" size="sm">Quoted</Badge></td>
               <td className="p-4 text-right"><Button variant="secondary" size="sm">Review Terms</Button></td>
             </tr>
@@ -44,7 +43,6 @@ export function AdminPayments() {
     <div className="space-y-6">
       <div className="pb-6 border-b border-border">
         <h1 className="text-2xl font-bold text-text-primary">Payment Gateways & Webhooks</h1>
-        <p className="text-xs text-text-muted">Stripe & Razorpay idempotent webhook events and capture logs</p>
       </div>
 
       <div className="rounded-xl bg-white border border-border overflow-hidden text-xs">
@@ -85,7 +83,6 @@ export function AdminReports() {
     <div className="space-y-6">
       <div className="pb-6 border-b border-border">
         <h1 className="text-2xl font-bold text-text-primary">Financial & Tax Reports</h1>
-        <p className="text-xs text-text-muted">GST, VAT and Sales Tax liability reporting across regional markets</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -114,7 +111,6 @@ export function AdminAuditLogs() {
     <div className="space-y-6">
       <div className="pb-6 border-b border-border">
         <h1 className="text-2xl font-bold text-text-primary">System Audit Trail</h1>
-        <p className="text-xs text-text-muted">Immutable event logs for company verifications, price adjustments, and refunds</p>
       </div>
 
       <div className="rounded-xl bg-white border border-border overflow-hidden text-xs">
@@ -155,7 +151,6 @@ export function AdminUsers() {
     <div className="space-y-6">
       <div className="pb-6 border-b border-border">
         <h1 className="text-2xl font-bold text-text-primary">Registered Users</h1>
-        <p className="text-xs text-text-muted">B2C Retail & B2B Wholesale Customer Accounts</p>
       </div>
 
       <div className="rounded-xl bg-white border border-border overflow-hidden text-xs">
@@ -172,7 +167,7 @@ export function AdminUsers() {
           <tbody className="divide-y divide-border">
             <tr className="hover:bg-surface-muted/50 transition-colors">
               <td className="p-4 font-bold text-text-primary">Rajesh Kulkarni</td>
-              <td className="p-4 text-text-secondary">buyer@agrowholesale.in</td>
+              <td className="p-4 text-text-secondary">buyer@apexwholesale.in</td>
               <td className="p-4"><Badge variant="gold" size="sm">B2B Wholesale</Badge></td>
               <td className="p-4 font-mono">COMPANY_ADMIN</td>
               <td className="p-4 text-right"><Badge variant="green" size="sm">ACTIVE</Badge></td>
@@ -196,7 +191,6 @@ export function AdminCompanies() {
     <div className="space-y-6">
       <div className="pb-6 border-b border-border">
         <h1 className="text-2xl font-bold text-text-primary">B2B Corporate Entities</h1>
-        <p className="text-xs text-text-muted">Onboarded wholesale buyers, credit lines, and payment terms</p>
       </div>
 
       <div className="rounded-xl bg-white border border-border overflow-hidden text-xs">
@@ -212,17 +206,17 @@ export function AdminCompanies() {
           </thead>
           <tbody className="divide-y divide-border">
             <tr className="hover:bg-surface-muted/50 transition-colors">
-              <td className="p-4 font-bold text-text-primary">AgroWholesale India Pvt Ltd</td>
+              <td className="p-4 font-bold text-text-primary">Apex Global Wholesale Traders Pvt Ltd</td>
               <td className="p-4">India (IN)</td>
               <td className="p-4 font-mono text-text-secondary">27AAACA1234A1Z1</td>
-              <td className="p-4 font-bold text-gold-600">₹5,00,000 (NET 30)</td>
+              <td className="p-4 font-bold text-gold-600">₹10,00,000 (NET 30)</td>
               <td className="p-4 text-right"><Badge variant="green" size="sm">APPROVED</Badge></td>
             </tr>
             <tr className="hover:bg-surface-muted/50 transition-colors">
-              <td className="p-4 font-bold text-text-primary">GreenHaven Landscaping LLC</td>
+              <td className="p-4 font-bold text-text-primary">Prime Logistics & Supplies LLC</td>
               <td className="p-4">United States (US)</td>
               <td className="p-4 font-mono text-text-secondary">EIN-82-9384721</td>
-              <td className="p-4 font-bold text-gold-600">$25,000 (NET 15)</td>
+              <td className="p-4 font-bold text-gold-600">$50,000 (NET 15)</td>
               <td className="p-4 text-right"><Badge variant="yellow" size="sm">UNDER_REVIEW</Badge></td>
             </tr>
           </tbody>

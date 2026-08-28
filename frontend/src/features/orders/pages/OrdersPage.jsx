@@ -25,7 +25,6 @@ export function OrdersPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <div className="pb-4 border-b border-border">
         <h1 className="text-2xl font-bold text-text-primary">Order History</h1>
-        <p className="text-xs text-text-muted">View past purchases, live tracking, and invoices</p>
       </div>
 
       {isLoading ? (

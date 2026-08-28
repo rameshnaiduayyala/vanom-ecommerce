@@ -29,7 +29,6 @@ export function Dashboard() {
       <div className="flex items-center justify-between pb-6 border-b border-border">
         <div>
           <h1 className="text-2xl font-bold text-text-primary">Executive Dashboard</h1>
-          <p className="text-xs text-text-muted">Enterprise B2C Retail & B2B Wholesale Control Plane</p>
         </div>
       </div>
 
@@ -141,7 +140,6 @@ export function BusinessApplications() {
     <div className="space-y-6">
       <div className="pb-6 border-b border-border">
         <h1 className="text-2xl font-bold text-text-primary">B2B Business Applications</h1>
-        <p className="text-xs text-text-muted">Review corporate tax certificates and approve wholesale credit facilities</p>
       </div>
 
       <div className="rounded-xl bg-white border border-border overflow-hidden text-xs">

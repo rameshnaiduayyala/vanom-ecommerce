@@ -23,7 +23,6 @@ export function B2BOrders() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Wholesale Orders & POs</h1>
-          <p className="text-xs text-slate-400 mt-1">Track pallet consignments, commercial invoices, and payment terms</p>
         </div>
       </div>
 
@@ -93,18 +92,17 @@ export function CompanyProfile() {
     <div className="space-y-6">
       <div className="pb-6 border-b border-slate-800">
         <h1 className="text-2xl font-bold text-white tracking-tight">Company Organization Profile</h1>
-        <p className="text-xs text-slate-400 mt-1">Verified commercial identity, billing addresses, and credit limits</p>
       </div>
 
       <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-6 text-white">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
           <div className="space-y-1">
             <span className="text-slate-400 block text-[10px] uppercase">Legal Business Name</span>
-            <span className="text-base font-bold">AgroWholesale India Pvt Ltd</span>
+            <span className="text-base font-bold">Apex Global Wholesale Traders Pvt Ltd</span>
           </div>
           <div className="space-y-1">
             <span className="text-slate-400 block text-[10px] uppercase">Trading Name</span>
-            <span className="text-base font-bold">AgroWholesale India</span>
+            <span className="text-base font-bold">Apex Global Wholesale</span>
           </div>
           <div className="space-y-1">
             <span className="text-slate-400 block text-[10px] uppercase">Corporate Registration (CIN/LLP)</span>
@@ -126,7 +124,6 @@ export function CompanyDocuments() {
       <div className="flex items-center justify-between pb-6 border-b border-slate-800">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Business Documents & Compliance</h1>
-          <p className="text-xs text-slate-400 mt-1">Upload and manage verification credentials</p>
         </div>
         <Button variant="gold" size="sm" className="font-bold text-slate-900">
           Upload New Document
@@ -169,7 +166,6 @@ export function CompanyMembers() {
       <div className="flex items-center justify-between pb-6 border-b border-slate-800">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Team Members & Access</h1>
-          <p className="text-xs text-slate-400 mt-1">Manage users authorized to place wholesale orders on company credit</p>
         </div>
         <Button variant="gold" size="sm" className="font-bold text-slate-900">
           Invite Member
@@ -189,13 +185,13 @@ export function CompanyMembers() {
           <tbody className="divide-y divide-slate-800 bg-slate-950/40">
             <tr>
               <td className="p-4 font-bold text-white">Rajesh Kulkarni</td>
-              <td className="p-4 text-slate-300">buyer@agrowholesale.in</td>
+              <td className="p-4 text-slate-300">buyer@apexwholesale.in</td>
               <td className="p-4"><Badge variant="gold" size="sm">COMPANY_ADMIN</Badge></td>
               <td className="p-4 text-emerald-400 font-semibold">Active Primary</td>
             </tr>
             <tr>
               <td className="p-4 font-bold text-white">Sunil Verma</td>
-              <td className="p-4 text-slate-300">procurement@agrowholesale.in</td>
+              <td className="p-4 text-slate-300">procurement@apexwholesale.in</td>
               <td className="p-4"><Badge variant="default" size="sm">COMPANY_BUYER</Badge></td>
               <td className="p-4 text-emerald-400 font-semibold">Active</td>
             </tr>

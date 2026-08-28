@@ -77,7 +77,6 @@ export function CheckoutPage() {
       <div className="flex items-center justify-between pb-4 border-b border-border">
         <div>
           <h1 className="text-2xl font-bold text-text-primary">Secure Checkout</h1>
-          <p className="text-xs text-text-muted">Authoritative server-side price & tax calculation</p>
         </div>
         <Badge variant="brand" size="md" className="flex items-center gap-1">
           <Lock className="w-3.5 h-3.5" /> 256-bit Encrypted

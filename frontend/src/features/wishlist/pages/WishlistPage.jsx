@@ -10,7 +10,6 @@ export function WishlistPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <div className="pb-4 border-b border-border">
         <h1 className="text-2xl font-bold text-text-primary">Saved Wishlist</h1>
-        <p className="text-xs text-text-muted">Manage items saved for future purchasing</p>
       </div>
 
       <EmptyState

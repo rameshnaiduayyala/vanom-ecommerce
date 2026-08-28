@@ -18,7 +18,6 @@ export function Inventory() {
     <div className="space-y-6">
       <div className="pb-6 border-b border-border">
         <h1 className="text-2xl font-bold text-text-primary">Multi-Warehouse Inventory Tracking</h1>
-        <p className="text-xs text-text-muted">Real-time stock balance, active checkout reservations, and fulfillment capacity</p>
       </div>
 
       <div className="rounded-xl bg-white border border-border overflow-hidden text-xs">
@@ -63,7 +62,6 @@ export function Orders() {
     <div className="space-y-6">
       <div className="pb-6 border-b border-border">
         <h1 className="text-2xl font-bold text-text-primary">Master Orders & Fulfillment</h1>
-        <p className="text-xs text-text-muted">Monitor B2C retail orders and B2B wholesale purchase orders</p>
       </div>
 
       <div className="rounded-xl bg-white border border-border overflow-hidden text-xs">

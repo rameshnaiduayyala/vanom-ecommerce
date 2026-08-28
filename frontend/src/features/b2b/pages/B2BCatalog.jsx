@@ -26,10 +26,6 @@ export function B2BCatalog() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Wholesale & Bulk Catalog</h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Authoritative tier pricing & pallet configurations for market:{" "}
-            <span className="text-gold-400 font-semibold">{country.name} ({country.currency})</span>
-          </p>
         </div>
 
         <div className="relative max-w-xs w-full">

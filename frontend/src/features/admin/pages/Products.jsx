@@ -271,9 +271,6 @@ export function Products() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
           <h1 className="text-2xl font-bold text-text-primary">Master Catalog & Taxonomies</h1>
-          <p className="text-xs text-text-muted">
-            Manage multi-market retail items, wholesale volume tiers, and product categories
-          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -967,7 +964,6 @@ export function Pricing() {
     <div className="space-y-6">
       <div className="pb-6 border-b border-border">
         <h1 className="text-2xl font-bold text-text-primary">Regional Wholesale Pricing Engine</h1>
-        <p className="text-xs text-text-muted">Manage quantity tiers and minimum order quantities (MOQ) across India, USA, and UK</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
