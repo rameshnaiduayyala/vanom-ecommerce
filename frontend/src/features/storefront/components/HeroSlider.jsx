@@ -152,7 +152,7 @@ export function HeroSlider({ products = [] }) {
           {/* Subtle vignette gradients */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          
+
           {/* Dot matrix texture */}
           <div
             className="absolute inset-0 opacity-[0.05]"
@@ -291,33 +291,34 @@ export function HeroSlider({ products = [] }) {
         </div>
       </div>
 
-      {/* ── Clean Minimalist Bottom Controls Bar (As Shown in Screenshot) ── */}
+      {/* ── Clean Minimalist Bottom Controls Bar ── */}
       <div className="absolute bottom-0 left-0 right-0 z-20">
-        {/* Continuous Progress Line */}
-        <div className="h-[2px] bg-white/10 w-full">
-          <motion.div
-            className="h-full"
-            style={{ width: `${progress}%`, backgroundColor: s.accent }}
-            transition={{ ease: "linear" }}
-          />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-3 flex items-center justify-between">
-          {/* Dot / Pill Indicators on the Left */}
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-3.5 flex items-center justify-between">
+          {/* Subtle Pill Indicators with Integrated Progress on the Left */}
           <div className="flex items-center gap-2">
-            {catalogList.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => go(idx)}
-                className={`rounded-full transition-all duration-300 cursor-pointer ${
-                  current === idx
-                    ? "w-6 h-1.5"
-                    : "w-1.5 h-1.5 bg-white/30 hover:bg-white/50"
-                }`}
-                style={current === idx ? { backgroundColor: s.accent } : {}}
-                aria-label={`Slide ${idx + 1}`}
-              />
-            ))}
+            {catalogList.map((_, idx) => {
+              const isActive = current === idx;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => go(idx)}
+                  className={`rounded-full transition-all duration-300 cursor-pointer relative overflow-hidden ${
+                    isActive
+                      ? "w-8 h-1.5 bg-white/20"
+                      : "w-2 h-1.5 bg-white/30 hover:bg-white/50"
+                  }`}
+                  aria-label={`Slide ${idx + 1}`}
+                >
+                  {isActive && (
+                    <motion.div
+                      className="h-full rounded-full"
+                      style={{ width: `${progress}%`, backgroundColor: s.accent }}
+                      transition={{ ease: "linear" }}
+                    />
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {/* Minimalist Slide Counter & Arrow Buttons on the Right */}
