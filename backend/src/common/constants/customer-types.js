@@ -1,0 +1,11 @@
+export const CUSTOMER_TYPES = {
+  B2C: "B2C",
+  B2B: "B2B"
+};
+
+export const BUSINESS_STATUS = {
+  PENDING: "PENDING",
+  UNDER_REVIEW: "UNDER_REVIEW",
+  APPROVED: "APPROVED",
+  REJECTED: "REJECTED"
+};

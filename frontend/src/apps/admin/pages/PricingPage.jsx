@@ -1,0 +1,4 @@
+import Card from "../../../components/ui/Card.jsx";
+export default function PricingPage() {
+  return <div><p className="text-xs font-black uppercase tracking-wider text-slate-500">Admin</p><h1 className="mt-2 text-4xl font-black">Pricing</h1><Card className="mt-7 p-7"><h2 className="text-lg font-bold">Pricing management</h2><p className="mt-2 text-sm text-slate-500">Manage country, currency, customer-group and quantity-tier pricing.</p><div className="mt-6 grid gap-4 md:grid-cols-3"><div className="rounded-xl bg-slate-50 p-5"><strong>Live data</strong><p className="mt-1 text-xs text-slate-500">API integration placeholder</p></div><div className="rounded-xl bg-slate-50 p-5"><strong>Permissions</strong><p className="mt-1 text-xs text-slate-500">Server-side authorization required</p></div><div className="rounded-xl bg-slate-50 p-5"><strong>Audit</strong><p className="mt-1 text-xs text-slate-500">Changes should be recorded</p></div></div></Card></div>;
+}
