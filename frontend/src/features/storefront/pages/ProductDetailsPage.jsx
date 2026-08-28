@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Api } from "../../../services/api/api-client.js";
+import { Api } from "@/services/api/api-client.js";
 import { useCountryStore } from "../../../stores/country.store.js";
 import { useCartStore } from "../../../stores/cart.store.js";
 import { useUIStore } from "../../../stores/ui.store.js";

@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Api } from "../../../services/api/api-client.js";
+import { Api } from "@/services/api/api-client.js";
 import { formatPrice, formatDate } from "../../../utils/formatters.js";
 import { ORDER_STATUSES } from "../../../constants/countries.js";
 import { Boxes, PackageCheck, AlertTriangle } from "lucide-react";

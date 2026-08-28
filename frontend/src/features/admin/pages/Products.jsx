@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Api } from "../../../services/api/api-client.js";
+import { Api } from "@/services/api/api-client.js";
 import { formatPrice } from "../../../utils/formatters.js";
 import { toast } from "../../../components/ui/Toast.jsx";
 import {

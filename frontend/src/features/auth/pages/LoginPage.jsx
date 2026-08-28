@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../../stores/auth.store.js";
 import { useUIStore } from "../../../stores/ui.store.js";
-import { Api } from "../../../services/api/api-client.js";
+import { Api } from "@/services/api/api-client.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { Building2, ShieldCheck, User, Lock, Mail, ArrowRight } from "lucide-react";
 import { Button } from "../../../components/ui/Button.jsx";

@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Api } from "../../../services/api/api-client.js";
+import { Api } from "@/services/api/api-client.js";
 import { ROUTES } from "../../../constants/routes.js";
 import {
   DollarSign,

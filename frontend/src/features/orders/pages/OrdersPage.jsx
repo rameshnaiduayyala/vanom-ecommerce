@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Api } from "../../../services/api/api-client.js";
+import { Api } from "@/services/api/api-client.js";
 import { useCountryStore } from "../../../stores/country.store.js";
 import { formatPrice, formatDate } from "../../../utils/formatters.js";
 import { ROUTES } from "../../../constants/routes.js";

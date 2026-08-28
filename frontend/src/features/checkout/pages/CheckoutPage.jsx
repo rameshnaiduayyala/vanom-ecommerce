@@ -5,7 +5,7 @@ import { useCartStore } from "../../../stores/cart.store.js";
 import { useCountryStore } from "../../../stores/country.store.js";
 import { useUIStore } from "../../../stores/ui.store.js";
 import { formatPrice } from "../../../utils/formatters.js";
-import { Api } from "../../../services/api/api-client.js";
+import { Api } from "@/services/api/api-client.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { ShieldCheck, Truck, CreditCard, Lock, CheckCircle2 } from "lucide-react";
 import { Button } from "../../../components/ui/Button.jsx";

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Api } from "../../../services/api/api-client.js";
+import { Api } from "@/services/api/api-client.js";
 import { useCountryStore } from "../../../stores/country.store.js";
 import { ProductCard } from "../components/ProductCard.jsx";
 import { Search, Filter, SlidersHorizontal, Inbox } from "lucide-react";
