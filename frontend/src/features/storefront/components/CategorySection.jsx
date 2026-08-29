@@ -11,97 +11,96 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
+  Layers,
 } from "lucide-react";
 
 const CATEGORY_DATA = [
   {
     id: "cat-1",
+    name: "Electronics & Tech",
+    subtitle: "Enterprise IT & POS",
     icon: Laptop,
-    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80",
-    gradient: "from-blue-600/80 to-indigo-900/90",
-    accent: "bg-blue-500",
-    iconColor: "text-blue-400",
+    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=400&q=80",
   },
   {
     id: "cat-2",
+    name: "Groceries & FMCG",
+    subtitle: "Bulk Staple Consignments",
     icon: UtensilsCrossed,
-    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80",
-    gradient: "from-amber-600/80 to-orange-900/90",
-    accent: "bg-amber-500",
-    iconColor: "text-amber-400",
+    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=400&q=80",
   },
   {
     id: "cat-3",
+    name: "Industrial Packaging",
+    subtitle: "Cartons & Pallet Films",
     icon: Boxes,
-    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80",
-    gradient: "from-emerald-600/80 to-teal-900/90",
-    accent: "bg-emerald-500",
-    iconColor: "text-emerald-400",
+    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80",
   },
   {
     id: "cat-4",
+    name: "Commercial Kitchen",
+    subtitle: "HORECA & Heavy Equipment",
     icon: CookingPot,
-    image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=600&q=80",
-    gradient: "from-rose-600/80 to-pink-900/90",
-    accent: "bg-rose-500",
-    iconColor: "text-rose-400",
+    image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=400&q=80",
   },
   {
     id: "cat-5",
+    name: "Safety & Security",
+    subtitle: "PoE CCTV & Access Tech",
     icon: ShieldCheck,
-    image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=600&q=80",
-    gradient: "from-cyan-600/80 to-blue-900/90",
-    accent: "bg-cyan-500",
-    iconColor: "text-cyan-400",
+    image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=400&q=80",
   },
   {
     id: "cat-6",
+    name: "Building Hardware",
+    subtitle: "Structural & Fasteners",
     icon: Hammer,
-    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80",
-    gradient: "from-slate-600/80 to-slate-900/90",
-    accent: "bg-slate-500",
-    iconColor: "text-slate-300",
+    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=400&q=80",
   },
 ];
 
 export function CategorySection({ categories = [] }) {
   const scrollRef = useRef(null);
 
-  const scrollLeft = () => scrollRef.current?.scrollBy({ left: -320, behavior: "smooth" });
-  const scrollRight = () => scrollRef.current?.scrollBy({ left: 320, behavior: "smooth" });
+  const scrollLeft = () => scrollRef.current?.scrollBy({ left: -280, behavior: "smooth" });
+  const scrollRight = () => scrollRef.current?.scrollBy({ left: 280, behavior: "smooth" });
 
   const catList = Array.isArray(categories) ? categories : (categories?.items || []);
 
-  const enriched = catList.map((cat) => {
-    const meta = CATEGORY_DATA.find((d) => d.id === cat.id) || CATEGORY_DATA[0];
+  const enriched = catList.map((cat, idx) => {
+    const meta = CATEGORY_DATA.find((d) => d.id === cat.id) || CATEGORY_DATA[idx % CATEGORY_DATA.length];
     return { ...cat, ...meta };
   });
 
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
-      {/* Section Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-1 h-5 rounded-full bg-brand-500" />
-          <h2 className="text-base font-black text-text-primary tracking-tight">Shop by Category</h2>
-          <span className="text-[10px] font-bold text-text-muted bg-surface-muted border border-border px-2 py-0.5 rounded-full">
-            {categories.length} categories
-          </span>
+    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      {/* Enterprise Section Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+              Procurement Classifications
+            </span>
+            <span className="text-[11px] text-slate-400 font-medium">Direct Manufacturer Supply</span>
+          </div>
+          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+            Browse by Industrial Category
+          </h2>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Scroll Buttons */}
+        <div className="flex items-center gap-3 shrink-0">
+          {/* Scroll Navigation */}
           <div className="flex items-center gap-1">
             <button
               onClick={scrollLeft}
-              className="w-9 h-9 rounded-xl bg-white border border-border flex items-center justify-center text-text-secondary hover:text-text-primary hover:border-brand-500 hover:bg-brand-50 shadow-xs transition-all"
+              className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-400 hover:bg-slate-50 shadow-2xs transition-all cursor-pointer"
               aria-label="Scroll left"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={scrollRight}
-              className="w-9 h-9 rounded-xl bg-white border border-border flex items-center justify-center text-text-secondary hover:text-text-primary hover:border-brand-500 hover:bg-brand-50 shadow-xs transition-all"
+              className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-400 hover:bg-slate-50 shadow-2xs transition-all cursor-pointer"
               aria-label="Scroll right"
             >
               <ChevronRight className="w-4 h-4" />
@@ -110,77 +109,74 @@ export function CategorySection({ categories = [] }) {
 
           <Link
             to={ROUTES.PRODUCTS}
-            className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 border border-brand-200 hover:border-brand-400 px-3 py-1.5 rounded-lg hover:bg-brand-50 transition-all group"
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-900 hover:text-blue-700 bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-lg transition-colors group"
           >
-            <span>View All</span>
+            <span>Master Catalog</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>
       </div>
 
-      {/* Horizontal Scroll Rail */}
+      {/* Enterprise Circular Category Rail */}
       <div
         ref={scrollRef}
-        className="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-3 scrollbar-none"
+        className="flex items-start gap-6 sm:gap-10 overflow-x-auto pb-4 pt-1 snap-x scrollbar-none scroll-smooth"
       >
         {enriched.map((cat) => {
-          const Icon = cat.icon;
+          const Icon = cat.icon || Layers;
           return (
             <Link
               key={cat.id}
               to={`${ROUTES.PRODUCTS}?category=${cat.id}`}
-              className="group relative rounded-2xl overflow-hidden snap-start shrink-0 min-w-[200px] sm:min-w-[220px] h-[200px] sm:h-[220px] shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5"
+              className="group flex flex-col items-center text-center shrink-0 w-28 sm:w-32 snap-start cursor-pointer"
             >
-              {/* Background image */}
-              <img
-                src={cat.image}
-                alt={cat.name}
-                className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-              />
-
-              {/* Gradient overlay */}
-              <div className={`absolute inset-0 bg-gradient-to-t ${cat.gradient}`} />
-
-              {/* Content */}
-              <div className="absolute inset-0 flex flex-col justify-between p-4">
-                {/* Icon badge at top */}
-                <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-white" />
+              {/* Premium Circular Avatar */}
+              <div className="relative mb-3">
+                <div className="w-22 h-22 sm:w-26 sm:h-26 rounded-full p-1 bg-white border border-slate-200 shadow-2xs group-hover:border-slate-900 group-hover:shadow-md group-hover:scale-104 transition-all duration-300">
+                  <div className="w-full h-full rounded-full overflow-hidden relative bg-slate-100">
+                    <img
+                      src={cat.image}
+                      alt={cat.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-transparent transition-colors" />
                   </div>
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/20 text-white backdrop-blur-sm border border-white/20">
-                    {cat.count || 0}+ SKUs
-                  </span>
                 </div>
 
-                {/* Name at bottom */}
-                <div>
-                  <h4 className="text-sm font-black text-white leading-tight drop-shadow-sm">
-                    {cat.name}
-                  </h4>
-                  <div className="flex items-center gap-1 mt-1.5 text-white/80 text-[11px] font-semibold group-hover:gap-2 transition-all">
-                    <span>Shop Now</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </div>
+                {/* Subtle Enterprise Corner Badge */}
+                <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-slate-900 text-white border-2 border-white shadow-xs flex items-center justify-center group-hover:bg-blue-700 transition-colors">
+                  <Icon className="w-3.5 h-3.5 stroke-[2]" />
                 </div>
               </div>
+
+              {/* Title & Industrial Subtitle */}
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-blue-700 transition-colors line-clamp-1 leading-snug">
+                {cat.name}
+              </h3>
+              <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1 font-medium">
+                {cat.subtitle || `${cat.count || 20}+ Verified SKUs`}
+              </p>
             </Link>
           );
         })}
 
-        {/* "See All" card at the end */}
+        {/* View All Enterprise Tile */}
         <Link
           to={ROUTES.PRODUCTS}
-          className="group relative rounded-2xl snap-start shrink-0 min-w-[140px] h-[200px] sm:h-[220px] bg-gradient-to-br from-brand-600 to-brand-900 flex flex-col items-center justify-center gap-3 text-white shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5 border border-brand-500/40"
+          className="group flex flex-col items-center text-center shrink-0 w-28 sm:w-32 snap-start cursor-pointer"
         >
-          <div className="w-12 h-12 rounded-full bg-white/15 border border-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <ArrowRight className="w-5 h-5 text-white" />
+          <div className="w-22 h-22 sm:w-26 sm:h-26 rounded-full bg-slate-50 border border-dashed border-slate-300 group-hover:border-slate-900 group-hover:bg-slate-100 flex flex-col items-center justify-center text-slate-800 shadow-2xs group-hover:scale-104 transition-all duration-300 mb-3">
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform text-slate-900" />
           </div>
-          <span className="text-xs font-black text-center leading-tight">
-            All<br />Categories
-          </span>
+          <h3 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-blue-700 leading-snug">
+            All Sectors
+          </h3>
+          <p className="text-[11px] text-slate-500 mt-0.5 font-medium">Full Taxonomy →</p>
         </Link>
       </div>
     </section>
   );
 }
+
+export default CategorySection;

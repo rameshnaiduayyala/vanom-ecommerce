@@ -5,6 +5,7 @@ export const SUPPORTED_COUNTRIES = [
     currency: "USD",
     symbol: "$",
     flag: "🇺🇸",
+    badge: "North America",
   },
   {
     code: "GB",
@@ -12,6 +13,7 @@ export const SUPPORTED_COUNTRIES = [
     currency: "GBP",
     symbol: "£",
     flag: "🇬🇧",
+    badge: "United Kingdom",
   },
 ];
 
