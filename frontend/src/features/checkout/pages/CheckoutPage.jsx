@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import confetti from "canvas-confetti";
 import { useCartStore } from "../../../stores/cart.store.js";
@@ -22,7 +22,7 @@ export function CheckoutPage() {
   const [formData, setFormData] = useState({
     fullName: "Ramesh Sharma",
     email: "ramesh.sharma@example.com",
-    phone: "+91 98765 43210",
+    phone: "+91 79894 19864 |",
     addressLine1: "Flat 402, Lotus Heights",
     city: "Bengaluru",
     state: "Karnataka",

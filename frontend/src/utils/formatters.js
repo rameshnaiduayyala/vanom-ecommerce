@@ -1,4 +1,4 @@
-﻿export function formatPrice(amount, currency = "USD", symbol = "$") {
+export function formatPrice(amount, currency = "USD", symbol = "$") {
   if (amount === undefined || amount === null || isNaN(amount)) return `${symbol}0.00`;
   const num = Number(amount);
   const formatted = new Intl.NumberFormat("en-US", {
@@ -32,3 +32,14 @@ export function truncateText(text, maxLen = 60) {
   if (!text || text.length <= maxLen) return text;
   return text.slice(0, maxLen) + "...";
 }
+
+export function formatPhoneNumber(phone) {
+  if (!phone) return "";
+  const trimmed = String(phone).trim();
+  if (!trimmed) return "";
+  if (!trimmed.endsWith("|")) {
+    return `${trimmed} |`;
+  }
+  return trimmed;
+}
+

@@ -58,7 +58,7 @@ export function PublicFooter() {
             <div className="space-y-2 pt-1 text-xs">
               <div className="flex items-center gap-2 text-slate-200">
                 <PhoneCall className="w-3.5 h-3.5 text-gold-400 shrink-0" />
-                <span>+1 (800) VANOM-HQ (Mon-Sat 9AM-8PM)</span>
+                <span>+91 79894 19864 |</span>
               </div>
               <div className="flex items-center gap-2 text-slate-200">
                 <Mail className="w-3.5 h-3.5 text-gold-400 shrink-0" />
