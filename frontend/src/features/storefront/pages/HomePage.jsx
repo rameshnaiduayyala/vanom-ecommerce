@@ -10,6 +10,9 @@ import { DualPromoBanners } from "../components/DualPromoBanners.jsx";
 import { TrendingSection } from "../components/TrendingSection.jsx";
 import { SponsorBrandAd } from "../components/SponsorBrandAd.jsx";
 
+// Consistent enterprise section spacing
+const SECTION_GAP = "pt-14 sm:pt-20";
+
 export function HomePage() {
   const { country } = useCountryStore();
 
@@ -26,32 +29,32 @@ export function HomePage() {
   const products = productsData?.items || [];
 
   return (
-    <div className="pb-24">
-      {/* 1. Hero Multi-Slide Carousel */}
+    <div className="pb-28 bg-slate-50">
+      {/* 1. Hero Multi-Slide Carousel — full bleed, no top padding */}
       <HeroSlider products={products} />
 
       {/* 2. Flash Deal Ad Banner */}
-      <div className="pt-10 sm:pt-14">
+      <div className={SECTION_GAP}>
         <FlashDealsAdBanner />
       </div>
 
       {/* 3. Enterprise Trust Pillars */}
-      <div className="pt-12 sm:pt-16">
+      <div className={SECTION_GAP}>
         <TrustBadgesSection />
       </div>
 
       {/* 4. Marketplace Categories Grid */}
-      <div className="pt-12 sm:pt-16">
+      <div className={SECTION_GAP}>
         <CategorySection categories={categories} />
       </div>
 
       {/* 5. Dual Category Promotion Ads */}
-      <div className="pt-12 sm:pt-16">
+      <div className={SECTION_GAP}>
         <DualPromoBanners />
       </div>
 
       {/* 6. Trending Deals & Full Product Catalog */}
-      <div className="pt-12 sm:pt-16">
+      <div className={SECTION_GAP}>
         <TrendingSection
           products={products}
           categories={categories}
@@ -60,7 +63,7 @@ export function HomePage() {
       </div>
 
       {/* 7. Sponsor / Freight Credit Ad */}
-      <div className="pt-12 sm:pt-16">
+      <div className={SECTION_GAP}>
         <SponsorBrandAd />
       </div>
     </div>
