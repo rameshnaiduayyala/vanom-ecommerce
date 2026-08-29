@@ -53,23 +53,16 @@ export function HeaderCountryDropdown({ isOpen, onToggle, onClose }) {
 
   return (
     <div ref={containerRef} className="relative">
-      {/* Enterprise Minimal Trigger */}
+      {/* Dark header trigger */}
       <button
         onClick={onToggle}
-        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
-          isOpen
-            ? "bg-slate-50 border-slate-400 shadow-xs"
-            : "bg-white border-slate-200 hover:border-slate-300 text-slate-800"
-        }`}
+        className="flex items-center gap-1.5 text-xs font-semibold transition-all cursor-pointer text-white/80 hover:text-white"
         aria-label="Select Country and Currency"
       >
         <FlagIcon code={activeCode} />
-        <span className="font-bold tracking-tight text-slate-900">{activeCode}</span>
-        <span className="text-slate-400 font-mono text-[11px]">({country?.currency || "USD"})</span>
+        <span className="font-bold tracking-tight">{activeCode}</span>
         <ChevronDown
-          className={`w-3 h-3 text-slate-400 transition-transform duration-150 ${
-            isOpen ? "rotate-180 text-slate-700" : ""
-          }`}
+          className={`w-3 h-3 opacity-60 transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 

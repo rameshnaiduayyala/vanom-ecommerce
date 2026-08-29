@@ -10,8 +10,16 @@ import { DualPromoBanners } from "../components/DualPromoBanners.jsx";
 import { TrendingSection } from "../components/TrendingSection.jsx";
 import { SponsorBrandAd } from "../components/SponsorBrandAd.jsx";
 
-// Consistent enterprise section spacing
-const SECTION_GAP = "pt-14 sm:pt-20";
+// BestBuy-style widescreen section card (1440px wide) with rounded corners
+function SectionCard({ children, className = "" }) {
+  return (
+    <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8">
+      <div className={`bg-white rounded-2xl sm:rounded-3xl border border-slate-200/80 shadow-xs py-7 px-4 sm:px-8 ${className}`}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export function HomePage() {
   const { country } = useCountryStore();
@@ -21,7 +29,7 @@ export function HomePage() {
     queryFn: () => Api.catalog.getProducts(),
   });
 
-  const { data: categories = [], isLoading: loadingCategories } = useQuery({
+  const { data: categories = [] } = useQuery({
     queryKey: ["home-categories"],
     queryFn: () => Api.catalog.getCategories(),
   });
@@ -29,43 +37,53 @@ export function HomePage() {
   const products = productsData?.items || [];
 
   return (
-    <div className="pb-28 bg-slate-50">
-      {/* 1. Hero Multi-Slide Carousel — full bleed, no top padding */}
-      <HeroSlider products={products} />
+    // ── Gray page background with widescreen rounded section cards ──
+    <div className="bg-[#ededed] space-y-4 sm:space-y-6 pb-12 pt-3 sm:pt-4">
 
-      {/* 2. Flash Deal Ad Banner */}
-      <div className={SECTION_GAP}>
-        <FlashDealsAdBanner />
+      {/* 1. Hero — 1440px smart widescreen banner */}
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="rounded-2xl sm:rounded-3xl overflow-hidden shadow-xs border border-slate-200/80">
+          <HeroSlider products={products} />
+        </div>
       </div>
 
-      {/* 3. Enterprise Trust Pillars */}
-      <div className={SECTION_GAP}>
+      {/* 2. Trust Pillars */}
+      <SectionCard>
         <TrustBadgesSection />
-      </div>
+      </SectionCard>
 
-      {/* 4. Marketplace Categories Grid */}
-      <div className={SECTION_GAP}>
+      {/* 3. Flash Deal Banner */}
+      <SectionCard>
+        <FlashDealsAdBanner />
+      </SectionCard>
+
+      {/* 4. Shop by Category */}
+      <SectionCard>
         <CategorySection categories={categories} />
-      </div>
+      </SectionCard>
 
-      {/* 5. Dual Category Promotion Ads */}
-      <div className={SECTION_GAP}>
-        <DualPromoBanners />
-      </div>
-
-      {/* 6. Trending Deals & Full Product Catalog */}
-      <div className={SECTION_GAP}>
+      {/* 5. Trending Now */}
+      <SectionCard>
         <TrendingSection
           products={products}
           categories={categories}
           isLoading={loadingProducts}
         />
-      </div>
+      </SectionCard>
 
-      {/* 7. Sponsor / Freight Credit Ad */}
-      <div className={SECTION_GAP}>
-        <SponsorBrandAd />
+      {/* 6. Featured Deals */}
+      <SectionCard>
+        <DualPromoBanners />
+      </SectionCard>
+
+      {/* 7. Sponsor / B2B Credit CTA */}
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8">
+        <div className="rounded-2xl sm:rounded-3xl overflow-hidden shadow-xs">
+          <SponsorBrandAd />
+        </div>
       </div>
     </div>
   );
 }
+
+export default HomePage;

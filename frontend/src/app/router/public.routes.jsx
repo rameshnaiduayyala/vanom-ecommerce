@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { PublicLayout } from "../../layouts/public/PublicLayout.jsx";
 import { HomePage } from "../../features/storefront/pages/HomePage.jsx";
 import { ProductsPage } from "../../features/storefront/pages/ProductsPage.jsx";
@@ -9,7 +9,8 @@ import { OrdersPage } from "../../features/orders/pages/OrdersPage.jsx";
 import { OrderDetailsPage } from "../../features/orders/pages/OrderDetailsPage.jsx";
 import { WishlistPage } from "../../features/wishlist/pages/WishlistPage.jsx";
 import { LoginPage } from "../../features/auth/pages/LoginPage.jsx";
-import { RegisterPage, ForgotPasswordPage } from "../../features/auth/pages/RegisterPage.jsx";
+import { RegisterPage } from "../../features/auth/pages/RegisterPage.jsx";
+import { ForgotPasswordPage } from "../../features/auth/pages/ForgotPasswordPage.jsx";
 import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
 
 export const publicRoutes = {
@@ -34,3 +35,5 @@ export const publicRoutes = {
     { path: "/forgot-password", element: <ForgotPasswordPage /> },
   ],
 };
+
+export default publicRoutes;

@@ -17,7 +17,7 @@ import {
   Zap,
 } from "lucide-react";
 
-const SLIDE_DURATION = 5500;
+const SLIDE_DURATION = 6000;
 
 export function HeroSlider({ products = [] }) {
   const { country } = useCountryStore();
@@ -38,29 +38,29 @@ export function HeroSlider({ products = [] }) {
 
       const themes = [
         {
-          accent: "#00c136",
-          bg: "from-[#011409] via-[#021f0f] to-[#010c06]",
-          pillColor: "bg-[#008522]",
+          accent: "#FFE000",
+          bg: "from-[#001736] via-[#00285a] to-[#001026]",
+          pillColor: "bg-[#FFE000] text-[#003876]",
           stats: [
-            { icon: Users, value: "50K+", label: "Buyers" },
-            { icon: Globe2, value: "US & UK", label: "Markets" },
-            { icon: ShieldCheck, value: "ISO", label: "Certified" },
+            { icon: Users, value: "50K+", label: "Verified Buyers" },
+            { icon: Globe2, value: "US & UK", label: "Priority Ports" },
+            { icon: ShieldCheck, value: "ISO 9001", label: "Certified" },
           ],
         },
         {
-          accent: "#F5B800",
-          bg: "from-[#160e01] via-[#241703] to-[#0d0800]",
-          pillColor: "bg-[#D9A000]",
+          accent: "#FFE000",
+          bg: "from-[#0a1b38] via-[#08234d] to-[#051124]",
+          pillColor: "bg-[#FFE000] text-[#003876]",
           stats: [
-            { icon: Boxes, value: "5,000+", label: "In Stock" },
-            { icon: Globe2, value: "Direct", label: "Millers" },
-            { icon: Zap, value: "Tier 3", label: "Wholesale" },
+            { icon: Boxes, value: "5,000+", label: "In-Stock SKUs" },
+            { icon: Globe2, value: "Direct", label: "Distributor" },
+            { icon: Zap, value: "Tier 3", label: "Volume Pricing" },
           ],
         },
         {
-          accent: "#10B981",
-          bg: "from-[#021812] via-[#04281e] to-[#01100b]",
-          pillColor: "bg-emerald-600",
+          accent: "#FFE000",
+          bg: "from-[#002244] via-[#003366] to-[#001730]",
+          pillColor: "bg-[#FFE000] text-[#003876]",
           stats: [
             { icon: Boxes, value: "3-Ply", label: "Corrugated" },
             { icon: ShieldCheck, value: "24-Hr", label: "Dispatch" },
@@ -68,13 +68,13 @@ export function HeroSlider({ products = [] }) {
           ],
         },
         {
-          accent: "#EAB308",
-          bg: "from-[#0f1710] via-[#162419] to-[#070e08]",
-          pillColor: "bg-amber-600",
+          accent: "#FFE000",
+          bg: "from-[#051a3a] via-[#092b5c] to-[#031024]",
+          pillColor: "bg-[#FFE000] text-[#003876]",
           stats: [
-            { icon: ShieldCheck, value: "4K UHD", label: "Night Vision" },
+            { icon: ShieldCheck, value: "4K UHD", label: "Surveillance" },
             { icon: Globe2, value: "PoE", label: "Plug & Play" },
-            { icon: Users, value: "3-Yr", label: "Warranty" },
+            { icon: Users, value: "3-Yr", label: "Commercial Warranty" },
           ],
         },
       ];
@@ -85,9 +85,9 @@ export function HeroSlider({ products = [] }) {
         id: p.id,
         name: p.name,
         slug: p.slug || p.id,
-        category: p.category || "General Catalog",
+        category: p.category || "Commercial Inventory",
         brand: p.brand || "Vanom",
-        description: p.description || "B2C delivery + B2B pallet trade across the US $ and UK £ with automated tax compliance.",
+        description: p.description || "Enterprise retail dispatch + B2B pallet trade across USA & UK with automated customs & tax compliance.",
         image: p.image || "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=85",
         packaging: p.packaging?.unitName || "Unit",
         retailPrice,
@@ -128,8 +128,8 @@ export function HeroSlider({ products = [] }) {
 
   return (
     <section
-      className="relative overflow-hidden select-none text-white bg-slate-950 border-b border-slate-800"
-      style={{ height: "clamp(380px, 46vw, 500px)" }}
+      className="relative overflow-hidden select-none text-white bg-slate-950 w-full"
+      style={{ height: "clamp(340px, 32vw, 420px)" }}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -140,18 +140,18 @@ export function HeroSlider({ products = [] }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.7 }}
+          transition={{ duration: 0.6 }}
           className={`absolute inset-0 bg-gradient-to-br ${s.bg}`}
         >
           <img
             src={s.image}
             alt=""
             aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover opacity-[0.20] filter saturate-125"
+            className="absolute inset-0 w-full h-full object-cover opacity-[0.22] filter saturate-125"
           />
-          {/* Subtle vignette gradients */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          {/* Vignette Gradients */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#001736]/95 via-[#001e47]/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
 
           {/* Dot matrix texture */}
           <div
@@ -164,125 +164,120 @@ export function HeroSlider({ products = [] }) {
         </motion.div>
       </AnimatePresence>
 
-      {/* ── Main Content Grid ── */}
-      <div className="relative z-10 h-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 flex items-center">
-        <div className="grid lg:grid-cols-12 gap-8 w-full items-center">
+      {/* ── Wide-Screen Responsive Grid ── */}
+      <div className="relative z-10 h-full w-full max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-14 flex items-center">
+        <div className="grid lg:grid-cols-12 gap-6 lg:gap-10 w-full items-center">
 
-          {/* ─── LEFT: Editorial Headline & Actions ─── */}
-          <div className="lg:col-span-7 space-y-4 max-w-xl">
+          {/* ─── LEFT: Compact Smart Typography & Actions ─── */}
+          <div className="lg:col-span-7 space-y-3 sm:space-y-4 max-w-2xl">
             <AnimatePresence mode="wait">
               <motion.div
                 key={`left-${s.id}`}
-                initial={{ opacity: 0, x: -16 }}
+                initial={{ opacity: 0, x: -12 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 16 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                className="space-y-4"
+                exit={{ opacity: 0, x: 12 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+                className="space-y-3"
               >
                 {/* Eyebrow + Pill */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/50">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="text-[11px] font-black uppercase tracking-[0.18em] text-[#FFE000] bg-white/10 px-2.5 py-0.5 rounded border border-white/15">
                     {s.category}
                   </span>
-                  <span className={`${s.pillColor} text-[10px] font-black px-2.5 py-0.5 rounded-full text-white shadow-xs`}>
-                    Up to {s.discountPct}% off bulk orders
+                  <span className={`${s.pillColor} text-[10px] font-black px-2.5 py-0.5 rounded uppercase tracking-wider`}>
+                    Up to {s.discountPct}% off bulk
                   </span>
                 </div>
 
-                {/* Main Headline */}
+                {/* Smart Sized Headline */}
                 <h1
-                  className="font-black tracking-tight leading-[1.1] text-white"
-                  style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.9rem)" }}
+                  className="font-black tracking-tight leading-[1.12] text-white line-clamp-2"
+                  style={{ fontSize: "clamp(1.5rem, 2.8vw, 2.4rem)" }}
                 >
                   {s.name}
                 </h1>
 
-                {/* Description */}
-                <p className="text-xs sm:text-sm text-white/60 leading-relaxed max-w-md line-clamp-2">
-                  {s.description}
-                </p>
+                {/* Price & Description */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-xl sm:text-2xl font-black text-[#FFE000]">
+                    {formatPrice(s.retailPrice, country.currency, country.symbol)}
+                  </span>
+                  <span className="text-xs text-white/60">
+                    Bulk: <span className="font-bold text-white">{formatPrice(s.wholesalePrice, country.currency, country.symbol)}/{s.packaging}</span>
+                  </span>
+                  <span className="text-white/30 hidden sm:inline">•</span>
+                  <span className="text-xs text-white/70 line-clamp-1 max-w-xs hidden sm:inline">
+                    {s.description}
+                  </span>
+                </div>
 
-                {/* CTAs */}
-                <div className="flex items-center gap-3 pt-1">
+                {/* CTAs + Stats in one compact smart row */}
+                <div className="flex flex-wrap items-center gap-4 pt-1">
                   <Link
                     to={`/products/${s.slug}`}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-950 transition-all hover:scale-105 hover:shadow-lg cursor-pointer"
-                    style={{ backgroundColor: s.accent }}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs sm:text-sm font-black bg-[#FFE000] text-[#003876] hover:bg-[#FFD100] transition-all hover:scale-103 shadow-md cursor-pointer"
                   >
-                    <span>Shop Now</span>
+                    <span>Shop Deal</span>
                     <ArrowRight className="w-4 h-4" />
                   </Link>
 
                   <Link
                     to={ROUTES.B2B.ROOT}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white border border-white/20 hover:bg-white/10 backdrop-blur-sm transition-all cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-bold text-white border border-white/30 hover:bg-white/10 backdrop-blur-sm transition-all cursor-pointer"
                   >
                     <Building2 className="w-4 h-4" />
-                    <span>B2B Wholesale</span>
+                    <span>Wholesale Tiers</span>
                   </Link>
-                </div>
 
-                {/* Stats Row */}
-                <div className="flex items-center gap-5 pt-1">
-                  {s.stats.map(({ icon: Icon, value, label }, i) => (
-                    <React.Fragment key={i}>
-                      {i > 0 && <div className="w-px h-5 bg-white/10" />}
-                      <div className="flex items-center gap-1.5">
-                        <Icon className="w-3.5 h-3.5 opacity-60" style={{ color: s.accent }} />
-                        <span className="text-xs font-black text-white">{value}</span>
-                        <span className="text-[10px] text-white/40 uppercase tracking-wider">{label}</span>
+                  {/* Inline Stats */}
+                  <div className="hidden xl:flex items-center gap-4 ml-2 pl-4 border-l border-white/15">
+                    {s.stats.slice(0, 2).map(({ icon: Icon, value, label }, i) => (
+                      <div key={i} className="flex items-center gap-1.5 text-xs">
+                        <Icon className="w-3.5 h-3.5 text-[#FFE000]" />
+                        <span className="font-black text-white">{value}</span>
+                        <span className="text-[10px] text-white/50 uppercase">{label}</span>
                       </div>
-                    </React.Fragment>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </motion.div>
             </AnimatePresence>
           </div>
 
-          {/* ─── RIGHT: Clean Floating Product Card ─── */}
+          {/* ─── RIGHT: Smart Compact Aspect Showcase ─── */}
           <div className="lg:col-span-5 hidden lg:flex justify-end items-center">
             <AnimatePresence mode="wait">
               <motion.div
                 key={`img-${s.id}`}
-                initial={{ opacity: 0, scale: 0.94, y: 12 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: -10 }}
-                transition={{ duration: 0.45, ease: "easeOut" }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.97 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
                 className="relative"
               >
-                {/* Main Image Container */}
-                <div className="w-[340px] h-[240px] rounded-2xl overflow-hidden border border-white/15 shadow-2xl bg-slate-900">
+                {/* Smart Wide Image Container */}
+                <div className="w-[360px] h-[220px] rounded-2xl overflow-hidden border border-white/20 shadow-xl bg-slate-900/90 relative group">
                   <img
                     src={s.image}
                     alt={s.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent" />
                 </div>
 
-                {/* Floating Bottom Badge */}
-                <motion.div
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
-                  className="absolute -bottom-4 -left-6 flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-black/70 backdrop-blur-xl border border-white/20 shadow-xl"
-                >
-                  <div
-                    className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: s.accent + "30", border: `1px solid ${s.accent}60` }}
-                  >
-                    <Boxes className="w-4 h-4" style={{ color: s.accent }} />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-black text-white leading-tight">
-                      {formatPrice(s.wholesalePrice, country.currency, country.symbol)} / {s.packaging}
-                    </p>
-                    <p className="text-[10px] text-white/50">MOQ available · NET 30</p>
-                  </div>
-                </motion.div>
+                {/* Floating Bottom Info Badge */}
+                <div className="absolute -bottom-3 -left-4 flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-slate-950/95 backdrop-blur-xl border border-white/20 shadow-xl">
+                  <Boxes className="w-4 h-4 text-[#FFE000]" />
+                  <span className="text-xs font-black text-[#FFE000]">
+                    {formatPrice(s.wholesalePrice, country.currency, country.symbol)}
+                  </span>
+                  <span className="text-[10px] text-white/60">Wholesale</span>
+                </div>
 
-                {/* Top-Right Live Pricing Badge */}
-                <div className="absolute -top-3 -right-3 flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black shadow-lg">
+                {/* Top-Right Badge */}
+                <div className="absolute -top-2.5 -right-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black shadow-lg">
                   <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                  Live Pricing
+                  Live Deal
                 </div>
               </motion.div>
             </AnimatePresence>
@@ -291,10 +286,10 @@ export function HeroSlider({ products = [] }) {
         </div>
       </div>
 
-      {/* ── Clean Minimalist Bottom Controls Bar ── */}
-      <div className="absolute bottom-0 left-0 right-0 z-20">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-3.5 flex items-center justify-between">
-          {/* Subtle Pill Indicators with Integrated Progress on the Left */}
+      {/* ── Compact Bottom Navigation Strip ── */}
+      <div className="absolute bottom-2.5 left-0 right-0 z-20">
+        <div className="max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-14 flex items-center justify-between">
+          {/* Pill Indicators with Progress */}
           <div className="flex items-center gap-2">
             {catalogList.map((_, idx) => {
               const isActive = current === idx;
@@ -304,15 +299,15 @@ export function HeroSlider({ products = [] }) {
                   onClick={() => go(idx)}
                   className={`rounded-full transition-all duration-300 cursor-pointer relative overflow-hidden ${
                     isActive
-                      ? "w-8 h-1.5 bg-white/20"
-                      : "w-2 h-1.5 bg-white/30 hover:bg-white/50"
+                      ? "w-9 h-1.5 bg-white/20"
+                      : "w-2.5 h-1.5 bg-white/30 hover:bg-white/50"
                   }`}
                   aria-label={`Slide ${idx + 1}`}
                 >
                   {isActive && (
                     <motion.div
-                      className="h-full rounded-full"
-                      style={{ width: `${progress}%`, backgroundColor: s.accent }}
+                      className="h-full rounded-full bg-[#FFE000]"
+                      style={{ width: `${progress}%` }}
                       transition={{ ease: "linear" }}
                     />
                   )}
@@ -321,25 +316,25 @@ export function HeroSlider({ products = [] }) {
             })}
           </div>
 
-          {/* Minimalist Slide Counter & Arrow Buttons on the Right */}
+          {/* Slide Counter & Arrow Buttons */}
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-white/40 font-mono tabular-nums">
+            <span className="text-[11px] text-white/50 font-mono font-bold tabular-nums">
               0{current + 1} / 0{catalogList.length}
             </span>
-            <div className="flex items-center gap-1.5 ml-2">
+            <div className="flex items-center gap-1 ml-1">
               <button
                 onClick={handlePrev}
-                className="w-8 h-8 rounded-lg bg-white/8 hover:bg-white/15 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all cursor-pointer"
+                className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white transition-all cursor-pointer"
                 aria-label="Previous Slide"
               >
-                <ChevronLeft className="w-4 h-4" />
+                <ChevronLeft className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={handleNext}
-                className="w-8 h-8 rounded-lg bg-white/8 hover:bg-white/15 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-all cursor-pointer"
+                className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white transition-all cursor-pointer"
                 aria-label="Next Slide"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>

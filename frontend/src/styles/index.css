@@ -1,43 +1,50 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-50: #F0F8F1;
-  --color-brand-100: #E0F1E2;
-  --color-brand-200: #C1E3C5;
-  --color-brand-300: #91CC98;
-  --color-brand-400: #5DBB68;
-  --color-brand-500: #008522;
-  --color-brand-600: #006B1B;
-  --color-brand-700: #005616;
-  --color-brand-800: #003D12;
-  --color-brand-900: #00290C;
+  /* Corporate BestBuy Navy Brand Palette */
+  --color-brand-50: #EEF4FC;
+  --color-brand-100: #D8E7F9;
+  --color-brand-200: #B3D1F4;
+  --color-brand-300: #80B3EC;
+  --color-brand-400: #4B90E2;
+  --color-brand-500: #1B6FD4;
+  --color-brand-600: #004691;
+  --color-brand-700: #003876;
+  --color-brand-800: #002A5B;
+  --color-brand-900: #001E42;
+  --color-brand-950: #00132B;
 
-  --color-gold-50: #FFFBEA;
-  --color-gold-100: #FFF3BF;
-  --color-gold-200: #FFE78A;
-  --color-gold-300: #FFD34D;
-  --color-gold-400: #F5B800;
-  --color-gold-500: #D9A000;
-  --color-gold-600: #C89000;
-  --color-gold-700: #9A6F00;
+  /* Signature Yellow Accent Palette */
+  --color-gold-50: #FFFDE6;
+  --color-gold-100: #FFFABF;
+  --color-gold-200: #FFF58C;
+  --color-gold-300: #FFED4D;
+  --color-gold-400: #FFE000;
+  --color-gold-500: #E6C800;
+  --color-gold-600: #B89F00;
+  --color-gold-700: #8A7700;
 
-  --color-surface: #FFFFFF;
-  --color-surface-muted: #F8FAF8;
-  --color-surface-green: #EEF7EF;
-  --color-surface-gold: #FFF8DC;
+  /* Neutral Surface System */
+  --color-surface: #EDEDED;
+  --color-surface-card: #FFFFFF;
+  --color-surface-muted: #F7F9FA;
+  --color-surface-dark: #001E3D;
 
-  --color-text-primary: #172117;
-  --color-text-secondary: #596359;
-  --color-text-muted: #7A847A;
+  /* Clean Typography Colors */
+  --color-text-primary: #040C13;
+  --color-text-secondary: #4A5568;
+  --color-text-muted: #718096;
 
-  --color-border: #E2E8E2;
+  /* Subtle Borders */
+  --color-border: #E2E8F0;
+  --color-border-subtle: #EDF2F7;
 }
 
 body {
-  background-color: var(--color-surface);
-  color: var(--color-text-primary);
+  background-color: #EDEDED;
+  color: #040C13;
   -webkit-font-smoothing: antialiased;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 /* Global Pointer Cursor on all interactive elements */
@@ -67,12 +74,12 @@ select:disabled {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #EDEDED;
 }
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: #CBD5E1;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: #94A3B8;
 }

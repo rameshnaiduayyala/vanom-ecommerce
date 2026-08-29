@@ -32,10 +32,10 @@ export function HeaderUserMenu({ isOpen, onToggle, onClose }) {
     return (
       <Link
         to={ROUTES.LOGIN}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-bold transition-colors"
+        className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded hover:bg-white/10 transition-colors text-white"
       >
-        <User className="w-4 h-4" />
-        <span>Sign In</span>
+        <User className="w-5 h-5 stroke-[1.75]" />
+        <span className="text-[10px] font-semibold hidden sm:block">Sign In</span>
       </Link>
     );
   }
@@ -44,13 +44,12 @@ export function HeaderUserMenu({ isOpen, onToggle, onClose }) {
     <div ref={containerRef} className="relative">
       <button
         onClick={onToggle}
-        className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-border bg-surface-muted hover:bg-slate-100 text-text-primary text-xs font-bold transition-colors cursor-pointer"
+        className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded hover:bg-white/10 transition-colors text-white cursor-pointer"
       >
-        <div className="w-5 h-5 rounded-full bg-brand-600 text-white flex items-center justify-center text-[10px] font-black">
+        <div className="w-5 h-5 rounded-full bg-[#FFE000] text-[#003876] flex items-center justify-center text-[10px] font-black">
           {user?.firstName?.[0] || "U"}
         </div>
-        <span className="hidden md:inline max-w-[100px] truncate">{user?.firstName || "Account"}</span>
-        <ChevronDown className={`w-3 h-3 text-text-muted transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+        <span className="text-[10px] font-semibold hidden sm:block truncate max-w-[80px]">{user?.firstName || "Account"}</span>
       </button>
 
       {isOpen && (

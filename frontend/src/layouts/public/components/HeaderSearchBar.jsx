@@ -6,7 +6,6 @@ import { ROUTES } from "../../../constants/routes.js";
 export function HeaderSearchBar({ className = "" }) {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchFocused, setSearchFocused] = useState(false);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -18,45 +17,31 @@ export function HeaderSearchBar({ className = "" }) {
   return (
     <form
       onSubmit={handleSearch}
-      className={`relative flex items-center w-full transition-all duration-200 ${className}`}
+      className={`flex items-center w-full ${className}`}
     >
-      <div
-        className={`flex items-center w-full bg-surface-muted rounded-2xl border transition-all duration-200 overflow-hidden ${
-          searchFocused
-            ? "border-brand-500 bg-white ring-4 ring-brand-100/70 shadow-sm"
-            : "border-border hover:border-slate-300"
-        }`}
-      >
-        <div className="pl-4 text-text-muted flex items-center pointer-events-none">
-          <Search className="w-4 h-4" />
-        </div>
-
+      <div className="flex items-center w-full bg-white rounded-none overflow-hidden h-10">
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          onFocus={() => setSearchFocused(true)}
-          onBlur={() => setSearchFocused(false)}
-          placeholder="Search 10,000+ products, categories, SKUs..."
-          className="w-full py-2.5 pl-3 pr-10 text-xs sm:text-sm bg-transparent text-text-primary placeholder:text-text-muted focus:outline-none"
+          placeholder="Search products, brands, SKUs..."
+          className="w-full h-full px-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none bg-white"
         />
-
         {searchQuery && (
           <button
             type="button"
             onClick={() => setSearchQuery("")}
-            className="absolute right-12 text-text-muted hover:text-text-primary p-1"
-            aria-label="Clear search"
+            className="px-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+            aria-label="Clear"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-4 h-4" />
           </button>
         )}
-
         <button
           type="submit"
-          className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2.5 text-xs font-bold transition-colors cursor-pointer shrink-0"
+          className="h-full px-5 bg-[#FFE000] hover:bg-[#FFD100] text-[#003876] font-black text-sm transition-colors cursor-pointer shrink-0 flex items-center gap-1.5"
         >
-          Search
+          <Search className="w-4 h-4" />
         </button>
       </div>
     </form>

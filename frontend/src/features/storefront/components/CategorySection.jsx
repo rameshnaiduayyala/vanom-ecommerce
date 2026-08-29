@@ -2,178 +2,167 @@ import React, { useRef } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../../constants/routes.js";
 import {
-  Laptop,
-  UtensilsCrossed,
-  Boxes,
-  CookingPot,
-  ShieldCheck,
-  Hammer,
-  ArrowRight,
   ChevronLeft,
   ChevronRight,
-  Layers,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 
 const CATEGORY_DATA = [
   {
     id: "cat-1",
-    name: "Electronics & Tech",
-    subtitle: "Enterprise IT & POS",
-    icon: Laptop,
-    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=400&q=80",
+    name: "TV & Tech",
+    image: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=300&q=80",
+  },
+  {
+    id: "cat-4",
+    name: "Appliances",
+    image: "https://images.unsplash.com/photo-1584992236310-6edddc08acff?auto=format&fit=crop&w=300&q=80",
+  },
+  {
+    id: "cat-electronics",
+    name: "Cell Phones",
+    image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=300&q=80",
+  },
+  {
+    id: "cat-wearables",
+    name: "Wearable Tech",
+    image: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=300&q=80",
+  },
+  {
+    id: "cat-gaming",
+    name: "Video Games",
+    image: "https://images.unsplash.com/photo-1600080972464-8e5f35f63d08?auto=format&fit=crop&w=300&q=80",
+  },
+  {
+    id: "cat-audio",
+    name: "Headphones",
+    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=300&q=80",
+  },
+  {
+    id: "cat-3",
+    name: "Packaging & Logistics",
+    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=300&q=80",
   },
   {
     id: "cat-2",
     name: "Groceries & FMCG",
-    subtitle: "Bulk Staple Consignments",
-    icon: UtensilsCrossed,
-    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=400&q=80",
-  },
-  {
-    id: "cat-3",
-    name: "Industrial Packaging",
-    subtitle: "Cartons & Pallet Films",
-    icon: Boxes,
-    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80",
-  },
-  {
-    id: "cat-4",
-    name: "Commercial Kitchen",
-    subtitle: "HORECA & Heavy Equipment",
-    icon: CookingPot,
-    image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=400&q=80",
-  },
-  {
-    id: "cat-5",
-    name: "Safety & Security",
-    subtitle: "PoE CCTV & Access Tech",
-    icon: ShieldCheck,
-    image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=400&q=80",
-  },
-  {
-    id: "cat-6",
-    name: "Building Hardware",
-    subtitle: "Structural & Fasteners",
-    icon: Hammer,
-    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=400&q=80",
+    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=300&q=80",
   },
 ];
 
 export function CategorySection({ categories = [] }) {
   const scrollRef = useRef(null);
 
-  const scrollLeft = () => scrollRef.current?.scrollBy({ left: -280, behavior: "smooth" });
-  const scrollRight = () => scrollRef.current?.scrollBy({ left: 280, behavior: "smooth" });
+  const scrollLeft = () => scrollRef.current?.scrollBy({ left: -260, behavior: "smooth" });
+  const scrollRight = () => scrollRef.current?.scrollBy({ left: 260, behavior: "smooth" });
 
-  const catList = Array.isArray(categories) ? categories : (categories?.items || []);
-
+  const catList = Array.isArray(categories) && categories.length > 0 ? categories : CATEGORY_DATA;
   const enriched = catList.map((cat, idx) => {
     const meta = CATEGORY_DATA.find((d) => d.id === cat.id) || CATEGORY_DATA[idx % CATEGORY_DATA.length];
     return { ...cat, ...meta };
   });
 
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-      {/* Enterprise Section Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b border-slate-200">
+    <section className="w-full">
+      {/* ── BestBuy-Style Heading ── */}
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 mb-6">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-              Procurement Classifications
-            </span>
-            <span className="text-[11px] text-slate-400 font-medium">Direct Manufacturer Supply</span>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-            Browse by Industrial Category
+          <h2 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight leading-tight">
+            Top quality. Even better prices.
           </h2>
+          <p className="text-xs sm:text-sm text-slate-600 font-normal mt-0.5">
+            We inspect and verify every catalog item. All you have to do is save.
+          </p>
         </div>
-
-        <div className="flex items-center gap-3 shrink-0">
-          {/* Scroll Navigation */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={scrollLeft}
-              className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-400 hover:bg-slate-50 shadow-2xs transition-all cursor-pointer"
-              aria-label="Scroll left"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={scrollRight}
-              className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-400 hover:bg-slate-50 shadow-2xs transition-all cursor-pointer"
-              aria-label="Scroll right"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          <Link
-            to={ROUTES.PRODUCTS}
-            className="flex items-center gap-1.5 text-xs font-bold text-slate-900 hover:text-blue-700 bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-lg transition-colors group"
-          >
-            <span>Master Catalog</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-          </Link>
-        </div>
-      </div>
-
-      {/* Enterprise Circular Category Rail */}
-      <div
-        ref={scrollRef}
-        className="flex items-start gap-6 sm:gap-10 overflow-x-auto pb-4 pt-1 snap-x scrollbar-none scroll-smooth"
-      >
-        {enriched.map((cat) => {
-          const Icon = cat.icon || Layers;
-          return (
-            <Link
-              key={cat.id}
-              to={`${ROUTES.PRODUCTS}?category=${cat.id}`}
-              className="group flex flex-col items-center text-center shrink-0 w-28 sm:w-32 snap-start cursor-pointer"
-            >
-              {/* Premium Circular Avatar */}
-              <div className="relative mb-3">
-                <div className="w-22 h-22 sm:w-26 sm:h-26 rounded-full p-1 bg-white border border-slate-200 shadow-2xs group-hover:border-slate-900 group-hover:shadow-md group-hover:scale-104 transition-all duration-300">
-                  <div className="w-full h-full rounded-full overflow-hidden relative bg-slate-100">
-                    <img
-                      src={cat.image}
-                      alt={cat.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-slate-900/10 group-hover:bg-transparent transition-colors" />
-                  </div>
-                </div>
-
-                {/* Subtle Enterprise Corner Badge */}
-                <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-slate-900 text-white border-2 border-white shadow-xs flex items-center justify-center group-hover:bg-blue-700 transition-colors">
-                  <Icon className="w-3.5 h-3.5 stroke-[2]" />
-                </div>
-              </div>
-
-              {/* Title & Industrial Subtitle */}
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-blue-700 transition-colors line-clamp-1 leading-snug">
-                {cat.name}
-              </h3>
-              <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1 font-medium">
-                {cat.subtitle || `${cat.count || 20}+ Verified SKUs`}
-              </p>
-            </Link>
-          );
-        })}
-
-        {/* View All Enterprise Tile */}
         <Link
           to={ROUTES.PRODUCTS}
-          className="group flex flex-col items-center text-center shrink-0 w-28 sm:w-32 snap-start cursor-pointer"
+          className="text-xs sm:text-sm font-bold text-[#003876] hover:underline whitespace-nowrap mt-1 sm:mt-0 flex items-center gap-1"
         >
-          <div className="w-22 h-22 sm:w-26 sm:h-26 rounded-full bg-slate-50 border border-dashed border-slate-300 group-hover:border-slate-900 group-hover:bg-slate-100 flex flex-col items-center justify-center text-slate-800 shadow-2xs group-hover:scale-104 transition-all duration-300 mb-3">
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform text-slate-900" />
-          </div>
-          <h3 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-blue-700 leading-snug">
-            All Sectors
-          </h3>
-          <p className="text-[11px] text-slate-500 mt-0.5 font-medium">Full Taxonomy →</p>
+          Shop all Deals
+          <ArrowRight className="w-3.5 h-3.5" />
         </Link>
+      </div>
+
+      {/* ── BestBuy Outlet Feature Card + Circle Rail Layout ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+
+        {/* Left Feature Card (BestBuy Outlet / Open-Box Style) */}
+        <div className="lg:col-span-4 xl:col-span-3">
+          <Link
+            to={`${ROUTES.PRODUCTS}?filter=deals`}
+            className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#003876] via-[#1a3a6b] to-[#b3203f] p-6 text-white flex flex-col justify-between h-[180px] sm:h-[200px] shadow-md hover:shadow-xl transition-all duration-300 block"
+          >
+            {/* Top pill badge */}
+            <div className="flex items-center gap-1.5 w-fit bg-[#001E3D]/60 backdrop-blur-sm border border-white/20 px-3 py-1 rounded-md">
+              <span className="text-[11px] font-black text-[#FFE000] tracking-wider uppercase">
+                VANOM OUTLET
+              </span>
+            </div>
+
+            {/* Big Open-Box Headline */}
+            <div>
+              <h3 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-none group-hover:scale-103 transition-transform origin-left">
+                Open-box
+              </h3>
+              <p className="text-[11px] text-white/80 font-medium mt-1">
+                Save up to 40% on certified surplus & wholesale overstock
+              </p>
+            </div>
+          </Link>
+        </div>
+
+        {/* Right Scrollable Clean Gray Circle Rail with Floating Arrow Controls */}
+        <div className="lg:col-span-8 xl:col-span-9 relative">
+
+          {/* Left Arrow Button */}
+          <button
+            onClick={scrollLeft}
+            className="absolute -left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white border border-slate-300 shadow-md flex items-center justify-center text-slate-700 hover:text-[#003876] hover:scale-110 transition-all cursor-pointer"
+            aria-label="Scroll Left"
+          >
+            <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
+          </button>
+
+          {/* Right Arrow Button */}
+          <button
+            onClick={scrollRight}
+            className="absolute -right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white border border-slate-300 shadow-md flex items-center justify-center text-slate-700 hover:text-[#003876] hover:scale-110 transition-all cursor-pointer"
+            aria-label="Scroll Right"
+          >
+            <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+          </button>
+
+          {/* Circle category items */}
+          <div
+            ref={scrollRef}
+            className="flex items-start gap-4 sm:gap-6 overflow-x-auto py-2 px-4 snap-x scrollbar-none scroll-smooth"
+          >
+            {enriched.map((cat) => (
+              <Link
+                key={cat.id}
+                to={`${ROUTES.PRODUCTS}?category=${cat.id}`}
+                className="group flex flex-col items-center text-center shrink-0 w-24 sm:w-28 snap-start cursor-pointer"
+              >
+                {/* Clean Gray Circle with Centered Transparent Product Image */}
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#f4f4f4] hover:bg-[#e8e8e8] flex items-center justify-center p-3.5 mb-2.5 transition-colors duration-200 shadow-2xs group-hover:scale-105">
+                  <img
+                    src={cat.image}
+                    alt={cat.name}
+                    className="max-h-full max-w-full object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-110"
+                    loading="lazy"
+                  />
+                </div>
+
+                {/* Subtitle Underneath with Hover Underline */}
+                <span className="text-xs font-semibold text-slate-900 group-hover:text-[#003876] group-hover:underline transition-colors text-center leading-tight line-clamp-2">
+                  {cat.name}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
       </div>
     </section>
   );
