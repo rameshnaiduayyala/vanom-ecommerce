@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../../constants/routes.js";
 import { toast } from "../../../components/ui/Toast.jsx";
@@ -46,25 +46,25 @@ export function FlashDealsAdBanner() {
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-900 via-brand-900 to-slate-950 p-6 sm:p-8 text-white shadow-xl border border-brand-500/30">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#042A19] via-[#074428] to-[#0A4F30] p-6 sm:p-8 text-white shadow-xl border border-emerald-700/40">
         {/* Glow Effects */}
-        <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-gold-500/20 blur-3xl pointer-events-none" />
-        <div className="absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-brand-500/20 blur-3xl pointer-events-none" />
+        <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-[#84CC16]/20 blur-3xl pointer-events-none" />
+        <div className="absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-[#10B981]/20 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6">
           {/* Left info */}
           <div className="space-y-3 text-center lg:text-left max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-400 text-slate-950 text-xs font-black uppercase tracking-wider shadow-sm">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#84CC16] text-slate-950 text-xs font-black uppercase tracking-wider shadow-sm">
               <Zap className="w-3.5 h-3.5 fill-current" />
-              <span>Limited-Time Commercial Flash Sale</span>
+              <span>Limited-Time Storewide Flash Discount</span>
             </div>
 
             <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight">
-              Get Instant <span className="text-gold-400">20% OFF</span> on Master Packaging & FMCG Consignments
+              Get Instant <span className="text-[#84CC16]">20% OFF</span> on Packaging, Tech & Kitchen Essentials
             </h3>
 
-            <p className="text-xs sm:text-sm text-slate-300">
-              Applicable on all bulk corrugated boxes, 25KG rice sacks, and commercial kitchen appliances.
+            <p className="text-xs sm:text-sm text-emerald-100/80">
+              Use code at checkout to enjoy savings across all eligible retail catalog departments.
             </p>
           </div>
 

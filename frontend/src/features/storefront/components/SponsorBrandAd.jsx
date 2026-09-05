@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../../constants/routes.js";
 import {
@@ -15,63 +15,58 @@ import { Button } from "../../../components/ui/Button.jsx";
 export function SponsorBrandAd() {
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="relative overflow-hidden rounded-3xl bg-slate-950 border border-gold-500/30 p-8 sm:p-12 text-white shadow-2xl">
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-[#074428] border border-emerald-700/40 p-8 sm:p-12 text-white shadow-2xl">
         {/* Decorative Grid Lines */}
-        <div className="absolute inset-0 bg-[radial-gradient(#d9a000_1px,transparent_1px)] [background-size:24px_24px] opacity-10" />
-        <div className="absolute right-0 top-0 w-96 h-96 bg-brand-500/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(#84cc16_1px,transparent_1px)] [background-size:24px_24px] opacity-10" />
+        <div className="absolute right-0 top-0 w-96 h-96 bg-[#84CC16]/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           {/* Left Main Content */}
           <div className="lg:col-span-8 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold-400/20 text-gold-300 border border-gold-400/30 text-xs font-bold uppercase tracking-widest">
-              <Sparkles className="w-3.5 h-3.5 text-gold-400" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#0c5936] text-[#A3E635] border border-[#84CC16]/30 text-xs font-bold uppercase tracking-widest">
+              <Sparkles className="w-3.5 h-3.5 text-[#84CC16]" />
               <span>Vanom Commercial Credit & Freight Desk</span>
             </div>
 
             <h2 className="text-2xl sm:text-4xl font-black tracking-tight text-white leading-tight">
-              Unlock Up to <span className="text-gold-400">$100,000</span> Commercial Credit with <span className="text-emerald-400">NET 30</span> Terms
+              Unlock Up to <span className="text-[#84CC16]">$100,000</span> Commercial Credit with <span className="text-[#4ADE80]">NET 30</span> Terms
             </h2>
 
-            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-emerald-100/80 max-w-2xl leading-relaxed">
               Verify your Corporate Tax ID in under 2 hours. Order full pallet truckloads with zero upfront payment, dedicated priority dispatch, and automated consolidated tax invoices.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-              <div className="flex items-center gap-2 text-xs text-slate-200">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div className="flex items-center gap-2 text-xs text-emerald-100">
+                <CheckCircle2 className="w-4 h-4 text-[#84CC16] shrink-0" />
                 <span>0% Interest on Net 15/30</span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-200">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div className="flex items-center gap-2 text-xs text-emerald-100">
+                <CheckCircle2 className="w-4 h-4 text-[#84CC16] shrink-0" />
                 <span>Consolidated Tax / VAT Invoice</span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-200">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div className="flex items-center gap-2 text-xs text-emerald-100">
+                <CheckCircle2 className="w-4 h-4 text-[#84CC16] shrink-0" />
                 <span>Dedicated Freight Logistics</span>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-4 pt-4">
               <Link to={ROUTES.B2B.ROOT}>
-                <Button
-                  variant="gold"
-                  size="lg"
-                  icon={Building2}
-                  className="font-black text-slate-950 shadow-lg hover:scale-102 transition-transform"
+                <button
+                  className="px-6 py-3.5 rounded-xl bg-[#84CC16] hover:bg-[#74B626] text-slate-950 font-black text-sm shadow-lg hover:scale-102 transition-transform inline-flex items-center gap-2 cursor-pointer"
                 >
-                  Apply for Wholesale Credit
-                </Button>
+                  <Building2 className="w-4 h-4" />
+                  <span>Apply for Wholesale Credit</span>
+                </button>
               </Link>
               <Link to={ROUTES.B2B.BULK_ORDER}>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  icon={ArrowRight}
-                  iconPosition="right"
-                  className="border-slate-700 text-slate-200 hover:bg-slate-900"
+                <button
+                  className="px-6 py-3.5 rounded-xl border border-white/30 text-white hover:bg-white/10 text-sm font-bold transition-colors inline-flex items-center gap-2 cursor-pointer"
                 >
-                  Try Bulk Order Spreadsheet
-                </Button>
+                  <span>Try Bulk Order Spreadsheet</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
               </Link>
             </div>
           </div>

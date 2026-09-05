@@ -83,10 +83,10 @@ export function CategorySection({ categories = [] }) {
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
           <span className="text-xs font-bold text-[#059669] uppercase tracking-wider block mb-1">
-            Commercial Sourcing
+            Browse Catalog
           </span>
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#072115] tracking-tight">
-            Explore Wholesale & Retail Departments
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-[#072115] tracking-tight">
+            Shop by Category
           </h2>
         </div>
 

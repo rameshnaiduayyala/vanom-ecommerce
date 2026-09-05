@@ -19,7 +19,7 @@ export function DualPromoBanners() {
           <div className="relative z-10 space-y-3">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-[11px] font-bold uppercase tracking-wider">
               <Boxes className="w-3.5 h-3.5" />
-              <span>Packaging & Logistics Mega Depot</span>
+              <span>Packaging & Shipping Essentials</span>
             </div>
 
             <h3 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight text-white max-w-sm">
@@ -27,14 +27,14 @@ export function DualPromoBanners() {
             </h3>
 
             <p className="text-xs text-slate-300 max-w-xs leading-relaxed">
-              Tier 3 wholesale volume discount unlocked starting at 80 bundles with full pallet strapping.
+              Industrial strength cardboard cartons, bubble rolls, and durable stretch films for safe dispatch.
             </p>
           </div>
 
           <div className="relative z-10 pt-4 flex items-center justify-between">
             <div>
               <span className="text-[10px] text-slate-400 uppercase block">Starting from</span>
-              <span className="text-lg font-black text-gold-400">$16.50 / bundle</span>
+              <span className="text-lg font-black text-gold-400">$16.50 / pack</span>
             </div>
 
             <Link to={`${ROUTES.PRODUCTS}?category=cat-3`}>
@@ -62,22 +62,22 @@ export function DualPromoBanners() {
           <div className="relative z-10 space-y-3">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 text-[11px] font-bold uppercase tracking-wider">
               <CookingPot className="w-3.5 h-3.5" />
-              <span>Commercial Kitchen & Catering</span>
+              <span>Kitchen & Foodservice Appliances</span>
             </div>
 
             <h3 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight text-white max-w-sm">
-              3500W High-Capacity Commercial Induction Burners
+              3500W High-Capacity Induction Cooktops
             </h3>
 
             <p className="text-xs text-slate-300 max-w-xs leading-relaxed">
-              Heavy stainless-steel construction with continuous 24/7 duty cycle for restaurants and cloud kitchens.
+              Heavy stainless-steel construction with continuous duty cycle, digital timer, and rapid heat induction.
             </p>
           </div>
 
           <div className="relative z-10 pt-4 flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-slate-400 uppercase block">Commercial Price</span>
-              <span className="text-lg font-black text-amber-400">$85.00 (Wholesale)</span>
+              <span className="text-[10px] text-slate-400 uppercase block">Starting from</span>
+              <span className="text-lg font-black text-amber-400">$85.00</span>
             </div>
 
             <Link to={`${ROUTES.PRODUCTS}?category=cat-4`}>

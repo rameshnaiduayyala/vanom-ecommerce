@@ -27,48 +27,38 @@ export function HomePage() {
   const products = productsData?.items || [];
 
   return (
-    <div className="pb-24">
+    <div className="pb-24 space-y-0">
       {/* 1. Hero Multi-Slide Carousel */}
       <HeroSlider products={products} />
 
-      {/* 2. Flash Deal Ad Banner */}
-      <div className="pt-10 sm:pt-14">
-        <FlashDealsAdBanner />
-      </div>
-
-      {/* 3. Enterprise Trust Pillars */}
-      <div className="pt-12 sm:pt-16">
-        <TrustBadgesSection />
-      </div>
-
-      {/* 4. Marketplace Categories Grid */}
-      <div className="pt-12 sm:pt-16">
+      {/* 2. Shop by Category (Elevated strip directly below hero) */}
+      <section className="py-12 sm:py-16 bg-white border-b border-[#E3ECE6]/80">
         <CategorySection categories={categories} />
-      </div>
+      </section>
 
-      {/* 5. Enterprise Commercial & Bulk Procurement (matching screenshot) */}
-      <div className="pt-12 sm:pt-16">
-        <CommercialProcurementSection />
-      </div>
-
-      {/* 6. Dual Category Promotion Ads */}
-      <div className="pt-12 sm:pt-16">
-        <DualPromoBanners />
-      </div>
-
-      {/* 6. Trending Deals & Full Product Catalog */}
-      <div className="pt-12 sm:pt-16">
+      {/* 3. Best Sellers & Trending Products */}
+      <section className="py-12 sm:py-16">
         <TrendingSection
           products={products}
           categories={categories}
           isLoading={loadingProducts}
         />
-      </div>
+      </section>
 
-      {/* 7. Sponsor / Freight Credit Ad */}
-      <div className="pt-12 sm:pt-16">
-        <SponsorBrandAd />
-      </div>
+      {/* 4. Trust Pillars & Delivery Assurances */}
+      <section className="py-10 sm:py-14 bg-white border-y border-[#E3ECE6]/80">
+        <TrustBadgesSection />
+      </section>
+
+      {/* 5. Flash Deals Special Discount */}
+      <section className="py-10 sm:py-14">
+        <FlashDealsAdBanner />
+      </section>
+
+      {/* 6. Featured Category Promotion Banners */}
+      <section className="py-12 sm:py-16 bg-white border-t border-[#E3ECE6]/80">
+        <DualPromoBanners />
+      </section>
     </div>
   );
 }

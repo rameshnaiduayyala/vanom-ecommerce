@@ -4,26 +4,26 @@ import { Truck, ShieldCheck, Layers, CreditCard, Clock, Award } from "lucide-rea
 const ASSURANCES = [
   {
     icon: Truck,
-    title: "Global & Domestic Freight",
-    description: "30+ countries · Express & pallet freight logistics",
+    title: "Global Express Delivery",
+    description: "Fast doorstep delivery across US, UK & worldwide",
     color: "bg-emerald-100 text-[#074428] border border-emerald-200",
   },
   {
-    icon: Layers,
-    title: "Wholesale Volume Tiers",
-    description: "Up to 35% off on bulk pallet & case orders",
+    icon: Award,
+    title: "Verified Quality Guarantee",
+    description: "100% authentic products backed by warranty",
     color: "bg-lime-100 text-[#65A30D] border border-lime-200",
   },
   {
     icon: ShieldCheck,
-    title: "Multi-Tax Compliant",
-    description: "HMRC VAT & US State Nexus Sales Tax cleared",
+    title: "Transparent Pricing",
+    description: "Clear checkout with local taxes included",
     color: "bg-emerald-100 text-[#074428] border border-emerald-200",
   },
   {
     icon: CreditCard,
-    title: "Enterprise Terms",
-    description: "Stripe secure & NET 30 commercial credit lines",
+    title: "Secure Payment Methods",
+    description: "Encrypted Stripe, cards & digital wallet payments",
     color: "bg-emerald-100 text-[#074428] border border-emerald-200",
   },
 ];
