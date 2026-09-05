@@ -80,13 +80,14 @@ export function CategorySection({ categories = [] }) {
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
       {/* Section Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-1 h-5 rounded-full bg-brand-500" />
-          <h2 className="text-base font-black text-text-primary tracking-tight">Shop by Category</h2>
-          <span className="text-[10px] font-bold text-text-muted bg-surface-muted border border-border px-2 py-0.5 rounded-full">
-            {categories.length} categories
+      <div className="flex items-end justify-between gap-4 mb-6">
+        <div>
+          <span className="text-xs font-bold text-[#059669] uppercase tracking-wider block mb-1">
+            Commercial Sourcing
           </span>
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#072115] tracking-tight">
+            Explore Wholesale & Retail Departments
+          </h2>
         </div>
 
         <div className="flex items-center gap-2">
@@ -94,14 +95,14 @@ export function CategorySection({ categories = [] }) {
           <div className="flex items-center gap-1">
             <button
               onClick={scrollLeft}
-              className="w-9 h-9 rounded-xl bg-white border border-border flex items-center justify-center text-text-secondary hover:text-text-primary hover:border-brand-500 hover:bg-brand-50 shadow-xs transition-all"
+              className="w-9 h-9 rounded-xl bg-white border border-[#DCE8DF] flex items-center justify-center text-[#4B6357] hover:text-[#074428] hover:border-[#074428] hover:bg-emerald-50 shadow-2xs transition-all cursor-pointer"
               aria-label="Scroll left"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={scrollRight}
-              className="w-9 h-9 rounded-xl bg-white border border-border flex items-center justify-center text-text-secondary hover:text-text-primary hover:border-brand-500 hover:bg-brand-50 shadow-xs transition-all"
+              className="w-9 h-9 rounded-xl bg-white border border-[#DCE8DF] flex items-center justify-center text-[#4B6357] hover:text-[#074428] hover:border-[#074428] hover:bg-emerald-50 shadow-2xs transition-all cursor-pointer"
               aria-label="Scroll right"
             >
               <ChevronRight className="w-4 h-4" />
@@ -110,7 +111,7 @@ export function CategorySection({ categories = [] }) {
 
           <Link
             to={ROUTES.PRODUCTS}
-            className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 border border-brand-200 hover:border-brand-400 px-3 py-1.5 rounded-lg hover:bg-brand-50 transition-all group"
+            className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-[#074428] hover:text-[#059669] border border-emerald-200/80 hover:border-emerald-400 px-3.5 py-2 rounded-xl hover:bg-emerald-50 transition-all group"
           >
             <span>View All</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -129,7 +130,7 @@ export function CategorySection({ categories = [] }) {
             <Link
               key={cat.id}
               to={`${ROUTES.PRODUCTS}?category=${cat.id}`}
-              className="group relative rounded-2xl overflow-hidden snap-start shrink-0 min-w-[200px] sm:min-w-[220px] h-[200px] sm:h-[220px] shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5"
+              className="group relative rounded-3xl overflow-hidden snap-start shrink-0 min-w-[200px] sm:min-w-[220px] h-[200px] sm:h-[220px] shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1.5 border border-black/5"
             >
               {/* Background image */}
               <img

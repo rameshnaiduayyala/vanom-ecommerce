@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { useCountryStore } from "../../../stores/country.store.js";
 import { HeroSlider } from "../components/HeroSlider.jsx";
+import { CommercialProcurementSection } from "../components/CommercialProcurementSection.jsx";
 import { FlashDealsAdBanner } from "../components/FlashDealsAdBanner.jsx";
 import { TrustBadgesSection } from "../components/TrustBadgesSection.jsx";
 import { CategorySection } from "../components/CategorySection.jsx";
@@ -45,7 +46,12 @@ export function HomePage() {
         <CategorySection categories={categories} />
       </div>
 
-      {/* 5. Dual Category Promotion Ads */}
+      {/* 5. Enterprise Commercial & Bulk Procurement (matching screenshot) */}
+      <div className="pt-12 sm:pt-16">
+        <CommercialProcurementSection />
+      </div>
+
+      {/* 6. Dual Category Promotion Ads */}
       <div className="pt-12 sm:pt-16">
         <DualPromoBanners />
       </div>

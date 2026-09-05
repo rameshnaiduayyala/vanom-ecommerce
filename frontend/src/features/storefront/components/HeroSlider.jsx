@@ -38,43 +38,48 @@ export function HeroSlider({ products = [] }) {
 
       const themes = [
         {
-          accent: "#00c136",
-          bg: "from-[#011409] via-[#021f0f] to-[#010c06]",
-          pillColor: "bg-[#008522]",
+          accent: "#10B981",
+          pillColor: "bg-[#0C5936] text-[#6EE7B7] border border-[#10B981]/30",
+          eyebrow: "ENTERPRISE PROCUREMENT • MULTI-MARKET DELIVERY",
+          titleLine1: "Global Retail &",
+          titleLine2: "B2B Wholesale Trade",
+          subtitle: "Direct consumer delivery and bulk pallet trade across US and UK jurisdictions with automated VAT & sales tax compliance.",
+          facility: "Vanom Global Logistics Hub, London & Mumbai",
+          heroImage: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=85",
           stats: [
-            { icon: Users, value: "50K+", label: "Buyers" },
-            { icon: Globe2, value: "US & UK", label: "Markets" },
-            { icon: ShieldCheck, value: "ISO", label: "Certified" },
+            { value: "50,000+", label: "Active Buyers" },
+            { value: "30+ Countries", label: "Delivery Routes" },
+            { value: "Direct Freight", label: "Farm-to-Site Transit" },
           ],
         },
         {
-          accent: "#F5B800",
-          bg: "from-[#160e01] via-[#241703] to-[#0d0800]",
-          pillColor: "bg-[#D9A000]",
+          accent: "#84CC16",
+          pillColor: "bg-[#0C5936] text-[#A3E635] border border-[#84CC16]/30",
+          eyebrow: "ENTERPRISE PROCUREMENT • PALLET DISCOUNTS",
+          titleLine1: "Industrial Packaging &",
+          titleLine2: "FMCG Wholesale Supply",
+          subtitle: "Tier 3 wholesale volume pricing on corrugated boxes, stretch wrap films, food staples, and commercial equipment.",
+          facility: "Vanom Central Pallet Depot & Warehousing",
+          heroImage: "https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=1200&q=85",
           stats: [
-            { icon: Boxes, value: "5,000+", label: "In Stock" },
-            { icon: Globe2, value: "Direct", label: "Millers" },
-            { icon: Zap, value: "Tier 3", label: "Wholesale" },
+            { value: "Up to 35%", label: "Wholesale Tier Savings" },
+            { value: "NET 30", label: "Credit Available" },
+            { value: "24-Hr", label: "Pallet Dispatch" },
           ],
         },
         {
           accent: "#10B981",
-          bg: "from-[#021812] via-[#04281e] to-[#01100b]",
-          pillColor: "bg-emerald-600",
+          pillColor: "bg-[#0C5936] text-[#6EE7B7] border border-[#10B981]/30",
+          eyebrow: "SECURITY HARDWARE & COMMERCIAL APPLIANCES",
+          titleLine1: "Commercial Grade POS &",
+          titleLine2: "Enterprise Surveillance",
+          subtitle: "Direct mill and factory sourcing on PoE security camera systems, barcode POS hardware, and industrial smallwares.",
+          facility: "Vanom Hardware & Tech Depot",
+          heroImage: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=1200&q=85",
           stats: [
-            { icon: Boxes, value: "3-Ply", label: "Corrugated" },
-            { icon: ShieldCheck, value: "24-Hr", label: "Dispatch" },
-            { icon: Zap, value: "MOQ 10", label: "Bundles" },
-          ],
-        },
-        {
-          accent: "#EAB308",
-          bg: "from-[#0f1710] via-[#162419] to-[#070e08]",
-          pillColor: "bg-amber-600",
-          stats: [
-            { icon: ShieldCheck, value: "4K UHD", label: "Night Vision" },
-            { icon: Globe2, value: "PoE", label: "Plug & Play" },
-            { icon: Users, value: "3-Yr", label: "Warranty" },
+            { value: "1,200+", label: "Catalog SKUs" },
+            { value: "Stripe & NET 30", label: "Payment Gateways" },
+            { value: "Door-to-Door", label: "Freight Tracking" },
           ],
         },
       ];
@@ -87,8 +92,8 @@ export function HeroSlider({ products = [] }) {
         slug: p.slug || p.id,
         category: p.category || "General Catalog",
         brand: p.brand || "Vanom",
-        description: p.description || "B2C delivery + B2B pallet trade across the US $ and UK £ with automated tax compliance.",
-        image: p.image || "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1400&q=85",
+        description: p.description || theme.subtitle,
+        image: p.image || theme.heroImage,
         packaging: p.packaging?.unitName || "Unit",
         retailPrice,
         wholesalePrice,
@@ -128,161 +133,134 @@ export function HeroSlider({ products = [] }) {
 
   return (
     <section
-      className="relative overflow-hidden select-none text-white bg-slate-950 border-b border-slate-800"
-      style={{ height: "clamp(380px, 46vw, 500px)" }}
+      className="relative overflow-hidden select-none text-white bg-[#074428] border-b border-emerald-900/60"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      {/* ── Background Layer with Dimmed Vignette ── */}
-      <AnimatePresence mode="sync">
-        <motion.div
-          key={`bg-${s.id}`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.7 }}
-          className={`absolute inset-0 bg-gradient-to-br ${s.bg}`}
-        >
-          <img
-            src={s.image}
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover opacity-[0.20] filter saturate-125"
-          />
-          {/* Subtle vignette gradients */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+      {/* Background ambient lighting */}
+      <div className="absolute inset-0 bg-radial-at-t from-[#0d5936] via-[#074428] to-[#042a19] pointer-events-none" />
 
-          {/* Dot matrix texture */}
-          <div
-            className="absolute inset-0 opacity-[0.05]"
-            style={{
-              backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.7) 1px, transparent 1px)",
-              backgroundSize: "28px 28px",
-            }}
-          />
-        </motion.div>
-      </AnimatePresence>
+      {/* Subtle texture */}
+      <div
+        className="absolute inset-0 opacity-[0.04] pointer-events-none"
+        style={{
+          backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)",
+          backgroundSize: "32px 32px",
+        }}
+      />
 
-      {/* ── Main Content Grid ── */}
-      <div className="relative z-10 h-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 flex items-center">
-        <div className="grid lg:grid-cols-12 gap-8 w-full items-center">
+      {/* ── Main Hero Content ── */}
+      <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-12 lg:py-16">
+        <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 items-center">
 
           {/* ─── LEFT: Editorial Headline & Actions ─── */}
-          <div className="lg:col-span-7 space-y-4 max-w-xl">
+          <div className="lg:col-span-7 space-y-6 max-w-2xl">
             <AnimatePresence mode="wait">
               <motion.div
                 key={`left-${s.id}`}
-                initial={{ opacity: 0, x: -16 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 16 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                className="space-y-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+                className="space-y-5"
               >
-                {/* Eyebrow + Pill */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/50">
-                    {s.category}
-                  </span>
-                  <span className={`${s.pillColor} text-[10px] font-black px-2.5 py-0.5 rounded-full text-white shadow-xs`}>
-                    Up to {s.discountPct}% off bulk orders
-                  </span>
+                {/* Pill Eyebrow */}
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#0c5936] text-[#a7f3d0] border border-[#10b981]/30 text-xs font-bold tracking-wide">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse" />
+                  <span>{s.eyebrow}</span>
                 </div>
 
-                {/* Main Headline */}
+                {/* Main Headline (Two-tone split matching Image 1) */}
                 <h1
-                  className="font-black tracking-tight leading-[1.1] text-white"
-                  style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.9rem)" }}
+                  className="font-black tracking-tight leading-[1.08] text-white"
+                  style={{ fontSize: "clamp(2.3rem, 4.5vw, 3.8rem)" }}
                 >
-                  {s.name}
+                  <span className="block text-white">
+                    {s.titleLine1 || s.title}
+                  </span>
+                  <span className="block text-[#4ADE80] mt-1">
+                    {s.titleLine2 || "Across Every Global Market"}
+                  </span>
                 </h1>
 
-                {/* Description */}
-                <p className="text-xs sm:text-sm text-white/60 leading-relaxed max-w-md line-clamp-2">
-                  {s.description}
+                {/* Subtitle / Description */}
+                <p className="text-sm sm:text-base text-emerald-100/85 leading-relaxed max-w-xl font-normal">
+                  {s.subtitle || s.description}
                 </p>
 
-                {/* CTAs */}
-                <div className="flex items-center gap-3 pt-1">
+                {/* Action Buttons (Matching Image 1: Explore Products + Request Project Quote) */}
+                <div className="flex flex-wrap items-center gap-4 pt-2">
                   <Link
-                    to={`/products/${s.slug}`}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-950 transition-all hover:scale-105 hover:shadow-lg cursor-pointer"
-                    style={{ backgroundColor: s.accent }}
+                    to={ROUTES.PRODUCTS}
+                    className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl text-sm font-bold bg-[#059669] hover:bg-[#047857] text-white transition-all hover:scale-[1.02] shadow-lg hover:shadow-emerald-900/40 cursor-pointer"
                   >
-                    <span>Shop Now</span>
+                    <span>Explore Products</span>
                     <ArrowRight className="w-4 h-4" />
                   </Link>
 
                   <Link
-                    to={ROUTES.B2B.ROOT}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white border border-white/20 hover:bg-white/10 backdrop-blur-sm transition-all cursor-pointer"
+                    to={ROUTES.B2B.QUOTES}
+                    className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-sm font-bold text-white border border-white/30 hover:bg-white/10 backdrop-blur-sm transition-all hover:border-white/50 cursor-pointer"
                   >
-                    <Building2 className="w-4 h-4" />
-                    <span>B2B Wholesale</span>
+                    <span>Request Project Quote</span>
                   </Link>
                 </div>
 
                 {/* Stats Row */}
-                <div className="flex items-center gap-5 pt-1">
-                  {s.stats.map(({ icon: Icon, value, label }, i) => (
-                    <React.Fragment key={i}>
-                      {i > 0 && <div className="w-px h-5 bg-white/10" />}
-                      <div className="flex items-center gap-1.5">
-                        <Icon className="w-3.5 h-3.5 opacity-60" style={{ color: s.accent }} />
-                        <span className="text-xs font-black text-white">{value}</span>
-                        <span className="text-[10px] text-white/40 uppercase tracking-wider">{label}</span>
+                <div className="grid grid-cols-3 gap-4 pt-6 border-t border-white/10">
+                  {s.stats.map((st, i) => (
+                    <div key={i} className="space-y-0.5">
+                      <div className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                        {st.value}
                       </div>
-                    </React.Fragment>
+                      <div className="text-[11px] sm:text-xs text-emerald-200/70 font-medium">
+                        {st.label}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </motion.div>
             </AnimatePresence>
           </div>
 
-          {/* ─── RIGHT: Clean Floating Product Card ─── */}
-          <div className="lg:col-span-5 hidden lg:flex justify-end items-center">
+          {/* ─── RIGHT: Majestic Facility / Warehouse Card ─── */}
+          <div className="lg:col-span-5 flex justify-center lg:justify-end">
             <AnimatePresence mode="wait">
               <motion.div
                 key={`img-${s.id}`}
-                initial={{ opacity: 0, scale: 0.94, y: 12 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: -10 }}
-                transition={{ duration: 0.45, ease: "easeOut" }}
-                className="relative"
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="w-full max-w-[480px]"
               >
-                {/* Main Image Container */}
-                <div className="w-[340px] h-[240px] rounded-2xl overflow-hidden border border-white/15 shadow-2xl bg-slate-900">
-                  <img
-                    src={s.image}
-                    alt={s.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                {/* Outer Card Container with generous rounded borders */}
+                <div className="relative rounded-[2.2rem] bg-white p-2.5 sm:p-3 shadow-2xl border border-white/20">
+                  {/* Inner Image Container */}
+                  <div className="relative h-[320px] sm:h-[380px] rounded-[1.8rem] overflow-hidden bg-[#eaf2ec]">
+                    <img
+                      src={s.heroImage || s.image}
+                      alt="Logistics Facility"
+                      className="w-full h-full object-cover"
+                    />
 
-                {/* Floating Bottom Badge */}
-                <motion.div
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
-                  className="absolute -bottom-4 -left-6 flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-black/70 backdrop-blur-xl border border-white/20 shadow-xl"
-                >
-                  <div
-                    className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: s.accent + "30", border: `1px solid ${s.accent}60` }}
-                  >
-                    <Boxes className="w-4 h-4" style={{ color: s.accent }} />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-black text-white leading-tight">
-                      {formatPrice(s.wholesalePrice, country.currency, country.symbol)} / {s.packaging}
-                    </p>
-                    <p className="text-[10px] text-white/50">MOQ available · NET 30</p>
-                  </div>
-                </motion.div>
+                    {/* Facility Overlay Box at Bottom of Image */}
+                    <div className="absolute bottom-3 left-3 right-3 rounded-2xl bg-[#074428]/95 backdrop-blur-md p-3.5 sm:p-4 text-white border border-white/15 shadow-xl flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <span className="block text-[10px] font-bold tracking-widest text-[#84CC16] uppercase">
+                          TRADE & LOGISTICS FACILITY
+                        </span>
+                        <h4 className="text-xs sm:text-sm font-bold text-white truncate mt-0.5">
+                          {s.facility}
+                        </h4>
+                      </div>
 
-                {/* Top-Right Live Pricing Badge */}
-                <div className="absolute -top-3 -right-3 flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black shadow-lg">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                  Live Pricing
+                      {/* Pill Tag */}
+                      <span className="shrink-0 px-2.5 py-1 rounded-full bg-white text-[#074428] text-[10px] font-black tracking-wider uppercase shadow-xs">
+                        ISO 9001 CERTIFIED
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             </AnimatePresence>
@@ -290,6 +268,7 @@ export function HeroSlider({ products = [] }) {
 
         </div>
       </div>
+
 
       {/* ── Clean Minimalist Bottom Controls Bar ── */}
       <div className="absolute bottom-0 left-0 right-0 z-20">

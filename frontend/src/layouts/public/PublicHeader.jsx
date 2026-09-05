@@ -1,34 +1,27 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useCountryStore } from "../../stores/country.store.js";
 import { useCartStore } from "../../stores/cart.store.js";
 import { useAuthStore } from "../../stores/auth.store.js";
-import { SUPPORTED_COUNTRIES } from "../../constants/countries.js";
 import { ROUTES } from "../../constants/routes.js";
+import { AnnouncementBar } from "../../features/storefront/components/AnnouncementBar.jsx";
 import {
   Search,
   ShoppingCart,
   Heart,
   User,
-  Globe,
   Building2,
   ShieldCheck,
   LogOut,
   ChevronDown,
+  Package,
+  X,
   Laptop,
   UtensilsCrossed,
   Boxes,
   CookingPot,
-  Shirt,
   Hammer,
-  LayoutGrid,
-  Bell,
-  Package,
-  X,
-  Mic,
 } from "lucide-react";
-import { Badge } from "../../components/ui/Badge.jsx";
-
 
 const MEGA_CATEGORIES = [
   {
@@ -89,23 +82,38 @@ const MEGA_CATEGORIES = [
 
 export function PublicHeader() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { country, setCountry } = useCountryStore();
   const { cart, openCart } = useCartStore();
   const { user, isAuthenticated, logout } = useAuthStore();
+
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
   const [showCountryMenu, setShowCountryMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMegaMenu, setShowMegaMenu] = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
+
   const megaRef = useRef(null);
   const countryRef = useRef(null);
   const userRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`${ROUTES.SEARCH}?q=${encodeURIComponent(searchQuery.trim())}`);
+      setShowSearch(false);
     }
+  };
+
+  const toggleSearch = () => {
+    setShowSearch((v) => {
+      const next = !v;
+      if (next) {
+        setTimeout(() => searchInputRef.current?.focus(), 100);
+      }
+      return next;
+    });
   };
 
   // Close dropdowns on outside click
@@ -119,13 +127,23 @@ export function PublicHeader() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // Close on route change
+  useEffect(() => {
+    setShowMegaMenu(false);
+    setShowSearch(false);
+  }, [location.pathname]);
+
   return (
     <>
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-border shadow-sm">
-        {/* Main Header Row */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      {/* Top Utility Bar */}
+      <AnnouncementBar />
+
+      {/* Single Main Header (One Single Row matching Image 1) */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#DCE8DF] shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-6">
+
           {/* Brand Logo */}
-          <Link to={ROUTES.HOME} className="flex items-center gap-2 shrink-0 py-1">
+          <Link to={ROUTES.HOME} className="shrink-0 flex items-center py-1">
             <img
               src="/logo.png"
               alt="Vanom"
@@ -133,194 +151,163 @@ export function PublicHeader() {
             />
           </Link>
 
-          {/* Category Megamenu Trigger */}
-          <div ref={megaRef} className="relative hidden lg:block">
-            <button
-              onMouseEnter={() => setShowMegaMenu(true)}
-              onClick={() => setShowMegaMenu((v) => !v)}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all ${
-                showMegaMenu
-                  ? "bg-brand-600 text-white border-brand-600 shadow-xs"
-                  : "text-text-primary border-slate-200 hover:border-brand-400 hover:bg-brand-50/50 hover:text-brand-700"
-              }`}
-            >
-              <LayoutGrid className={`w-4 h-4 ${showMegaMenu ? "text-white" : "text-brand-600"}`} />
-              <span>All Categories</span>
-              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showMegaMenu ? "rotate-180" : ""}`} />
-            </button>
+          {/* Center Navigation Links (Matching Screenshot 1) */}
+          <nav className="hidden lg:flex items-center gap-7 text-xs font-bold text-[#3D5648]">
 
-            {/* MEGA MENU PANEL */}
-            {showMegaMenu && (
-              <div
-                className="absolute left-0 top-full mt-2 w-[680px] bg-white rounded-2xl border border-border shadow-2xl z-50 overflow-hidden"
-                onMouseLeave={() => setShowMegaMenu(false)}
+
+            {/* Catalog Dropdown with MegaMenu */}
+            <div ref={megaRef} className="relative">
+              <button
+                onMouseEnter={() => setShowMegaMenu(true)}
+                onClick={() => setShowMegaMenu((v) => !v)}
+                className="flex items-center gap-1 hover:text-[#074428] transition-colors py-1 cursor-pointer"
               >
-                <div className="grid grid-cols-3 gap-0">
-                  {MEGA_CATEGORIES.map((cat) => {
-                    const Icon = cat.icon;
-                    return (
-                      <div key={cat.id} className="p-4 border-r border-b border-border last:border-r-0">
-                        <Link
-                          to={cat.href}
-                          onClick={() => setShowMegaMenu(false)}
-                          className="flex items-center gap-2 mb-2.5 group"
-                        >
-                          <span className={`w-7 h-7 rounded-lg ${cat.bg} ${cat.color} flex items-center justify-center shrink-0`}>
-                            <Icon className="w-3.5 h-3.5" />
-                          </span>
-                          <span className={`text-xs font-bold ${cat.color} group-hover:underline`}>{cat.label}</span>
-                        </Link>
-                        <ul className="space-y-1">
-                          {cat.subs.map((sub) => (
-                            <li key={sub}>
-                              <Link
-                                to={cat.href}
-                                onClick={() => setShowMegaMenu(false)}
-                                className="text-[11px] text-text-secondary hover:text-brand-700 transition-colors"
-                              >
-                                {sub}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })}
-                </div>
+                <span>Products Catalog</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showMegaMenu ? "rotate-180 text-[#074428]" : "text-slate-400"}`} />
+              </button>
 
-                {/* Footer banner */}
-                <div className="bg-gradient-to-r from-brand-900 to-slate-900 px-5 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs text-white">
-                    <Building2 className="w-4 h-4 text-gold-400" />
-                    <span className="font-semibold">B2B Wholesale — Apply for NET 30 credit terms</span>
-                  </div>
-                  <Link
-                    to={ROUTES.B2B.ROOT}
-                    onClick={() => setShowMegaMenu(false)}
-                    className="text-[11px] font-bold text-gold-400 hover:text-gold-300 transition-colors"
-                  >
-                    Wholesale Portal →
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Global Search Bar */}
-          <form onSubmit={handleSearch} className="flex-1 max-w-xl hidden md:block">
-            <div className={`relative flex items-center rounded-xl border-2 transition-all ${searchFocused ? "border-brand-600 ring-2 ring-brand-500/15 shadow-sm" : "border-slate-200 hover:border-slate-300"}`}>
-              <Search className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${searchFocused ? "text-brand-600" : "text-slate-400"}`} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                placeholder="Search products, SKUs, categories, brands..."
-                className="w-full pl-10 pr-11 py-2.5 text-sm bg-transparent focus:outline-none text-text-primary placeholder:text-text-muted"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-11 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-surface-muted text-text-muted cursor-pointer"
+              {/* MegaMenu Dropdown */}
+              {showMegaMenu && (
+                <div
+                  className="absolute left-0 top-full mt-2 w-[700px] bg-white rounded-2xl border border-[#DCE8DF] shadow-2xl z-50 overflow-hidden"
+                  onMouseLeave={() => setShowMegaMenu(false)}
                 >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-              <button
-                type="submit"
-                aria-label="Search"
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white transition-colors cursor-pointer"
-              >
-                <Search className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </form>
-
-          {/* Header Actions */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* Country / Currency Selector */}
-            <div className="relative" ref={countryRef}>
-              <button
-                onClick={() => setShowCountryMenu(!showCountryMenu)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-xs font-medium hover:border-brand-400 hover:bg-brand-50/50 hover:text-brand-700 text-text-secondary transition-all cursor-pointer"
-              >
-                <span className="text-base leading-none">{country.flag}</span>
-                <span className="font-bold text-text-primary hidden sm:inline">{country.code}</span>
-                <ChevronDown className="w-3 h-3 text-text-muted" />
-              </button>
-
-              {showCountryMenu && (
-                <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl border border-border shadow-xl py-1 z-50">
-                  <div className="px-3 py-2 text-[10px] font-bold text-text-muted uppercase tracking-widest border-b border-border">
-                    Select Regional Market
+                  <div className="grid grid-cols-3 gap-0">
+                    {MEGA_CATEGORIES.map((cat) => {
+                      const Icon = cat.icon;
+                      return (
+                        <div key={cat.id} className="p-4 border-r border-b border-[#DCE8DF] last:border-r-0">
+                          <Link
+                            to={cat.href}
+                            onClick={() => setShowMegaMenu(false)}
+                            className="flex items-center gap-2 mb-2 group"
+                          >
+                            <span className={`w-7 h-7 rounded-lg ${cat.bg} ${cat.color} flex items-center justify-center shrink-0`}>
+                              <Icon className="w-3.5 h-3.5" />
+                            </span>
+                            <span className={`text-xs font-bold ${cat.color} group-hover:underline`}>{cat.label}</span>
+                          </Link>
+                          <ul className="space-y-1">
+                            {cat.subs.map((sub) => (
+                              <li key={sub}>
+                                <Link
+                                  to={cat.href}
+                                  onClick={() => setShowMegaMenu(false)}
+                                  className="text-[11px] text-slate-600 hover:text-[#074428] transition-colors block py-0.5"
+                                >
+                                  {sub}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
                   </div>
-                  {SUPPORTED_COUNTRIES.map((c) => (
-                    <button
-                      key={c.code}
-                      onClick={() => {
-                        setCountry(c);
-                        setShowCountryMenu(false);
-                      }}
-                      className={`w-full text-left px-3 py-2.5 text-xs flex items-center justify-between hover:bg-brand-50 hover:text-brand-800 transition-colors cursor-pointer ${
-                        c.code === country.code ? "bg-brand-50 text-brand-700 font-bold" : ""
-                      }`}
+
+                  {/* MegaMenu Footer */}
+                  <div className="bg-[#074428] px-5 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs text-white">
+                      <Building2 className="w-4 h-4 text-[#84CC16]" />
+                      <span className="font-semibold">B2B Wholesale — Commercial credit & pallet matrix</span>
+                    </div>
+                    <Link
+                      to={ROUTES.B2B.ROOT}
+                      onClick={() => setShowMegaMenu(false)}
+                      className="text-[11px] font-bold text-[#84CC16] hover:text-[#A3E635] transition-colors"
                     >
-                      <span className="flex items-center gap-2">
-                        <span className="text-base">{c.flag}</span>
-                        <span className="font-semibold">{c.name}</span>
-                      </span>
-                      <span className="font-bold text-brand-700 font-mono text-[11px]">
-                        {c.currency} {c.symbol}
-                      </span>
-                    </button>
-                  ))}
+                      Wholesale Portal →
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Wishlist */}
             <Link
-              to={ROUTES.WISHLIST}
-              className="p-2 rounded-xl text-text-secondary hover:text-brand-700 hover:bg-brand-50/60 transition-colors relative"
-              title="Wishlist"
+              to={ROUTES.B2B.ROOT}
+              className={`hover:text-[#074428] transition-colors ${location.pathname.startsWith("/b2b") ? "text-[#074428] font-bold" : ""}`}
             >
-              <Heart className="w-5 h-5" />
+              B2B Wholesale
             </Link>
 
-            {/* User Account Menu */}
+            <Link
+              to={ROUTES.B2B.BULK_ORDER}
+              className="hover:text-[#074428] transition-colors"
+            >
+              Bulk Orders
+            </Link>
+
+            <Link
+              to={ROUTES.B2B.QUOTES}
+              className="hover:text-[#074428] transition-colors"
+            >
+              Custom RFQ
+            </Link>
+
+            <Link
+              to={ROUTES.ORDERS}
+              className="hover:text-[#074428] transition-colors"
+            >
+              Order Tracking
+            </Link>
+          </nav>
+
+          {/* Right Header Actions matching Image 1 */}
+          <div className="flex items-center gap-3">
+
+            {/* Search Toggle Icon */}
+            <button
+              onClick={toggleSearch}
+              aria-label="Search"
+              className="p-2 text-slate-700 hover:text-[#074428] hover:bg-emerald-50 rounded-full transition-colors cursor-pointer"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+
+            {/* Cart Trigger */}
+            <button
+              onClick={openCart}
+              aria-label="Cart"
+              className="p-2 text-slate-700 hover:text-[#074428] hover:bg-emerald-50 rounded-full transition-colors relative cursor-pointer"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {cart?.itemCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 bg-[#84CC16] text-slate-950 text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
+                  {cart.itemCount}
+                </span>
+              )}
+            </button>
+
+            {/* User Account / Profile Icon */}
             <div className="relative" ref={userRef}>
               {isAuthenticated ? (
                 <>
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg border border-border text-xs font-medium hover:bg-surface-muted text-text-primary transition-colors"
+                    className="flex items-center gap-1.5 p-1.5 rounded-full hover:bg-emerald-50 transition-colors text-slate-700 cursor-pointer"
                   >
-                    <div className="w-5 h-5 rounded-full bg-brand-600 text-white flex items-center justify-center text-[10px] font-black">
+                    <div className="w-7 h-7 rounded-full bg-[#074428] text-white flex items-center justify-center text-xs font-bold">
                       {(user?.firstName?.[0] || "U").toUpperCase()}
                     </div>
-                    <span className="hidden sm:inline font-semibold">{user?.firstName || "Account"}</span>
-                    <ChevronDown className="w-3 h-3 text-text-muted" />
                   </button>
 
                   {showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl border border-border shadow-xl py-1 z-50">
-                      <div className="px-3 py-3 border-b border-border bg-surface-muted/50">
+                    <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl border border-[#DCE8DF] shadow-xl py-1 z-50 overflow-hidden">
+                      <div className="px-3 py-3 border-b border-[#DCE8DF] bg-[#F6FAF7]">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center text-sm font-black">
+                          <div className="w-8 h-8 rounded-full bg-[#074428] text-white flex items-center justify-center text-sm font-black">
                             {(user?.firstName?.[0] || "U").toUpperCase()}
                           </div>
                           <div>
-                            <p className="text-xs font-bold text-text-primary">{user?.firstName} {user?.lastName}</p>
-                            <p className="text-[10px] text-text-muted truncate">{user?.email}</p>
+                            <p className="text-xs font-bold text-slate-900">{user?.firstName} {user?.lastName}</p>
+                            <p className="text-[10px] text-slate-500 truncate">{user?.email}</p>
                           </div>
                         </div>
                       </div>
                       <Link
                         to={ROUTES.ORDERS}
                         onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-text-secondary hover:bg-surface-muted hover:text-text-primary transition-colors"
+                        className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-slate-600 hover:bg-[#F6FAF7] hover:text-[#074428] transition-colors"
                       >
                         <Package className="w-3.5 h-3.5" />
                         My Orders
@@ -328,7 +315,7 @@ export function PublicHeader() {
                       <Link
                         to={ROUTES.ACCOUNT_PROFILE}
                         onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-text-secondary hover:bg-surface-muted hover:text-text-primary transition-colors"
+                        className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-slate-600 hover:bg-[#F6FAF7] hover:text-[#074428] transition-colors"
                       >
                         <User className="w-3.5 h-3.5" />
                         Profile & Addresses
@@ -336,18 +323,18 @@ export function PublicHeader() {
                       <Link
                         to={ROUTES.WISHLIST}
                         onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-text-secondary hover:bg-surface-muted hover:text-text-primary transition-colors"
+                        className="flex items-center gap-2.5 px-3 py-2.5 text-xs text-slate-600 hover:bg-[#F6FAF7] hover:text-[#074428] transition-colors"
                       >
                         <Heart className="w-3.5 h-3.5" />
                         Saved Wishlist
                       </Link>
-                      <div className="border-t border-border mt-1">
+                      <div className="border-t border-[#DCE8DF] mt-1">
                         <button
                           onClick={() => {
                             logout();
                             setShowUserMenu(false);
                           }}
-                          className="w-full text-left px-3 py-2.5 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors"
+                          className="w-full text-left px-3 py-2.5 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors cursor-pointer"
                         >
                           <LogOut className="w-3.5 h-3.5" />
                           Sign Out
@@ -359,30 +346,64 @@ export function PublicHeader() {
               ) : (
                 <Link
                   to={ROUTES.LOGIN}
-                  className="flex items-center gap-1.5 text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white px-3.5 py-2 rounded-lg transition-all shadow-sm hover:shadow-md"
+                  className="p-2 text-slate-700 hover:text-[#074428] hover:bg-emerald-50 rounded-full transition-colors inline-flex"
+                  title="Sign In"
                 >
-                  <User className="w-3.5 h-3.5" />
-                  <span>Sign In</span>
+                  <User className="w-5 h-5" />
                 </Link>
               )}
             </div>
-
-            {/* Cart Trigger */}
-            <button
-              onClick={openCart}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-white transition-all shadow-sm hover:shadow-md relative"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              <span className="text-xs font-bold hidden sm:inline">Cart</span>
-              {cart?.itemCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-gold-400 text-slate-950 text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-xs">
-                  {cart.itemCount}
-                </span>
-              )}
-            </button>
           </div>
         </div>
+
+        {/* Slide-Down Expandable Search Bar */}
+        {showSearch && (
+          <div className="border-t border-[#DCE8DF] bg-[#F6FAF7] px-4 sm:px-6 lg:px-8 py-3.5 animate-in slide-in-from-top-2 duration-200">
+            <div className="max-w-3xl mx-auto">
+              <form onSubmit={handleSearch} className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#074428]" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Type to search products, SKUs, wholesale categories..."
+                    className="w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm bg-white border border-[#DCE8DF] rounded-xl focus:outline-none focus:border-[#074428] focus:ring-2 focus:ring-[#074428]/10 text-[#072115] shadow-xs"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-slate-100 text-slate-400"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-[#074428] hover:bg-[#0a5634] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  Search
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowSearch(false)}
+                  className="p-2.5 rounded-xl border border-[#DCE8DF] bg-white text-slate-500 hover:text-slate-900 transition-colors"
+                  aria-label="Close search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
       </header>
     </>
   );
 }
+
+export default PublicHeader;
