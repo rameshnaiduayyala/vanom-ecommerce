@@ -27,17 +27,17 @@ export function HomePage() {
   const products = productsData?.items || [];
 
   return (
-    <div className="pb-24 space-y-0">
-      {/* 1. Hero Multi-Slide Carousel */}
+    <div className="bg-white">
+      {/* 1. Hero Slider */}
       <HeroSlider products={products} />
 
-      {/* 2. Shop by Category (Elevated strip directly below hero) */}
-      <section className="py-12 sm:py-16 bg-white border-b border-[#E3ECE6]/80">
+      {/* 2. Shop by Category */}
+      <section className="py-14 sm:py-20 bg-white">
         <CategorySection categories={categories} />
       </section>
 
-      {/* 3. Best Sellers & Trending Products */}
-      <section className="py-12 sm:py-16">
+      {/* 3. Best Sellers & Trending */}
+      <section className="py-14 sm:py-20 bg-[#FAFCFA] border-y border-[#E8EDE9]">
         <TrendingSection
           products={products}
           categories={categories}
@@ -45,18 +45,18 @@ export function HomePage() {
         />
       </section>
 
-      {/* 4. Trust Pillars & Delivery Assurances */}
-      <section className="py-10 sm:py-14 bg-white border-y border-[#E3ECE6]/80">
+      {/* 4. Trust Pillars */}
+      <section className="py-12 sm:py-16 bg-white">
         <TrustBadgesSection />
       </section>
 
-      {/* 5. Flash Deals Special Discount */}
-      <section className="py-10 sm:py-14">
+      {/* 5. Flash Deals */}
+      <section className="py-12 sm:py-16 bg-[#FAFCFA] border-y border-[#E8EDE9]">
         <FlashDealsAdBanner />
       </section>
 
-      {/* 6. Featured Category Promotion Banners */}
-      <section className="py-12 sm:py-16 bg-white border-t border-[#E3ECE6]/80">
+      {/* 6. Featured Category Banners */}
+      <section className="py-14 sm:py-20 bg-white">
         <DualPromoBanners />
       </section>
     </div>

@@ -8,13 +8,12 @@ import {
   MapPin,
   Clock,
   Send,
-  MessageSquare,
-  ShieldCheck,
   CheckCircle2,
-  HelpCircle,
   Package,
   Headphones,
   ArrowRight,
+  Globe,
+  Shield,
 } from "lucide-react";
 
 export function ContactPage() {
@@ -32,7 +31,7 @@ export function ContactPage() {
     setSubmitted(true);
     toast.success(
       "Message Sent Successfully!",
-      "Thank you for reaching out. Our support team will review your inquiry and respond within 24 hours."
+      "Our support team will respond within 24 hours."
     );
     setFormData({
       name: "",
@@ -41,7 +40,7 @@ export function ContactPage() {
       subject: "Order Inquiry",
       message: "",
     });
-    setTimeout(() => setSubmitted(false), 6000);
+    setTimeout(() => setSubmitted(false), 5000);
   };
 
   const handleChange = (e) => {
@@ -50,284 +49,303 @@ export function ContactPage() {
   };
 
   return (
-    <div className="bg-[#F6FAF7] min-h-screen pb-24">
-      {/* ─── Hero Header ─── */}
-      <section className="relative overflow-hidden bg-[#074428] text-white py-16 sm:py-20 border-b border-emerald-900/60">
-        <div className="absolute inset-0 bg-radial-at-t from-[#0d5936] via-[#074428] to-[#042a19] pointer-events-none" />
-        <div
-          className="absolute inset-0 opacity-[0.04] pointer-events-none"
-          style={{
-            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        />
+    <div className="min-h-screen bg-white">
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0c5936] text-[#a7f3d0] border border-[#10b981]/30 text-xs font-bold tracking-wider uppercase">
-            <Headphones className="w-3.5 h-3.5 text-[#84CC16]" />
-            <span>24/7 Customer Care & Support Desk</span>
+      {/* ─── Minimal Hero ─── */}
+      <section className="relative bg-[#042A19] overflow-hidden">
+        {/* Ambient glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#0a5634]/40 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-[#84CC16]/8 rounded-full blur-[80px] pointer-events-none" />
+
+        <div className="relative max-w-6xl mx-auto px-6 lg:px-8 py-20 sm:py-28 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.08] text-[#84CC16] text-[11px] font-semibold tracking-[0.15em] uppercase mb-8 backdrop-blur-sm">
+            <Headphones className="w-3.5 h-3.5" />
+            <span>Customer Support</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
-            We're Here to Help You
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.1] mb-5">
+            Get in Touch
           </h1>
 
-          <p className="text-sm sm:text-base text-emerald-100/80 max-w-2xl mx-auto leading-relaxed">
-            Have questions about an existing order, shipping tracking, product specifications, or return policy? Our dedicated support team is available around the clock.
+          <p className="text-base sm:text-lg text-emerald-100/60 max-w-lg mx-auto leading-relaxed font-light">
+            Questions about orders, products, or shipping? We're here to help.
           </p>
         </div>
       </section>
 
-      {/* ─── Main Content Container ─── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-20">
+      {/* ─── Contact Info Strip ─── */}
+      <section className="border-b border-[#E8EDE9]">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#E8EDE9]">
 
-        {/* 3 Quick Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
-          {/* Card 1: Direct Email */}
-          <div className="bg-white rounded-3xl p-6 border border-[#DCE8DF] shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#074428] flex items-center justify-center shrink-0 border border-emerald-100">
-                <Mail className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Email Support</span>
-                <h3 className="text-base font-bold text-[#072115]">Direct Inquiries</h3>
-              </div>
-            </div>
-            <p className="text-xs text-[#4B6357] leading-relaxed">
-              Drop us an email anytime. We typically respond to customer service requests within 2 business hours.
-            </p>
+            {/* Email */}
             <a
               href="mailto:ayyalarameshnaidu@gmail.com"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#074428] hover:text-[#059669] transition-colors"
+              className="group flex items-center gap-4 py-7 md:py-9 md:pr-8 transition-colors"
             >
-              <span>ayyalarameshnaidu@gmail.com</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <div className="w-11 h-11 rounded-xl bg-[#F0F7F1] flex items-center justify-center shrink-0 group-hover:bg-[#074428] transition-colors duration-300">
+                <Mail className="w-5 h-5 text-[#074428] group-hover:text-white transition-colors duration-300" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold text-[#8B9E91] uppercase tracking-wider mb-0.5">Email</p>
+                <p className="text-sm font-bold text-[#0F2B1C] truncate group-hover:text-[#074428] transition-colors">
+                  ayyalarameshnaidu@gmail.com
+                </p>
+              </div>
             </a>
-          </div>
 
-          {/* Card 2: Phone Hotline */}
-          <div className="bg-white rounded-3xl p-6 border border-[#DCE8DF] shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-lime-50 text-[#65A30D] flex items-center justify-center shrink-0 border border-lime-200">
-                <Phone className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Customer Hotline</span>
-                <h3 className="text-base font-bold text-[#072115]">Phone Assistance</h3>
-              </div>
-            </div>
-            <p className="text-xs text-[#4B6357] leading-relaxed">
-              Speak directly with our support desk representatives for urgent order changes or dispatch questions.
-            </p>
+            {/* Phone */}
             <a
               href="tel:+917989419864"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#074428] hover:text-[#059669] transition-colors"
+              className="group flex items-center gap-4 py-7 md:py-9 md:px-8 transition-colors"
             >
-              <span>+91 7989419864 (Mon - Sat)</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <div className="w-11 h-11 rounded-xl bg-[#F0F7F1] flex items-center justify-center shrink-0 group-hover:bg-[#074428] transition-colors duration-300">
+                <Phone className="w-5 h-5 text-[#074428] group-hover:text-white transition-colors duration-300" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold text-[#8B9E91] uppercase tracking-wider mb-0.5">Phone</p>
+                <p className="text-sm font-bold text-[#0F2B1C] group-hover:text-[#074428] transition-colors">
+                  +91 7989419864
+                </p>
+                <p className="text-[11px] text-[#8B9E91]">Mon – Sat, 9 AM – 8 PM IST</p>
+              </div>
             </a>
-          </div>
 
-          {/* Card 3: Track Existing Order */}
-          <div className="bg-white rounded-3xl p-6 border border-[#DCE8DF] shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between space-y-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
-                <Package className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Self-Service</span>
-                <h3 className="text-base font-bold text-[#072115]">Order Tracking</h3>
-              </div>
-            </div>
-            <p className="text-xs text-[#4B6357] leading-relaxed">
-              Track your package live with your Order ID and delivery tracking number for instant real-time status.
-            </p>
+            {/* Track Orders */}
             <Link
               to={ROUTES.ORDERS}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#074428] hover:text-[#059669] transition-colors"
+              className="group flex items-center gap-4 py-7 md:py-9 md:pl-8 transition-colors"
             >
-              <span>Go to Order Tracking</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <div className="w-11 h-11 rounded-xl bg-[#F0F7F1] flex items-center justify-center shrink-0 group-hover:bg-[#074428] transition-colors duration-300">
+                <Package className="w-5 h-5 text-[#074428] group-hover:text-white transition-colors duration-300" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-semibold text-[#8B9E91] uppercase tracking-wider mb-0.5">Self-Service</p>
+                <p className="text-sm font-bold text-[#0F2B1C] group-hover:text-[#074428] transition-colors">
+                  Track Your Order
+                </p>
+              </div>
+              <ArrowRight className="w-4 h-4 text-[#C4D1C7] group-hover:text-[#074428] group-hover:translate-x-1 transition-all duration-300 shrink-0" />
             </Link>
           </div>
         </div>
+      </section>
 
-        {/* ─── Contact Form & Office Info Grid ─── */}
-        <div className="grid lg:grid-cols-12 gap-8 items-start">
+      {/* ─── Main Content: Form + Sidebar ─── */}
+      <section className="py-16 sm:py-24 bg-[#FAFCFA]">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
+          <div className="grid lg:grid-cols-5 gap-12 lg:gap-16">
 
-          {/* Left: Contact Form Card */}
-          <div className="lg:col-span-7 bg-white rounded-3xl border border-[#DCE8DF] p-7 sm:p-10 shadow-lg">
-            <div className="mb-6">
-              <span className="text-xs font-bold text-[#059669] uppercase tracking-wider block mb-1">
-                Direct Message
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-[#072115] tracking-tight">
-                Send Us a Message
-              </h2>
-              <p className="text-xs sm:text-sm text-[#4B6357] mt-1">
-                Fill out the form below and our customer experience team will get back to you promptly.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Full Name */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Your Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="e.g. Ramesh Naidu"
-                    className="w-full px-4 py-3 rounded-xl border border-[#DCE8DF] text-xs sm:text-sm focus:outline-none focus:border-[#074428] focus:ring-2 focus:ring-[#074428]/10 text-[#072115] bg-[#F9FBF9]"
-                  />
-                </div>
-
-                {/* Email Address */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="name@example.com"
-                    className="w-full px-4 py-3 rounded-xl border border-[#DCE8DF] text-xs sm:text-sm focus:outline-none focus:border-[#074428] focus:ring-2 focus:ring-[#074428]/10 text-[#072115] bg-[#F9FBF9]"
-                  />
-                </div>
+            {/* ── Left: Contact Form (3/5) ── */}
+            <div className="lg:col-span-3">
+              <div className="mb-10">
+                <h2 className="text-2xl sm:text-3xl font-black text-[#0F2B1C] tracking-tight mb-3">
+                  Send Us a Message
+                </h2>
+                <p className="text-sm text-[#5E7D67] leading-relaxed max-w-md">
+                  Fill out the form and our team will respond within one business day.
+                </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Phone Number */}
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-[13px] font-semibold text-[#2D4A35] mb-2">
+                      Full Name <span className="text-[#84CC16]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      placeholder="Your full name"
+                      className="w-full px-4 py-3.5 rounded-xl border border-[#D4DED6] text-sm focus:outline-none focus:border-[#074428] focus:ring-2 focus:ring-[#074428]/8 text-[#0F2B1C] bg-white placeholder:text-[#A3B5A8] transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[13px] font-semibold text-[#2D4A35] mb-2">
+                      Email Address <span className="text-[#84CC16]">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="you@example.com"
+                      className="w-full px-4 py-3.5 rounded-xl border border-[#D4DED6] text-sm focus:outline-none focus:border-[#074428] focus:ring-2 focus:ring-[#074428]/8 text-[#0F2B1C] bg-white placeholder:text-[#A3B5A8] transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-[13px] font-semibold text-[#2D4A35] mb-2">
+                      Phone <span className="text-[#A3B5A8] font-normal">(optional)</span>
+                    </label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      placeholder="+91 / +1 / +44"
+                      className="w-full px-4 py-3.5 rounded-xl border border-[#D4DED6] text-sm focus:outline-none focus:border-[#074428] focus:ring-2 focus:ring-[#074428]/8 text-[#0F2B1C] bg-white placeholder:text-[#A3B5A8] transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[13px] font-semibold text-[#2D4A35] mb-2">
+                      Subject <span className="text-[#84CC16]">*</span>
+                    </label>
+                    <select
+                      name="subject"
+                      value={formData.subject}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3.5 rounded-xl border border-[#D4DED6] text-sm focus:outline-none focus:border-[#074428] focus:ring-2 focus:ring-[#074428]/8 text-[#0F2B1C] bg-white cursor-pointer transition-all appearance-none"
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238B9E91' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "right 16px center",
+                      }}
+                    >
+                      <option value="Order Inquiry">Order & Delivery</option>
+                      <option value="Product Specifications">Product Info</option>
+                      <option value="Returns & Refunds">Returns & Refunds</option>
+                      <option value="Payment & Invoicing">Payment & Invoicing</option>
+                      <option value="General Question">General Inquiry</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Phone Number (Optional)
+                  <label className="block text-[13px] font-semibold text-[#2D4A35] mb-2">
+                    Message <span className="text-[#84CC16]">*</span>
                   </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
+                  <textarea
+                    required
+                    name="message"
+                    rows={5}
+                    value={formData.message}
                     onChange={handleChange}
-                    placeholder="+91 / +1 / +44 ..."
-                    className="w-full px-4 py-3 rounded-xl border border-[#DCE8DF] text-xs sm:text-sm focus:outline-none focus:border-[#074428] focus:ring-2 focus:ring-[#074428]/10 text-[#072115] bg-[#F9FBF9]"
+                    placeholder="Tell us how we can help..."
+                    className="w-full px-4 py-3.5 rounded-xl border border-[#D4DED6] text-sm focus:outline-none focus:border-[#074428] focus:ring-2 focus:ring-[#074428]/8 text-[#0F2B1C] bg-white placeholder:text-[#A3B5A8] resize-none transition-all"
                   />
                 </div>
 
-                {/* Subject */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Inquiry Subject *
-                  </label>
-                  <select
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-[#DCE8DF] text-xs sm:text-sm focus:outline-none focus:border-[#074428] focus:ring-2 focus:ring-[#074428]/10 text-[#072115] bg-[#F9FBF9] cursor-pointer"
+                <div className="flex items-center gap-4 pt-2">
+                  <button
+                    type="submit"
+                    disabled={submitted}
+                    className="px-8 py-3.5 rounded-xl bg-[#074428] hover:bg-[#0a5634] disabled:bg-[#074428]/70 text-white font-bold text-sm transition-all duration-200 hover:shadow-lg hover:shadow-[#074428]/20 flex items-center gap-2.5 cursor-pointer"
                   >
-                    <option value="Order Inquiry">Order Inquiry / Delivery Status</option>
-                    <option value="Product Specifications">Product Specifications</option>
-                    <option value="Returns & Refunds">Returns & Refund Request</option>
-                    <option value="Payment & Invoicing">Payment & Tax Invoicing</option>
-                    <option value="General Question">General Feedback</option>
-                  </select>
-                </div>
-              </div>
+                    {submitted ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-[#84CC16]" />
+                        <span>Sent!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>Send Message</span>
+                      </>
+                    )}
+                  </button>
 
-              {/* Message */}
+                  <p className="text-[11px] text-[#8B9E91]">
+                    We typically respond within 24 hours.
+                  </p>
+                </div>
+              </form>
+            </div>
+
+            {/* ── Right Sidebar (2/5) ── */}
+            <div className="lg:col-span-2 space-y-8">
+
+              {/* Office Locations */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Your Message *
-                </label>
-                <textarea
-                  required
-                  name="message"
-                  rows={5}
-                  value={formData.message}
-                  onChange={handleChange}
-                  placeholder="Provide any details, order numbers, or questions you have..."
-                  className="w-full px-4 py-3 rounded-xl border border-[#DCE8DF] text-xs sm:text-sm focus:outline-none focus:border-[#074428] focus:ring-2 focus:ring-[#074428]/10 text-[#072115] bg-[#F9FBF9] resize-none"
-                />
-              </div>
+                <h3 className="text-xs font-bold text-[#8B9E91] uppercase tracking-[0.15em] mb-5">
+                  Our Offices
+                </h3>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#074428] hover:bg-[#0a5634] text-white font-extrabold text-xs sm:text-sm transition-all hover:scale-[1.01] shadow-md flex items-center justify-center gap-2 cursor-pointer"
-              >
-                {submitted ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-[#84CC16]" />
-                    <span>Message Sent!</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    <span>Send Message</span>
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
+                <div className="space-y-6">
+                  <div className="group">
+                    <div className="flex items-start gap-3.5">
+                      <div className="w-9 h-9 rounded-lg bg-[#F0F7F1] flex items-center justify-center shrink-0 mt-0.5">
+                        <MapPin className="w-4 h-4 text-[#074428]" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-[#0F2B1C] mb-1">United Kingdom</h4>
+                        <p className="text-[13px] text-[#5E7D67] leading-relaxed">
+                          Vanom Global Ltd<br />
+                          25 Cabot Square, Canary Wharf<br />
+                          London E14 4QA
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
-          {/* Right: Office Logistics Hubs & Assurances */}
-          <div className="lg:col-span-5 space-y-6">
+                  <div className="w-full h-px bg-[#E8EDE9]" />
 
-            {/* Global Hubs Card */}
-            <div className="bg-white rounded-3xl border border-[#DCE8DF] p-6 sm:p-8 shadow-sm space-y-6">
-              <h3 className="text-lg font-black text-[#072115]">
-                Corporate & Fulfillment Centers
-              </h3>
-
-              <div className="space-y-4 text-xs text-[#4B6357]">
-                <div className="flex items-start gap-3 pb-3 border-b border-[#E3ECE6]">
-                  <MapPin className="w-4 h-4 text-[#074428] shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="block text-[#072115] font-bold text-sm">United Kingdom Operations</strong>
-                    <span>Vanom Global Ltd, 25 Cabot Square, Canary Wharf, London E14 4QA</span>
+                  <div className="group">
+                    <div className="flex items-start gap-3.5">
+                      <div className="w-9 h-9 rounded-lg bg-[#F0F7F1] flex items-center justify-center shrink-0 mt-0.5">
+                        <MapPin className="w-4 h-4 text-[#074428]" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-[#0F2B1C] mb-1">United States</h4>
+                        <p className="text-[13px] text-[#5E7D67] leading-relaxed">
+                          Vanom Logistics Inc<br />
+                          450 Lexington Avenue<br />
+                          New York, NY 10017
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="flex items-start gap-3 pb-3 border-b border-[#E3ECE6]">
-                  <MapPin className="w-4 h-4 text-[#074428] shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="block text-[#072115] font-bold text-sm">United States Fulfillment</strong>
-                    <span>Vanom Logistics Inc, 450 Lexington Ave, New York, NY 10017</span>
+              {/* Hours */}
+              <div className="bg-[#074428] rounded-2xl p-6 relative overflow-hidden">
+                <div className="absolute -right-8 -top-8 w-32 h-32 bg-[#84CC16]/10 rounded-full blur-2xl pointer-events-none" />
+
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Clock className="w-4 h-4 text-[#84CC16]" />
+                    <span className="text-[11px] font-bold text-[#84CC16] uppercase tracking-wider">Hours</span>
                   </div>
+
+                  <h4 className="text-lg font-bold text-white mb-2">
+                    24/7 Order Processing
+                  </h4>
+
+                  <p className="text-[13px] text-emerald-100/60 leading-relaxed">
+                    Fulfillment runs around the clock. Phone support is available Mon–Sat, 9 AM – 8 PM.
+                  </p>
+                </div>
+              </div>
+
+              {/* Trust Signals */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Shield className="w-4 h-4 text-[#84CC16] shrink-0" />
+                  <span className="text-[13px] text-[#5E7D67]">256-bit SSL encrypted communication</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Globe className="w-4 h-4 text-[#84CC16] shrink-0" />
+                  <span className="text-[13px] text-[#5E7D67]">Multi-market delivery across US & UK</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="w-4 h-4 text-[#84CC16] shrink-0" />
+                  <span className="text-[13px] text-[#5E7D67]">Dedicated account support available</span>
                 </div>
               </div>
             </div>
 
-            {/* Operating Hours Card */}
-            <div className="bg-[#074428] rounded-3xl p-6 sm:p-8 text-white shadow-lg space-y-3 relative overflow-hidden">
-              <div className="absolute right-0 top-0 w-48 h-48 bg-[#84CC16]/10 rounded-full blur-2xl pointer-events-none" />
-
-              <div className="flex items-center gap-2 text-xs font-bold text-[#84CC16]">
-                <Clock className="w-4 h-4" />
-                <span>Operating Hours</span>
-              </div>
-
-              <h4 className="text-lg font-black text-white">
-                Online Orders Dispatched 24/7
-              </h4>
-
-              <p className="text-xs text-emerald-100/80 leading-relaxed">
-                Our fulfillment depots operate round the clock. Phone & live support is active Monday to Saturday, 8:00 AM – 8:00 PM local time.
-              </p>
-            </div>
-
           </div>
-
         </div>
-
-      </div>
+      </section>
     </div>
   );
 }
