@@ -21,12 +21,17 @@ import {
   Boxes,
   CookingPot,
   Hammer,
+  ArrowRight,
+  Sparkles,
+  Truck,
+  HelpCircle,
 } from "lucide-react";
 
 const MEGA_CATEGORIES = [
   {
     id: "cat-1",
     label: "Electronics & Tech",
+    tagline: "Point of sale, barcode scanners & networking",
     icon: Laptop,
     color: "text-blue-600",
     bg: "bg-blue-50",
@@ -36,65 +41,69 @@ const MEGA_CATEGORIES = [
   {
     id: "cat-2",
     label: "Groceries & FMCG",
+    tagline: "Premium grains, staples & cooking oils",
     icon: UtensilsCrossed,
     color: "text-amber-600",
     bg: "bg-amber-50",
     href: `${ROUTES.PRODUCTS}?category=cat-2`,
-    subs: ["Basmati Rice (Bulk Sacks)", "Pulses & Lentils", "Cooking Oils (Drum)", "Spices & Condiments", "Frozen & Dairy Bulk"],
+    subs: ["Basmati Rice Sacks", "Pulses & Lentils", "Cooking Oils & Fats", "Spices & Condiments", "Beverages & Dairy"],
   },
   {
     id: "cat-3",
     label: "Industrial & Packaging",
+    tagline: "Heavy-duty shipping boxes & wrapping",
     icon: Boxes,
     color: "text-emerald-600",
     bg: "bg-emerald-50",
     href: `${ROUTES.PRODUCTS}?category=cat-3`,
-    subs: ["Corrugated Cartons", "Stretch Wrap Films", "Bubble Wrap Rolls", "Pallet Wrap", "Thermal Labels & Tape"],
+    subs: ["Corrugated Cartons", "Stretch Wrap Films", "Bubble Wrap Rolls", "Thermal Labels & Tape", "Strapping Materials"],
   },
   {
     id: "cat-4",
     label: "Commercial Kitchen",
+    tagline: "Induction cooktops, ovens & smallwares",
     icon: CookingPot,
     color: "text-rose-600",
     bg: "bg-rose-50",
     href: `${ROUTES.PRODUCTS}?category=cat-4`,
-    subs: ["Commercial Ovens", "Food Prep Equipment", "Cold Storage Units", "Dishwashers (Industrial)", "Restaurant Smallwares"],
+    subs: ["Commercial Induction", "Food Prep Equipment", "Cold Storage Units", "Stainless Smallwares", "Catering Essentials"],
   },
   {
     id: "cat-5",
     label: "Safety & Security",
+    tagline: "PoE camera systems & biometric locks",
     icon: ShieldCheck,
     color: "text-cyan-600",
     bg: "bg-cyan-50",
     href: `${ROUTES.PRODUCTS}?category=cat-5`,
-    subs: ["PoE Surveillance Systems", "Biometric Access Control", "Fire Suppression Hardware", "Alarm Systems", "Security Domes"],
+    subs: ["PoE Surveillance Kits", "Biometric Access Control", "Alarm Systems", "Security Domes", "Emergency Equipment"],
   },
   {
     id: "cat-6",
     label: "Building & Hardware",
+    tagline: "Heavy tools, electrical fittings & fixtures",
     icon: Hammer,
     color: "text-slate-700",
     bg: "bg-slate-100",
     href: `${ROUTES.PRODUCTS}?category=cat-6`,
-    subs: ["Structural Steel", "Cement & Aggregates", "Power Tools", "Plumbing Fixtures", "Electrical Fittings"],
+    subs: ["Fasteners & Fixtures", "Power & Hand Tools", "Electrical Fittings", "Cable Trays", "Plumbing Supplies"],
   },
 ];
 
 export function PublicHeader() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { country, setCountry } = useCountryStore();
+  const { country } = useCountryStore();
   const { cart, openCart } = useCartStore();
   const { user, isAuthenticated, logout } = useAuthStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-  const [showCountryMenu, setShowCountryMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMegaMenu, setShowMegaMenu] = useState(false);
+  const [activeMegaCategory, setActiveMegaCategory] = useState(MEGA_CATEGORIES[0]);
 
   const megaRef = useRef(null);
-  const countryRef = useRef(null);
   const userRef = useRef(null);
   const searchInputRef = useRef(null);
 
@@ -120,7 +129,6 @@ export function PublicHeader() {
   useEffect(() => {
     const handler = (e) => {
       if (megaRef.current && !megaRef.current.contains(e.target)) setShowMegaMenu(false);
-      if (countryRef.current && !countryRef.current.contains(e.target)) setShowCountryMenu(false);
       if (userRef.current && !userRef.current.contains(e.target)) setShowUserMenu(false);
     };
     document.addEventListener("mousedown", handler);
@@ -138,9 +146,9 @@ export function PublicHeader() {
       {/* Top Utility Bar */}
       <AnnouncementBar />
 
-      {/* Single Main Header (One Single Row matching Image 1) */}
+      {/* Single Main Header (Unified Clean Enterprise Row) */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#DCE8DF] shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-6">
 
           {/* Brand Logo */}
           <Link to={ROUTES.HOME} className="shrink-0 flex items-center py-1">
@@ -151,104 +159,183 @@ export function PublicHeader() {
             />
           </Link>
 
-          {/* Center Navigation Links (Matching Screenshot 1) */}
+          {/* Center Navigation Links with Enterprise Mega-Menu */}
           <nav className="hidden lg:flex items-center gap-7 text-xs font-bold text-[#3D5648]">
+            <Link
+              to={ROUTES.HOME}
+              className={`transition-colors relative py-1 ${
+                location.pathname === ROUTES.HOME
+                  ? "text-[#074428] font-extrabold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#074428] after:rounded-full"
+                  : "hover:text-[#074428]"
+              }`}
+            >
+              Home
+            </Link>
 
-
-            {/* Catalog Dropdown with MegaMenu */}
+            {/* Products Catalog MegaMenu Dropdown */}
             <div ref={megaRef} className="relative">
               <button
                 onMouseEnter={() => setShowMegaMenu(true)}
                 onClick={() => setShowMegaMenu((v) => !v)}
-                className="flex items-center gap-1 hover:text-[#074428] transition-colors py-1 cursor-pointer"
+                className={`flex items-center gap-1.5 transition-colors py-1 cursor-pointer ${
+                  showMegaMenu || location.pathname.startsWith("/products")
+                    ? "text-[#074428] font-extrabold"
+                    : "hover:text-[#074428]"
+                }`}
               >
                 <span>Products Catalog</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showMegaMenu ? "rotate-180 text-[#074428]" : "text-slate-400"}`} />
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                    showMegaMenu ? "rotate-180 text-[#074428]" : "text-slate-400"
+                  }`}
+                />
               </button>
 
-              {/* MegaMenu Dropdown */}
+              {/* Enterprise MegaMenu Panel */}
               {showMegaMenu && (
                 <div
-                  className="absolute left-0 top-full mt-2 w-[700px] bg-white rounded-2xl border border-[#DCE8DF] shadow-2xl z-50 overflow-hidden"
+                  className="absolute left-1/2 -translate-x-1/2 top-full mt-3 w-[840px] bg-white rounded-3xl border border-[#DCE8DF] shadow-2xl z-50 overflow-hidden animate-in fade-in-50 zoom-in-98 duration-150"
                   onMouseLeave={() => setShowMegaMenu(false)}
                 >
-                  <div className="grid grid-cols-3 gap-0">
-                    {MEGA_CATEGORIES.map((cat) => {
-                      const Icon = cat.icon;
-                      return (
-                        <div key={cat.id} className="p-4 border-r border-b border-[#DCE8DF] last:border-r-0">
-                          <Link
-                            to={cat.href}
-                            onClick={() => setShowMegaMenu(false)}
-                            className="flex items-center gap-2 mb-2 group"
+                  <div className="grid grid-cols-12">
+                    {/* Left Column: Department List */}
+                    <div className="col-span-5 bg-[#F6FAF7] p-4 border-r border-[#E3ECE6] space-y-1">
+                      <div className="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Departments
+                      </div>
+                      {MEGA_CATEGORIES.map((cat) => {
+                        const Icon = cat.icon;
+                        const isHovered = activeMegaCategory.id === cat.id;
+                        return (
+                          <div
+                            key={cat.id}
+                            onMouseEnter={() => setActiveMegaCategory(cat)}
+                            className={`flex items-center justify-between p-2.5 rounded-2xl transition-all cursor-pointer ${
+                              isHovered
+                                ? "bg-white shadow-xs text-[#074428] font-bold border border-[#DCE8DF]"
+                                : "text-slate-700 hover:text-[#074428] hover:bg-white/60"
+                            }`}
                           >
-                            <span className={`w-7 h-7 rounded-lg ${cat.bg} ${cat.color} flex items-center justify-center shrink-0`}>
-                              <Icon className="w-3.5 h-3.5" />
-                            </span>
-                            <span className={`text-xs font-bold ${cat.color} group-hover:underline`}>{cat.label}</span>
-                          </Link>
-                          <ul className="space-y-1">
-                            {cat.subs.map((sub) => (
-                              <li key={sub}>
-                                <Link
-                                  to={cat.href}
-                                  onClick={() => setShowMegaMenu(false)}
-                                  className="text-[11px] text-slate-600 hover:text-[#074428] transition-colors block py-0.5"
-                                >
-                                  {sub}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* MegaMenu Footer */}
-                  <div className="bg-[#074428] px-5 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs text-white">
-                      <Building2 className="w-4 h-4 text-[#84CC16]" />
-                      <span className="font-semibold">B2B Wholesale — Commercial credit & pallet matrix</span>
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span
+                                className={`w-8 h-8 rounded-xl ${cat.bg} ${cat.color} flex items-center justify-center shrink-0`}
+                              >
+                                <Icon className="w-4 h-4" />
+                              </span>
+                              <div className="min-w-0">
+                                <span className="block text-xs font-bold truncate">{cat.label}</span>
+                                <span className="block text-[10px] text-slate-400 font-normal truncate">
+                                  {cat.tagline}
+                                </span>
+                              </div>
+                            </div>
+                            <ArrowRight
+                              className={`w-3.5 h-3.5 transition-transform ${
+                                isHovered ? "text-[#074428] translate-x-0.5" : "text-slate-300 opacity-0"
+                              }`}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
-                    <Link
-                      to={ROUTES.B2B.ROOT}
-                      onClick={() => setShowMegaMenu(false)}
-                      className="text-[11px] font-bold text-[#84CC16] hover:text-[#A3E635] transition-colors"
-                    >
-                      Wholesale Portal →
-                    </Link>
+
+                    {/* Right Column: Subcategories & Featured Collection */}
+                    <div className="col-span-7 p-6 flex flex-col justify-between bg-white">
+                      <div>
+                        {/* Subcategory Header */}
+                        <div className="flex items-center justify-between pb-3 border-b border-[#E3ECE6] mb-4">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+                            <h4 className="text-sm font-extrabold text-[#072115]">
+                              {activeMegaCategory.label}
+                            </h4>
+                          </div>
+                          <Link
+                            to={activeMegaCategory.href}
+                            onClick={() => setShowMegaMenu(false)}
+                            className="text-xs font-bold text-[#059669] hover:text-[#074428] flex items-center gap-1 transition-colors"
+                          >
+                            <span>Browse Department</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </Link>
+                        </div>
+
+                        {/* Subcategories Grid */}
+                        <div className="grid grid-cols-2 gap-2.5">
+                          {activeMegaCategory.subs.map((sub) => (
+                            <Link
+                              key={sub}
+                              to={`${activeMegaCategory.href}&sub=${encodeURIComponent(sub)}`}
+                              onClick={() => setShowMegaMenu(false)}
+                              className="group p-2.5 rounded-xl hover:bg-[#F6FAF7] border border-transparent hover:border-[#DCE8DF] transition-all flex items-center justify-between"
+                            >
+                              <span className="text-xs text-slate-700 group-hover:text-[#074428] group-hover:font-semibold transition-colors">
+                                {sub}
+                              </span>
+                              <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-[#074428] group-hover:translate-x-0.5 transition-all opacity-0 group-hover:opacity-100" />
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Featured Promo Strip in MegaMenu */}
+                      <div className="mt-6 p-4 rounded-2xl bg-[#074428] text-white flex items-center justify-between gap-4 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-[#84CC16]">
+                            <Sparkles className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <span className="block text-[10px] font-bold text-[#84CC16] uppercase tracking-wider">
+                              Verified Store
+                            </span>
+                            <span className="block text-xs font-semibold text-white">
+                              Fast multi-market delivery & express dispatch
+                            </span>
+                          </div>
+                        </div>
+
+                        <Link
+                          to={ROUTES.PRODUCTS}
+                          onClick={() => setShowMegaMenu(false)}
+                          className="px-3.5 py-1.5 rounded-xl bg-[#84CC16] hover:bg-[#74B626] text-slate-950 text-xs font-black shrink-0 transition-transform hover:scale-102"
+                        >
+                          All Products
+                        </Link>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
 
             <Link
-              to={ROUTES.B2B.ROOT}
-              className={`hover:text-[#074428] transition-colors ${location.pathname.startsWith("/b2b") ? "text-[#074428] font-bold" : ""}`}
+              to={ROUTES.PRODUCTS}
+              className={`hover:text-[#074428] transition-colors ${
+                location.pathname === ROUTES.PRODUCTS ? "text-[#074428] font-bold" : ""
+              }`}
             >
-              B2B Wholesale
-            </Link>
-
-            <Link
-              to={ROUTES.B2B.BULK_ORDER}
-              className="hover:text-[#074428] transition-colors"
-            >
-              Bulk Orders
-            </Link>
-
-            <Link
-              to={ROUTES.B2B.QUOTES}
-              className="hover:text-[#074428] transition-colors"
-            >
-              Custom RFQ
+              All Products
             </Link>
 
             <Link
               to={ROUTES.ORDERS}
-              className="hover:text-[#074428] transition-colors"
+              className={`hover:text-[#074428] transition-colors flex items-center gap-1.5 ${
+                location.pathname === ROUTES.ORDERS ? "text-[#074428] font-bold" : ""
+              }`}
             >
-              Order Tracking
+              <Truck className="w-3.5 h-3.5 text-slate-400" />
+              <span>Track Orders</span>
+            </Link>
+
+            <Link
+              to={ROUTES.CONTACT}
+              className={`transition-colors relative py-1 ${
+                location.pathname === ROUTES.CONTACT
+                  ? "text-[#074428] font-extrabold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#074428] after:rounded-full"
+                  : "hover:text-[#074428]"
+              }`}
+            >
+              Contact Us
             </Link>
           </nav>
 

@@ -69,20 +69,13 @@ export function PublicFooter() {
       <div className="bg-[#062E1F] text-slate-300 border-t border-emerald-950/60 pt-16 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-10">
-            
+
             {/* Column 1: Vanom Brand & Company Bio */}
             <div className="space-y-4 lg:col-span-2">
               <div className="inline-block bg-white rounded-xl p-3 shadow-md">
                 <Link to={ROUTES.HOME} className="flex items-center gap-2">
                   <img src="/logo.png" alt="Vanom" className="h-9 w-auto object-contain" />
-                  <div className="flex flex-col">
-                    <span className="font-black text-base text-[#074428] font-mono tracking-tight leading-none uppercase">
-                      VANOM
-                    </span>
-                    <span className="text-[8px] font-bold text-[#059669] tracking-widest uppercase">
-                      ENTERPRISE COMMERCE
-                    </span>
-                  </div>
+
                 </Link>
               </div>
 
@@ -164,6 +157,7 @@ export function PublicFooter() {
           </p>
 
           <div className="flex items-center gap-5 text-[11px]">
+            <Link to={ROUTES.CONTACT} className="text-[#84CC16] font-bold hover:underline">Contact Support</Link>
             <a href="#privacy" className="hover:text-[#84CC16] transition-colors">Privacy Policy</a>
             <a href="#terms" className="hover:text-[#84CC16] transition-colors">Terms of Sale</a>
             <a href="#supply-chain" className="hover:text-[#84CC16] transition-colors">Supply Chain</a>

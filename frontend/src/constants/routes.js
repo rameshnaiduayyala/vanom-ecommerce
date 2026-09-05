@@ -1,4 +1,4 @@
-﻿export const ROUTES = {
+export const ROUTES = {
   // Public B2C
   HOME: "/",
   PRODUCTS: "/products",
@@ -16,6 +16,7 @@
   LOGIN: "/login",
   REGISTER: "/register",
   FORGOT_PASSWORD: "/forgot-password",
+  CONTACT: "/contact",
 
   // B2B Wholesale Portal
   B2B: {

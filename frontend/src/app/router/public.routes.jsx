@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { PublicLayout } from "../../layouts/public/PublicLayout.jsx";
 import { HomePage } from "../../features/storefront/pages/HomePage.jsx";
 import { ProductsPage } from "../../features/storefront/pages/ProductsPage.jsx";
@@ -8,6 +8,7 @@ import { CheckoutPage } from "../../features/checkout/pages/CheckoutPage.jsx";
 import { OrdersPage } from "../../features/orders/pages/OrdersPage.jsx";
 import { OrderDetailsPage } from "../../features/orders/pages/OrderDetailsPage.jsx";
 import { WishlistPage } from "../../features/wishlist/pages/WishlistPage.jsx";
+import { ContactPage } from "../../features/storefront/pages/ContactPage.jsx";
 import { LoginPage } from "../../features/auth/pages/LoginPage.jsx";
 import { RegisterPage, ForgotPasswordPage } from "../../features/auth/pages/RegisterPage.jsx";
 import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
@@ -21,6 +22,7 @@ export const publicRoutes = {
     { path: "/products/:slug", element: <ProductDetailsPage /> },
     { path: "/categories/:slug", element: <ProductsPage /> },
     { path: "/search", element: <ProductsPage /> },
+    { path: "/contact", element: <ContactPage /> },
     { path: "/cart", element: <CartPage /> },
     { path: "/checkout", element: <CheckoutPage /> },
     { path: "/orders", element: <OrdersPage /> },
