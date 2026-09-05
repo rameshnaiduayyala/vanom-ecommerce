@@ -120,16 +120,16 @@ export function ProductCard({ product }) {
         <div className="absolute bottom-0 left-0 right-0 z-10 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
           <button
             onClick={handleAddToCart}
-            className="w-full py-2.5 bg-[#074428] hover:bg-[#0a5634] text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-md"
+            className="w-full py-2.5 bg-[#00875A] hover:bg-[#00744D] text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-md"
           >
             {addingToCart ? (
               <>
-                <Zap className="w-3.5 h-3.5 text-[#84CC16] animate-pulse" />
+                <Zap className="w-3.5 h-3.5 text-[#4ADE80] animate-pulse" />
                 <span>Adding to Order...</span>
               </>
             ) : (
               <>
-                <ShoppingCart className="w-3.5 h-3.5 text-[#84CC16]" />
+                <ShoppingCart className="w-3.5 h-3.5 text-[#4ADE80]" />
                 <span>Instant Order / Add to Cart</span>
               </>
             )}
@@ -142,7 +142,7 @@ export function ProductCard({ product }) {
         <div className="space-y-2">
           {/* Department & SKU Line */}
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] text-[#059669] font-bold uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+            <span className="text-[10px] text-[#00875A] font-bold uppercase tracking-wider bg-[#E6F4EA] px-2 py-0.5 rounded-md border border-emerald-100">
               {product.category || "General Catalog"}
             </span>
             <span className="text-[10px] text-slate-400 font-mono">
@@ -152,7 +152,7 @@ export function ProductCard({ product }) {
 
           {/* Product Name */}
           <Link to={`/products/${product.slug}`}>
-            <h3 className="text-sm font-extrabold text-[#072115] hover:text-[#059669] transition-colors line-clamp-2 leading-snug">
+            <h3 className="text-sm font-extrabold text-[#0F2B1C] hover:text-[#00875A] transition-colors line-clamp-2 leading-snug">
               {product.name}
             </h3>
           </Link>
@@ -165,21 +165,21 @@ export function ProductCard({ product }) {
                   key={s}
                   className={`w-3 h-3 ${
                     s <= Math.round(product.rating || 4)
-                      ? "text-[#84CC16] fill-[#84CC16]"
+                      ? "text-amber-400 fill-amber-400"
                       : "text-slate-200 fill-slate-200"
                   }`}
                 />
               ))}
             </div>
-            <span className="text-xs font-bold text-[#074428]">{product.rating || "4.8"}</span>
+            <span className="text-xs font-bold text-[#0F2B1C]">{product.rating || "4.8"}</span>
             <span className="text-[10px] text-slate-400 font-medium">({product.reviewsCount || 42} reviews)</span>
           </div>
 
           {/* Key Product Specification / Feature Pill */}
           <div className="mt-1 px-2.5 py-1 rounded-lg bg-[#F4F8F5] border border-emerald-100 flex items-center justify-between text-[11px]">
             <span className="text-[#4B6357] font-medium">Availability:</span>
-            <strong className="text-[#074428] font-semibold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+            <strong className="text-[#00875A] font-semibold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00875A]" />
               In Stock • Express Delivery
             </strong>
           </div>
@@ -189,7 +189,7 @@ export function ProductCard({ product }) {
         <div className="flex items-end justify-between gap-2 pt-3 border-t border-[#E3ECE6]">
           <div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-lg font-black text-[#074428] tracking-tight">
+              <span className="text-lg font-black text-[#064027] tracking-tight">
                 {formatPrice(price, country.currency, country.symbol)}
               </span>
               {discount >= 5 && (
@@ -207,11 +207,11 @@ export function ProductCard({ product }) {
             onClick={handleAddToCart}
             className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer shadow-xs ${
               addingToCart
-                ? "bg-emerald-100 text-[#074428]"
-                : "bg-[#074428] hover:bg-[#0a5634] text-white hover:shadow-md hover:scale-102"
+                ? "bg-[#E6F4EA] text-[#00875A]"
+                : "bg-[#00875A] hover:bg-[#00744D] text-white hover:shadow-md hover:scale-102"
             }`}
           >
-            <ShoppingCart className="w-3.5 h-3.5 text-[#84CC16]" />
+            <ShoppingCart className="w-3.5 h-3.5 text-[#4ADE80]" />
             <span>{addingToCart ? "Added" : "Add"}</span>
           </button>
         </div>

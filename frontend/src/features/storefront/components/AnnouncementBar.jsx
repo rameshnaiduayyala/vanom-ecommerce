@@ -41,17 +41,17 @@ export function AnnouncementBar() {
             <span>ayyalarameshnaidu@gmail.com</span>
           </a>
 
-          <div className="hidden sm:block w-px h-3 bg-emerald-800/60" />
+          <div className="hidden md:block w-px h-3 bg-emerald-800/60" />
 
           <a
             href="tel:+917989419864"
-            className="flex items-center gap-1.5 text-emerald-100/80 hover:text-white transition-colors"
+            className="hidden sm:flex items-center gap-1.5 text-emerald-100/80 hover:text-white transition-colors"
           >
             <Phone className="w-3 h-3 text-[#4ADE80]" />
             <span>+91 7989419864</span>
           </a>
 
-          <div className="w-px h-3 bg-emerald-800/60" />
+          <div className="hidden sm:block w-px h-3 bg-emerald-800/60" />
 
           {/* Currency Selector */}
           <div className="relative" ref={menuRef}>
