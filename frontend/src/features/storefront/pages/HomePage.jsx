@@ -27,17 +27,17 @@ export function HomePage() {
   const products = productsData?.items || [];
 
   return (
-    <div className="bg-white">
+    <div className="bg-[#E8EDE9]">
       {/* 1. Hero Slider */}
       <HeroSlider products={products} />
 
       {/* 2. Shop by Category */}
-      <section className="py-14 sm:py-20 bg-white">
+      <section className="py-14 sm:py-20 bg-[#E8EDE9]">
         <CategorySection categories={categories} />
       </section>
 
       {/* 3. Best Sellers & Trending */}
-      <section className="py-14 sm:py-20 bg-[#FAFCFA] border-y border-[#E8EDE9]">
+      <section className="py-14 sm:py-20 bg-[#E8EDE9] border-y border-[#D6DDD8]">
         <TrendingSection
           products={products}
           categories={categories}
@@ -45,20 +45,20 @@ export function HomePage() {
         />
       </section>
 
-      {/* 4. Trust Pillars */}
-      <section className="py-12 sm:py-16 bg-white">
-        <TrustBadgesSection />
-      </section>
+      {/* 4. Global Stats & Trust Metrics */}
+      <TrustBadgesSection />
 
       {/* 5. Flash Deals */}
-      <section className="py-12 sm:py-16 bg-[#FAFCFA] border-y border-[#E8EDE9]">
+      <section className="py-12 sm:py-16 bg-[#E8EDE9] border-y border-[#D6DDD8]">
         <FlashDealsAdBanner />
       </section>
 
       {/* 6. Featured Category Banners */}
-      <section className="py-14 sm:py-20 bg-white">
+      <section className="py-14 sm:py-20 bg-[#E8EDE9]">
         <DualPromoBanners />
       </section>
     </div>
   );
 }
+
+export default HomePage;

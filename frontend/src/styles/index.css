@@ -33,8 +33,8 @@
   --color-gold-700: #9A6F00;
 
   --color-surface: #FFFFFF;
-  --color-surface-muted: #F3F8F5;
-  --color-surface-green: #EAF5ED;
+  --color-surface-muted: #E8EDE9;
+  --color-surface-green: #E8EDE9;
   --color-surface-card: #FFFFFF;
 
   --color-text-primary: #072115;
@@ -45,7 +45,7 @@
 }
 
 body {
-  background-color: #F6FAF7;
+  background-color: #E8EDE9;
   color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;

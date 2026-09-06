@@ -49,7 +49,7 @@ export function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#E8EDE9]">
 
       {/* ─── Minimal Hero ─── */}
       <section className="relative bg-[#042A19] overflow-hidden">
@@ -132,7 +132,7 @@ export function ContactPage() {
       </section>
 
       {/* ─── Main Content: Form + Sidebar ─── */}
-      <section className="py-16 sm:py-24 bg-[#FAFCFA]">
+      <section className="py-16 sm:py-24 bg-[#E8EDE9]">
         <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <div className="grid lg:grid-cols-5 gap-12 lg:gap-16">
 

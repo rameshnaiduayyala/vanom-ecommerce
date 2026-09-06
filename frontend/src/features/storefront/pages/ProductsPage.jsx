@@ -82,7 +82,7 @@ export function ProductsPage() {
   }, [rawProducts, inStockOnly, sortBy, country.code]);
 
   return (
-    <div className="bg-[#F8FAF9] min-h-screen py-6 sm:py-8">
+    <div className="bg-[#E8EDE9] min-h-screen py-6 sm:py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         
         {/* ─── Clean Header & Filter Control Bar ─── */}

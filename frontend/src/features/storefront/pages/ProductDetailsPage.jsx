@@ -11,71 +11,74 @@ import { getLiveProducts } from "../../../services/api/mock-data.js";
 import { ProductCard } from "../components/ProductCard.jsx";
 import {
   Star,
-  ShoppingCart,
-  Truck,
-  ShieldCheck,
-  Package,
-  Plus,
-  Minus,
-  CheckCircle2,
-  ArrowRight,
+  ChevronLeft,
   ChevronRight,
-  Home,
-  RefreshCw,
-  Globe2,
-  BadgeCheck,
-  Building2,
-  Heart,
-  Share2,
-  Sparkles,
+  ChevronDown,
+  ShoppingBag,
+  Package,
+  ArrowRight,
+  Check,
+  ShieldCheck,
+  Truck,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "../../../components/ui/Button.jsx";
 import { Spinner } from "../../../components/ui/Alert.jsx";
+
+const COLOR_OPTIONS = [
+  { name: "GREEN", colorClass: "bg-[#5ECFB5]" },
+  { name: "AMBER", colorClass: "bg-[#F59E0B]" },
+  { name: "CHARCOAL", colorClass: "bg-[#1E293B]" },
+  { name: "SLATE", colorClass: "bg-[#64748B]" },
+];
 
 export function ProductDetailsPage() {
   const { slug } = useParams();
   const { country } = useCountryStore();
   const { cart, setCart, openCart } = useCartStore();
   const { addToast } = useUIStore();
+
   const [quantity, setQuantity] = useState(1);
-  const [activeTab, setActiveTab] = useState("description");
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0]);
+  const [colorDropdownOpen, setColorDropdownOpen] = useState(false);
+  const [quantityDropdownOpen, setQuantityDropdownOpen] = useState(false);
+  const [activeBottomTab, setActiveBottomTab] = useState("DETAILS");
+  const [addingToCart, setAddingToCart] = useState(false);
 
   const { data: product, isLoading, error } = useQuery({
     queryKey: ["product-detail", slug, country.code],
     queryFn: () => Api.catalog.getProductBySlug(slug),
   });
 
-  // Get related products
+  // Related products
   const relatedProducts = React.useMemo(() => {
     const all = getLiveProducts();
     if (!product) return all.slice(0, 4);
-    return all.filter((p) => p.id !== product.id && p.categoryId === product.categoryId).slice(0, 4).length > 0
-      ? all.filter((p) => p.id !== product.id && p.categoryId === product.categoryId).slice(0, 4)
-      : all.filter((p) => p.id !== product.id).slice(0, 4);
+    const sameCat = all.filter((p) => p.id !== product.id && p.categoryId === product.categoryId);
+    return (sameCat.length > 0 ? sameCat : all.filter((p) => p.id !== product.id)).slice(0, 4);
   }, [product]);
 
   if (isLoading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 bg-[#F8FAF9]">
+      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 bg-white">
         <Spinner size="lg" />
-        <p className="text-sm font-medium text-[#3D5648]">Loading product specifications...</p>
+        <p className="text-sm font-medium text-slate-500">Loading product view...</p>
       </div>
     );
   }
 
   if (error || !product) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-20 text-center">
-        <div className="w-16 h-16 rounded-full bg-[#E6F4EA] text-[#00875A] flex items-center justify-center mx-auto mb-4">
+      <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 py-20 text-center bg-white">
+        <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto mb-4">
           <Package className="w-8 h-8" />
         </div>
-        <h2 className="text-2xl font-bold text-[#0F2B1C]">Product Not Found</h2>
-        <p className="text-sm text-[#5E7D67] mt-2 max-w-md mx-auto">
-          The requested product could not be located or may have been updated in our catalog.
+        <h2 className="text-2xl font-bold text-slate-900">Product Not Found</h2>
+        <p className="text-sm text-slate-500 mt-2 max-w-md mx-auto">
+          The requested product could not be located or may have been updated.
         </p>
         <Link to={ROUTES.PRODUCTS} className="mt-6 inline-block">
-          <Button variant="primary" size="md" className="bg-[#00875A] hover:bg-[#00744D] text-white">
+          <Button variant="primary" size="md" className="bg-[#5ECFB5] hover:bg-[#4EBFB0] text-slate-900 font-bold">
             Browse All Products
           </Button>
         </Link>
@@ -84,11 +87,11 @@ export function ProductDetailsPage() {
   }
 
   const pricing = product.pricing?.[country.code] || product.pricing?.IN || {};
-  const retailPrice = pricing.retailPrice || 499;
-  const originalPrice = pricing.mrp || retailPrice * 1.25;
-  const discount = Math.round(((originalPrice - retailPrice) / originalPrice) * 100);
+  const retailPrice = pricing.retailPrice || 399;
+  const originalPrice = pricing.mrp || retailPrice * 1.18;
 
   const handleAddToCart = () => {
+    setAddingToCart(true);
     const existing = cart.items.find((i) => i.id === product.id);
     let newItems = [];
     if (existing) {
@@ -112,392 +115,252 @@ export function ProductDetailsPage() {
     setCart({ items: newItems, itemCount: newItems.length, subtotal });
     addToast({
       title: "Added to Cart",
-      message: `${quantity}x ${product.name} added to your cart.`,
+      message: `${quantity}x ${product.name} (${selectedColor.name}) added to cart.`,
       type: "success",
     });
+    setTimeout(() => setAddingToCart(false), 800);
     openCart();
   };
 
-  const toggleWishlist = () => {
-    setIsWishlisted(!isWishlisted);
-    addToast({
-      title: isWishlisted ? "Removed from Wishlist" : "Added to Wishlist",
-      message: product.name,
-      type: "info",
-    });
-  };
-
-  const handleShare = () => {
-    navigator.clipboard?.writeText(window.location.href);
-    addToast({
-      title: "Link Copied",
-      message: "Product link copied to clipboard.",
-      type: "success",
-    });
-  };
-
   return (
-    <div className="bg-[#F8FAF9] min-h-screen py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="w-full bg-white min-h-screen py-8 sm:py-12 select-none">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 space-y-12 sm:space-y-16">
         
-        {/* ─── Breadcrumb Navigation ─── */}
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-[#5E7D67]">
-          <Link
-            to={ROUTES.HOME}
-            className="flex items-center gap-1 hover:text-[#00875A] transition-colors"
-          >
-            <Home className="w-3.5 h-3.5" />
-            <span>Home</span>
-          </Link>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-          <Link
-            to={ROUTES.PRODUCTS}
-            className="hover:text-[#00875A] transition-colors"
-          >
-            Products
-          </Link>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-          <Link
-            to={`${ROUTES.PRODUCTS}?category=${product.categoryId}`}
-            className="hover:text-[#00875A] transition-colors"
-          >
-            {product.category || "Catalog"}
-          </Link>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-          <span className="font-semibold text-[#0F2B1C] truncate max-w-[200px] sm:max-w-none">
-            {product.name}
-          </span>
-        </nav>
-
-        {/* ─── Main Product Presentation (2 Columns) ─── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+        {/* ─── FULL-WIDTH MAIN PRODUCT SHOWCASE CONTAINER ─── */}
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
           
-          {/* LEFT: Product Visuals & Trust Matrix */}
-          <div className="lg:col-span-6 space-y-6">
-            <div className="relative rounded-[2rem] bg-white p-3 border border-[#DCE8DF] shadow-xl shadow-emerald-950/[0.04] overflow-hidden group">
-              <div className="relative h-[380px] sm:h-[480px] rounded-[1.5rem] overflow-hidden bg-[#F2F6F3]">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-                />
-
-                {/* Floating Top Badges */}
-                <div className="absolute top-4 left-4 flex flex-col gap-2 z-10 pointer-events-none">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#064027] text-[#4ADE80] text-[11px] font-bold shadow-md">
-                    <Sparkles className="w-3 h-3" />
-                    <span>VANOM CERTIFIED</span>
-                  </span>
-                  {discount > 0 && (
-                    <span className="inline-block px-3 py-1 rounded-full bg-[#00875A] text-white text-[11px] font-bold shadow-sm">
-                      SAVE {discount}%
-                    </span>
-                  )}
+          {/* ── LEFT SHOWCASE PANEL ── */}
+          <div className="lg:col-span-7 bg-[#EEF5F8] rounded-[2.5rem] p-6 sm:p-10 lg:p-12 relative flex flex-col items-center justify-between min-h-[500px] sm:min-h-[580px] lg:min-h-[620px] overflow-hidden">
+            
+            {/* Top Designer & Rating Badge with Color Swatches */}
+            <div className="w-full flex flex-col items-center z-10">
+              <div className="text-center">
+                <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                  Designed by <strong className="text-slate-800 font-bold">{product.brand || "Thomas Jonas"}</strong>
+                </p>
+                <div className="flex items-center justify-center gap-1 mt-1 text-xs text-slate-600 font-semibold">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <span>{product.rating || 4.5}</span>
+                  <span className="text-slate-400">({product.reviewsCount || 89} reviews)</span>
                 </div>
+              </div>
 
-                {/* Top-Right Quick Actions */}
-                <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
-                  <button
-                    onClick={toggleWishlist}
-                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-md cursor-pointer ${
-                      isWishlisted
-                        ? "bg-red-500 text-white"
-                        : "bg-white/90 backdrop-blur-md text-[#3D5648] hover:text-red-500 hover:bg-white"
-                    }`}
-                    title="Save to Wishlist"
-                  >
-                    <Heart className={`w-4 h-4 ${isWishlisted ? "fill-current" : ""}`} />
-                  </button>
-                  <button
-                    onClick={handleShare}
-                    className="w-9 h-9 rounded-full bg-white/90 backdrop-blur-md text-[#3D5648] hover:text-[#00875A] hover:bg-white flex items-center justify-center transition-all shadow-md cursor-pointer"
-                    title="Share Product"
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </button>
-                </div>
+              {/* Vertical subtle indicator line */}
+              <div className="w-px h-5 bg-slate-300 my-2" />
 
-                {/* Bottom Image Sub-bar */}
-                <div className="absolute bottom-4 left-4 right-4 p-3 bg-white/90 backdrop-blur-md rounded-xl border border-white/60 shadow-md flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-[#0F2B1C]">
-                    <CheckCircle2 className="w-4 h-4 text-[#00875A]" />
-                    <span>In Stock & Ready for Dispatch</span>
-                  </div>
-                  <span className="text-[11px] font-mono text-[#5E7D67]">
-                    SKU: {product.sku || "VNM-1092"}
-                  </span>
-                </div>
+              {/* Horizontal Color Swatches matching reference */}
+              <div className="flex items-center gap-3">
+                {COLOR_OPTIONS.map((c) => {
+                  const isActive = selectedColor.name === c.name;
+                  return (
+                    <button
+                      key={c.name}
+                      onClick={() => setSelectedColor(c)}
+                      className={`transition-all duration-200 cursor-pointer ${
+                        isActive
+                          ? "w-8 h-2 rounded-full ring-2 ring-slate-400 ring-offset-2 scale-110 " + c.colorClass
+                          : "w-6 h-1.5 rounded-full hover:scale-105 " + c.colorClass
+                      }`}
+                      aria-label={`Select ${c.name}`}
+                    />
+                  );
+                })}
               </div>
             </div>
 
-            {/* 4-Card Trust Matrix */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3.5 rounded-2xl bg-white border border-[#DCE8DF] text-center flex flex-col items-center justify-center gap-1.5 shadow-2xs">
-                <div className="w-8 h-8 rounded-full bg-[#E6F4EA] text-[#00875A] flex items-center justify-center">
-                  <Truck className="w-4 h-4" />
-                </div>
-                <span className="text-xs font-bold text-[#0F2B1C]">Fast Transit</span>
-                <span className="text-[10px] text-[#5E7D67]">2-4 Days Express</span>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-white border border-[#DCE8DF] text-center flex flex-col items-center justify-center gap-1.5 shadow-2xs">
-                <div className="w-8 h-8 rounded-full bg-[#E6F4EA] text-[#00875A] flex items-center justify-center">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <span className="text-xs font-bold text-[#0F2B1C]">Guaranteed</span>
-                <span className="text-[10px] text-[#5E7D67]">100% Quality Inspected</span>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-white border border-[#DCE8DF] text-center flex flex-col items-center justify-center gap-1.5 shadow-2xs">
-                <div className="w-8 h-8 rounded-full bg-[#E6F4EA] text-[#00875A] flex items-center justify-center">
-                  <Globe2 className="w-4 h-4" />
-                </div>
-                <span className="text-xs font-bold text-[#0F2B1C]">Multi-Market</span>
-                <span className="text-[10px] text-[#5E7D67]">{country.name} Local Billing</span>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-white border border-[#DCE8DF] text-center flex flex-col items-center justify-center gap-1.5 shadow-2xs">
-                <div className="w-8 h-8 rounded-full bg-[#E6F4EA] text-[#00875A] flex items-center justify-center">
-                  <RefreshCw className="w-4 h-4" />
-                </div>
-                <span className="text-xs font-bold text-[#0F2B1C]">Easy Returns</span>
-                <span className="text-[10px] text-[#5E7D67]">30-Day Policy</span>
-              </div>
+            {/* Central Floating Hero Product Image with Drop Shadow */}
+            <div className="relative my-6 sm:my-8 w-full flex items-center justify-center z-0">
+              <img
+                src={product.image}
+                alt={product.name}
+                className="max-h-[320px] sm:max-h-[420px] lg:max-h-[460px] w-auto object-contain drop-shadow-2xl transition-transform duration-500 hover:scale-105"
+              />
             </div>
+
+            {/* Left & Right Circular Navigation Arrows */}
+            <button
+              className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white shadow-lg text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer z-10"
+              aria-label="Previous image"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+
+            <button
+              className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white shadow-lg text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer z-10"
+              aria-label="Next image"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+
+            {/* Empty placeholder spacer for vertical balance */}
+            <div className="h-2" />
           </div>
 
-          {/* RIGHT: Product Buy Box & Specifications */}
-          <div className="lg:col-span-6 space-y-6">
+          {/* ── RIGHT PRODUCT INFO & ACTION PANEL ── */}
+          <div className="lg:col-span-5 flex flex-col justify-between space-y-6 sm:space-y-7">
             
-            {/* Header / Titles */}
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="px-3 py-1 rounded-full bg-[#E6F4EA] text-[#00875A] text-xs font-bold tracking-wide uppercase">
-                  {product.category || "General Catalog"}
-                </span>
-                <span className="px-2.5 py-1 rounded-full bg-[#F0F4F1] text-[#4B6354] text-xs font-medium">
-                  Brand: <strong className="text-[#0F2B1C]">{product.brand || "Vanom"}</strong>
-                </span>
-              </div>
-
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#0F2B1C] tracking-tight leading-tight">
+            {/* Product Title & Item Code */}
+            <div>
+              <h1 className="text-3xl sm:text-4xl lg:text-[2.6rem] font-extrabold text-slate-800 tracking-tight leading-tight">
                 {product.name}
               </h1>
-
-              {/* Review & Ratings Bar */}
-              <div className="flex items-center gap-3 text-xs text-[#5E7D67]">
-                <div className="flex items-center gap-1 bg-[#FEF3C7] text-[#92400E] px-2.5 py-1 rounded-lg font-bold">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  <span>{product.rating || 4.9}</span>
-                </div>
-                <span className="text-slate-300">•</span>
-                <span className="font-medium text-[#3D5648]">
-                  {product.reviewsCount || 128} verified customer reviews
-                </span>
-                <span className="text-slate-300">•</span>
-                <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                  <BadgeCheck className="w-4 h-4 text-[#00875A]" />
-                  Verified Merchant
-                </span>
-              </div>
-            </div>
-
-            {/* Pricing Box */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-[#EAF5EE] via-[#F6FAF7] to-white border border-[#D4E8DC] shadow-xs space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#5E7D67] uppercase tracking-wider">
-                  Direct Retail Price
-                </span>
-                <span className="text-xs font-semibold text-[#00875A] flex items-center gap-1">
-                  <span>{country.flag}</span>
-                  <span>{country.name} ({country.currency})</span>
-                </span>
-              </div>
-
-              <div className="flex items-baseline gap-3 pt-1">
-                <span className="text-3xl sm:text-4xl font-black text-[#064027] tracking-tight">
-                  {formatPrice(retailPrice, country.currency, country.symbol)}
-                </span>
-                {originalPrice > retailPrice && (
-                  <span className="text-base text-slate-400 line-through font-medium">
-                    {formatPrice(originalPrice, country.currency, country.symbol)}
-                  </span>
-                )}
-                {discount > 0 && (
-                  <span className="text-xs font-bold bg-[#00875A] text-white px-2 py-0.5 rounded-md">
-                    {discount}% OFF
-                  </span>
-                )}
-              </div>
-
-              <p className="text-xs text-[#5E7D67] pt-1 border-t border-emerald-900/10">
-                Inclusive of standard localized taxes, handling & custom export packaging.
+              <p className="text-xs sm:text-sm text-slate-400 font-medium tracking-wide mt-1.5 uppercase">
+                Item code: {product.sku ? product.sku.replace(/\D/g, "") || "597830" : "597830"}
               </p>
             </div>
 
-            {/* Quantity Selector & Purchase Buttons */}
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#0F2B1C] uppercase tracking-wider">
-                  Select Quantity:
-                </span>
-                <span className="text-xs font-semibold text-[#00875A] flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  {product.stock || 350} units available
-                </span>
-              </div>
+            {/* Description Section */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block">
+                DESCRIPTION
+              </span>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
+                {product.description ||
+                  "Accent Chair Living Room Armchair Tub Side Chair Sofa Lounge Soft Velvet Upholstered Back for Dining Room/Cafe Home Furniture."}
+              </p>
+            </div>
 
-              <div className="flex items-center gap-4">
-                <div className="inline-flex items-center border border-[#D4DED6] rounded-xl bg-white p-1 shadow-2xs">
-                  <button
-                    type="button"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-9 h-9 rounded-lg flex items-center justify-center text-[#3D5648] hover:bg-[#F0F7F1] hover:text-[#00875A] transition-colors cursor-pointer"
-                    aria-label="Decrease quantity"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="w-12 text-center text-sm font-bold text-[#0F2B1C]">
-                    {quantity}
+            {/* Divider Line */}
+            <div className="w-full h-px bg-slate-100" />
+
+            {/* Price Row */}
+            <div className="space-y-1">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block">
+                PRICE
+              </span>
+              <div className="flex items-baseline gap-3">
+                <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-800 tracking-tight">
+                  {formatPrice(retailPrice, country.currency, country.symbol)}
+                </span>
+                {originalPrice > retailPrice && (
+                  <span className="text-lg sm:text-xl text-slate-300 line-through font-medium">
+                    {formatPrice(originalPrice, country.currency, country.symbol)}
                   </span>
+                )}
+              </div>
+            </div>
+
+            {/* Color Dropdown Selector */}
+            <div className="space-y-1.5 relative">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block">
+                COLOR
+              </span>
+              <button
+                type="button"
+                onClick={() => setColorDropdownOpen(!colorDropdownOpen)}
+                className="w-full bg-[#EDF5F7] px-4 sm:px-5 py-3.5 rounded-2xl text-xs sm:text-sm font-bold text-slate-700 flex items-center justify-between cursor-pointer hover:bg-[#E3EFF1] transition-colors"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className={`w-3.5 h-3.5 rounded-full ${selectedColor.colorClass}`} />
+                  <span>{selectedColor.name}</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${colorDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {colorDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-100 rounded-2xl shadow-xl z-20 py-1.5 overflow-hidden">
+                  {COLOR_OPTIONS.map((c) => (
+                    <button
+                      key={c.name}
+                      onClick={() => {
+                        setSelectedColor(c);
+                        setColorDropdownOpen(false);
+                      }}
+                      className="w-full px-4 py-3 text-left text-xs sm:text-sm font-semibold text-slate-700 hover:bg-[#EDF5F7] flex items-center gap-2.5 transition-colors cursor-pointer"
+                    >
+                      <span className={`w-3.5 h-3.5 rounded-full ${c.colorClass}`} />
+                      <span>{c.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Quantity & Add to Cart Row */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block">
+                QUANTITY
+              </span>
+              <div className="flex items-center gap-3 sm:gap-4">
+                {/* Quantity Selector Dropdown */}
+                <div className="relative w-28 sm:w-32 shrink-0">
                   <button
                     type="button"
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-9 h-9 rounded-lg flex items-center justify-center text-[#3D5648] hover:bg-[#F0F7F1] hover:text-[#00875A] transition-colors cursor-pointer"
-                    aria-label="Increase quantity"
+                    onClick={() => setQuantityDropdownOpen(!quantityDropdownOpen)}
+                    className="w-full bg-[#EDF5F7] px-4 py-3.5 sm:py-4 rounded-2xl text-xs sm:text-sm font-bold text-slate-700 flex items-center justify-between cursor-pointer hover:bg-[#E3EFF1] transition-colors"
                   >
-                    <Plus className="w-4 h-4" />
+                    <span>{String(quantity).padStart(2, "0")}</span>
+                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${quantityDropdownOpen ? "rotate-180" : ""}`} />
                   </button>
+
+                  {quantityDropdownOpen && (
+                    <div className="absolute bottom-full mb-1 left-0 right-0 bg-white border border-slate-100 rounded-2xl shadow-xl z-20 py-1 max-h-48 overflow-y-auto">
+                      {[1, 2, 3, 4, 5, 10, 20].map((num) => (
+                        <button
+                          key={num}
+                          onClick={() => {
+                            setQuantity(num);
+                            setQuantityDropdownOpen(false);
+                          }}
+                          className="w-full px-4 py-2.5 text-left text-xs sm:text-sm font-semibold text-slate-700 hover:bg-[#EDF5F7] cursor-pointer"
+                        >
+                          {String(num).padStart(2, "0")}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="text-xs text-[#5E7D67]">
-                  Unit Type: <strong className="text-[#0F2B1C]">{product.packaging?.unitName || "Unit"}</strong>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                {/* Mint/Teal "ADD TO CART" Button */}
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  className="w-full py-3.5 px-6 rounded-xl bg-[#00875A] hover:bg-[#00744D] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#00875A]/20 transition-all cursor-pointer"
+                  className="flex-1 py-3.5 sm:py-4 px-6 sm:px-8 rounded-2xl bg-[#5ECFB5] hover:bg-[#4EBFB0] active:scale-[0.98] text-slate-900 font-extrabold text-xs sm:text-sm tracking-wider uppercase shadow-xl shadow-[#5ECFB5]/25 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
                 >
-                  <ShoppingCart className="w-4 h-4" />
-                  <span>Add to Cart</span>
+                  {addingToCart ? (
+                    <>
+                      <Check className="w-4 h-4 text-slate-900" />
+                      <span>ADDED</span>
+                    </>
+                  ) : (
+                    <span>ADD TO CART</span>
+                  )}
                 </button>
-
-                <Link
-                  to={ROUTES.CHECKOUT}
-                  onClick={handleAddToCart}
-                  className="w-full py-3.5 px-6 rounded-xl bg-[#064027] hover:bg-[#0B4F32] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all text-center cursor-pointer"
-                >
-                  <span>Buy Now</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
               </div>
             </div>
 
-            {/* Commercial Procurement Banner */}
-            <div className="p-4 rounded-2xl bg-white border border-[#DCE8DF] shadow-xs flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#064027] text-[#4ADE80] flex items-center justify-center shrink-0">
-                  <Building2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-[#0F2B1C]">Commercial & Enterprise Inquiries</h4>
-                  <p className="text-[11px] text-[#5E7D67]">Need custom project volumes or pallet dispatch?</p>
-                </div>
+            {/* Bottom Tabs: DETAILS | DELIVERY | RETURN */}
+            <div className="pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between text-xs sm:text-sm font-bold tracking-wider text-slate-400">
+                {["DETAILS", "DELIVERY", "RETURN"].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveBottomTab(tab)}
+                    className={`hover:text-slate-800 transition-colors cursor-pointer py-1 uppercase ${
+                      activeBottomTab === tab ? "text-slate-800 border-b-2 border-slate-800" : ""
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
               </div>
 
-              <Link
-                to={ROUTES.B2B.QUOTES}
-                className="shrink-0 px-3.5 py-2 rounded-xl bg-[#E6F4EA] hover:bg-[#D4EEDC] text-[#00875A] text-xs font-bold transition-colors cursor-pointer"
-              >
-                Request Quote
-              </Link>
-            </div>
-
-            {/* ─── Product Tabs & Specifications ─── */}
-            <div className="bg-white rounded-2xl border border-[#DCE8DF] overflow-hidden shadow-xs">
-              {/* Tab Navigation */}
-              <div className="flex border-b border-[#E8EDE9] bg-[#FAFCFA]">
-                <button
-                  onClick={() => setActiveTab("description")}
-                  className={`flex-1 py-3 px-4 text-xs font-bold transition-colors cursor-pointer text-center ${
-                    activeTab === "description"
-                      ? "text-[#00875A] border-b-2 border-[#00875A] bg-white"
-                      : "text-[#5E7D67] hover:text-[#0F2B1C]"
-                  }`}
-                >
-                  Description
-                </button>
-                <button
-                  onClick={() => setActiveTab("specs")}
-                  className={`flex-1 py-3 px-4 text-xs font-bold transition-colors cursor-pointer text-center ${
-                    activeTab === "specs"
-                      ? "text-[#00875A] border-b-2 border-[#00875A] bg-white"
-                      : "text-[#5E7D67] hover:text-[#0F2B1C]"
-                  }`}
-                >
-                  Specifications
-                </button>
-                <button
-                  onClick={() => setActiveTab("shipping")}
-                  className={`flex-1 py-3 px-4 text-xs font-bold transition-colors cursor-pointer text-center ${
-                    activeTab === "shipping"
-                      ? "text-[#00875A] border-b-2 border-[#00875A] bg-white"
-                      : "text-[#5E7D67] hover:text-[#0F2B1C]"
-                  }`}
-                >
-                  Shipping & Quality
-                </button>
-              </div>
-
-              {/* Tab Content */}
-              <div className="p-5 text-xs text-[#3D5648] leading-relaxed">
-                {activeTab === "description" && (
-                  <div className="space-y-3">
-                    <p>{product.description}</p>
-                    <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-4 text-[11px] text-[#5E7D67]">
-                      <span>✓ High-grade materials</span>
-                      <span>✓ Verified manufacturer warranty</span>
-                      <span>✓ Standard packaging included</span>
-                    </div>
-                  </div>
+              {/* Tab Info Box */}
+              <div className="mt-3 text-xs sm:text-sm text-slate-500 leading-relaxed font-normal bg-[#F8FAFC] p-3.5 sm:p-4 rounded-2xl border border-slate-100">
+                {activeBottomTab === "DETAILS" && (
+                  <p>
+                    Premium construction with ergonomic lumbar curvature, solid natural wood frame, and reinforced stitching.
+                  </p>
                 )}
-
-                {activeTab === "specs" && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-2.5 rounded-lg bg-[#F8FAF9] border border-[#E8EDE9]">
-                      <span className="text-[10px] text-[#5E7D67] block uppercase">Product SKU</span>
-                      <span className="font-mono font-bold text-[#0F2B1C]">{product.sku}</span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-[#F8FAF9] border border-[#E8EDE9]">
-                      <span className="text-[10px] text-[#5E7D67] block uppercase">Brand</span>
-                      <span className="font-bold text-[#0F2B1C]">{product.brand || "Vanom Global"}</span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-[#F8FAF9] border border-[#E8EDE9]">
-                      <span className="text-[10px] text-[#5E7D67] block uppercase">Category</span>
-                      <span className="font-bold text-[#0F2B1C]">{product.category}</span>
-                    </div>
-                    <div className="p-2.5 rounded-lg bg-[#F8FAF9] border border-[#E8EDE9]">
-                      <span className="text-[10px] text-[#5E7D67] block uppercase">Packaging Format</span>
-                      <span className="font-bold text-[#0F2B1C]">{product.packaging?.unitName || "Unit Box"}</span>
-                    </div>
-                  </div>
+                {activeBottomTab === "DELIVERY" && (
+                  <p>
+                    Direct insured doorstep shipping in 2–4 business days with live tracking across US, UK & international hubs.
+                  </p>
                 )}
-
-                {activeTab === "shipping" && (
-                  <div className="space-y-2">
-                    <p>
-                      Dispatches within 24 hours from regional fulfillment centers. Covered by Vanom Global Comprehensive Delivery Guarantee.
-                    </p>
-                    <ul className="list-disc list-inside space-y-1 text-[#5E7D67]">
-                      <li>Tracked air & surface courier partners</li>
-                      <li>Tamper-evident, climate-controlled packaging</li>
-                      <li>Zero transit damage replacement guarantee</li>
-                    </ul>
-                  </div>
+                {activeBottomTab === "RETURN" && (
+                  <p>
+                    30-day risk-free return guarantee with complimentary return pickup for verified enterprise & retail orders.
+                  </p>
                 )}
               </div>
             </div>
@@ -506,23 +369,23 @@ export function ProductDetailsPage() {
 
         </div>
 
-        {/* ─── Related Recommended Products ─── */}
+        {/* ─── RELATED PRODUCTS FULL-WIDTH GRID ─── */}
         {relatedProducts.length > 0 && (
-          <div className="pt-12 border-t border-[#DCE8DF] space-y-6">
+          <div className="space-y-6 pt-6 border-t border-slate-100">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-[#00875A] uppercase tracking-wider">
-                  You Might Also Need
-                </span>
-                <h2 className="text-xl sm:text-2xl font-black text-[#0F2B1C] tracking-tight">
-                  Related Products
-                </h2>
+                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                  You Might Also Like
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                  Curated selections based on your browsing preferences
+                </p>
               </div>
               <Link
                 to={ROUTES.PRODUCTS}
-                className="text-xs font-bold text-[#00875A] hover:underline flex items-center gap-1"
+                className="text-xs sm:text-sm font-bold text-slate-700 hover:text-slate-900 flex items-center gap-1 transition-colors"
               >
-                <span>View Full Catalog</span>
+                <span>View All</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>

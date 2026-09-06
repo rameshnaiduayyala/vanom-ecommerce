@@ -15,10 +15,10 @@ export function PublicLayout() {
   const { country } = useCountryStore();
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F6FAF7] text-text-primary">
+    <div className="min-h-screen flex flex-col bg-[#E8EDE9] text-text-primary">
       <PublicHeader />
 
-      <main className="flex-1 bg-[#F6FAF7]">
+      <main className="flex-1 bg-[#E8EDE9]">
         <Outlet />
       </main>
 

@@ -11,84 +11,129 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
+  Armchair,
+  ShoppingBag,
 } from "lucide-react";
 
-const CATEGORY_DATA = [
+const CATEGORY_ITEMS = [
   {
     id: "cat-1",
+    name: "Electronics & POS",
+    count: "480+ Products",
     icon: Laptop,
-    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80",
-    gradient: "from-blue-600/70 to-indigo-900/85",
+    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=400&q=80",
+    borderColor: "#1E3A8A", // Bold Deep Blue
   },
   {
     id: "cat-2",
+    name: "Groceries & FMCG",
+    count: "620+ Products",
     icon: UtensilsCrossed,
-    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80",
-    gradient: "from-amber-600/70 to-orange-900/85",
+    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=400&q=80",
+    borderColor: "#B45309", // Bold Warm Amber
   },
   {
     id: "cat-3",
+    name: "Industrial Packaging",
+    count: "340+ Products",
     icon: Boxes,
-    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80",
-    gradient: "from-emerald-600/70 to-teal-900/85",
+    image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80",
+    borderColor: "#065F46", // Bold Forest Green
   },
   {
     id: "cat-4",
+    name: "Commercial Kitchen",
+    count: "210+ Products",
     icon: CookingPot,
-    image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=600&q=80",
-    gradient: "from-rose-600/70 to-pink-900/85",
+    image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=400&q=80",
+    borderColor: "#9F1239", // Bold Crimson
   },
   {
     id: "cat-5",
+    name: "Safety & Security",
+    count: "190+ Products",
     icon: ShieldCheck,
-    image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=600&q=80",
-    gradient: "from-cyan-600/70 to-blue-900/85",
+    image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=400&q=80",
+    borderColor: "#0369A1", // Bold Steel Cyan
   },
   {
     id: "cat-6",
+    name: "Tools & Hardware",
+    count: "310+ Products",
     icon: Hammer,
-    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80",
-    gradient: "from-slate-600/70 to-slate-900/85",
+    image: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=400&q=80",
+    borderColor: "#4338CA", // Bold Deep Indigo
+  },
+  {
+    id: "cat-7",
+    name: "Living & Decor",
+    count: "160+ Products",
+    icon: Armchair,
+    image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=400&q=80",
+    borderColor: "#9A3412", // Bold Terracotta
+  },
+  {
+    id: "cat-8",
+    name: "Global Essentials",
+    count: "500+ Products",
+    icon: ShoppingBag,
+    image: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80",
+    borderColor: "#0F766E", // Bold Deep Teal
   },
 ];
 
 export function CategorySection({ categories = [] }) {
-  const scrollRef = useRef(null);
+  const scrollContainerRef = useRef(null);
 
-  const scrollLeft = () => scrollRef.current?.scrollBy({ left: -320, behavior: "smooth" });
-  const scrollRight = () => scrollRef.current?.scrollBy({ left: 320, behavior: "smooth" });
+  const catList = Array.isArray(categories) && categories.length > 0
+    ? categories
+    : CATEGORY_ITEMS;
 
-  const catList = Array.isArray(categories) ? categories : (categories?.items || []);
-
-  const enriched = catList.map((cat) => {
-    const meta = CATEGORY_DATA.find((d) => d.id === cat.id) || CATEGORY_DATA[0];
-    return { ...cat, ...meta };
+  const displayList = CATEGORY_ITEMS.map((item) => {
+    const backendMatch = catList.find((c) => c.id === item.id || c.name === item.name);
+    return {
+      ...item,
+      name: backendMatch?.name || item.name,
+      count: backendMatch?.count ? `${backendMatch.count}+ Products` : item.count,
+    };
   });
 
+  const handleScrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -340, behavior: "smooth" });
+    }
+  };
+
+  const handleScrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 340, behavior: "smooth" });
+    }
+  };
+
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="w-full select-none px-4 sm:px-8 lg:px-12 py-2">
       {/* Section Header */}
-      <div className="flex items-end justify-between gap-4 mb-8">
+      <div className="max-w-7xl mx-auto flex items-end justify-between gap-4 mb-8 sm:mb-10">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#0F2B1C] tracking-tight">
+          <h2 className="text-2xl sm:text-3xl lg:text-[2.5rem] font-black text-slate-900 tracking-tight leading-tight">
             Shop by Category
           </h2>
-          <p className="text-sm text-[#5E7D67] mt-1">
-            Browse our curated product departments
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 font-normal max-w-xl">
+            Browse our curated catalog departments with express global delivery
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <button
-            onClick={scrollLeft}
-            className="w-9 h-9 rounded-lg bg-white border border-[#E8EDE9] flex items-center justify-center text-[#5E7D67] hover:text-[#074428] hover:border-[#074428] transition-all cursor-pointer"
+            onClick={handleScrollLeft}
+            className="w-10 h-10 rounded-full bg-white hover:bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-all cursor-pointer shadow-sm hover:shadow-md active:scale-95"
             aria-label="Scroll left"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
-            onClick={scrollRight}
-            className="w-9 h-9 rounded-lg bg-white border border-[#E8EDE9] flex items-center justify-center text-[#5E7D67] hover:text-[#074428] hover:border-[#074428] transition-all cursor-pointer"
+            onClick={handleScrollRight}
+            className="w-10 h-10 rounded-full bg-white hover:bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-all cursor-pointer shadow-sm hover:shadow-md active:scale-95"
             aria-label="Scroll right"
           >
             <ChevronRight className="w-4 h-4" />
@@ -96,75 +141,71 @@ export function CategorySection({ categories = [] }) {
 
           <Link
             to={ROUTES.PRODUCTS}
-            className="hidden sm:flex items-center gap-1.5 text-[13px] font-medium text-[#074428] hover:text-[#059669] px-4 py-2 rounded-lg border border-[#E8EDE9] hover:border-[#074428] hover:bg-[#F6FAF7] transition-all group ml-1"
+            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-slate-800 hover:text-slate-950 px-5 py-2.5 rounded-full border border-slate-200 hover:border-slate-400 bg-white hover:bg-slate-50 shadow-xs transition-all ml-1.5 group cursor-pointer"
           >
             <span>View All</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
       </div>
 
-      {/* Horizontal Scroll Rail */}
+      {/* ── CLEAN PREMIUM ROUND CATEGORY RAIL ── */}
       <div
-        ref={scrollRef}
-        className="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 scrollbar-none"
+        ref={scrollContainerRef}
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        className="w-full flex items-center gap-7 sm:gap-9 lg:gap-11 overflow-x-auto snap-x snap-mandatory scroll-smooth py-3 [&::-webkit-scrollbar]:hidden"
       >
-        {enriched.map((cat) => {
+        {displayList.map((cat) => {
           const Icon = cat.icon;
           return (
             <Link
               key={cat.id}
               to={`${ROUTES.PRODUCTS}?category=${cat.id}`}
-              className="group relative rounded-2xl overflow-hidden snap-start shrink-0 min-w-[200px] sm:min-w-[220px] h-[200px] sm:h-[220px] shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+              className="group flex flex-col items-center text-center shrink-0 w-[130px] sm:w-[155px] snap-start cursor-pointer"
             >
-              {/* Background image */}
-              <img
-                src={cat.image}
-                alt={cat.name}
-                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
+              {/* Bold Solid Premium Ring Frame */}
+              <div
+                className="relative p-[3.5px] sm:p-[4px] rounded-full transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1 shadow-md group-hover:shadow-xl"
+                style={{ backgroundColor: cat.borderColor }}
+              >
+                {/* White Inner Gap Border */}
+                <div className="rounded-full p-[2.5px] bg-white">
+                  
+                  {/* Clean Circular Photo */}
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 lg:w-30 lg:h-30 rounded-full overflow-hidden bg-slate-100 relative">
+                    <img
+                      src={cat.image}
+                      alt={cat.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
+                      loading="lazy"
+                    />
 
-              {/* Gradient overlay */}
-              <div className={`absolute inset-0 bg-gradient-to-t ${cat.gradient}`} />
-
-              {/* Content */}
-              <div className="absolute inset-0 flex flex-col justify-between p-5">
-                <div className="flex items-start justify-between">
-                  <div className="w-9 h-9 rounded-lg bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center">
-                    <Icon className="w-4.5 h-4.5 text-white" />
+                    {/* Subtle Dark Overlay on Hover with Icon */}
+                    <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                      <div className="w-9 h-9 rounded-full bg-white text-slate-900 shadow-md flex items-center justify-center">
+                        <Icon className="w-4 h-4" />
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/15 text-white/80 backdrop-blur-sm">
-                    {cat.count || 0}+ items
-                  </span>
-                </div>
 
-                <div>
-                  <h4 className="text-[14px] font-bold text-white leading-tight">
-                    {cat.name}
-                  </h4>
-                  <div className="flex items-center gap-1 mt-1.5 text-white/60 text-[12px] font-medium group-hover:text-white/80 group-hover:gap-2 transition-all">
-                    <span>Shop Now</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </div>
                 </div>
+              </div>
+
+              {/* Clean Minimalist Typography */}
+              <div className="mt-3.5 space-y-0.5 w-full px-1">
+                <h3 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition-colors truncate">
+                  {cat.name}
+                </h3>
+                <span className="inline-block text-[11px] text-slate-400 font-medium">
+                  {cat.count}
+                </span>
               </div>
             </Link>
           );
         })}
-
-        {/* See All card */}
-        <Link
-          to={ROUTES.PRODUCTS}
-          className="group relative rounded-2xl snap-start shrink-0 min-w-[140px] h-[200px] sm:h-[220px] bg-[#074428] flex flex-col items-center justify-center gap-3 text-white shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-        >
-          <div className="w-11 h-11 rounded-full bg-white/10 border border-white/15 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <ArrowRight className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-[12px] font-semibold text-center text-white/80">
-            All<br />Categories
-          </span>
-        </Link>
       </div>
-    </section>
+    </div>
   );
 }
+
+export default CategorySection;
