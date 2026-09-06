@@ -596,6 +596,31 @@ async function main() {
     },
   });
 
+  // 13. Demo B2C Retail Customer
+  const customerUser = await prisma.user.upsert({
+    where: { email: "customer@vanom.com" },
+    update: {},
+    create: {
+      email: "customer@vanom.com",
+      passwordHash,
+      firstName: "Ramesh",
+      lastName: "Ayyala",
+      status: "ACTIVE",
+      customerType: "B2C",
+      roles: {
+        create: {
+          role: { connect: { name: "CUSTOMER" } },
+        },
+      },
+      profile: {
+        create: {
+          preferredCurrency: "USD",
+          marketingOptIn: true,
+        },
+      },
+    },
+  });
+
   console.log("✅ Database successfully seeded with full enterprise B2C and B2B dataset!");
 }
 

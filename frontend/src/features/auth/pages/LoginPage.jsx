@@ -24,8 +24,8 @@ export function LoginPage() {
   const { login } = useAuthStore();
   const { addToast } = useUIStore();
 
-  const [email, setEmail] = useState("customer@example.com");
-  const [password, setPassword] = useState("CustomerPass123!");
+  const [email, setEmail] = useState("customer@vanom.com");
+  const [password, setPassword] = useState("Password123!");
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState("B2C");
   const [loading, setLoading] = useState(false);
@@ -36,16 +36,23 @@ export function LoginPage() {
 
     try {
       const data = await Api.auth.login({ email, password });
-      login(data.user, data.tokens);
+      const user = data?.user || data;
+      const tokens = data?.tokens;
+
+      if (!user) {
+        throw new Error("Invalid response from server. User payload missing.");
+      }
+
+      login(user, tokens);
       addToast({
         title: "Welcome Back",
-        message: `Logged in as ${data.user.firstName || data.user.email}`,
+        message: `Logged in as ${user?.firstName || user?.email || "User"}`,
         type: "success",
       });
 
-      if (data.user.roles?.includes("ADMIN") || data.user.roles?.includes("SUPER_ADMIN")) {
+      if (user?.roles?.includes("ADMIN") || user?.roles?.includes("SUPER_ADMIN")) {
         navigate(ROUTES.ADMIN.DASHBOARD);
-      } else if (data.user.customerType === "B2B") {
+      } else if (user?.customerType === "B2B") {
         navigate(ROUTES.B2B.DASHBOARD);
       } else {
         navigate(ROUTES.HOME);
@@ -65,13 +72,13 @@ export function LoginPage() {
     setSelectedRole(demoType);
     if (demoType === "ADMIN") {
       setEmail("admin@vanom.com");
-      setPassword("AdminPassword123!");
+      setPassword("Password123!");
     } else if (demoType === "B2B") {
       setEmail("buyer@agrowholesale.in");
-      setPassword("WholesalePass123!");
+      setPassword("Password123!");
     } else {
-      setEmail("customer@example.com");
-      setPassword("CustomerPass123!");
+      setEmail("customer@vanom.com");
+      setPassword("Password123!");
     }
   };
 

@@ -42,9 +42,12 @@ export class CatalogRepository {
     return { total, items };
   }
 
-  static async findById(id) {
-    return prisma.product.findUnique({
-      where: { id },
+  static async findById(idOrSlug) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+    const where = isUuid ? { id: idOrSlug } : { slug: idOrSlug };
+
+    return prisma.product.findFirst({
+      where,
       include: {
         brand: true,
         categories: { include: { category: true } },

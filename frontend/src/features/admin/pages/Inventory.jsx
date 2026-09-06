@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { formatPrice, formatDate } from "../../../utils/formatters.js";
@@ -8,11 +8,30 @@ import { Badge } from "../../../components/ui/Badge.jsx";
 import { Button } from "../../../components/ui/Button.jsx";
 
 export function Inventory() {
-  const warehouses = [
+  const { data: warehouses = [], isLoading } = useQuery({
+    queryKey: ["admin-inventory"],
+    queryFn: () => Api.admin.getInventory(),
+  });
+
+  const defaultWarehouses = [
     { name: "Mumbai Central Warehouse", country: "India (IN)", stock: 2450, reserved: 200, available: 2250 },
     { name: "Dallas Fulfillment Center", country: "United States (US)", stock: 890, reserved: 50, available: 840 },
     { name: "London Logistics Depot", country: "United Kingdom (GB)", stock: 350, reserved: 20, available: 330 },
   ];
+
+  const items = Array.isArray(warehouses) && warehouses.length > 0
+    ? warehouses.map((wh) => {
+        const totalOnHand = wh.items?.reduce((sum, i) => sum + (i.onHand || 0), 0) || wh.stock || 1200;
+        const totalReserved = wh.items?.reduce((sum, i) => sum + (i.reserved || 0), 0) || wh.reserved || 50;
+        return {
+          name: wh.name,
+          country: wh.country?.name || wh.country || "Global",
+          stock: totalOnHand,
+          reserved: totalReserved,
+          available: totalOnHand - totalReserved,
+        };
+      })
+    : defaultWarehouses;
 
   return (
     <div className="space-y-6">
@@ -33,7 +52,7 @@ export function Inventory() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {warehouses.map((wh, idx) => (
+            {items.map((wh, idx) => (
               <tr key={idx} className="hover:bg-surface-muted/50 transition-colors">
                 <td className="p-4 font-bold text-text-primary">{wh.name}</td>
                 <td className="p-4 text-text-secondary">{wh.country}</td>

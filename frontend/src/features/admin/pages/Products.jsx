@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { formatPrice } from "../../../utils/formatters.js";
@@ -59,6 +59,10 @@ export function Products() {
       palletQuantity: 40,
       palletWeightKg: 1000,
     },
+    attributes: [
+      { name: "Organic Grade", value: "Grade A Certified" },
+      { name: "Moisture Content", value: "< 12%" },
+    ],
     pricing: {
       IN: {
         currency: "USD",
@@ -198,9 +202,17 @@ export function Products() {
 
   const openEditProduct = (prod) => {
     setEditingProduct(prod);
+    const existingAttributes = Array.isArray(prod.attributes)
+      ? prod.attributes.map((a) => ({
+          name: a.attribute?.name || a.name || "Attribute",
+          value: a.customValue || a.value?.value || a.value || "",
+        }))
+      : defaultProductForm.attributes;
+
     setProductForm({
       ...defaultProductForm,
       ...prod,
+      attributes: existingAttributes,
       packaging: { ...defaultProductForm.packaging, ...prod.packaging },
       pricing: { ...defaultProductForm.pricing, ...prod.pricing },
     });
@@ -406,7 +418,7 @@ export function Products() {
                         <td className="p-4 font-mono text-text-secondary">{p.sku}</td>
                         <td className="p-4">
                           <Badge variant="default" size="sm">
-                            {p.category}
+                            {typeof p.category === "object" ? p.category?.name : (p.category || "General")}
                           </Badge>
                         </td>
                         <td className="p-4">
@@ -761,6 +773,73 @@ export function Products() {
             </div>
           </div>
 
+          {/* Dynamic Custom Product Attributes */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-1">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-brand-700">
+                4. Custom Product Attributes & Specs
+              </h4>
+              <button
+                type="button"
+                onClick={() =>
+                  setProductForm({
+                    ...productForm,
+                    attributes: [...(productForm.attributes || []), { name: "", value: "" }],
+                  })
+                }
+                className="text-xs font-semibold text-brand-700 hover:text-brand-800 flex items-center gap-1 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Attribute</span>
+              </button>
+            </div>
+
+            <div className="space-y-2.5">
+              {(productForm.attributes || []).map((attr, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Attribute Name (e.g. Organic Grade, Purity, Material)"
+                      value={attr.name}
+                      onChange={(e) => {
+                        const updated = [...productForm.attributes];
+                        updated[index].name = e.target.value;
+                        setProductForm({ ...productForm, attributes: updated });
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Attribute Value (e.g. 100% Certified, 99.8%)"
+                      value={attr.value}
+                      onChange={(e) => {
+                        const updated = [...productForm.attributes];
+                        updated[index].value = e.target.value;
+                        setProductForm({ ...productForm, attributes: updated });
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = productForm.attributes.filter((_, i) => i !== index);
+                      setProductForm({ ...productForm, attributes: updated });
+                    }}
+                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                    title="Remove Attribute"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              {(!productForm.attributes || productForm.attributes.length === 0) && (
+                <p className="text-xs text-text-muted italic py-1">
+                  No custom attributes added yet. Click "+ Add Attribute" to define custom specs.
+                </p>
+              )}
+            </div>
+          </div>
+
           {/* Form Actions */}
           <div className="pt-4 border-t border-border flex items-center justify-end gap-3">
             <Button
@@ -803,7 +882,7 @@ export function Products() {
               />
               <div className="space-y-1">
                 <Badge variant="brand" size="sm">
-                  {viewingProduct.category}
+                  {typeof viewingProduct.category === "object" ? viewingProduct.category?.name : (viewingProduct.category || "General")}
                 </Badge>
                 <h3 className="text-base font-bold text-text-primary">{viewingProduct.name}</h3>
                 <p className="text-text-muted font-mono">SKU: {viewingProduct.sku}</p>
@@ -874,6 +953,27 @@ export function Products() {
                 </table>
               </div>
             </div>
+
+            {/* Custom Product Attributes & Specs */}
+            {viewingProduct.attributes && viewingProduct.attributes.length > 0 && (
+              <div className="p-4 rounded-xl bg-surface-muted border border-border space-y-2">
+                <h5 className="font-bold text-text-primary uppercase tracking-wider text-[11px]">
+                  Custom Product Attributes
+                </h5>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                  {viewingProduct.attributes.map((attr, idx) => (
+                    <div key={idx} className="bg-white p-2.5 rounded-lg border border-border">
+                      <span className="text-text-muted block text-[10px] uppercase font-semibold">
+                        {attr.attribute?.name || attr.name}
+                      </span>
+                      <span className="font-bold text-text-primary">
+                        {attr.customValue || attr.value?.value || attr.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </Modal>

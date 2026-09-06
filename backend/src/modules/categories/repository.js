@@ -11,9 +11,12 @@ export class CategoryRepository {
     });
   }
 
-  static async getById(id) {
-    return prisma.category.findUnique({
-      where: { id },
+  static async getById(idOrSlug) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+    const where = isUuid ? { id: idOrSlug } : { slug: idOrSlug };
+
+    return prisma.category.findFirst({
+      where,
       include: {
         children: true,
         parent: true,

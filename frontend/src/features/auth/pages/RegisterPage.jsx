@@ -39,10 +39,17 @@ export function RegisterPage() {
         customerType,
       });
 
-      login(data.user, data.tokens);
+      const user = data?.user || data;
+      const tokens = data?.tokens;
+
+      if (!user) {
+        throw new Error("Registration succeeded but user profile was not returned.");
+      }
+
+      login(user, tokens);
       addToast({
         title: "Account Created!",
-        message: `Welcome to Vanom, ${data.user.firstName}!`,
+        message: `Welcome to Vanom, ${user?.firstName || user?.email || "User"}!`,
         type: "success",
       });
 

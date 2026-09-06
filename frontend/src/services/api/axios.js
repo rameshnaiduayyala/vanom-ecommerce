@@ -1,4 +1,4 @@
-﻿import axios from "axios";
+import axios from "axios";
 import { TokenStorage } from "../storage/token.storage.js";
 import { useCountryStore } from "../../stores/country.store.js";
 
@@ -47,7 +47,13 @@ const processQueue = (error, token = null) => {
 };
 
 apiClient.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    // Backend standard is ApiResponse.success(data) -> { success: true, data: { ... } }
+    if (response.data && typeof response.data === "object" && "data" in response.data && "success" in response.data) {
+      return response.data.data;
+    }
+    return response.data;
+  },
   async (error) => {
     const originalRequest = error.config;
 
