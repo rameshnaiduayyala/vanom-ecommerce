@@ -84,18 +84,18 @@ export function ProductsPage() {
   return (
     <div className="bg-[#E8EDE9] min-h-screen py-6 sm:py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        
+
         {/* ─── Clean Header & Filter Control Bar ─── */}
         <div className="bg-white rounded-2xl p-5 border border-[#DCE8DF] shadow-xs flex flex-wrap items-center justify-between gap-4">
-          
+
           {/* Active Results Count & Breadcrumb */}
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <h1 className="text-lg sm:text-xl font-extrabold text-[#0F2B1C] tracking-tight">
               {currentSearch
                 ? `Search: "${currentSearch}"`
                 : activeCategoryObj
-                ? activeCategoryObj.name
-                : "All Products"}
+                  ? activeCategoryObj.name
+                  : "All Products"}
             </h1>
             <span className="text-slate-300">•</span>
             <span className="text-[#5E7D67]">
@@ -154,7 +154,7 @@ export function ProductsPage() {
 
           {/* Controls: In Stock Toggle, Sort, Grid View Switcher */}
           <div className="flex items-center gap-3 ml-auto">
-            
+
             {/* In Stock Toggle */}
             <label className="flex items-center gap-2 text-xs font-semibold text-[#3D5648] cursor-pointer bg-[#F8FAF9] px-3 py-1.5 rounded-xl border border-[#DCE8DF] hover:bg-[#F2FAF5]">
               <input
@@ -186,22 +186,20 @@ export function ProductsPage() {
             <div className="hidden sm:flex items-center gap-1 bg-[#F8FAF9] border border-[#DCE8DF] rounded-xl p-1">
               <button
                 onClick={() => setGridCols("standard")}
-                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                  gridCols === "standard"
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${gridCols === "standard"
                     ? "bg-[#00875A] text-white"
                     : "text-[#5E7D67] hover:text-[#0F2B1C]"
-                }`}
+                  }`}
                 title="3-Column View"
               >
                 <Grid3X3 className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => setGridCols("compact")}
-                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                  gridCols === "compact"
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${gridCols === "compact"
                     ? "bg-[#00875A] text-white"
                     : "text-[#5E7D67] hover:text-[#0F2B1C]"
-                }`}
+                  }`}
                 title="4-Column View"
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
@@ -219,11 +217,10 @@ export function ProductsPage() {
               searchParams.delete("category");
               setSearchParams(searchParams);
             }}
-            className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              !currentCategory
+            className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${!currentCategory
                 ? "bg-[#00875A] text-white shadow-xs"
                 : "bg-white text-[#3D5648] border border-[#DCE8DF] hover:bg-[#F0F7F1]"
-            }`}
+              }`}
           >
             All Departments ({rawProducts.length})
           </button>
@@ -236,11 +233,10 @@ export function ProductsPage() {
                   searchParams.set("category", cat.id);
                   setSearchParams(searchParams);
                 }}
-                className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                  isSelected
+                className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${isSelected
                     ? "bg-[#00875A] text-white font-bold shadow-xs"
                     : "bg-white text-[#3D5648] border border-[#DCE8DF] hover:bg-[#F0F7F1]"
-                }`}
+                  }`}
               >
                 {cat.name}
               </button>
@@ -250,10 +246,10 @@ export function ProductsPage() {
 
         {/* ─── 2-Column Catalog Body ─── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
+
           {/* Left Sticky Sidebar (Desktop) */}
           <aside className="hidden lg:block lg:col-span-3 space-y-6 sticky top-24">
-            
+
             {/* Department Filter Card */}
             <div className="bg-white rounded-3xl border border-[#DCE8DF] p-5 shadow-xs">
               <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#0F2B1C] mb-3 pb-2 border-b border-[#E8EDE9] flex items-center justify-between">
@@ -270,11 +266,10 @@ export function ProductsPage() {
                     searchParams.delete("category");
                     setSearchParams(searchParams);
                   }}
-                  className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-between ${
-                    !currentCategory
+                  className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-between ${!currentCategory
                       ? "bg-[#E6F4EA] text-[#00875A] shadow-2xs font-bold"
                       : "text-[#3D5648] hover:bg-[#F0F7F1] hover:text-[#00875A]"
-                  }`}
+                    }`}
                 >
                   <span>All Catalog Items</span>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/70">
@@ -291,11 +286,10 @@ export function ProductsPage() {
                         searchParams.set("category", cat.id);
                         setSearchParams(searchParams);
                       }}
-                      className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-between ${
-                        isSelected
+                      className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-between ${isSelected
                           ? "bg-[#E6F4EA] text-[#00875A] shadow-2xs font-bold"
                           : "text-[#3D5648] hover:bg-[#F0F7F1] hover:text-[#00875A]"
-                      }`}
+                        }`}
                     >
                       <span className="truncate">{cat.name}</span>
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#F4F7F4] text-[#5E7D67]">
@@ -370,9 +364,8 @@ export function ProductsPage() {
               </div>
             ) : (
               <div
-                className={`grid grid-cols-1 sm:grid-cols-2 ${
-                  gridCols === "compact" ? "lg:grid-cols-4" : "lg:grid-cols-3"
-                } gap-4 sm:gap-6`}
+                className={`grid grid-cols-1 sm:grid-cols-2 ${gridCols === "compact" ? "lg:grid-cols-4" : "lg:grid-cols-3"
+                  } gap-4 sm:gap-6`}
               >
                 {filteredProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
