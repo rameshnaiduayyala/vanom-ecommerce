@@ -14,9 +14,21 @@ export function ProductCard({ product }) {
   const [addingToCart, setAddingToCart] = useState(false);
 
   const pricing = product.pricing?.[country.code] || product.pricing?.IN || {};
-  const price = pricing.retailPrice || 499;
-  const originalPrice = pricing.mrp || price * 1.2;
+  const backendPrice =
+    product.resolvedPrice?.unitPrice ||
+    product.prices?.[0]?.amount ||
+    product.variants?.[0]?.prices?.[0]?.amount ||
+    pricing.retailPrice ||
+    499;
+  const price = Number(backendPrice);
+  const originalPrice = pricing.mrp || (price > 0 ? price * 1.2 : 599);
   const discount = originalPrice > price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
+
+  const productImage =
+    product.image ||
+    product.images?.[0]?.file?.url ||
+    product.images?.[0]?.url ||
+    "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=600&q=80";
 
   const handleAddToCart = (e) => {
     e.preventDefault();
@@ -31,7 +43,7 @@ export function ProductCard({ product }) {
     } else {
       newItems = [
         ...cart.items,
-        { id: product.id, name: product.name, price, quantity: 1, image: product.image },
+        { id: product.id, name: product.name, price, quantity: 1, image: productImage },
       ];
     }
     const subtotal = newItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -62,7 +74,7 @@ export function ProductCard({ product }) {
           aria-label={product.name}
         >
           <img
-            src={product.image}
+            src={productImage}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
             loading="lazy"

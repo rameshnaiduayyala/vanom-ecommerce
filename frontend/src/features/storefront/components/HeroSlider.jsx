@@ -14,14 +14,32 @@ import {
 
 const SLIDE_DURATION = 6000;
 
-export function HeroSlider({ products = [] }) {
+export function HeroSlider({ products = [], banners = [] }) {
   const { country } = useCountryStore();
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  // Slides inspired by the reference banner design
+  // Slides from API banners or elegant curated defaults
   const slides = useMemo(() => {
+    if (Array.isArray(banners) && banners.length > 0) {
+      return banners.map((b) => ({
+        id: b.id,
+        category: b.badgeText || b.subtitle || "Featured Collection",
+        titleLine1: b.title || "Premium Commercial",
+        titleLine2: b.subtitle || "",
+        description: b.description || "Direct enterprise procurement, guaranteed quality and worldwide express delivery.",
+        bgGradient: b.bgGradient || "from-[#0F3826] via-[#0A4F30] to-[#06331E]",
+        accentBg: "#0E5A37",
+        textColor: "text-[#FAF6F0]",
+        image: b.imageUrl || "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1000&q=85",
+        ctaText: b.buttonText || "Shop Now",
+        ctaLink: b.buttonLink || ROUTES.PRODUCTS,
+        contactText: "ENTERPRISE PORTAL",
+        urlText: "vanomcommerce.com",
+      }));
+    }
+
     return [
       {
         id: "curated-collection",

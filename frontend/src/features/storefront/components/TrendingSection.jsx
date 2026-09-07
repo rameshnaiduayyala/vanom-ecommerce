@@ -17,19 +17,33 @@ import { Button } from "../../../components/ui/Button.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";
 import { Skeleton } from "../../../components/ui/Alert.jsx";
 
-export function TrendingSection({ products = [], categories = [], isLoading = false }) {
+export function TrendingSection({
+  products = [],
+  featuredProducts = [],
+  bestSellers = [],
+  categories = [],
+  isLoading = false,
+}) {
   const { country } = useCountryStore();
   const [activeFilter, setActiveFilter] = useState("ALL");
   const [viewMode, setViewMode] = useState("grid");
   const scrollContainerRef = useRef(null);
 
   const productList = Array.isArray(products) ? products : (products?.items || []);
+  const featuredList = Array.isArray(featuredProducts) ? featuredProducts : (featuredProducts?.items || []);
+  const bestSellerList = Array.isArray(bestSellers) ? bestSellers : (bestSellers?.items || []);
   const catList = Array.isArray(categories) ? categories : (categories?.items || []);
 
-  const filteredProducts = productList.filter((p) => {
-    if (activeFilter === "ALL") return true;
-    return p.categoryId === activeFilter || p.category === activeFilter;
-  });
+  const filteredProducts = React.useMemo(() => {
+    if (activeFilter === "ALL") return productList;
+    if (activeFilter === "FEATURED") {
+      return featuredList.length > 0 ? featuredList : productList.filter((p) => p.isFeatured);
+    }
+    if (activeFilter === "BEST_SELLERS") {
+      return bestSellerList.length > 0 ? bestSellerList : productList.filter((p) => p.isBestSeller);
+    }
+    return productList.filter((p) => p.categoryId === activeFilter || p.category === activeFilter);
+  }, [activeFilter, productList, featuredList, bestSellerList]);
 
   const scrollLeft = () => {
     scrollContainerRef.current?.scrollBy({ left: -360, behavior: "smooth" });
@@ -105,7 +119,7 @@ export function TrendingSection({ products = [], categories = [], isLoading = fa
         </div>
       </div>
 
-      {/* Category Filter Pills */}
+      {/* Category & Collection Filter Pills */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         <button
           onClick={() => setActiveFilter("ALL")}
@@ -115,6 +129,28 @@ export function TrendingSection({ products = [], categories = [], isLoading = fa
             }`}
         >
           All ({productList.length})
+        </button>
+
+        <button
+          onClick={() => setActiveFilter("FEATURED")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium transition-all shrink-0 cursor-pointer ${activeFilter === "FEATURED"
+            ? "bg-[#074428] text-white"
+            : "bg-white text-[#3D5648] border border-[#E8EDE9] hover:border-[#074428] hover:text-[#074428]"
+            }`}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+          <span>Featured ({featuredList.length})</span>
+        </button>
+
+        <button
+          onClick={() => setActiveFilter("BEST_SELLERS")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium transition-all shrink-0 cursor-pointer ${activeFilter === "BEST_SELLERS"
+            ? "bg-[#074428] text-white"
+            : "bg-white text-[#3D5648] border border-[#E8EDE9] hover:border-[#074428] hover:text-[#074428]"
+            }`}
+        >
+          <Flame className="w-3.5 h-3.5 text-rose-500" />
+          <span>Best Sellers ({bestSellerList.length})</span>
         </button>
 
         {catList.map((cat) => (

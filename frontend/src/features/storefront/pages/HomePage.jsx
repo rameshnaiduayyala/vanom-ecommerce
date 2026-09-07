@@ -14,22 +14,50 @@ import { SponsorBrandAd } from "../components/SponsorBrandAd.jsx";
 export function HomePage() {
   const { country } = useCountryStore();
 
+  // 1. Hero Banners
+  const { data: heroBanners = [] } = useQuery({
+    queryKey: ["banners-hero"],
+    queryFn: () => Api.banners.list({ type: "HERO_CAROUSEL" }),
+  });
+
+  // 2. Promotional Banners
+  const { data: promoBanners = [] } = useQuery({
+    queryKey: ["banners-promo"],
+    queryFn: () => Api.banners.list({ type: "PROMOTIONAL" }),
+  });
+
+  // 3. Products (all)
   const { data: productsData, isLoading: loadingProducts } = useQuery({
     queryKey: ["home-products", country.code],
     queryFn: () => Api.catalog.getProducts(),
   });
 
+  // 4. Featured Products
+  const { data: featuredData, isLoading: loadingFeatured } = useQuery({
+    queryKey: ["featured-products", country.code],
+    queryFn: () => Api.catalog.getFeaturedProducts(),
+  });
+
+  // 5. Best Seller Products
+  const { data: bestSellersData, isLoading: loadingBestSellers } = useQuery({
+    queryKey: ["best-seller-products", country.code],
+    queryFn: () => Api.catalog.getBestSellers(),
+  });
+
+  // 6. Categories
   const { data: categories = [], isLoading: loadingCategories } = useQuery({
     queryKey: ["home-categories"],
     queryFn: () => Api.catalog.getCategories(),
   });
 
-  const products = productsData?.items || [];
+  const products = productsData?.items || (Array.isArray(productsData) ? productsData : []);
+  const featuredProducts = featuredData?.items || (Array.isArray(featuredData) ? featuredData : []);
+  const bestSellers = bestSellersData?.items || (Array.isArray(bestSellersData) ? bestSellersData : []);
 
   return (
     <div className="bg-[#E8EDE9]">
       {/* 1. Hero Slider */}
-      <HeroSlider products={products} />
+      <HeroSlider products={products} banners={heroBanners} />
 
       {/* 2. Shop by Category */}
       <section className="py-14 sm:py-20 bg-[#E8EDE9]">
@@ -40,8 +68,10 @@ export function HomePage() {
       <section className="py-14 sm:py-20 bg-[#E8EDE9] border-y border-[#D6DDD8]">
         <TrendingSection
           products={products}
+          featuredProducts={featuredProducts}
+          bestSellers={bestSellers}
           categories={categories}
-          isLoading={loadingProducts}
+          isLoading={loadingProducts || loadingFeatured || loadingBestSellers}
         />
       </section>
 
@@ -55,7 +85,7 @@ export function HomePage() {
 
       {/* 6. Featured Category Banners */}
       <section className="py-14 sm:py-20 bg-[#E8EDE9]">
-        <DualPromoBanners />
+        <DualPromoBanners banners={promoBanners} />
       </section>
     </div>
   );
