@@ -18,6 +18,11 @@ export default async function cartRoutes(fastify, options) {
     handler: controller.updateItem,
   });
 
+  fastify.put("/cart/items/:id", {
+    preHandler: [fastify.authenticate],
+    handler: controller.updateItem,
+  });
+
   fastify.delete("/cart/items/:id", {
     preHandler: [fastify.authenticate],
     handler: controller.removeItem,

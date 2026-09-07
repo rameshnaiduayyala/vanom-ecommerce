@@ -73,6 +73,24 @@ describe("B2B Company Onboarding & Verification Tests", () => {
     createdCompanyId = body.data.id;
   });
 
+  it("should allow company member (self) to update their company details while PENDING / UNDER_REVIEW", async () => {
+    const updateRes = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/companies/${createdCompanyId}`,
+      headers: { authorization: `Bearer ${companyUserToken}` },
+      payload: {
+        tradingName: "Sharma Agro Global",
+        taxId: "27BBBBB1111B2Z6",
+      },
+    });
+
+    expect(updateRes.statusCode).toBe(200);
+    const body = JSON.parse(updateRes.payload);
+    expect(body.success).toBe(true);
+    expect(body.data.tradingName).toBe("Sharma Agro Global");
+    expect(body.data.taxId).toBe("27BBBBB1111B2Z6");
+  });
+
   it("should upload a business document", async () => {
     const fileRes = await app.inject({
       method: "POST",
@@ -152,4 +170,68 @@ describe("B2B Company Onboarding & Verification Tests", () => {
     expect(company.status).toBe("APPROVED");
     expect(company.approvedById).toBe(adminUser.id);
   });
+
+  it("should lock company details and forbid self-edits once company is APPROVED", async () => {
+    const updateRes = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/companies/${createdCompanyId}`,
+      headers: { authorization: `Bearer ${companyUserToken}` },
+      payload: {
+        tradingName: "Attempted Unauthorized Name Change",
+      },
+    });
+
+    expect(updateRes.statusCode).toBe(403);
+    const body = JSON.parse(updateRes.payload);
+    expect(body.success).toBe(false);
+    expect(body.error.message).toMatch(/locked after admin verification/i);
+  });
+
+  it("should allow admin to update company details including status and credit limits", async () => {
+    if (!adminToken) return;
+
+    const adminEditRes = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/companies/${createdCompanyId}`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: {
+        paymentTermsDays: 45,
+        creditLimit: 500000,
+      },
+    });
+
+    expect(adminEditRes.statusCode).toBe(200);
+    const body = JSON.parse(adminEditRes.payload);
+    expect(body.success).toBe(true);
+
+    const updated = await prisma.company.findUnique({ where: { id: createdCompanyId } });
+    expect(updated.paymentTermsDays).toBe(45);
+    expect(Number(updated.creditLimit)).toBe(500000);
+  });
+
+  it("should list companies appropriately for self vs admin", async () => {
+    // Self list: only companies user belongs to
+    const selfListRes = await app.inject({
+      method: "GET",
+      url: "/api/v1/companies",
+      headers: { authorization: `Bearer ${companyUserToken}` },
+    });
+    expect(selfListRes.statusCode).toBe(200);
+    const selfBody = JSON.parse(selfListRes.payload);
+    expect(selfBody.data.items.length).toBeGreaterThanOrEqual(1);
+    expect(selfBody.data.items.some((c) => c.id === createdCompanyId)).toBe(true);
+
+    // Admin list: can list and search all companies
+    if (adminToken) {
+      const adminListRes = await app.inject({
+        method: "GET",
+        url: "/api/v1/companies?search=Sharma",
+        headers: { authorization: `Bearer ${adminToken}` },
+      });
+      expect(adminListRes.statusCode).toBe(200);
+      const adminBody = JSON.parse(adminListRes.payload);
+      expect(adminBody.data.items.some((c) => c.id === createdCompanyId)).toBe(true);
+    }
+  });
 });
+

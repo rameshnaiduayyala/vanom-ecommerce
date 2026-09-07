@@ -103,12 +103,126 @@ export class CompanyService {
     return company;
   }
 
+  async listCompanies(user, { page = 1, limit = 20, status, search } = {}) {
+    const userRoles = Array.isArray(user?.roles)
+      ? user.roles.map((r) => (typeof r === "string" ? r : r.name || r.role?.name))
+      : [];
+    const isAdmin = userRoles.includes("ADMIN") || userRoles.includes("SUPER_ADMIN");
+
+    const where = {};
+    if (!isAdmin) {
+      // Non-admin can only see companies they belong to
+      where.members = { some: { userId: user.id } };
+    }
+    if (status) {
+      where.status = status;
+    }
+    if (search) {
+      where.OR = [
+        { legalName: { contains: search, mode: "insensitive" } },
+        { tradingName: { contains: search, mode: "insensitive" } },
+        { registrationNumber: { contains: search, mode: "insensitive" } },
+        { taxId: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    const [total, items] = await Promise.all([
+      prisma.company.count({ where }),
+      prisma.company.findMany({
+        where,
+        include: {
+          country: true,
+          members: {
+            include: {
+              user: { select: { id: true, email: true, firstName: true, lastName: true } },
+              roles: true,
+            },
+          },
+          verification: true,
+          documents: { include: { file: true } },
+        },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
+
+    return { total, items };
+  }
+
   async updateCompany(id, user, data) {
-    await this.getCompanyById(id, user);
+    const company = await this.getCompanyById(id, user);
+
+    const userRoles = Array.isArray(user?.roles)
+      ? user.roles.map((r) => (typeof r === "string" ? r : r.name || r.role?.name))
+      : [];
+    const isAdmin = userRoles.includes("ADMIN") || userRoles.includes("SUPER_ADMIN");
+
+    // Once approved, company details are locked against self-edits (only Admin can modify)
+    if (company.status === "APPROVED" && !isAdmin) {
+      throw new ForbiddenError(
+        "Company details are locked after admin verification. Please contact support or an administrator to request changes.",
+        ERROR_CODES.FORBIDDEN
+      );
+    }
+
+    // Whitelist editable fields
+    const safeData = {};
+    if (data.legalName !== undefined) safeData.legalName = data.legalName;
+    if (data.tradingName !== undefined) safeData.tradingName = data.tradingName;
+    if (data.registrationNumber !== undefined) safeData.registrationNumber = data.registrationNumber;
+    if (data.taxId !== undefined) safeData.taxId = data.taxId;
+
+    // Admin-only fields
+    if (isAdmin) {
+      if (data.status !== undefined) safeData.status = data.status;
+      if (data.paymentTermsDays !== undefined) safeData.paymentTermsDays = Number(data.paymentTermsDays);
+      if (data.creditLimit !== undefined) safeData.creditLimit = data.creditLimit;
+    }
+
+    if (data.countryCode) {
+      const country = await prisma.country.findUnique({
+        where: { code: data.countryCode.toUpperCase() },
+      });
+      if (!country) {
+        throw new NotFoundError(`Country code '${data.countryCode}' not supported`);
+      }
+      safeData.countryId = country.id;
+    }
+
     return prisma.company.update({
       where: { id },
-      data,
+      data: safeData,
+      include: {
+        country: true,
+        members: {
+          include: {
+            user: { select: { id: true, email: true, firstName: true, lastName: true } },
+          },
+        },
+        verification: true,
+      },
     });
+  }
+
+  async deleteCompany(id, user) {
+    const company = await this.getCompanyById(id, user);
+
+    const userRoles = Array.isArray(user?.roles)
+      ? user.roles.map((r) => (typeof r === "string" ? r : r.name || r.role?.name))
+      : [];
+    const isAdmin = userRoles.includes("ADMIN") || userRoles.includes("SUPER_ADMIN");
+    const isPrimaryOwner = company.members.some((m) => m.userId === user.id && m.isPrimary);
+
+    if (!isAdmin && !isPrimaryOwner) {
+      throw new ForbiddenError("Only company primary owner or administrator can delete this company");
+    }
+
+    await prisma.company.delete({
+      where: { id },
+    });
+
+    return { id, deleted: true };
   }
 
   async uploadDocument(id, user, { fileAssetId, documentType, documentNumber, expiresAt }) {

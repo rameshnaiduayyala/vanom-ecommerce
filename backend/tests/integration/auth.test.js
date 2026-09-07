@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { buildApp } from "../../src/app.js";
-import { disconnectPrisma } from "../../src/infrastructure/database/prisma.js";
+import { prisma, disconnectPrisma } from "../../src/infrastructure/database/prisma.js";
 
 describe("Authentication & RBAC Integration Tests", () => {
   let app;
@@ -70,6 +70,25 @@ describe("Authentication & RBAC Integration Tests", () => {
     const body = JSON.parse(response.payload);
     expect(body.success).toBe(true);
     expect(body.data.tokens.accessToken).toBeDefined();
+    expect(body.data.tokens.refreshToken).toBeDefined();
+    expect(body.data.user.email).toBe(uniqueEmail);
+    expect(Array.isArray(body.data.user.roles)).toBe(true);
+    expect(Array.isArray(body.data.user.permissions)).toBe(true);
+    expect(Array.isArray(body.data.user.companies)).toBe(true);
+
+    // Verify session and audit log written
+    const session = await prisma.session.findFirst({
+      where: { userId: body.data.user.id },
+      orderBy: { createdAt: "desc" },
+    });
+    expect(session).toBeDefined();
+
+    const audit = await prisma.auditLog.findFirst({
+      where: { actorId: body.data.user.id, action: "LOGIN" },
+      orderBy: { createdAt: "desc" },
+    });
+    expect(audit).toBeDefined();
+    expect(audit.metadata.success).toBe(true);
   });
 
   it("should reject invalid login password", async () => {

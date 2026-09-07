@@ -60,6 +60,35 @@ describe("Cart, Checkout, Orders & Idempotency Pipeline", () => {
     expect(body.success).toBe(true);
     expect(body.data.itemCount).toBe(1);
     expect(body.data.items[0].quantity).toBe(2);
+
+    const itemId = body.data.items[0].id;
+
+    // Test Update Quantity (PATCH /cart/items/:id)
+    const updateRes = await app.inject({
+      method: "PATCH",
+      url: `/api/v1/cart/items/${itemId}`,
+      headers: {
+        authorization: `Bearer ${userToken}`,
+        "x-country-code": "IN",
+        "x-currency-code": "INR",
+      },
+      payload: { quantity: 5 },
+    });
+    expect(updateRes.statusCode).toBe(200);
+    const updateBody = JSON.parse(updateRes.payload);
+    expect(updateBody.data.items[0].quantity).toBe(5);
+
+    // Reset back to 2 for subsequent checkout tests
+    await app.inject({
+      method: "PATCH",
+      url: `/api/v1/cart/items/${itemId}`,
+      headers: {
+        authorization: `Bearer ${userToken}`,
+        "x-country-code": "IN",
+        "x-currency-code": "INR",
+      },
+      payload: { quantity: 2 },
+    });
   });
 
   it("should authoritatively validate checkout calculation", async () => {

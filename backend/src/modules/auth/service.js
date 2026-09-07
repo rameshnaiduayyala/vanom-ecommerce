@@ -63,9 +63,14 @@ export class AuthService {
     };
   }
 
-  async login({ email, password }) {
+  async login({ email, password, ipAddress = null, userAgent = null, requestId = null }) {
+    const formattedEmail = email ? email.toLowerCase().trim() : "";
+    if (!formattedEmail || !password) {
+      throw new BadRequestError("Email and password are required", ERROR_CODES.VALIDATION_ERROR);
+    }
+
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
+      where: { email: formattedEmail },
       include: {
         roles: {
           include: {
@@ -80,30 +85,107 @@ export class AuthService {
         },
         profile: true,
         companyMembers: {
-          include: { company: true },
+          include: {
+            company: {
+              include: { country: true },
+            },
+            roles: true,
+          },
         },
       },
     });
 
     if (!user) {
+      // Record failed audit attempt with dummy actor
+      try {
+        await prisma.auditLog.create({
+          data: {
+            action: "LOGIN",
+            entityType: "AUTH",
+            entityId: formattedEmail,
+            requestId,
+            ipAddress,
+            userAgent,
+            metadata: { success: false, reason: "USER_NOT_FOUND" },
+          },
+        });
+      } catch (err) {
+        // Safe fail on audit
+      }
       throw new UnauthorizedError("Invalid email or password", ERROR_CODES.INVALID_CREDENTIALS);
     }
 
     if (user.status !== "ACTIVE") {
-      throw new UnauthorizedError("Account is suspended or inactive", ERROR_CODES.USER_INACTIVE);
+      try {
+        await prisma.auditLog.create({
+          data: {
+            actorId: user.id,
+            action: "LOGIN",
+            entityType: "USER",
+            entityId: user.id,
+            requestId,
+            ipAddress,
+            userAgent,
+            metadata: { success: false, reason: `USER_${user.status}` },
+          },
+        });
+      } catch (err) {
+        // Safe fail on audit
+      }
+      throw new UnauthorizedError(`Account is ${user.status.toLowerCase()}`, ERROR_CODES.USER_INACTIVE);
     }
 
     const isValid = await HashUtil.comparePassword(password, user.passwordHash);
     if (!isValid) {
+      try {
+        await prisma.auditLog.create({
+          data: {
+            actorId: user.id,
+            action: "LOGIN",
+            entityType: "USER",
+            entityId: user.id,
+            requestId,
+            ipAddress,
+            userAgent,
+            metadata: { success: false, reason: "INVALID_PASSWORD" },
+          },
+        });
+      } catch (err) {
+        // Safe fail on audit
+      }
       throw new UnauthorizedError("Invalid email or password", ERROR_CODES.INVALID_CREDENTIALS);
     }
 
+    // Enterprise session creation & token generation
+    const tokens = await this._generateAuthTokens(user, { ipAddress, userAgent });
+
+    // Update lastLoginAt
     await prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
     });
 
-    const tokens = await this._generateAuthTokens(user);
+    // Enterprise Audit Log for successful login
+    try {
+      await prisma.auditLog.create({
+        data: {
+          actorId: user.id,
+          action: "LOGIN",
+          entityType: "USER",
+          entityId: user.id,
+          requestId,
+          ipAddress,
+          userAgent,
+          metadata: {
+            success: true,
+            customerType: user.customerType,
+            roles: user.roles?.map((r) => r.role?.name),
+          },
+        },
+      });
+    } catch (err) {
+      // Safe fail on audit
+    }
 
     return {
       user: this._sanitizeUser(user),
@@ -239,7 +321,7 @@ export class AuthService {
     return { message: "Password has been successfully reset" };
   }
 
-  async _generateAuthTokens(user) {
+  async _generateAuthTokens(user, { ipAddress = null, userAgent = null } = {}) {
     const roles = user.roles?.map((r) => r.role?.name || r.roleName || r) || [];
     const payload = {
       userId: user.id,
@@ -253,13 +335,25 @@ export class AuthService {
     const tokenHash = HashUtil.sha256(rawRefreshToken);
     const expiresAt = new Date(Date.now() + authConfig.refreshTokenExpiresDays * 24 * 60 * 60 * 1000);
 
-    await prisma.refreshToken.create({
-      data: {
-        userId: user.id,
-        tokenHash,
-        expiresAt,
-      },
-    });
+    // Concurrently persist refresh token and user session
+    await Promise.all([
+      prisma.refreshToken.create({
+        data: {
+          userId: user.id,
+          tokenHash,
+          expiresAt,
+        },
+      }),
+      prisma.session.create({
+        data: {
+          userId: user.id,
+          tokenHash,
+          ipAddress,
+          userAgent,
+          expiresAt,
+        },
+      }),
+    ]);
 
     return {
       accessToken,
@@ -271,9 +365,32 @@ export class AuthService {
 
   _sanitizeUser(user) {
     const { passwordHash, ...sanitized } = user;
+
+    // Collect distinct permissions
+    const permissions = new Set();
+    user.roles?.forEach((ur) => {
+      ur.role?.permissions?.forEach((rp) => {
+        if (rp.permission?.code) permissions.add(rp.permission.code);
+      });
+    });
+
+    // Map company affiliations
+    const companies = user.companyMembers?.map((cm) => ({
+      companyId: cm.company?.id,
+      legalName: cm.company?.legalName,
+      tradingName: cm.company?.tradingName,
+      status: cm.company?.status,
+      countryCode: cm.company?.country?.code,
+      title: cm.title,
+      isPrimary: cm.isPrimary,
+      companyRoles: cm.roles?.map((cr) => cr.roleName) || [],
+    })) || [];
+
     return {
       ...sanitized,
       roles: user.roles?.map((r) => (r.role ? r.role.name : r.name || r)) || [],
+      permissions: Array.from(permissions),
+      companies,
     };
   }
 }

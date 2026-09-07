@@ -8,6 +8,11 @@ export default async function companyRoutes(fastify, options) {
     handler: controller.register,
   });
 
+  fastify.get("/companies", {
+    preHandler: [fastify.authenticate],
+    handler: controller.list,
+  });
+
   fastify.get("/companies/:id", {
     preHandler: [fastify.authenticate],
     handler: controller.getById,
@@ -16,6 +21,16 @@ export default async function companyRoutes(fastify, options) {
   fastify.patch("/companies/:id", {
     preHandler: [fastify.authenticate],
     handler: controller.update,
+  });
+
+  fastify.put("/companies/:id", {
+    preHandler: [fastify.authenticate],
+    handler: controller.update,
+  });
+
+  fastify.delete("/companies/:id", {
+    preHandler: [fastify.authenticate],
+    handler: controller.delete,
   });
 
   fastify.post("/companies/:id/documents", {

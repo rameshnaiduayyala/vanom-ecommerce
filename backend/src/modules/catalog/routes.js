@@ -25,6 +25,11 @@ export default async function catalogRoutes(fastify, options) {
     handler: controller.update,
   });
 
+  fastify.put("/products/:id", {
+    preHandler: [fastify.authenticate, RbacGuard.requirePermissions(PERMISSIONS.CATALOG_UPDATE)],
+    handler: controller.update,
+  });
+
   fastify.delete("/products/:id", {
     preHandler: [fastify.authenticate, RbacGuard.requirePermissions(PERMISSIONS.CATALOG_DELETE)],
     handler: controller.delete,

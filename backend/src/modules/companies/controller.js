@@ -12,6 +12,12 @@ export class CompanyController {
     return reply.status(HTTP_STATUS.CREATED).send(ApiResponse.success(result));
   };
 
+  list = async (request, reply) => {
+    const { page, limit, status, search } = request.query || {};
+    const result = await this.service.listCompanies(request.user, { page, limit, status, search });
+    return reply.status(HTTP_STATUS.OK).send(ApiResponse.success(result));
+  };
+
   getById = async (request, reply) => {
     const result = await this.service.getCompanyById(request.params.id, request.user);
     return reply.status(HTTP_STATUS.OK).send(ApiResponse.success(result));
@@ -22,8 +28,46 @@ export class CompanyController {
     return reply.status(HTTP_STATUS.OK).send(ApiResponse.success(result));
   };
 
+  delete = async (request, reply) => {
+    const result = await this.service.deleteCompany(request.params.id, request.user);
+    return reply.status(HTTP_STATUS.OK).send(ApiResponse.success(result));
+  };
+
   uploadDocument = async (request, reply) => {
-    const result = await this.service.uploadDocument(request.params.id, request.user, request.body);
+    let payload = {};
+    if (request.isMultipart && request.isMultipart()) {
+      let fileBuffer = null;
+      let originalName = null;
+      let mimeType = null;
+      const parts = request.parts();
+
+      for await (const part of parts) {
+        if (part.type === "file") {
+          fileBuffer = await part.toBuffer();
+          originalName = part.filename;
+          mimeType = part.mimetype;
+        } else {
+          payload[part.fieldname] = part.value;
+        }
+      }
+
+      if (fileBuffer) {
+        const { FileService } = await import("../files/service.js");
+        const fileService = new FileService();
+        const asset = await fileService.uploadFile({
+          fileBuffer,
+          originalName,
+          mimeType: mimeType || "application/octet-stream",
+          type: "BUSINESS_DOCUMENT",
+          uploadedById: request.user.id,
+        });
+        payload.fileAssetId = asset.id;
+      }
+    } else {
+      payload = request.body || {};
+    }
+
+    const result = await this.service.uploadDocument(request.params.id, request.user, payload);
     return reply.status(HTTP_STATUS.CREATED).send(ApiResponse.success(result));
   };
 

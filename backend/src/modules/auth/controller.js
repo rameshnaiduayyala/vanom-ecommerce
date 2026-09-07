@@ -13,7 +13,14 @@ export class AuthController {
   };
 
   login = async (request, reply) => {
-    const result = await this.authService.login(request.body);
+    const ipAddress = request.ip || request.headers["x-forwarded-for"] || request.socket?.remoteAddress;
+    const userAgent = request.headers["user-agent"] || "unknown";
+    const result = await this.authService.login({
+      ...request.body,
+      ipAddress,
+      userAgent,
+      requestId: request.id,
+    });
     return reply.status(HTTP_STATUS.OK).send(ApiResponse.success(result));
   };
 
