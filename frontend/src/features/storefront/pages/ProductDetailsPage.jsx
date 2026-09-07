@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
@@ -6,31 +6,50 @@ import { useCountryStore } from "../../../stores/country.store.js";
 import { useCartStore } from "../../../stores/cart.store.js";
 import { useUIStore } from "../../../stores/ui.store.js";
 import { formatPrice } from "../../../utils/formatters.js";
-import { ROUTES } from "../../../constants/routes.js";
-import { getLiveProducts } from "../../../services/api/mock-data.js";
 import { ProductCard } from "../components/ProductCard.jsx";
 import {
   Star,
-  ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  ShoppingBag,
-  Package,
-  ArrowRight,
-  Check,
-  ShieldCheck,
+  Heart,
+  ShoppingCart,
+  Zap,
   Truck,
   RotateCcw,
+  ShieldCheck,
+  CreditCard,
+  Percent,
+  RefreshCw,
+  Cpu,
+  HardDrive,
+  Monitor,
+  Battery,
+  Weight,
+  Layers,
+  Sparkles,
+  Maximize2,
+  CheckCircle2,
+  Lock,
+  Headphones,
+  Check,
+  ArrowRight,
 } from "lucide-react";
-import { Button } from "../../../components/ui/Button.jsx";
 import { Spinner } from "../../../components/ui/Alert.jsx";
 
-const COLOR_OPTIONS = [
-  { name: "GREEN", colorClass: "bg-[#5ECFB5]" },
-  { name: "AMBER", colorClass: "bg-[#F59E0B]" },
-  { name: "CHARCOAL", colorClass: "bg-[#1E293B]" },
-  { name: "SLATE", colorClass: "bg-[#64748B]" },
+const FALLBACK_THUMBNAILS = [
+  "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=800&q=80",
 ];
+
+function getHighlightIcon(label = "") {
+  const l = label.toLowerCase();
+  if (l.includes("processor") || l.includes("motor") || l.includes("driver") || l.includes("chip")) return Cpu;
+  if (l.includes("ram") || l.includes("storage") || l.includes("memory") || l.includes("jar")) return HardDrive;
+  if (l.includes("display") || l.includes("screen") || l.includes("monitor")) return Monitor;
+  if (l.includes("battery") || l.includes("playtime") || l.includes("power") || l.includes("charge")) return Battery;
+  if (l.includes("weight")) return Weight;
+  if (l.includes("type") || l.includes("pot") || l.includes("material") || l.includes("body")) return Layers;
+  if (l.includes("os") || l.includes("speed") || l.includes("calling") || l.includes("technology")) return Zap;
+  return Sparkles;
+}
 
 export function ProductDetailsPage() {
   const { slug } = useParams();
@@ -38,365 +57,508 @@ export function ProductDetailsPage() {
   const { cart, setCart, openCart } = useCartStore();
   const { addToast } = useUIStore();
 
-  const [quantity, setQuantity] = useState(1);
-  const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0]);
-  const [colorDropdownOpen, setColorDropdownOpen] = useState(false);
-  const [quantityDropdownOpen, setQuantityDropdownOpen] = useState(false);
-  const [activeBottomTab, setActiveBottomTab] = useState("DETAILS");
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [wishlisted, setWishlisted] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
 
-  const { data: product, isLoading, error } = useQuery({
+  useEffect(() => {
+    setSelectedImage(0);
+    window.scrollTo(0, 0);
+  }, [slug]);
+
+  const { data: product, isLoading } = useQuery({
     queryKey: ["product-detail", slug, country.code],
     queryFn: () => Api.catalog.getProductBySlug(slug),
   });
 
-  // Related products
-  const relatedProducts = React.useMemo(() => {
-    const all = getLiveProducts();
-    if (!product) return all.slice(0, 4);
-    const sameCat = all.filter((p) => p.id !== product.id && p.categoryId === product.categoryId);
-    return (sameCat.length > 0 ? sameCat : all.filter((p) => p.id !== product.id)).slice(0, 4);
+  const { data: allProducts = [] } = useQuery({
+    queryKey: ["all-products-for-rel"],
+    queryFn: () => Api.catalog.getProducts(),
+  });
+
+  const title = product?.name || "Product Name";
+  const subtitle = product?.specs || product?.subtitle || product?.description || "High Performance Quality Product";
+  const brand = product?.brand || "Vanom Choice";
+  const price = Number(product?.price || product?.pricing?.[country.code]?.retailPrice || product?.pricing?.IN?.retailPrice || 1999);
+  const mrp = Number(product?.mrp || product?.pricing?.[country.code]?.mrp || (price > 0 ? Math.round(price * 1.35) : 2699));
+  const discount = product?.discount || (mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 25);
+  const rating = product?.rating || 4.7;
+  const reviewsCount = product?.reviewsCount || 1420;
+  const answeredQuestions = Math.round(reviewsCount * 0.12) || 85;
+  const emiAmount = Math.round(price / 24) || 299;
+
+  // Gallery
+  const gallery = useMemo(() => {
+    if (product?.gallery && Array.isArray(product.gallery) && product.gallery.length > 0) {
+      return product.gallery;
+    }
+    if (product?.images && Array.isArray(product.images) && product.images.length > 0) {
+      return product.images.map((img) => (typeof img === "string" ? img : img.file?.url || img.url || img));
+    }
+    if (product?.image) {
+      return [product.image];
+    }
+    return FALLBACK_THUMBNAILS;
   }, [product]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 bg-white">
-        <Spinner size="lg" />
-        <p className="text-sm font-medium text-slate-500">Loading product view...</p>
-      </div>
-    );
-  }
+  const currentImage = gallery[selectedImage] || gallery[0] || product?.image;
 
-  if (error || !product) {
-    return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center px-4 py-20 text-center bg-white">
-        <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto mb-4">
-          <Package className="w-8 h-8" />
-        </div>
-        <h2 className="text-2xl font-bold text-slate-900">Product Not Found</h2>
-        <p className="text-sm text-slate-500 mt-2 max-w-md mx-auto">
-          The requested product could not be located or may have been updated.
-        </p>
-        <Link to={ROUTES.PRODUCTS} className="mt-6 inline-block">
-          <Button variant="primary" size="md" className="bg-[#5ECFB5] hover:bg-[#4EBFB0] text-slate-900 font-bold">
-            Browse All Products
-          </Button>
-        </Link>
-      </div>
-    );
-  }
+  // Highlights (8 Pills)
+  const highlights = useMemo(() => {
+    if (product?.highlights && Array.isArray(product.highlights) && product.highlights.length > 0) {
+      return product.highlights.map((h) => ({
+        label: h.label,
+        value: h.value,
+        icon: getHighlightIcon(h.label),
+      }));
+    }
+    return [
+      { label: "Category", value: product?.category || "General", icon: Cpu },
+      { label: "Brand", value: brand, icon: Sparkles },
+      { label: "Warranty", value: product?.specifications?.Warranty || "1 Year Standard", icon: ShieldCheck },
+      { label: "Delivery", value: "Express 2-3 Days", icon: Truck },
+      { label: "Condition", value: "100% Authentic Brand New", icon: CheckCircle2 },
+      { label: "Stock", value: product?.stock ? `${product.stock} Units In Stock` : "In Stock & Ready", icon: Layers },
+      { label: "Rating", value: `${rating} / 5 Stars`, icon: Star },
+      { label: "Returns", value: "7-Day Easy Return", icon: RotateCcw },
+    ];
+  }, [product, brand, rating]);
 
-  const pricing = product.pricing?.[country.code] || product.pricing?.IN || {};
-  const retailPrice = pricing.retailPrice || 399;
-  const originalPrice = pricing.mrp || retailPrice * 1.18;
+  // Features list
+  const features = useMemo(() => {
+    if (product?.features && Array.isArray(product.features) && product.features.length > 0) {
+      return product.features;
+    }
+    if (product?.description) {
+      return [
+        product.description,
+        "Commercial-grade certified build for long-lasting performance and reliability",
+        "Comprehensive warranty backed by authorized brand service centers",
+        "Verified authentic packaging with original brand accessories included",
+      ];
+    }
+    return [
+      "Commercial-grade certified build for long-lasting performance",
+      "Energy-efficient architecture with precision controls",
+      "Comprehensive warranty backed by authorized brand service centers",
+      "Verified authentic packaging with original accessories included",
+    ];
+  }, [product]);
+
+  // Specifications
+  const specifications = useMemo(() => {
+    if (product?.specifications && Object.keys(product.specifications).length > 0) {
+      return product.specifications;
+    }
+    return {
+      Brand: brand,
+      Model: product?.sku || "VN-" + (product?.id || "GENERIC"),
+      Category: product?.category || "Standard",
+      Availability: "In Stock",
+      Warranty: "1 Year Comprehensive",
+      "Country of Origin": "India",
+    };
+  }, [product, brand]);
+
+  // Related items
+  const relatedList = useMemo(() => {
+    const raw = Array.isArray(allProducts?.items) ? allProducts.items : Array.isArray(allProducts) ? allProducts : [];
+    const filtered = raw.filter((p) => p.slug !== slug && p.id !== product?.id && p.id !== slug);
+    return filtered.slice(0, 5);
+  }, [allProducts, slug, product]);
 
   const handleAddToCart = () => {
     setAddingToCart(true);
-    const existing = cart.items.find((i) => i.id === product.id);
+    const existing = cart.items.find((i) => i.id === (product?.id || slug));
     let newItems = [];
     if (existing) {
       newItems = cart.items.map((i) =>
-        i.id === product.id ? { ...i, quantity: i.quantity + quantity } : i
+        i.id === (product?.id || slug) ? { ...i, quantity: i.quantity + 1 } : i
       );
     } else {
       newItems = [
         ...cart.items,
         {
-          id: product.id,
-          name: product.name,
-          price: retailPrice,
-          quantity,
-          image: product.image,
+          id: product?.id || slug,
+          name: title,
+          price,
+          quantity: 1,
+          image: currentImage,
         },
       ];
     }
-
     const subtotal = newItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     setCart({ items: newItems, itemCount: newItems.length, subtotal });
     addToast({
       title: "Added to Cart",
-      message: `${quantity}x ${product.name} (${selectedColor.name}) added to cart.`,
+      message: `${title} added to cart.`,
       type: "success",
     });
     setTimeout(() => setAddingToCart(false), 800);
     openCart();
   };
 
+  const handleWishlist = () => {
+    setWishlisted(!wishlisted);
+    addToast({
+      title: wishlisted ? "Removed from Wishlist" : "Saved to Wishlist",
+      message: title,
+      type: wishlisted ? "info" : "success",
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 bg-white">
+        <Spinner size="lg" />
+        <p className="text-sm font-medium text-gray-500">Loading product details...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full bg-white min-h-screen py-8 sm:py-12 select-none">
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 space-y-12 sm:space-y-16">
+    <div className="bg-white min-h-screen pb-16 font-sans">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 space-y-8">
         
-        {/* ─── FULL-WIDTH MAIN PRODUCT SHOWCASE CONTAINER ─── */}
-        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-center">
+        {/* ─── 1. Breadcrumbs matching reference ─── */}
+        <nav className="flex items-center gap-1.5 text-xs text-gray-500">
+          <Link to="/" className="hover:text-gray-900 transition-colors">Home</Link>
+          <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+          <Link to="/products" className="hover:text-gray-900 transition-colors">
+            {product?.category || "Catalog"}
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+          <span className="text-gray-500">{brand}</span>
+          <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+          <span className="font-semibold text-gray-900 truncate max-w-xs">{title}</span>
+        </nav>
+
+        {/* ─── 2. Top Product Showcase Section ─── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           
-          {/* ── LEFT SHOWCASE PANEL ── */}
-          <div className="lg:col-span-7 bg-[#EEF5F8] rounded-[2.5rem] p-6 sm:p-10 lg:p-12 relative flex flex-col items-center justify-between min-h-[500px] sm:min-h-[580px] lg:min-h-[620px] overflow-hidden">
+          {/* ── LEFT: Product Gallery (Thumbnails + Main Image) ── */}
+          <div className="lg:col-span-6 flex gap-4">
             
-            {/* Top Designer & Rating Badge with Color Swatches */}
-            <div className="w-full flex flex-col items-center z-10">
-              <div className="text-center">
-                <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                  Designed by <strong className="text-slate-800 font-bold">{product.brand || "Thomas Jonas"}</strong>
-                </p>
-                <div className="flex items-center justify-center gap-1 mt-1 text-xs text-slate-600 font-semibold">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  <span>{product.rating || 4.5}</span>
-                  <span className="text-slate-400">({product.reviewsCount || 89} reviews)</span>
-                </div>
-              </div>
-
-              {/* Vertical subtle indicator line */}
-              <div className="w-px h-5 bg-slate-300 my-2" />
-
-              {/* Horizontal Color Swatches matching reference */}
-              <div className="flex items-center gap-3">
-                {COLOR_OPTIONS.map((c) => {
-                  const isActive = selectedColor.name === c.name;
-                  return (
-                    <button
-                      key={c.name}
-                      onClick={() => setSelectedColor(c)}
-                      className={`transition-all duration-200 cursor-pointer ${
-                        isActive
-                          ? "w-8 h-2 rounded-full ring-2 ring-slate-400 ring-offset-2 scale-110 " + c.colorClass
-                          : "w-6 h-1.5 rounded-full hover:scale-105 " + c.colorClass
-                      }`}
-                      aria-label={`Select ${c.name}`}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Central Floating Hero Product Image with Drop Shadow */}
-            <div className="relative my-6 sm:my-8 w-full flex items-center justify-center z-0">
-              <img
-                src={product.image}
-                alt={product.name}
-                className="max-h-[320px] sm:max-h-[420px] lg:max-h-[460px] w-auto object-contain drop-shadow-2xl transition-transform duration-500 hover:scale-105"
-              />
-            </div>
-
-            {/* Left & Right Circular Navigation Arrows */}
-            <button
-              className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white shadow-lg text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer z-10"
-              aria-label="Previous image"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-
-            <button
-              className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white shadow-lg text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer z-10"
-              aria-label="Next image"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-
-            {/* Empty placeholder spacer for vertical balance */}
-            <div className="h-2" />
-          </div>
-
-          {/* ── RIGHT PRODUCT INFO & ACTION PANEL ── */}
-          <div className="lg:col-span-5 flex flex-col justify-between space-y-6 sm:space-y-7">
-            
-            {/* Product Title & Item Code */}
-            <div>
-              <h1 className="text-3xl sm:text-4xl lg:text-[2.6rem] font-extrabold text-slate-800 tracking-tight leading-tight">
-                {product.name}
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-400 font-medium tracking-wide mt-1.5 uppercase">
-                Item code: {product.sku ? product.sku.replace(/\D/g, "") || "597830" : "597830"}
-              </p>
-            </div>
-
-            {/* Description Section */}
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block">
-                DESCRIPTION
-              </span>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
-                {product.description ||
-                  "Accent Chair Living Room Armchair Tub Side Chair Sofa Lounge Soft Velvet Upholstered Back for Dining Room/Cafe Home Furniture."}
-              </p>
-            </div>
-
-            {/* Divider Line */}
-            <div className="w-full h-px bg-slate-100" />
-
-            {/* Price Row */}
-            <div className="space-y-1">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block">
-                PRICE
-              </span>
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-800 tracking-tight">
-                  {formatPrice(retailPrice, country.currency, country.symbol)}
-                </span>
-                {originalPrice > retailPrice && (
-                  <span className="text-lg sm:text-xl text-slate-300 line-through font-medium">
-                    {formatPrice(originalPrice, country.currency, country.symbol)}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Color Dropdown Selector */}
-            <div className="space-y-1.5 relative">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block">
-                COLOR
-              </span>
-              <button
-                type="button"
-                onClick={() => setColorDropdownOpen(!colorDropdownOpen)}
-                className="w-full bg-[#EDF5F7] px-4 sm:px-5 py-3.5 rounded-2xl text-xs sm:text-sm font-bold text-slate-700 flex items-center justify-between cursor-pointer hover:bg-[#E3EFF1] transition-colors"
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className={`w-3.5 h-3.5 rounded-full ${selectedColor.colorClass}`} />
-                  <span>{selectedColor.name}</span>
-                </div>
-                <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${colorDropdownOpen ? "rotate-180" : ""}`} />
-              </button>
-
-              {colorDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-100 rounded-2xl shadow-xl z-20 py-1.5 overflow-hidden">
-                  {COLOR_OPTIONS.map((c) => (
-                    <button
-                      key={c.name}
-                      onClick={() => {
-                        setSelectedColor(c);
-                        setColorDropdownOpen(false);
-                      }}
-                      className="w-full px-4 py-3 text-left text-xs sm:text-sm font-semibold text-slate-700 hover:bg-[#EDF5F7] flex items-center gap-2.5 transition-colors cursor-pointer"
-                    >
-                      <span className={`w-3.5 h-3.5 rounded-full ${c.colorClass}`} />
-                      <span>{c.name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Quantity & Add to Cart Row */}
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest block">
-                QUANTITY
-              </span>
-              <div className="flex items-center gap-3 sm:gap-4">
-                {/* Quantity Selector Dropdown */}
-                <div className="relative w-28 sm:w-32 shrink-0">
+            {/* Vertical Thumbnail Strip (Only show if multiple images exist) */}
+            {gallery.length > 1 && (
+              <div className="flex flex-col gap-2.5 shrink-0">
+                {gallery.map((img, idx) => (
                   <button
-                    type="button"
-                    onClick={() => setQuantityDropdownOpen(!quantityDropdownOpen)}
-                    className="w-full bg-[#EDF5F7] px-4 py-3.5 sm:py-4 rounded-2xl text-xs sm:text-sm font-bold text-slate-700 flex items-center justify-between cursor-pointer hover:bg-[#E3EFF1] transition-colors"
-                  >
-                    <span>{String(quantity).padStart(2, "0")}</span>
-                    <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${quantityDropdownOpen ? "rotate-180" : ""}`} />
-                  </button>
-
-                  {quantityDropdownOpen && (
-                    <div className="absolute bottom-full mb-1 left-0 right-0 bg-white border border-slate-100 rounded-2xl shadow-xl z-20 py-1 max-h-48 overflow-y-auto">
-                      {[1, 2, 3, 4, 5, 10, 20].map((num) => (
-                        <button
-                          key={num}
-                          onClick={() => {
-                            setQuantity(num);
-                            setQuantityDropdownOpen(false);
-                          }}
-                          className="w-full px-4 py-2.5 text-left text-xs sm:text-sm font-semibold text-slate-700 hover:bg-[#EDF5F7] cursor-pointer"
-                        >
-                          {String(num).padStart(2, "0")}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Mint/Teal "ADD TO CART" Button */}
-                <button
-                  type="button"
-                  onClick={handleAddToCart}
-                  className="flex-1 py-3.5 sm:py-4 px-6 sm:px-8 rounded-2xl bg-[#5ECFB5] hover:bg-[#4EBFB0] active:scale-[0.98] text-slate-900 font-extrabold text-xs sm:text-sm tracking-wider uppercase shadow-xl shadow-[#5ECFB5]/25 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
-                >
-                  {addingToCart ? (
-                    <>
-                      <Check className="w-4 h-4 text-slate-900" />
-                      <span>ADDED</span>
-                    </>
-                  ) : (
-                    <span>ADD TO CART</span>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Bottom Tabs: DETAILS | DELIVERY | RETURN */}
-            <div className="pt-4 border-t border-slate-100">
-              <div className="flex items-center justify-between text-xs sm:text-sm font-bold tracking-wider text-slate-400">
-                {["DETAILS", "DELIVERY", "RETURN"].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveBottomTab(tab)}
-                    className={`hover:text-slate-800 transition-colors cursor-pointer py-1 uppercase ${
-                      activeBottomTab === tab ? "text-slate-800 border-b-2 border-slate-800" : ""
+                    key={idx}
+                    onClick={() => setSelectedImage(idx)}
+                    className={`w-14 h-14 rounded-xl border p-1 bg-gray-50/50 flex items-center justify-center overflow-hidden transition-all cursor-pointer ${
+                      selectedImage === idx
+                        ? "border-[#003D2B] ring-2 ring-[#003D2B]/20"
+                        : "border-gray-200 hover:border-gray-400"
                     }`}
                   >
-                    {tab}
+                    <img src={img} alt={`Thumb ${idx + 1}`} className="w-full h-full object-contain" />
                   </button>
                 ))}
               </div>
+            )}
 
-              {/* Tab Info Box */}
-              <div className="mt-3 text-xs sm:text-sm text-slate-500 leading-relaxed font-normal bg-[#F8FAFC] p-3.5 sm:p-4 rounded-2xl border border-slate-100">
-                {activeBottomTab === "DETAILS" && (
-                  <p>
-                    Premium construction with ergonomic lumbar curvature, solid natural wood frame, and reinforced stitching.
-                  </p>
-                )}
-                {activeBottomTab === "DELIVERY" && (
-                  <p>
-                    Direct insured doorstep shipping in 2–4 business days with live tracking across US, UK & international hubs.
-                  </p>
-                )}
-                {activeBottomTab === "RETURN" && (
-                  <p>
-                    30-day risk-free return guarantee with complimentary return pickup for verified enterprise & retail orders.
-                  </p>
-                )}
+            {/* Central Main Image Container */}
+            <div className="flex-1 bg-white rounded-2xl border border-gray-200 p-6 relative flex items-center justify-center min-h-[380px] sm:min-h-[440px]">
+              <img
+                src={currentImage}
+                alt={title}
+                className="max-h-[340px] sm:max-h-[400px] w-full object-contain drop-shadow-md transition-transform duration-300 hover:scale-105"
+              />
+              <button
+                className="absolute right-4 bottom-4 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 transition-colors cursor-pointer"
+                title="Expand image"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+            </div>
+
+          </div>
+
+          {/* ── RIGHT: Product Info, Pricing & Actions ── */}
+          <div className="lg:col-span-6 space-y-4">
+            
+            {/* Brand badge & Wishlist button */}
+            <div className="flex items-center justify-between">
+              <span className="bg-[#E50914] text-white text-xs font-extrabold uppercase px-2.5 py-0.5 rounded">
+                {brand}
+              </span>
+              <button
+                onClick={handleWishlist}
+                className="w-9 h-9 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-500 hover:text-rose-500 transition-colors cursor-pointer"
+              >
+                <Heart className={`w-4 h-4 ${wishlisted ? "fill-rose-500 text-rose-500" : ""}`} />
+              </button>
+            </div>
+
+            {/* Title & Subtitle */}
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-snug">
+                {title}
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                {subtitle}
+              </p>
+            </div>
+
+            {/* Ratings & Q&A */}
+            <div className="flex items-center gap-2 text-xs">
+              <span className="font-bold text-gray-900">{rating}</span>
+              <div className="flex items-center">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star key={s} className="w-3.5 h-3.5 fill-[#F9BC15] text-[#F9BC15]" />
+                ))}
               </div>
+              <span className="text-gray-500">({reviewsCount.toLocaleString()} ratings)</span>
+              <span className="text-gray-300">|</span>
+              <span className="text-gray-600">{answeredQuestions} answered questions</span>
+            </div>
+
+            {/* #1 Best Seller Tag */}
+            <div className="flex items-center gap-2">
+              <span className="bg-[#003D2B] text-white text-[11px] font-bold px-2 py-0.5 rounded">
+                #1 Best Seller
+              </span>
+              <span className="text-xs text-gray-500">in {product?.category || "Featured Catalog"}</span>
+            </div>
+
+            {/* Price Row */}
+            <div className="pt-2">
+              <div className="flex items-baseline gap-3">
+                <span className="text-3xl sm:text-4xl font-black text-gray-900">
+                  {formatPrice(price, country.currency, country.symbol)}
+                </span>
+                <span className="text-sm text-gray-400 line-through">
+                  {formatPrice(mrp, country.currency, country.symbol)}
+                </span>
+                <span className="text-xs font-bold text-[#059669] bg-[#EAF7F0] px-2 py-0.5 rounded">
+                  {discount}% OFF
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-500 mt-0.5">Inclusive of all taxes</p>
+            </div>
+
+            {/* EMI Text */}
+            <div className="flex items-center gap-1.5 text-xs text-gray-700">
+              <span>EMI from <strong>₹{emiAmount.toLocaleString()}/month</strong>.</span>
+              <button className="text-[#006B3C] font-bold hover:underline inline-flex items-center gap-0.5 cursor-pointer">
+                <span>View Plans</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* 3 Inline Trust / Delivery Pillars */}
+            <div className="grid grid-cols-3 gap-2.5 py-2">
+              <div className="bg-[#F8FAF9] rounded-xl p-3 border border-gray-200/80 flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-[#003D2B] text-white flex items-center justify-center shrink-0">
+                  <Truck className="w-4 h-4 text-[#dff0d8]" />
+                </div>
+                <div>
+                  <h4 className="text-[11px] font-bold text-gray-900">Free Delivery</h4>
+                  <p className="text-[10px] text-gray-500">By Thu, 12 Sep</p>
+                </div>
+              </div>
+
+              <div className="bg-[#F8FAF9] rounded-xl p-3 border border-gray-200/80 flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-[#003D2B] text-white flex items-center justify-center shrink-0">
+                  <RotateCcw className="w-4 h-4 text-[#dff0d8]" />
+                </div>
+                <div>
+                  <h4 className="text-[11px] font-bold text-gray-900">7 Days</h4>
+                  <p className="text-[10px] text-gray-500">Easy Returns</p>
+                </div>
+              </div>
+
+              <div className="bg-[#F8FAF9] rounded-xl p-3 border border-gray-200/80 flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-[#003D2B] text-white flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-4 h-4 text-[#dff0d8]" />
+                </div>
+                <div>
+                  <h4 className="text-[11px] font-bold text-gray-900">1 Year</h4>
+                  <p className="text-[10px] text-gray-500">Brand Warranty</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons: Add to Cart + Buy Now */}
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <button
+                onClick={handleAddToCart}
+                className="py-3 px-6 rounded-xl border-2 border-[#003D2B] text-[#003D2B] hover:bg-[#003D2B]/5 font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+              >
+                {addingToCart ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Added</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-4 h-4" />
+                    <span>Add to Cart</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleAddToCart}
+                className="py-3 px-6 rounded-xl bg-[#003D2B] hover:bg-[#002d20] text-white font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md"
+              >
+                <Zap className="w-4 h-4 fill-white" />
+                <span>Buy Now</span>
+              </button>
             </div>
 
           </div>
 
         </div>
 
-        {/* ─── RELATED PRODUCTS FULL-WIDTH GRID ─── */}
-        {relatedProducts.length > 0 && (
-          <div className="space-y-6 pt-6 border-t border-slate-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                  You Might Also Like
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                  Curated selections based on your browsing preferences
-                </p>
+        {/* ─── 3. Offers Available (4 Card Grid) ─── */}
+        <div className="space-y-3 pt-4">
+          <h3 className="text-base font-bold text-gray-900">Offers Available</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <div className="bg-white rounded-2xl p-4 border border-gray-200/90 shadow-2xs flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-[#EAF7F0] text-[#006B3C] flex items-center justify-center shrink-0">
+                <CreditCard className="w-5 h-5" />
               </div>
+              <div>
+                <h4 className="text-xs font-bold text-gray-900">₹2,000 Instant Discount</h4>
+                <p className="text-[11px] text-gray-500">on HDFC Bank Cards</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 border border-gray-200/90 shadow-2xs flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-[#EAF7F0] text-[#006B3C] flex items-center justify-center shrink-0">
+                <Percent className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-gray-900">10% Cashback</h4>
+                <p className="text-[11px] text-gray-500">up to ₹2,000 on UPI</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 border border-gray-200/90 shadow-2xs flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-[#EAF7F0] text-[#006B3C] flex items-center justify-center shrink-0">
+                <Layers className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-gray-900">No Cost EMI</h4>
+                <p className="text-[11px] text-gray-500">from ₹{emiAmount.toLocaleString()}/month</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 border border-gray-200/90 shadow-2xs flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-[#EAF7F0] text-[#006B3C] flex items-center justify-center shrink-0">
+                <RefreshCw className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-gray-900">Exchange Offer</h4>
+                <p className="text-[11px] text-gray-500">Up to ₹5,000 off</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* ─── 4. Key Highlights (8 Card Pill Grid) ─── */}
+        <div className="space-y-3 pt-4">
+          <h3 className="text-base font-bold text-gray-900">Key Highlights</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+            {highlights.map((item, idx) => {
+              const Icon = item.icon || Sparkles;
+              return (
+                <div
+                  key={idx}
+                  className="bg-white rounded-2xl p-3.5 border border-gray-200 text-center flex flex-col items-center justify-center shadow-2xs hover:border-[#006B3C]/50 transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-[#EAF7F0] text-[#006B3C] flex items-center justify-center mb-2">
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <h4 className="text-[11px] font-bold text-gray-900">{item.label}</h4>
+                  <p className="text-[10px] text-gray-500 mt-0.5 leading-tight">{item.value}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ─── 5. About This Item & Specifications Table (2 Column Grid) ─── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-4">
+          
+          {/* Left: About This Item */}
+          <div className="lg:col-span-6 space-y-3">
+            <h3 className="text-base font-bold text-gray-900">About this item</h3>
+            <ul className="space-y-2 text-xs sm:text-sm text-gray-600 list-disc list-inside leading-relaxed">
+              {features.map((feat, i) => (
+                <li key={i}>{feat}</li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Right: Brand Specifications Table */}
+          <div className="lg:col-span-6 space-y-3">
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden text-xs">
+              {Object.entries(specifications).map(([k, val], idx) => (
+                <div
+                  key={idx}
+                  className={`grid grid-cols-2 px-4 py-2.5 ${
+                    idx % 2 === 0 ? "bg-gray-50/70" : "bg-white"
+                  } border-b border-gray-100 last:border-b-0`}
+                >
+                  <span className="font-bold text-gray-700">{k}</span>
+                  <span className="text-gray-600">{val}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+
+        {/* ─── 6. "You may also like" Product Carousel ─── */}
+        {relatedList.length > 0 && (
+          <div className="space-y-4 pt-6 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">You may also like</h3>
               <Link
-                to={ROUTES.PRODUCTS}
-                className="text-xs sm:text-sm font-bold text-slate-700 hover:text-slate-900 flex items-center gap-1 transition-colors"
+                to="/products"
+                className="text-xs font-bold text-[#006B3C] hover:text-[#003D2B] flex items-center gap-1 transition-colors"
               >
                 <span>View All</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.map((p) => (
-                <ProductCard key={p.id} product={p} />
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {relatedList.map((p, idx) => (
+                <ProductCard key={p.id || idx} product={p} />
               ))}
             </div>
           </div>
         )}
+
+        {/* ─── 7. Bottom Trust Feature Strip (5-items) ─── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 pt-6 border-t border-gray-200">
+          {[
+            { title: "100% Genuine", desc: "Products", icon: CheckCircle2 },
+            { title: "Secure", desc: "Payments", icon: Lock },
+            { title: "Easy", desc: "Returns", icon: RotateCcw },
+            { title: "Fast & Reliable", desc: "Delivery", icon: Truck },
+            { title: "Dedicated", desc: "Customer Support", icon: Headphones },
+          ].map((badge, idx) => {
+            const Icon = badge.icon;
+            return (
+              <div key={idx} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-2xs">
+                <div className="w-10 h-10 rounded-full bg-[#EAF7F0] text-[#006B3C] flex items-center justify-center shrink-0">
+                  <Icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-gray-900">{badge.title}</h4>
+                  <p className="text-[11px] text-gray-500">{badge.desc}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
 
       </div>
     </div>
