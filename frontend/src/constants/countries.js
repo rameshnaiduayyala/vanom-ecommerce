@@ -5,6 +5,7 @@ export const SUPPORTED_COUNTRIES = [
     currency: "USD",
     symbol: "$",
     flag: "🇺🇸",
+    flagUrl: "https://flagcdn.com/w40/us.png",
   },
   {
     code: "GB",
@@ -12,7 +13,8 @@ export const SUPPORTED_COUNTRIES = [
     currency: "GBP",
     symbol: "£",
     flag: "🇬🇧",
-  },
+    flagUrl: "https://flagcdn.com/w40/gb.png",
+  }
 ];
 
 export const ORDER_STATUSES = {

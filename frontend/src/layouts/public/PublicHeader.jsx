@@ -4,7 +4,6 @@ import { useCountryStore } from "../../stores/country.store.js";
 import { useCartStore } from "../../stores/cart.store.js";
 import { useAuthStore } from "../../stores/auth.store.js";
 import { ROUTES } from "../../constants/routes.js";
-import { AnnouncementBar } from "../../features/storefront/components/AnnouncementBar.jsx";
 import {
   Search,
   ShoppingCart,
@@ -151,9 +150,6 @@ export function PublicHeader() {
 
   return (
     <>
-      {/* Top Utility Bar */}
-      <AnnouncementBar />
-
       {/* Main Header */}
       <header className="sticky top-0 z-40 bg-white border-b border-[#E8EDE9]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-[72px] flex items-center justify-between gap-4 sm:gap-8">
