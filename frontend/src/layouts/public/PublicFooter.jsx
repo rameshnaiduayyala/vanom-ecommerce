@@ -2,228 +2,253 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../constants/routes.js";
 import {
-  Twitter,
-  Linkedin,
   Facebook,
   Instagram,
-  ArrowRight,
-  ShieldCheck,
-  Leaf,
-  MapPin,
-  Phone,
-  Mail,
+  Youtube,
+  Linkedin,
 } from "lucide-react";
 
 export function PublicFooter() {
+  const currentYear = new Date().getFullYear();
+
   return (
-    <footer className="mt-auto select-none overflow-hidden relative text-slate-100">
-      {/* ── TOP HILLS & BOTANICAL WAVE GRAPHIC ── */}
-      <div className="relative w-full bg-[#18533C] pt-14 sm:pt-20 pb-10 sm:pb-16 overflow-hidden">
-        {/* Layered Vector Landscape / Hill Wave Overlay */}
-        <svg
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-40 z-0"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 1440 320"
-          preserveAspectRatio="none"
-        >
-          <path
-            d="M0,96 C280,180 560,40 840,120 C1120,200 1320,80 1440,110 L1440,0 L0,0 Z"
-            fill="#0F3B2A"
-          />
-          <path
-            d="M0,192 C320,120 640,260 960,180 C1200,120 1380,220 1440,190 L1440,0 L0,0 Z"
-            fill="#1E6B4E"
-            opacity="0.3"
-          />
-        </svg>
+    <footer className="bg-[#002418] text-white border-t border-[#003826] mt-auto select-none">
+      {/* Main Footer Links & Branding */}
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10">
+          
+          {/* Column 1: Brand & Socials (4 Cols) */}
+          <div className="lg:col-span-4 space-y-4">
+            <Link to={ROUTES.HOME} className="inline-block">
+              <img
+                src="/logo.png"
+                alt="Vanom"
+                className="h-10 w-auto object-contain brightness-0 invert"
+                onError={(e) => {
+                  e.target.style.display = "none";
+                  e.target.nextSibling.style.display = "block";
+                }}
+              />
+              <span className="hidden text-2xl font-black text-[#A3E635] tracking-tight font-serif">
+                Vanom<span className="text-[#FBBF24]">™</span>
+              </span>
+            </Link>
 
-        {/* Floating subtle leaves */}
-        <div className="absolute top-6 left-[18%] text-[#6EE7B7]/40 pointer-events-none z-10 transform rotate-[-20deg] animate-pulse">
-          <Leaf className="w-8 h-8 fill-current" />
-        </div>
-        <div className="absolute top-12 right-[24%] text-[#34D399]/30 pointer-events-none z-10 transform rotate-[40deg]">
-          <Leaf className="w-10 h-10 fill-current" />
-        </div>
-        <div className="absolute bottom-8 right-[48%] text-[#10B981]/30 pointer-events-none z-10 transform rotate-[15deg]">
-          <Leaf className="w-7 h-7 fill-current" />
-        </div>
+            <p className="text-xs text-white/70 font-medium">
+              Everything for a brighter tomorrow.
+            </p>
 
-        {/* Big Bold Headline Statement matching Treecard reference */}
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
-          <h2
-            className="font-black text-white tracking-tight leading-[1.08] max-w-3xl drop-shadow-sm"
-            style={{ fontSize: "clamp(2.1rem, 5.2vw, 4.2rem)" }}
-          >
-            Commerce doesn&apos;t stop at borders,{" "}
-            <span className="text-[#6EE7B7]">it connects them.</span>
-          </h2>
+            {/* Circular Social Icons matching reference */}
+            <div className="flex items-center gap-2.5 pt-2">
+              <a
+                href="https://facebook.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Facebook"
+                className="w-8 h-8 rounded-full border border-white/20 bg-white/5 hover:bg-[#F9BC15] hover:border-[#F9BC15] hover:text-[#002418] text-white/80 flex items-center justify-center transition-all duration-200"
+              >
+                <Facebook className="w-3.5 h-3.5" />
+              </a>
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Instagram"
+                className="w-8 h-8 rounded-full border border-white/20 bg-white/5 hover:bg-[#F9BC15] hover:border-[#F9BC15] hover:text-[#002418] text-white/80 flex items-center justify-center transition-all duration-200"
+              >
+                <Instagram className="w-3.5 h-3.5" />
+              </a>
+              <a
+                href="https://youtube.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Youtube"
+                className="w-8 h-8 rounded-full border border-white/20 bg-white/5 hover:bg-[#F9BC15] hover:border-[#F9BC15] hover:text-[#002418] text-white/80 flex items-center justify-center transition-all duration-200"
+              >
+                <Youtube className="w-3.5 h-3.5" />
+              </a>
+              <a
+                href="https://linkedin.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="LinkedIn"
+                className="w-8 h-8 rounded-full border border-white/20 bg-white/5 hover:bg-[#F9BC15] hover:border-[#F9BC15] hover:text-[#002418] text-white/80 flex items-center justify-center transition-all duration-200"
+              >
+                <Linkedin className="w-3.5 h-3.5" />
+              </a>
+              <a
+                href="https://pinterest.com"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Pinterest"
+                className="w-8 h-8 rounded-full border border-white/20 bg-white/5 hover:bg-[#F9BC15] hover:border-[#F9BC15] hover:text-[#002418] text-white/80 flex items-center justify-center transition-all duration-200 text-xs font-bold font-serif"
+              >
+                P
+              </a>
+            </div>
+          </div>
+
+          {/* Column 2: Shop Links (2.5 Cols) */}
+          <div className="lg:col-span-2 space-y-3">
+            <h4 className="text-xs font-bold text-white tracking-wider">Shop</h4>
+            <ul className="space-y-2 text-xs text-white/70">
+              <li>
+                <Link to={ROUTES.PRODUCTS} className="hover:text-white transition-colors">
+                  All Categories
+                </Link>
+              </li>
+              <li>
+                <Link to={`${ROUTES.PRODUCTS}?filter=deals`} className="hover:text-white transition-colors">
+                  Today&apos;s Deals
+                </Link>
+              </li>
+              <li>
+                <Link to={`${ROUTES.PRODUCTS}?filter=new`} className="hover:text-white transition-colors">
+                  New Arrivals
+                </Link>
+              </li>
+              <li>
+                <Link to={`${ROUTES.PRODUCTS}?filter=bestseller`} className="hover:text-white transition-colors">
+                  Best Sellers
+                </Link>
+              </li>
+              <li>
+                <Link to="/gift-cards" className="hover:text-white transition-colors">
+                  Gift Cards
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 3: Customer Service (2.5 Cols) */}
+          <div className="lg:col-span-2 space-y-3">
+            <h4 className="text-xs font-bold text-white tracking-wider">Customer Service</h4>
+            <ul className="space-y-2 text-xs text-white/70">
+              <li>
+                <Link to={ROUTES.ORDERS} className="hover:text-white transition-colors">
+                  Track Order
+                </Link>
+              </li>
+              <li>
+                <Link to="/shipping" className="hover:text-white transition-colors">
+                  Shipping &amp; Delivery
+                </Link>
+              </li>
+              <li>
+                <Link to="/returns" className="hover:text-white transition-colors">
+                  Returns &amp; Refunds
+                </Link>
+              </li>
+              <li>
+                <Link to={ROUTES.CONTACT} className="hover:text-white transition-colors">
+                  Help Center
+                </Link>
+              </li>
+              <li>
+                <Link to={ROUTES.CONTACT} className="hover:text-white transition-colors">
+                  Contact Us
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 4: About Vanom (2 Cols) */}
+          <div className="lg:col-span-2 space-y-3">
+            <h4 className="text-xs font-bold text-white tracking-wider">About Vanom</h4>
+            <ul className="space-y-2 text-xs text-white/70">
+              <li>
+                <Link to="/about" className="hover:text-white transition-colors">
+                  Our Story
+                </Link>
+              </li>
+              <li>
+                <Link to="/sustainability" className="hover:text-white transition-colors">
+                  Sustainability
+                </Link>
+              </li>
+              <li>
+                <Link to="/careers" className="hover:text-white transition-colors">
+                  Careers
+                </Link>
+              </li>
+              <li>
+                <Link to="/blog" className="hover:text-white transition-colors">
+                  Blog
+                </Link>
+              </li>
+              <li>
+                <Link to="/bulk-buyers" className="hover:text-white transition-colors">
+                  Partner With Us
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 5: Payment Methods (2 Cols) */}
+          <div className="lg:col-span-2 space-y-3">
+            <h4 className="text-xs font-bold text-white tracking-wider">We Accept</h4>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              {/* Visa Badge */}
+              <div className="h-7 px-2.5 rounded bg-white flex items-center justify-center shadow-xs">
+                <span className="text-[11px] font-black text-[#1A1F71] tracking-tight italic font-serif">
+                  VISA
+                </span>
+              </div>
+
+              {/* Mastercard Badge */}
+              <div className="h-7 px-2.5 rounded bg-white flex items-center justify-center shadow-xs">
+                <div className="flex items-center -space-x-1.5">
+                  <div className="w-3.5 h-3.5 rounded-full bg-[#EB001B]" />
+                  <div className="w-3.5 h-3.5 rounded-full bg-[#F79E1B] opacity-90" />
+                </div>
+              </div>
+
+              {/* RuPay Badge */}
+              <div className="h-7 px-2.5 rounded bg-white flex items-center justify-center shadow-xs">
+                <span className="text-[10px] font-black text-[#097939] tracking-tighter">
+                  Ru<span className="text-[#092B60]">Pay</span>
+                  <span className="text-[#F37021] text-[8px]">▶</span>
+                </span>
+              </div>
+
+              {/* UPI Badge */}
+              <div className="h-7 px-2.5 rounded bg-white flex items-center justify-center shadow-xs">
+                <span className="text-[10px] font-black text-[#1E3A8A] tracking-wider">
+                  UPI<span className="text-[#059669]">▶</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      {/* ── MAIN STYLIZED FOOTER CONTENT ── */}
-      <div className="bg-[#0D442F] border-t border-[#1D6347]/60 pt-12 sm:pt-16 pb-12 sm:pb-16 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-10">
+      {/* Bottom Sub-Bar: Copyright, Legal Links & Made in India */}
+      <div className="border-t border-[#003826] bg-[#001D13] py-4 px-4 sm:px-8 lg:px-12 text-[11px] text-white/60">
+        <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Copyright */}
+          <div>
+            © {currentYear} Vanom. All rights reserved.
+          </div>
 
-            {/* Column 1: Brand Logo, Socials, CTA Button (3.5 cols) */}
-            <div className="lg:col-span-3 space-y-5">
-              <Link to={ROUTES.HOME} className="inline-flex items-center gap-3 group">
-                <div className="bg-white rounded-xl p-2 shadow-md flex items-center justify-center">
-                  <img src="/logo.png" alt="Vanom Logo" className="h-8 w-auto object-contain" />
-                </div>
-              </Link>
-
-              {/* Social Media Icons */}
-              <div className="flex items-center gap-3 text-[#34D399]">
-                <a
-                  href="https://twitter.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-8 h-8 rounded-full bg-[#12553B] hover:bg-[#22C55E] hover:text-white flex items-center justify-center transition-all duration-200"
-                  aria-label="Twitter"
-                >
-                  <Twitter className="w-3.5 h-3.5" />
-                </a>
-                <a
-                  href="https://linkedin.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-8 h-8 rounded-full bg-[#12553B] hover:bg-[#22C55E] hover:text-white flex items-center justify-center transition-all duration-200"
-                  aria-label="LinkedIn"
-                >
-                  <Linkedin className="w-3.5 h-3.5" />
-                </a>
-                <a
-                  href="https://facebook.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-8 h-8 rounded-full bg-[#12553B] hover:bg-[#22C55E] hover:text-white flex items-center justify-center transition-all duration-200"
-                  aria-label="Facebook"
-                >
-                  <Facebook className="w-3.5 h-3.5" />
-                </a>
-                <a
-                  href="https://instagram.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-8 h-8 rounded-full bg-[#12553B] hover:bg-[#22C55E] hover:text-white flex items-center justify-center transition-all duration-200"
-                  aria-label="Instagram"
-                >
-                  <Instagram className="w-3.5 h-3.5" />
-                </a>
-              </div>
-
-              {/* Treecard-style CTA Button */}
-              <div>
-                <Link
-                  to={ROUTES.PRODUCTS}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-xs sm:text-sm font-bold bg-[#34D399] hover:bg-[#2cd092] active:scale-[0.98] text-[#06331E] shadow-lg shadow-[#34D399]/20 transition-all duration-200 cursor-pointer"
-                >
-                  <span>Explore Catalog</span>
-                  <ArrowRight className="w-4 h-4 text-[#06331E]" />
-                </Link>
-              </div>
-
-              {/* Direct Quick Contact */}
-              <div className="space-y-1.5 pt-2 text-xs text-emerald-100/70">
-                <div className="flex items-center gap-2">
-                  <Phone className="w-3.5 h-3.5 text-[#34D399] shrink-0" />
-                  <span>+91 7989419864</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="w-3.5 h-3.5 text-[#34D399] shrink-0" />
-                  <a href="mailto:ayyalarameshnaidu@gmail.com" className="hover:text-white transition-colors truncate">
-                    ayyalarameshnaidu@gmail.com
-                  </a>
-                </div>
-              </div>
+          {/* Legal Links & Country Badge */}
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+            <Link to="/privacy-policy" className="hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+            <span className="text-white/20">|</span>
+            <Link to="/terms-conditions" className="hover:text-white transition-colors">
+              Terms &amp; Conditions
+            </Link>
+            <span className="text-white/20">|</span>
+            <Link to="/cookie-policy" className="hover:text-white transition-colors">
+              Cookie Policy
+            </Link>
+            <span className="text-white/20">|</span>
+            <div className="inline-flex items-center gap-1.5 text-white/80">
+              <span className="text-sm leading-none">🇮🇳</span>
+              <span className="text-[10px] font-medium text-white/70">Made with care in India</span>
             </div>
-
-            {/* Column 2: Navigation Links (2.5 cols) */}
-            <div className="lg:col-span-3 grid grid-cols-2 gap-4 sm:gap-6">
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold text-white/50 uppercase tracking-wider">
-                  Company
-                </h4>
-                <ul className="space-y-2 text-xs font-medium text-emerald-100/80">
-                  <li><Link to={ROUTES.HOME} className="hover:text-[#6EE7B7] transition-colors">Home</Link></li>
-                  <li><Link to={ROUTES.PRODUCTS} className="hover:text-[#6EE7B7] transition-colors">Catalog</Link></li>
-                  <li><Link to={ROUTES.B2B.CATALOG} className="hover:text-[#6EE7B7] transition-colors">B2B Portal</Link></li>
-                  <li><Link to={ROUTES.B2B.QUOTES} className="hover:text-[#6EE7B7] transition-colors">Request RFQ</Link></li>
-                  <li><Link to={ROUTES.B2B.BULK_ORDER} className="hover:text-[#6EE7B7] transition-colors">Bulk Order</Link></li>
-                </ul>
-              </div>
-
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold text-white/50 uppercase tracking-wider">
-                  Support
-                </h4>
-                <ul className="space-y-2 text-xs font-medium text-emerald-100/80">
-                  <li><Link to={ROUTES.CONTACT} className="hover:text-[#6EE7B7] transition-colors">Contact Us</Link></li>
-                  <li><Link to={ROUTES.ORDERS} className="hover:text-[#6EE7B7] transition-colors">Track Orders</Link></li>
-                  <li><Link to={ROUTES.ACCOUNT} className="hover:text-[#6EE7B7] transition-colors">My Account</Link></li>
-                  <li><a href="#faqs" className="hover:text-[#6EE7B7] transition-colors">FAQs</a></li>
-                  <li><a href="#privacy" className="hover:text-[#6EE7B7] transition-colors">Privacy</a></li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Column 3: Global Office Addresses (3.5 cols) */}
-            <div className="lg:col-span-3 space-y-4">
-              <h4 className="text-xs font-bold text-white/50 uppercase tracking-wider">
-                Global Offices & Hubs
-              </h4>
-
-              <div className="space-y-3 text-xs text-emerald-100/80">
-                {/* UK Office */}
-                <div className="p-3 rounded-xl bg-[#12553B]/50 border border-white/10 space-y-1">
-                  <div className="flex items-center gap-1.5 font-bold text-[#6EE7B7]">
-                    <MapPin className="w-3.5 h-3.5 text-[#34D399] shrink-0" />
-                    <span>United Kingdom</span>
-                  </div>
-                  <p className="text-[11px] leading-relaxed text-emerald-100/70 pl-5">
-                    Vanom Global Ltd<br />
-                    25 Cabot Square, Canary Wharf<br />
-                    London E14 4QA
-                  </p>
-                </div>
-
-                {/* US Office */}
-                <div className="p-3 rounded-xl bg-[#12553B]/50 border border-white/10 space-y-1">
-                  <div className="flex items-center gap-1.5 font-bold text-[#6EE7B7]">
-                    <MapPin className="w-3.5 h-3.5 text-[#34D399] shrink-0" />
-                    <span>United States</span>
-                  </div>
-                  <p className="text-[11px] leading-relaxed text-emerald-100/70 pl-5">
-                    Vanom Logistics Inc<br />
-                    450 Lexington Avenue<br />
-                    New York, NY 10017
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Column 4: Tagline & Legal Disclaimer (3 cols) */}
-            <div className="lg:col-span-3 space-y-3.5">
-              <div>
-                <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight leading-snug">
-                  Global supply. Seamless delivery.
-                </h3>
-                <p className="text-xs text-emerald-200/60 mt-0.5">
-                  Copyright © {new Date().getFullYear()} Vanom Platforms Ltd.
-                </p>
-              </div>
-
-              <p className="text-[11px] leading-relaxed text-emerald-200/50">
-                THIS PLATFORM IS OPERATED BY VANOM ECOMMERCE PLATFORMS LTD. DIRECT RETAIL AND B2B OPERATIONS ARE BACKED BY ISO-9001 QUALITY STANDARDS.
-              </p>
-
-              <div className="pt-1 flex items-center gap-2 text-[11px] text-[#6EE7B7]/80">
-                <ShieldCheck className="w-4 h-4 text-[#34D399] shrink-0" />
-                <span>PCI-DSS Level 1 & SSL Encrypted</span>
-              </div>
-            </div>
-
           </div>
         </div>
       </div>
@@ -232,3 +257,4 @@ export function PublicFooter() {
 }
 
 export default PublicFooter;
+
