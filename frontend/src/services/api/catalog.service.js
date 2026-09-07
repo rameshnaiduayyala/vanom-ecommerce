@@ -62,4 +62,15 @@ export const catalogService = {
     }
     return apiClient.get("/products/best-sellers", { params });
   },
+
+  // --- Product CRUD ---
+  createProduct: (data) => apiClient.post("/products", data),
+  updateProduct: (id, data) => apiClient.put(`/products/${id}`, data),
+  deleteProduct: (id) => apiClient.delete(`/products/${id}`),
+
+  // --- Category CRUD ---
+  getCategoryById: (id) => apiClient.get(`/categories/${id}`),
+  createCategory: (data) => apiClient.post("/categories", data),
+  updateCategory: (id, data) => apiClient.put(`/categories/${id}`, data),
+  deleteCategory: (id) => apiClient.delete(`/categories/${id}`),
 };

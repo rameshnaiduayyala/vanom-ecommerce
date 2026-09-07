@@ -55,7 +55,7 @@ export const ADMIN_NAV_CONFIG = [
       {
         id: "add-product",
         label: "Add Product",
-        path: `${ROUTES.ADMIN.PRODUCTS}#new`,
+        path: "/admin/products/new",
         permission: "catalog.create",
       },
       {

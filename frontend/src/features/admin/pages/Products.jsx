@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { formatPrice } from "../../../utils/formatters.js";
@@ -253,24 +254,29 @@ export function Products() {
     }
   };
 
+  // Safely normalized arrays
+  const productList = Array.isArray(products) ? products : (products?.items || []);
+  const categoryList = Array.isArray(categories) ? categories : (categories?.items || []);
+
   // Filtered Products
-  const filteredProducts = products.filter((p) => {
+  const filteredProducts = productList.filter((p) => {
     const matchesSearch =
       !search ||
       p.name?.toLowerCase().includes(search.toLowerCase()) ||
       p.sku?.toLowerCase().includes(search.toLowerCase()) ||
-      p.category?.toLowerCase().includes(search.toLowerCase());
+      (typeof p.category === "string" && p.category?.toLowerCase().includes(search.toLowerCase()));
 
     const matchesCategory =
       selectedCategory === "ALL" ||
       p.categoryId === selectedCategory ||
-      p.category === selectedCategory;
+      p.category === selectedCategory ||
+      (typeof p.category === "object" && p.category?.id === selectedCategory);
 
     return matchesSearch && matchesCategory;
   });
 
   // Filtered Categories
-  const filteredCategories = categories.filter(
+  const filteredCategories = categoryList.filter(
     (c) =>
       !categorySearch ||
       c.name?.toLowerCase().includes(categorySearch.toLowerCase()) ||
@@ -287,15 +293,16 @@ export function Products() {
 
         <div className="flex items-center gap-3">
           {activeTab === "products" ? (
-            <Button
-              variant="primary"
-              size="sm"
-              icon={Plus}
-              onClick={openAddProduct}
-              className="font-bold shadow-xs"
-            >
-              Add New Product
-            </Button>
+            <Link to="/admin/products/new">
+              <Button
+                variant="primary"
+                size="sm"
+                icon={Plus}
+                className="font-bold shadow-xs cursor-pointer"
+              >
+                Add New Product
+              </Button>
+            </Link>
           ) : (
             <Button
               variant="primary"
