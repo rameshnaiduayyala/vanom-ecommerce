@@ -4,13 +4,12 @@ import { useCountryStore } from "../../../../stores/country.store.js";
 import { useCartStore } from "../../../../stores/cart.store.js";
 import { useUIStore } from "../../../../stores/ui.store.js";
 import { formatPrice } from "../../../../utils/formatters.js";
-import { Heart, ShoppingCart, Star, Check, Flame, Sparkles, TrendingUp } from "lucide-react";
+import { Star, ShoppingCart, Check } from "lucide-react";
 
 export function ProductCardCompact({ product, badge = null }) {
   const { country } = useCountryStore();
   const { cart, setCart } = useCartStore();
   const { addToast } = useUIStore();
-  const [wishlisted, setWishlisted] = useState(false);
   const [added, setAdded] = useState(false);
 
   const pricing = product.pricing?.[country.code] || product.pricing?.IN || {};
@@ -19,12 +18,13 @@ export function ProductCardCompact({ product, badge = null }) {
     product.prices?.[0]?.amount ||
     product.variants?.[0]?.prices?.[0]?.amount ||
     pricing.retailPrice ||
-    499;
+    product.price ||
+    1499;
   const price = Number(backendPrice);
-  const originalPrice = pricing.mrp || (price > 0 ? price * 1.25 : 599);
-  const discount = originalPrice > price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
-  const rating = product.rating || 4.3;
-  const reviews = product.reviewsCount || product.reviews || 128;
+  const originalPrice = product.mrp || pricing.mrp || (price > 0 ? Math.round(price * 1.35) : 2199);
+  const discount = product.discount || (originalPrice > price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0);
+  const rating = product.rating || 4.5;
+  const reviews = product.reviewsCount || product.reviews || 2340;
 
   const image =
     product.image ||
@@ -38,7 +38,7 @@ export function ProductCardCompact({ product, badge = null }) {
     setAdded(true);
     const existing = cart.items.find((i) => i.id === product.id);
     const newItems = existing
-      ? cart.items.map((i) => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i)
+      ? cart.items.map((i) => (i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i))
       : [...cart.items, { id: product.id, name: product.name, price, quantity: 1, image }];
     const subtotal = newItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     setCart({ items: newItems, itemCount: newItems.length, subtotal });
@@ -46,88 +46,110 @@ export function ProductCardCompact({ product, badge = null }) {
     setTimeout(() => setAdded(false), 1200);
   };
 
+  const effectiveBadge = product.badge || badge;
+
   return (
-    <div className="group relative bg-white rounded-2xl border border-gray-100 hover:border-[#006B3C]/30 hover:shadow-xl shadow-sm transition-all duration-300 hover:-translate-y-0.5 flex flex-col overflow-hidden">
-      {/* Image */}
-      <div className="relative aspect-square overflow-hidden bg-gray-50">
-        <Link to={`/products/${product.slug || product.id}`}>
+    <div className="group relative bg-white rounded-2xl border border-gray-200/90 hover:border-[#006B3C]/50 hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden p-3 bg-white">
+      {/* Product Image Box */}
+      <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-gray-50/50 flex items-center justify-center p-2 mb-2">
+        <Link to={`/products/${product.slug || product.id}`} className="w-full h-full flex items-center justify-center">
           <img
             src={image}
             alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
         </Link>
 
-        {/* Badges */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1">
-          {badge === "best-seller" && (
-            <span className="flex items-center gap-1 bg-[#D9A514] text-[#003D2B] text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
-              <TrendingUp className="w-2.5 h-2.5" /> Best Seller
-            </span>
-          )}
-          {badge === "new" && (
-            <span className="flex items-center gap-1 bg-blue-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
-              <Sparkles className="w-2.5 h-2.5" /> New
-            </span>
-          )}
-          {badge === "sale" && discount >= 5 && (
-            <span className="flex items-center gap-1 bg-rose-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
-              <Flame className="w-2.5 h-2.5" /> -{discount}%
-            </span>
-          )}
-          {!badge && discount >= 5 && (
-            <span className="bg-[#006B3C] text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full">
-              -{discount}%
-            </span>
-          )}
-        </div>
-
-        {/* Wishlist */}
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            setWishlisted((v) => !v);
-          }}
-          className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-sm ${
-            wishlisted ? "bg-rose-500 text-white" : "bg-white/90 text-gray-400 hover:text-rose-500"
-          }`}
-        >
-          <Heart className={`w-3.5 h-3.5 ${wishlisted ? "fill-current" : ""}`} />
-        </button>
-      </div>
-
-      {/* Details */}
-      <div className="p-3 flex-1 flex flex-col gap-1.5">
-        <Link to={`/products/${product.slug || product.id}`} className="group-hover:text-[#006B3C] transition-colors">
-          <h3 className="text-xs font-bold text-gray-800 line-clamp-2 leading-snug">{product.name}</h3>
-        </Link>
-
-        {/* Rating */}
-        <div className="flex items-center gap-1">
-          <div className="flex">
-            {[1,2,3,4,5].map((s) => (
-              <Star key={s} className={`w-2.5 h-2.5 ${s <= Math.round(rating) ? "text-[#D9A514] fill-[#D9A514]" : "text-gray-200"}`} />
-            ))}
-          </div>
-          <span className="text-[9px] text-gray-400">({reviews})</span>
-        </div>
-
-        {/* Price & Cart */}
-        <div className="flex items-center justify-between mt-auto pt-1">
-          <div>
-            <span className="text-sm font-black text-gray-900">{formatPrice(price, country.currency, country.symbol)}</span>
-            {discount >= 5 && (
-              <span className="text-[10px] text-gray-400 line-through ml-1">{formatPrice(originalPrice, country.currency, country.symbol)}</span>
+        {/* Top-Left Pill Badge matching reference (Bestseller yellow / New green) */}
+        {effectiveBadge && (
+          <div className="absolute top-2 left-2 z-10">
+            {effectiveBadge.toLowerCase().includes("best") ? (
+              <span className="bg-[#F9BC15] text-[#003D2B] text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow-2xs">
+                Bestseller
+              </span>
+            ) : effectiveBadge.toLowerCase().includes("new") ? (
+              <span className="bg-[#059669] text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow-2xs">
+                New
+              </span>
+            ) : (
+              <span className="bg-[#003D2B] text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow-2xs">
+                {effectiveBadge}
+              </span>
             )}
           </div>
+        )}
+      </div>
+
+      {/* Product Info Section */}
+      <div className="flex-1 flex flex-col">
+        {/* Title */}
+        <Link to={`/products/${product.slug || product.id}`} className="group-hover:text-[#006B3C] transition-colors">
+          <h3 className="text-xs font-bold text-gray-900 line-clamp-1 leading-snug">
+            {product.name}
+          </h3>
+        </Link>
+
+        {/* Subtitle / Key Spec */}
+        <p className="text-[10px] text-gray-500 line-clamp-1 mb-2">
+          {product.subtitle || product.category || "Premium Quality"}
+        </p>
+
+        {/* Price & Discount Row */}
+        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+          <span className="text-sm font-black text-gray-900">
+            {formatPrice(price, country.currency, country.symbol)}
+          </span>
+          {originalPrice > price && (
+            <span className="text-[10px] text-gray-400 line-through">
+              {formatPrice(originalPrice, country.currency, country.symbol)}
+            </span>
+          )}
+          {discount > 0 && (
+            <span className="text-[9px] font-bold text-[#059669] bg-[#EAF7F0] px-1.5 py-0.2 rounded">
+              {discount}% OFF
+            </span>
+          )}
+        </div>
+
+        {/* Rating Stars & Count */}
+        <div className="flex items-center gap-1 mb-3">
+          <div className="flex items-center">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <Star
+                key={s}
+                className={`w-2.5 h-2.5 ${
+                  s <= Math.round(rating)
+                    ? "text-[#F9BC15] fill-[#F9BC15]"
+                    : "text-gray-200"
+                }`}
+              />
+            ))}
+          </div>
+          <span className="text-[9px] text-gray-400">({reviews.toLocaleString()})</span>
+        </div>
+
+        {/* Full-width Add to Cart Button matching reference image */}
+        <div className="mt-auto">
           <button
             onClick={handleAddToCart}
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-95 cursor-pointer shadow-sm ${
-              added ? "bg-[#006B3C] text-white" : "bg-[#003D2B] hover:bg-[#006B3C] text-white"
+            className={`w-full py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 cursor-pointer shadow-2xs ${
+              added
+                ? "bg-[#059669] text-white"
+                : "bg-[#003D2B] hover:bg-[#002d20] text-white"
             }`}
           >
-            {added ? <Check className="w-3.5 h-3.5" /> : <ShoppingCart className="w-3.5 h-3.5" />}
+            {added ? (
+              <>
+                <Check className="w-3.5 h-3.5" />
+                <span>Added</span>
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="w-3.5 h-3.5" />
+                <span>Add to Cart</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -136,3 +158,4 @@ export function ProductCardCompact({ product, badge = null }) {
 }
 
 export default ProductCardCompact;
+

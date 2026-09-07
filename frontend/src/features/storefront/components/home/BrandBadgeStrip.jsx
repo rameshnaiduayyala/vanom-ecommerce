@@ -1,40 +1,63 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 
 const BRANDS = [
-  { name: "Samsung", logo: "https://upload.wikimedia.org/wikipedia/commons/2/24/Samsung_Logo.svg" },
-  { name: "boAt", logo: "https://upload.wikimedia.org/wikipedia/commons/8/8c/BoAt_logo.png" },
-  { name: "Philips", logo: "https://upload.wikimedia.org/wikipedia/commons/b/bf/Philips_logo_new.svg" },
-  { name: "Xiaomi", logo: "https://upload.wikimedia.org/wikipedia/commons/2/29/Xiaomi_logo.svg" },
-  { name: "HP", logo: "https://upload.wikimedia.org/wikipedia/commons/a/ad/HP_logo_2012.svg" },
-  { name: "Lenovo", logo: "https://upload.wikimedia.org/wikipedia/commons/b/b8/Lenovo_logo_2015.svg" },
+  { name: "Samsung", color: "#1428A0", tag: "SAMSUNG" },
+  { name: "boAt", color: "#E50914", tag: "boAt" },
+  { name: "Philips", color: "#0B5ED7", tag: "PHILIPS" },
+  { name: "Prestige", color: "#D32F2F", tag: "Prestige", bg: "bg-red-600 text-white" },
+  { name: "pigeon", color: "#E11D48", tag: "pigeon" },
+  { name: "Tefal", color: "#DC2626", tag: "Tefal", italic: true },
+  { name: "croma", color: "#0D9488", tag: "croma" },
+  { name: "Mi", color: "#FF6700", tag: "וח", iconBox: true },
+  { name: "hp", color: "#0096D6", tag: "hp", circle: true },
+  { name: "Lenovo", color: "#E2231A", tag: "Lenovo" },
 ];
 
 export function BrandBadgeStrip({ brands = BRANDS }) {
   return (
-    <section className="py-8 bg-white border-y border-gray-100">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-8">
-        <h2 className="text-xl font-black text-gray-900 mb-5 text-center">Top Brands</h2>
-        <div className="flex items-center justify-center flex-wrap gap-4 sm:gap-8">
-          {(brands.length > 0 ? brands : BRANDS).map((brand) => (
-            <div
-              key={brand.name}
-              className="flex items-center justify-center h-12 w-28 px-4 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all cursor-pointer"
+    <section className="py-10 bg-white border-t border-gray-100">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Top Brands</h2>
+          <Link
+            to="/products"
+            className="flex items-center gap-1 text-xs font-bold text-[#006B3C] hover:text-[#003D2B] transition-colors"
+          >
+            View All <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {/* Brand tiles grid matching reference */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-3">
+          {BRANDS.map((b) => (
+            <Link
+              key={b.name}
+              to={`/products?search=${encodeURIComponent(b.name)}`}
+              className="h-16 rounded-xl border border-gray-200 hover:border-[#006B3C]/40 hover:shadow-md bg-white flex items-center justify-center p-2 transition-all duration-200 group"
             >
-              {brand.logo ? (
-                <img
-                  src={brand.logo}
-                  alt={brand.name}
-                  className="max-h-8 max-w-full object-contain"
-                  onError={(e) => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
-                />
-              ) : null}
-              <span
-                className="hidden text-lg font-black text-gray-700"
-                style={{ display: "none" }}
-              >
-                {brand.name}
-              </span>
-            </div>
+              {b.iconBox ? (
+                <div className="w-8 h-8 rounded-lg bg-[#FF6700] text-white flex items-center justify-center font-bold text-base shadow-xs">
+                  {b.tag}
+                </div>
+              ) : b.circle ? (
+                <div className="w-8 h-8 rounded-full border-2 border-[#0096D6] text-[#0096D6] flex items-center justify-center font-black text-xs italic">
+                  {b.tag}
+                </div>
+              ) : b.bg ? (
+                <div className="px-2.5 py-1 rounded bg-red-600 text-white font-black text-xs tracking-tight">
+                  {b.tag}
+                </div>
+              ) : (
+                <span
+                  className={`font-black text-sm tracking-tight ${b.italic ? "italic" : ""}`}
+                  style={{ color: b.color }}
+                >
+                  {b.tag}
+                </span>
+              )}
+            </Link>
           ))}
         </div>
       </div>
@@ -43,3 +66,4 @@ export function BrandBadgeStrip({ brands = BRANDS }) {
 }
 
 export default BrandBadgeStrip;
+

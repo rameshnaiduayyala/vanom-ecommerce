@@ -12,12 +12,80 @@ const FILTER_TABS = [
   { key: "OFFERS", label: "Offers" },
 ];
 
-function getBadgeForFilter(filter) {
-  if (filter === "BEST_SELLERS") return "best-seller";
-  if (filter === "NEW") return "new";
-  if (filter === "OFFERS") return "sale";
-  return null;
-}
+const REFERENCE_PRODUCTS = [
+  {
+    id: "prod-1",
+    name: "Philips Air Fryer 4.1L",
+    subtitle: "Healthy Cooking",
+    price: 3499,
+    mrp: 5299,
+    discount: 42,
+    rating: 4.8,
+    reviewsCount: 2340,
+    badge: "Bestseller",
+    image: "https://images.unsplash.com/photo-1556909172-8c2f041fca1e?auto=format&fit=crop&w=400&q=80",
+  },
+  {
+    id: "prod-2",
+    name: "Lenovo IdeaPad Slim 3",
+    subtitle: "Intel i5, 16GB, 512GB SSD",
+    price: 42990,
+    mrp: 56990,
+    discount: 25,
+    rating: 4.6,
+    reviewsCount: 12154,
+    badge: "New",
+    image: "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=400&q=80",
+  },
+  {
+    id: "prod-3",
+    name: "Prestige Mixer Grinder 750W",
+    subtitle: "Powerful & Durable",
+    price: 2299,
+    mrp: 3429,
+    discount: 34,
+    rating: 4.7,
+    reviewsCount: 9764,
+    badge: "Bestseller",
+    image: "https://images.unsplash.com/photo-1570222094114-d054a817e56b?auto=format&fit=crop&w=400&q=80",
+  },
+  {
+    id: "prod-4",
+    name: "Noise Buds VS104",
+    subtitle: "Crystal Clear Sound",
+    price: 1499,
+    mrp: 2999,
+    discount: 50,
+    rating: 4.4,
+    reviewsCount: 8493,
+    badge: null,
+    image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=400&q=80",
+  },
+  {
+    id: "prod-5",
+    name: "Live Indoor Plant",
+    subtitle: "Purifies Air",
+    price: 499,
+    mrp: 799,
+    discount: 38,
+    rating: 4.9,
+    reviewsCount: 2873,
+    badge: null,
+    image: "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=400&q=80",
+  },
+  {
+    id: "prod-6",
+    name: "boAt Smartwatch",
+    subtitle: "Track Your Fitness",
+    price: 4999,
+    mrp: 7999,
+    discount: 38,
+    rating: 4.5,
+    reviewsCount: 4170,
+    badge: null,
+    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80",
+  },
+];
 
 export function FeaturedProductsSection({
   products = [],
@@ -28,19 +96,21 @@ export function FeaturedProductsSection({
   const [activeFilter, setActiveFilter] = useState("ALL");
   const scrollRef = useRef(null);
 
-  const productList = Array.isArray(products) ? products : (products?.items || []);
-  const featuredList = Array.isArray(featuredProducts) ? featuredProducts : (featuredProducts?.items || []);
-  const bestSellerList = Array.isArray(bestSellers) ? bestSellers : (bestSellers?.items || []);
+  const rawList = products.length > 0 ? products : (featuredProducts.length > 0 ? featuredProducts : REFERENCE_PRODUCTS);
+  const productList = Array.isArray(rawList) ? rawList : (rawList?.items || REFERENCE_PRODUCTS);
+  const featuredList = Array.isArray(featuredProducts) && featuredProducts.length > 0 ? featuredProducts : productList;
+  const bestSellerList = Array.isArray(bestSellers) && bestSellers.length > 0 ? bestSellers : productList;
 
   const displayed = React.useMemo(() => {
     let list = productList;
-    if (activeFilter === "BEST_SELLERS") list = bestSellerList.length > 0 ? bestSellerList : productList.filter((p) => p.isBestSeller);
-    else if (activeFilter === "NEW") list = productList.filter((p) => !p.isBestSeller).slice(0, 12);
+    if (activeFilter === "BEST_SELLERS") list = bestSellerList;
+    else if (activeFilter === "NEW") list = productList.filter((p) => p.badge === "New" || !p.isBestSeller);
     else if (activeFilter === "TOP_RATED") list = [...productList].sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    else if (activeFilter === "OFFERS") list = productList.filter((p) => (p.pricing?.IN?.retailPrice || 0) > 0);
-    else list = featuredList.length > 0 ? featuredList : productList;
-    return list.slice(0, 12);
+    else if (activeFilter === "OFFERS") list = productList.filter((p) => (p.discount || 0) >= 30);
+    else list = featuredList;
+    return (list.length > 0 ? list : REFERENCE_PRODUCTS).slice(0, 12);
   }, [activeFilter, productList, featuredList, bestSellerList]);
+
 
   const scroll = (dir) => scrollRef.current?.scrollBy({ left: dir * 280, behavior: "smooth" });
 
@@ -99,7 +169,7 @@ export function FeaturedProductsSection({
                 <ProductCardCompact
                   key={p.id || i}
                   product={p}
-                  badge={getBadgeForFilter(activeFilter) || (i === 0 ? "best-seller" : i === 1 ? "new" : null)}
+                  badge={p.badge || (i === 0 ? "Bestseller" : i === 1 ? "New" : null)}
                 />
               ))}
             </div>
