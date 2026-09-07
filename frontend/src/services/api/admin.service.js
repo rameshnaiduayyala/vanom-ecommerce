@@ -121,7 +121,7 @@ export const adminService = {
       saveLiveProducts(updated);
       return newProduct;
     }
-    return apiClient.post("/admin/products", productData);
+    return apiClient.post("/products", productData);
   },
 
   updateProduct: async (id, productData) => {
@@ -135,7 +135,7 @@ export const adminService = {
       saveLiveProducts(products);
       return updatedProduct;
     }
-    return apiClient.put(`/admin/products/${id}`, productData);
+    return apiClient.put(`/products/${id}`, productData);
   },
 
   deleteProduct: async (id) => {
@@ -145,7 +145,7 @@ export const adminService = {
       saveLiveProducts(products);
       return { success: true, id };
     }
-    return apiClient.delete(`/admin/products/${id}`);
+    return apiClient.delete(`/products/${id}`);
   },
 
   // --- Category CRUD ---
@@ -179,7 +179,7 @@ export const adminService = {
       saveLiveCategories(updated);
       return newCategory;
     }
-    return apiClient.post("/admin/categories", categoryData);
+    return apiClient.post("/categories", categoryData);
   },
 
   updateCategory: async (id, categoryData) => {
@@ -193,7 +193,7 @@ export const adminService = {
       saveLiveCategories(categories);
       return updatedCategory;
     }
-    return apiClient.put(`/admin/categories/${id}`, categoryData);
+    return apiClient.put(`/categories/${id}`, categoryData);
   },
 
   deleteCategory: async (id) => {
@@ -203,7 +203,7 @@ export const adminService = {
       saveLiveCategories(categories);
       return { success: true, id };
     }
-    return apiClient.delete(`/admin/categories/${id}`);
+    return apiClient.delete(`/categories/${id}`);
   },
 
   getOrders: async () => {

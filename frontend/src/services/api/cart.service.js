@@ -21,6 +21,30 @@ export const cartService = {
     return apiClient.post("/cart/items", item);
   },
 
+  updateItem: async (itemId, payload) => {
+    if (USE_MOCK) {
+      await delay(100);
+      return { success: true };
+    }
+    return apiClient.put(`/cart/items/${itemId}`, payload);
+  },
+
+  removeItem: async (itemId) => {
+    if (USE_MOCK) {
+      await delay(100);
+      return { success: true };
+    }
+    return apiClient.delete(`/cart/items/${itemId}`);
+  },
+
+  clearCart: async () => {
+    if (USE_MOCK) {
+      await delay(100);
+      return { success: true };
+    }
+    return apiClient.delete("/cart");
+  },
+
   validateCheckout: async (payload) => {
     if (USE_MOCK) {
       await delay(200);
@@ -50,7 +74,7 @@ export const cartService = {
       return newOrder;
     }
     return apiClient.post("/checkout/place-order", payload, {
-      headers: { "Idempotency-Key": `idem_${Date.now()}` },
+      headers: { "Idempotency-Key": `idem_${Date.now()}_${Math.random().toString(36).slice(2, 8)}` },
     });
   },
 };
@@ -72,5 +96,13 @@ export const orderService = {
       return order;
     }
     return apiClient.get(`/orders/${id}`);
+  },
+
+  cancel: async (id, reason) => {
+    if (USE_MOCK) {
+      await delay(150);
+      return { success: true, status: "CANCELLED" };
+    }
+    return apiClient.post(`/orders/${id}/cancel`, { reason });
   },
 };
