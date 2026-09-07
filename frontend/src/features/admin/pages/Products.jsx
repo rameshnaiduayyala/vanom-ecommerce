@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { formatPrice } from "../../../utils/formatters.js";
@@ -27,7 +27,17 @@ import { ConfirmDialog, EmptyState } from "../../../components/ui/Alert.jsx";
 
 export function Products() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("products"); // 'products' | 'categories'
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(tabParam === "categories" ? "categories" : "products");
+
+  useEffect(() => {
+    if (tabParam === "categories") {
+      setActiveTab("categories");
+    } else if (tabParam === "products" || !tabParam) {
+      setActiveTab("products");
+    }
+  }, [tabParam]);
 
   // --- Product States ---
   const [search, setSearch] = useState("");

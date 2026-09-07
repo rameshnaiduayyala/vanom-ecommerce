@@ -2,6 +2,8 @@ import {
   LayoutDashboard,
   ShoppingCart,
   Package,
+  PlusCircle,
+  FolderTree,
   Users,
   Building2,
   FileCheck2,
@@ -24,6 +26,10 @@ import { ROUTES } from "./routes.js";
  * Defines menu hierarchy, icons, routes, badges, and RBAC permissions.
  */
 export const ADMIN_NAV_CONFIG = [
+  // ── CORE ──
+  {
+    header: "Main",
+  },
   {
     id: "dashboard",
     label: "Dashboard",
@@ -40,6 +46,11 @@ export const ADMIN_NAV_CONFIG = [
     badgeColor: "bg-rose-500",
     permission: "admin.orders",
   },
+
+  // ── CATALOG MANAGEMENT ──
+  {
+    header: "Catalog & Inventory",
+  },
   {
     id: "products",
     label: "Products",
@@ -55,19 +66,15 @@ export const ADMIN_NAV_CONFIG = [
       {
         id: "add-product",
         label: "Add Product",
+        icon: PlusCircle,
         path: "/admin/products/new",
         permission: "catalog.create",
       },
       {
         id: "categories",
         label: "Categories",
+        icon: FolderTree,
         path: `${ROUTES.ADMIN.PRODUCTS}?tab=categories`,
-        permission: "catalog.read",
-      },
-      {
-        id: "brands",
-        label: "Brands",
-        path: `${ROUTES.ADMIN.PRODUCTS}?tab=brands`,
         permission: "catalog.read",
       },
       {
@@ -79,110 +86,75 @@ export const ADMIN_NAV_CONFIG = [
     ],
   },
   {
-    id: "customers",
-    label: "Customers",
-    icon: Users,
-    path: ROUTES.ADMIN.USERS,
-    permission: "admin.users",
+    id: "inventory",
+    label: "Warehouse & Stock",
+    icon: Warehouse,
+    path: ROUTES.ADMIN.INVENTORY,
+    permission: "inventory.read",
+  },
+
+  // ── B2B WHOLESALE & CUSTOMERS ──
+  {
+    header: "B2B & Customer CRM",
+  },
+  {
+    id: "applications",
+    label: "Business Approvals",
+    icon: FileCheck2,
+    path: ROUTES.ADMIN.BUSINESS_APPLICATIONS,
+    badge: 3,
+    badgeColor: "bg-amber-500",
+    permission: "companies.approve",
   },
   {
     id: "companies",
-    label: "Sellers & B2B",
+    label: "Sellers & B2B Accounts",
     icon: Building2,
     path: ROUTES.ADMIN.COMPANIES,
     permission: "admin.companies",
   },
   {
-    id: "applications",
-    label: "Applications",
-    icon: FileCheck2,
-    path: ROUTES.ADMIN.BUSINESS_APPLICATIONS,
-    permission: "companies.approve",
-  },
-  {
-    id: "inventory",
-    label: "Inventory",
-    icon: Warehouse,
-    permission: "inventory.read",
-    children: [
-      {
-        id: "warehouse-stock",
-        label: "Warehouse Stock",
-        path: ROUTES.ADMIN.INVENTORY,
-        permission: "inventory.read",
-      },
-    ],
+    id: "customers",
+    label: "Customers & Users",
+    icon: Users,
+    path: ROUTES.ADMIN.USERS,
+    permission: "admin.users",
   },
   {
     id: "quotes",
-    label: "Wholesale Quotes",
+    label: "Wholesale RFQ Quotes",
     icon: FileText,
     path: ROUTES.ADMIN.QUOTES,
     permission: "quotes.read",
   },
+
+  // ── SALES & FINANCE ──
   {
-    id: "marketing",
-    label: "Marketing",
-    icon: Megaphone,
-    children: [
-      {
-        id: "hero-banners",
-        label: "Hero Banners",
-        path: `${ROUTES.ADMIN.DASHBOARD}#banners`,
-      },
-      {
-        id: "promotions",
-        label: "Promotions",
-        path: `${ROUTES.ADMIN.DASHBOARD}#promotions`,
-      },
-    ],
-  },
-  {
-    id: "discounts",
-    label: "Discounts & Coupons",
-    icon: Tag,
-    path: ROUTES.ADMIN.PRICING,
-  },
-  {
-    id: "reports",
-    label: "Reports",
-    icon: BarChart3,
-    path: ROUTES.ADMIN.REPORTS,
+    header: "Finance & Analytics",
   },
   {
     id: "payments",
-    label: "Payments",
+    label: "Payments & Invoices",
     icon: CreditCard,
     path: ROUTES.ADMIN.PAYMENTS,
     permission: "payments.read",
   },
   {
-    id: "returns",
-    label: "Returns & Refunds",
-    icon: RotateCcw,
-    path: ROUTES.ADMIN.ORDERS,
+    id: "reports",
+    label: "Revenue & Tax Reports",
+    icon: BarChart3,
+    path: ROUTES.ADMIN.REPORTS,
+  },
+
+  // ── SYSTEM ──
+  {
+    header: "System & Governance",
   },
   {
-    id: "cms",
-    label: "CMS",
-    icon: Globe,
-    children: [
-      {
-        id: "store-pages",
-        label: "Store Pages",
-        path: ROUTES.HOME,
-      },
-      {
-        id: "audit-logs",
-        label: "Audit Logs",
-        path: ROUTES.ADMIN.AUDIT_LOGS,
-      },
-    ],
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    icon: Settings,
+    id: "audit-logs",
+    label: "Audit Logs & Security",
+    icon: ShieldCheck,
     path: ROUTES.ADMIN.AUDIT_LOGS,
   },
 ];
+
