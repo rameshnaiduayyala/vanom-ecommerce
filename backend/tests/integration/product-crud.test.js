@@ -112,6 +112,30 @@ describe("Product Catalog CRUD Integration Tests", () => {
     expect(body.data.name).toBe("Eco-Friendly Premium Organic Compost 25kg");
   });
 
+  it("should retrieve featured products via /api/v1/products/featured", async () => {
+    const res = await app.inject({
+      method: "GET",
+      url: "/api/v1/products/featured?limit=5",
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.success).toBe(true);
+    expect(Array.isArray(body.data)).toBe(true);
+  });
+
+  it("should retrieve best-selling products via /api/v1/products/best-sellers", async () => {
+    const res = await app.inject({
+      method: "GET",
+      url: "/api/v1/products/best-sellers?limit=5",
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.success).toBe(true);
+    expect(Array.isArray(body.data)).toBe(true);
+  });
+
   it("should soft-delete (archive) product", async () => {
     if (!createdProductId || !adminToken) return;
 

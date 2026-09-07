@@ -296,17 +296,18 @@ async function main() {
     },
   });
 
-  // 10. Products & Multi-Tier Pricing
-  // Product 1: Premium Garden Soil
+  // 10. Products & Multi-Tier Pr  // Product 1: Premium Garden Soil
   const soilProduct = await prisma.product.upsert({
     where: { slug: "premium-garden-soil" },
-    update: {},
+    update: { isFeatured: true, isBestSeller: true },
     create: {
       name: "Premium Garden Soil",
       slug: "premium-garden-soil",
       sku: "SOIL-PREM-BASE",
       brandId: vanomBrand.id,
       status: "ACTIVE",
+      isFeatured: true,
+      isBestSeller: true,
       description: "Organic nutrient-rich garden soil suitable for commercial nurseries and home gardening.",
       categories: { create: { categoryId: gardenCategory.id } },
     },
@@ -375,7 +376,7 @@ async function main() {
       locationId: null,
       variantId: soilVariant.id,
       productId: soilProduct.id,
-      onHand: 3000,
+      onHand: 2500,
       reserved: 0,
     },
   });
@@ -447,13 +448,14 @@ async function main() {
   // Product 2: Premium Ceramic Pot
   const potProduct = await prisma.product.upsert({
     where: { slug: "premium-ceramic-pot" },
-    update: {},
+    update: { isFeatured: true },
     create: {
       name: "Premium Ceramic Pot",
       slug: "premium-ceramic-pot",
       sku: "POT-CERAM-BASE",
       brandId: vanomBrand.id,
       status: "ACTIVE",
+      isFeatured: true,
       description: "Glazed ceramic pot with drainage system.",
       categories: { create: { categoryId: potCategory.id } },
     },
@@ -483,13 +485,14 @@ async function main() {
   // Product 3: Indoor Foliage Plant
   const plantProduct = await prisma.product.upsert({
     where: { slug: "indoor-foliage-plant" },
-    update: {},
+    update: { isBestSeller: true },
     create: {
       name: "Indoor Foliage Plant",
       slug: "indoor-foliage-plant",
       sku: "PLANT-FOLIAGE-BASE",
       brandId: vanomBrand.id,
       status: "ACTIVE",
+      isBestSeller: true,
       description: "Air-purifying indoor ornamental foliage plant.",
       categories: { create: { categoryId: gardenCategory.id } },
     },
@@ -518,12 +521,15 @@ async function main() {
   const passwordHash = await bcrypt.hash("Password123!", 10);
   const adminUser = await prisma.user.upsert({
     where: { email: "admin@vanom.com" },
-    update: {},
+    update: {
+      avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80",
+    },
     create: {
       email: "admin@vanom.com",
       passwordHash,
       firstName: "Super",
       lastName: "Admin",
+      avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80",
       status: "ACTIVE",
       customerType: "B2B",
       roles: {
@@ -538,12 +544,15 @@ async function main() {
   // 12. Demo Approved B2B Wholesale Company
   const b2bUser = await prisma.user.upsert({
     where: { email: "buyer@agrowholesale.in" },
-    update: {},
+    update: {
+      avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&q=80",
+    },
     create: {
       email: "buyer@agrowholesale.in",
       passwordHash,
       firstName: "Ramesh",
       lastName: "Patel",
+      avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&q=80",
       status: "ACTIVE",
       customerType: "B2B",
       roles: {
@@ -599,12 +608,15 @@ async function main() {
   // 13. Demo B2C Retail Customer
   const customerUser = await prisma.user.upsert({
     where: { email: "customer@vanom.com" },
-    update: {},
+    update: {
+      avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=256&q=80",
+    },
     create: {
       email: "customer@vanom.com",
       passwordHash,
       firstName: "Ramesh",
       lastName: "Ayyala",
+      avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=256&q=80",
       status: "ACTIVE",
       customerType: "B2C",
       roles: {
@@ -621,7 +633,57 @@ async function main() {
     },
   });
 
-  console.log("✅ Database successfully seeded with full enterprise B2C and B2B dataset!");
+  // 14. Promotional & Carousel Banners
+  const demoBanners = [
+    {
+      title: "Commercial Agricultural Supplies & Nutrients",
+      subtitle: "Enterprise Procurement 2026",
+      description: "Direct manufacturer pricing for certified fertilizers, seeds, and industrial soil conditioners with guaranteed delivery.",
+      type: "HERO_CAROUSEL",
+      imageUrl: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80",
+      buttonText: "Explore Wholesale",
+      buttonLink: "/products?category=gardening-supplies",
+      badgeText: "Verified Global Exporters",
+      bgGradient: "from-emerald-900 via-emerald-800 to-green-950",
+      sortOrder: 1,
+      active: true,
+    },
+    {
+      title: "Glazed Architectural Planters & Horticultural Ceramics",
+      subtitle: "Premium Design Series",
+      description: "Handcrafted frost-resistant planters engineered for commercial resorts, corporate offices, and botanical landscapers.",
+      type: "HERO_CAROUSEL",
+      imageUrl: "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=1200&q=80",
+      buttonText: "Browse Collection",
+      buttonLink: "/products?category=pots-and-planters",
+      badgeText: "High Durability",
+      bgGradient: "from-stone-900 via-stone-800 to-amber-950",
+      sortOrder: 2,
+      active: true,
+    },
+    {
+      title: "Flash Deal: Extra 15% Off Bulk Pallet Freight",
+      subtitle: "Limited Time Offer",
+      description: "Take advantage of zero container demurrage and volume pricing on all domestic interstate bulk shipments.",
+      type: "PROMOTIONAL",
+      imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80",
+      buttonText: "Claim Discount",
+      buttonLink: "/b2b/bulk-order",
+      badgeText: "Flash Deal",
+      bgGradient: "from-blue-900 via-indigo-900 to-slate-900",
+      sortOrder: 1,
+      active: true,
+    },
+  ];
+
+  for (const b of demoBanners) {
+    const existing = await prisma.banner.findFirst({ where: { title: b.title } });
+    if (!existing) {
+      await prisma.banner.create({ data: b });
+    }
+  }
+
+  console.log("✅ Database successfully seeded with full enterprise B2C and B2B dataset & promotional banners!");
 }
 
 main()

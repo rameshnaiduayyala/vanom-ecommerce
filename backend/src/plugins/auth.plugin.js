@@ -46,19 +46,27 @@ async function authPlugin(fastify, options) {
       }
 
       // Flatten permissions for high-performance RBAC evaluations
+      const roleNames = user.roles.map(ur => ur.role.name);
+      const isSuperAdmin = roleNames.includes("SUPER_ADMIN");
+
       const permissions = new Set();
-      user.roles.forEach(ur => {
-        ur.role.permissions.forEach(rp => {
-          permissions.add(rp.permission.code);
+      if (isSuperAdmin) {
+        const { PERMISSIONS } = await import("../common/constants/permissions.js");
+        Object.values(PERMISSIONS).forEach(p => permissions.add(p));
+      } else {
+        user.roles.forEach(ur => {
+          ur.role.permissions.forEach(rp => {
+            permissions.add(rp.permission.code);
+          });
         });
-      });
+      }
 
       request.user = {
         id: user.id,
         email: user.email,
         customerType: user.customerType,
         status: user.status,
-        roles: user.roles.map(ur => ur.role.name),
+        roles: roleNames,
         permissions: Array.from(permissions),
         companyMembers: user.companyMembers,
         rawUser: user,

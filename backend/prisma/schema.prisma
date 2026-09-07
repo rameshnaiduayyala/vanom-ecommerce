@@ -257,6 +257,7 @@ model User {
   firstName       String?
   lastName        String?
   phone           String?
+  avatarUrl       String?
   status          UserStatus   @default(ACTIVE)
   customerType    CustomerType @default(B2C)
   emailVerifiedAt DateTime?
@@ -654,6 +655,8 @@ model Product {
   brandId        String?
   description    String?
   status         ProductStatus @default(DRAFT)
+  isFeatured     Boolean       @default(false)
+  isBestSeller   Boolean       @default(false)
   searchableText String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
@@ -1813,4 +1816,32 @@ model SystemSetting {
   environment String   @default("production")
   description String?
   updatedAt   DateTime @updatedAt
+}
+
+enum BannerType {
+  HERO_CAROUSEL
+  PROMOTIONAL
+  POPUP
+  SIDEBAR
+}
+
+model Banner {
+  id          String     @id @default(uuid())
+  title       String
+  subtitle    String?
+  description String?
+  type        BannerType @default(HERO_CAROUSEL)
+  imageUrl    String
+  buttonText  String     @default("Shop Now")
+  buttonLink  String     @default("/products")
+  badgeText   String?
+  bgGradient  String?
+  sortOrder   Int        @default(0)
+  active      Boolean    @default(true)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([type, active, sortOrder])
 }

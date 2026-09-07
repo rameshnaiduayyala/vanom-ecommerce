@@ -382,18 +382,34 @@ export function PublicHeader() {
                     onClick={() => setShowUserMenu(!showUserMenu)}
                     className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[#F6FAF7] transition-colors cursor-pointer"
                   >
-                    <div className="w-7 h-7 rounded-full bg-[#00875A] text-white flex items-center justify-center text-xs font-semibold">
-                      {(user?.firstName?.[0] || "U").toUpperCase()}
-                    </div>
+                    {user?.avatarUrl ? (
+                      <img
+                        src={user.avatarUrl}
+                        alt={user?.firstName || "User"}
+                        className="w-8 h-8 rounded-full object-cover border border-[#00875A]/30 shadow-xs"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-[#00875A] text-white flex items-center justify-center text-xs font-semibold shadow-xs">
+                        {(user?.firstName?.[0] || "U").toUpperCase()}
+                      </div>
+                    )}
                   </button>
 
                   {showUserMenu && (
                     <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl border border-[#E8EDE9] shadow-xl shadow-black/[0.08] py-1 z-50 overflow-hidden">
                       <div className="px-3 py-3 border-b border-[#E8EDE9] bg-[#FAFCFA]">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-[#00875A] text-white flex items-center justify-center text-sm font-semibold">
-                            {(user?.firstName?.[0] || "U").toUpperCase()}
-                          </div>
+                          {user?.avatarUrl ? (
+                            <img
+                              src={user.avatarUrl}
+                              alt={user?.firstName || "User"}
+                              className="w-9 h-9 rounded-full object-cover border border-[#00875A]/30"
+                            />
+                          ) : (
+                            <div className="w-9 h-9 rounded-full bg-[#00875A] text-white flex items-center justify-center text-sm font-semibold">
+                              {(user?.firstName?.[0] || "U").toUpperCase()}
+                            </div>
+                          )}
                           <div className="min-w-0">
                             <p className="text-[13px] font-semibold text-[#0F2B1C] truncate">{user?.firstName} {user?.lastName}</p>
                             <p className="text-[11px] text-[#8B9E91] truncate">{user?.email}</p>

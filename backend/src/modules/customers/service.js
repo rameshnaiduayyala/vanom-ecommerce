@@ -107,7 +107,7 @@ export class CustomerService {
     const profile = await prisma.customerProfile.findUnique({
       where: { userId },
       include: {
-        user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true } },
+        user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true, avatarUrl: true } },
         addresses: { include: { country: true } },
       },
     });
@@ -115,13 +115,14 @@ export class CustomerService {
   }
 
   async updateProfile(userId, data) {
-    if (data.firstName || data.lastName || data.phone) {
+    if (data.firstName || data.lastName || data.phone || data.avatarUrl !== undefined) {
       await prisma.user.update({
         where: { id: userId },
         data: {
           ...(data.firstName && { firstName: data.firstName }),
           ...(data.lastName && { lastName: data.lastName }),
           ...(data.phone && { phone: data.phone }),
+          ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
         },
       });
     }
@@ -142,7 +143,7 @@ export class CustomerService {
         ...(data.marketingOptIn !== undefined && { marketingOptIn: Boolean(data.marketingOptIn) }),
       },
       include: {
-        user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true } },
+        user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true, avatarUrl: true } },
       },
     });
 

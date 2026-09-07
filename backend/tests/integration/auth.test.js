@@ -133,4 +133,36 @@ describe("Authentication & RBAC Integration Tests", () => {
     expect(newTokens.accessToken).toBeDefined();
     expect(newTokens.refreshToken).not.toBe(tokens.refreshToken); // Token rotated
   });
+
+  it("should grant and return all system permissions for a SUPER_ADMIN login", async () => {
+    const adminUser = await prisma.user.findUnique({
+      where: { email: "admin@vanom.com" },
+    });
+    if (!adminUser) return;
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/auth/login",
+      payload: {
+        email: "admin@vanom.com",
+        password: "Password123!",
+      },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.success).toBe(true);
+    expect(body.data.user.roles).toContain("SUPER_ADMIN");
+
+    expect(body.data.user.customerType).toBe("SYSADMIN");
+    expect(body.data.user.companies).toBeUndefined();
+
+    // Must return all system permissions
+    const { PERMISSIONS } = await import("../../src/common/constants/permissions.js");
+    const allSystemPerms = Object.values(PERMISSIONS);
+    expect(body.data.user.permissions.length).toBeGreaterThanOrEqual(allSystemPerms.length);
+    for (const perm of allSystemPerms) {
+      expect(body.data.user.permissions).toContain(perm);
+    }
+  });
 });

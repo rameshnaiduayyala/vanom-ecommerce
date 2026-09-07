@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link, useNavigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "../../stores/auth.store.js";
 import { ROUTES } from "../../constants/routes.js";
@@ -46,6 +46,24 @@ export function AdminHeader() {
               <Building2 className="w-3.5 h-3.5" />
               <span>B2B Portal</span>
             </Link>
+
+            {/* Admin Avatar Pill */}
+            <div className="flex items-center gap-2 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg">
+              {user?.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user?.firstName || "Admin"}
+                  className="w-6 h-6 rounded-full object-cover border border-red-300"
+                />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-[10px] font-bold">
+                  {(user?.firstName?.[0] || "A").toUpperCase()}
+                </div>
+              )}
+              <span className="text-xs font-semibold text-slate-800 hidden sm:inline">
+                {user?.firstName} {user?.lastName}
+              </span>
+            </div>
 
             <button
               onClick={() => {

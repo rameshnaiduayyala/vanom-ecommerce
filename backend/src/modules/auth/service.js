@@ -7,7 +7,7 @@ import {
   ConflictError,
   NotFoundError,
 } from "../../common/errors/index.js";
-import { ERROR_CODES } from "../../common/constants/index.js";
+import { ERROR_CODES, PERMISSIONS, ROLES } from "../../common/constants/index.js";
 
 /**
  * AuthService
@@ -366,15 +366,33 @@ export class AuthService {
   _sanitizeUser(user) {
     const { passwordHash, ...sanitized } = user;
 
-    // Collect distinct permissions
-    const permissions = new Set();
-    user.roles?.forEach((ur) => {
-      ur.role?.permissions?.forEach((rp) => {
-        if (rp.permission?.code) permissions.add(rp.permission.code);
-      });
-    });
+    const roleNames = user.roles?.map((r) => (r.role ? r.role.name : r.name || r)) || [];
+    const isSuperAdmin = roleNames.includes(ROLES.SUPER_ADMIN);
+    const isAdmin = roleNames.includes(ROLES.ADMIN);
 
-    // Map company affiliations
+    // Collect distinct permissions (SUPER_ADMIN has all system permissions)
+    const permissions = new Set();
+    if (isSuperAdmin) {
+      Object.values(PERMISSIONS).forEach((p) => permissions.add(p));
+    } else {
+      user.roles?.forEach((ur) => {
+        ur.role?.permissions?.forEach((rp) => {
+          if (rp.permission?.code) permissions.add(rp.permission.code);
+        });
+      });
+    }
+
+    // Platform Admins (SUPER_ADMIN / ADMIN) are system operators without company associations
+    if (isSuperAdmin || isAdmin) {
+      return {
+        ...sanitized,
+        customerType: "SYSADMIN",
+        roles: user.roles?.map((r) => (r.role ? r.role.name : r.name || r)) || [],
+        permissions: Array.from(permissions),
+      };
+    }
+
+    // Map company affiliations for B2B/B2C users
     const companies = user.companyMembers?.map((cm) => ({
       companyId: cm.company?.id,
       legalName: cm.company?.legalName,

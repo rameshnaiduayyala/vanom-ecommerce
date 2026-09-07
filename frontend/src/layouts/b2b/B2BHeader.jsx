@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../stores/auth.store.js";
 import { useCountryStore } from "../../stores/country.store.js";
@@ -77,6 +77,27 @@ export function B2BHeader() {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* User Profile Avatar Pill */}
+          <div className="flex items-center gap-2.5 px-2.5 py-1 rounded-xl bg-slate-800 border border-slate-700">
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user?.firstName || "Buyer"}
+                className="w-7 h-7 rounded-full object-cover border border-gold-400/40"
+              />
+            ) : (
+              <div className="w-7 h-7 rounded-full bg-gold-500/20 text-gold-400 flex items-center justify-center text-xs font-bold border border-gold-400/40">
+                {(user?.firstName?.[0] || "B").toUpperCase()}
+              </div>
+            )}
+            <div className="hidden lg:flex flex-col text-left">
+              <span className="text-[11px] font-bold text-slate-200 leading-tight">
+                {user?.firstName} {user?.lastName}
+              </span>
+              <span className="text-[9px] text-slate-400 font-medium">B2B Buyer</span>
+            </div>
           </div>
 
           {/* Switch to Retail or Sign Out */}

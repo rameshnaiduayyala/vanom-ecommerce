@@ -14,10 +14,24 @@ export class CatalogController {
       search: request.query.search,
       categoryId: request.query.categoryId,
       brandId: request.query.brandId,
+      isFeatured: request.query.isFeatured,
+      isBestSeller: request.query.isBestSeller,
       page,
       limit,
     });
     return reply.status(HTTP_STATUS.OK).send(ApiResponse.paginated(items, { page, limit, total }));
+  };
+
+  getFeatured = async (request, reply) => {
+    const limit = request.query.limit ? parseInt(request.query.limit, 10) : 10;
+    const items = await this.service.getFeaturedProducts({ limit });
+    return reply.status(HTTP_STATUS.OK).send(ApiResponse.success(items));
+  };
+
+  getBestSellers = async (request, reply) => {
+    const limit = request.query.limit ? parseInt(request.query.limit, 10) : 10;
+    const items = await this.service.getBestSellers({ limit });
+    return reply.status(HTTP_STATUS.OK).send(ApiResponse.success(items));
   };
 
   getById = async (request, reply) => {

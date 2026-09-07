@@ -23,6 +23,7 @@ import { notificationRoutes } from "../modules/notifications/index.js";
 import { fileRoutes } from "../modules/files/index.js";
 import { auditRoutes } from "../modules/audit/index.js";
 import { adminRoutes } from "../modules/admin/index.js";
+import bannerRoutes from "../modules/banners/routes.js";
 
 export default async function registerRoutes(fastify, options) {
   await fastify.register(authRoutes, { prefix: "/auth" });
@@ -33,6 +34,7 @@ export default async function registerRoutes(fastify, options) {
   await fastify.register(catalogRoutes);
   await fastify.register(categoryRoutes);
   await fastify.register(brandRoutes);
+  await fastify.register(bannerRoutes);
   await fastify.register(pricingRoutes);
   await fastify.register(geographyRoutes);
   await fastify.register(inventoryRoutes);

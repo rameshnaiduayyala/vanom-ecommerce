@@ -1,4 +1,4 @@
-﻿import { create } from "zustand";
+import { create } from "zustand";
 import { TokenStorage } from "@/services/storage/token.storage.js";
 
 export const useAuthStore = create((set, get) => ({
@@ -8,7 +8,11 @@ export const useAuthStore = create((set, get) => ({
   activeCompany: null, // For B2B wholesale buyers
 
   setUser: (user) => {
-    const primaryCompany = user?.companyMembers?.[0]?.company || user?.company || null;
+    const primaryCompany =
+      user?.companies?.[0] ||
+      user?.companyMembers?.[0]?.company ||
+      user?.company ||
+      null;
     set({
       user,
       isAuthenticated: !!user,
@@ -21,7 +25,11 @@ export const useAuthStore = create((set, get) => ({
   login: (userData, tokens) => {
     if (tokens?.accessToken) TokenStorage.setAccessToken(tokens.accessToken);
     if (tokens?.refreshToken) TokenStorage.setRefreshToken(tokens.refreshToken);
-    const primaryCompany = userData?.companyMembers?.[0]?.company || userData?.company || null;
+    const primaryCompany =
+      userData?.companies?.[0] ||
+      userData?.companyMembers?.[0]?.company ||
+      userData?.company ||
+      null;
     set({
       user: userData,
       isAuthenticated: true,

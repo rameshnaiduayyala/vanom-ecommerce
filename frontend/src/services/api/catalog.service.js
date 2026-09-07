@@ -44,4 +44,22 @@ export const catalogService = {
     }
     return apiClient.get("/categories");
   },
+
+  getFeaturedProducts: async (params = {}) => {
+    if (USE_MOCK) {
+      await delay(100);
+      const items = getLiveProducts().slice(0, params.limit || 8);
+      return items;
+    }
+    return apiClient.get("/products/featured", { params });
+  },
+
+  getBestSellers: async (params = {}) => {
+    if (USE_MOCK) {
+      await delay(100);
+      const items = getLiveProducts().slice(0, params.limit || 8);
+      return items;
+    }
+    return apiClient.get("/products/best-sellers", { params });
+  },
 };

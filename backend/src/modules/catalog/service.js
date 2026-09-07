@@ -7,12 +7,18 @@ import { NotFoundError } from "../../common/errors/index.js";
  * Direct Prisma queries, search, filtering, and contextual pricing
  */
 export class CatalogService {
-  async listProducts({ search, categoryId, brandId, status = "ACTIVE", page = 1, limit = 20 } = {}) {
+  async listProducts({ search, categoryId, brandId, isFeatured, isBestSeller, status = "ACTIVE", page = 1, limit = 20 } = {}) {
     const where = {};
     if (status) where.status = status;
     if (brandId) where.brandId = brandId;
     if (categoryId) {
       where.categories = { some: { categoryId } };
+    }
+    if (isFeatured !== undefined) {
+      where.isFeatured = isFeatured === true || isFeatured === "true";
+    }
+    if (isBestSeller !== undefined) {
+      where.isBestSeller = isBestSeller === true || isBestSeller === "true";
     }
     if (search) {
       where.OR = [
@@ -46,6 +52,48 @@ export class CatalogService {
     ]);
 
     return { total, items };
+  }
+
+  async getFeaturedProducts({ limit = 10 } = {}) {
+    return prisma.product.findMany({
+      where: { status: "ACTIVE", isFeatured: true },
+      include: {
+        brand: true,
+        categories: { include: { category: true } },
+        images: { include: { file: true } },
+        variants: {
+          where: { status: "ACTIVE" },
+          include: {
+            packaging: {
+              include: { unit: true, type: true, pallet: true },
+            },
+          },
+        },
+      },
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async getBestSellers({ limit = 10 } = {}) {
+    return prisma.product.findMany({
+      where: { status: "ACTIVE", isBestSeller: true },
+      include: {
+        brand: true,
+        categories: { include: { category: true } },
+        images: { include: { file: true } },
+        variants: {
+          where: { status: "ACTIVE" },
+          include: {
+            packaging: {
+              include: { unit: true, type: true, pallet: true },
+            },
+          },
+        },
+      },
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    });
   }
 
   async getProductById(id, context = {}) {
