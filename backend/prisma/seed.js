@@ -199,17 +199,84 @@ async function main() {
   });
 
   // 8. Categories & Brands
-  const gardenCategory = await prisma.category.upsert({
-    where: { slug: "gardening-supplies" },
-    update: {},
-    create: { name: "Gardening Supplies", slug: "gardening-supplies" },
-  });
+  const defaultCategories = [
+    {
+      name: "Electronics & POS",
+      slug: "electronics-pos",
+      description: "POS terminals, barcode scanners, commercial sensors, and hardware.",
+      imageUrl: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=400&q=80",
+    },
+    {
+      name: "Groceries & FMCG",
+      slug: "groceries-fmcg",
+      description: "Wholesale grains, food staples, seasonings, and bulk consumables.",
+      imageUrl: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=400&q=80",
+    },
+    {
+      name: "Industrial Packaging",
+      slug: "industrial-packaging",
+      description: "Heavy-duty corrugated boxes, stretch wrap, thermal strapping, and tape.",
+      imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80",
+    },
+    {
+      name: "Commercial Kitchen",
+      slug: "commercial-kitchen",
+      description: "Induction cooktops, stainless cutlery, food warmers, and culinary equipment.",
+      imageUrl: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=400&q=80",
+    },
+    {
+      name: "Safety & Security",
+      slug: "safety-security",
+      description: "Industrial PPE, high-vis wear, CCTV security, and biometric locks.",
+      imageUrl: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=400&q=80",
+    },
+    {
+      name: "Tools & Hardware",
+      slug: "tools-hardware",
+      description: "Hand tools, power tools, workshop consumables, and fasteners.",
+      imageUrl: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=400&q=80",
+    },
+    {
+      name: "Living & Decor",
+      slug: "living-decor",
+      description: "Modern acoustic wall panels, architectural accents, and lighting.",
+      imageUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=400&q=80",
+    },
+    {
+      name: "Gardening Supplies",
+      slug: "gardening-supplies",
+      description: "Commercial agricultural supplies, soils, and organic fertilizers.",
+      imageUrl: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=400&q=80",
+    },
+    {
+      name: "Pots & Planters",
+      slug: "pots-and-planters",
+      description: "Glazed architectural planters and ceramic horticultural containers.",
+      imageUrl: "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=400&q=80",
+    },
+  ];
 
-  const potCategory = await prisma.category.upsert({
-    where: { slug: "pots-and-planters" },
-    update: {},
-    create: { name: "Pots & Planters", slug: "pots-and-planters" },
-  });
+  const seededCategories = {};
+  for (const cat of defaultCategories) {
+    const created = await prisma.category.upsert({
+      where: { slug: cat.slug },
+      update: {
+        name: cat.name,
+        description: cat.description,
+        imageUrl: cat.imageUrl,
+      },
+      create: {
+        name: cat.name,
+        slug: cat.slug,
+        description: cat.description,
+        imageUrl: cat.imageUrl,
+      },
+    });
+    seededCategories[cat.slug] = created;
+  }
+
+  const gardenCategory = seededCategories["gardening-supplies"];
+  const potCategory = seededCategories["pots-and-planters"];
 
   const vanomBrand = await prisma.brand.upsert({
     where: { slug: "vanom-commercial" },

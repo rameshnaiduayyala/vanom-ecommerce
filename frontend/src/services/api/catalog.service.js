@@ -30,7 +30,11 @@ export const catalogService = {
     if (USE_MOCK) {
       await delay(150);
       const products = getLiveProducts();
-      const product = products.find((p) => p.slug === slug || p.id === slug);
+      const norm = String(slug || "").toLowerCase().trim();
+      const product =
+        products.find((p) => p.slug?.toLowerCase() === norm || p.id?.toLowerCase() === norm) ||
+        products.find((p) => p.name?.toLowerCase().replace(/[^a-z0-9]+/g, "-").includes(norm)) ||
+        products[0];
       if (!product) throw new Error("Product not found");
       return product;
     }
@@ -62,4 +66,15 @@ export const catalogService = {
     }
     return apiClient.get("/products/best-sellers", { params });
   },
+
+  // --- Product CRUD ---
+  createProduct: (data) => apiClient.post("/products", data),
+  updateProduct: (id, data) => apiClient.put(`/products/${id}`, data),
+  deleteProduct: (id) => apiClient.delete(`/products/${id}`),
+
+  // --- Category CRUD ---
+  getCategoryById: (id) => apiClient.get(`/categories/${id}`),
+  createCategory: (data) => apiClient.post("/categories", data),
+  updateCategory: (id, data) => apiClient.put(`/categories/${id}`, data),
+  deleteCategory: (id) => apiClient.delete(`/categories/${id}`),
 };

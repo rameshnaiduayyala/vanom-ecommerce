@@ -2,6 +2,7 @@ import React from "react";
 import { Outlet, Link } from "react-router-dom";
 import { PublicHeader } from "./PublicHeader.jsx";
 import { PublicFooter } from "./PublicFooter.jsx";
+import { AnnouncementBar } from "../../features/storefront/components/AnnouncementBar.jsx";
 import { useCartStore } from "../../stores/cart.store.js";
 import { useCountryStore } from "../../stores/country.store.js";
 import { formatPrice } from "../../utils/formatters.js";
@@ -16,6 +17,8 @@ export function PublicLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#E8EDE9] text-text-primary">
+      {/* Announcement bar sits above the sticky header */}
+      <AnnouncementBar />
       <PublicHeader />
 
       <main className="flex-1 bg-[#E8EDE9]">

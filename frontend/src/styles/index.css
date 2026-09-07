@@ -1,51 +1,53 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-50: #F2F9F4;
-  --color-brand-100: #DEF0E3;
-  --color-brand-200: #BCE2C6;
-  --color-brand-300: #89CFA0;
-  --color-brand-400: #4EB772;
-  --color-brand-500: #10B981;
-  --color-brand-600: #059669;
-  --color-brand-700: #0D6B42;
-  --color-brand-800: #0A5333;
-  --color-brand-900: #074428;
-  --color-brand-950: #042A19;
+  --color-brand-deep: #003D2B;
+  --color-brand-primary: #006B3C;
+  --color-brand-fresh: #008C52;
+  --color-brand-light: #EAF7F0;
 
-  --color-forest-800: #0A4F30;
-  --color-forest-900: #074428;
-  --color-forest-950: #042A19;
+  --color-brand-50: #F2FAF5;
+  --color-brand-100: #EAF7F0;
+  --color-brand-200: #C7EBDA;
+  --color-brand-300: #92D6B5;
+  --color-brand-400: #54BC8C;
+  --color-brand-500: #008C52;
+  --color-brand-600: #006B3C;
+  --color-brand-700: #00522E;
+  --color-brand-800: #003D2B;
+  --color-brand-900: #00291D;
+  --color-brand-950: #001A12;
 
-  --color-lime-300: #BEF264;
-  --color-lime-400: #A3E635;
-  --color-lime-500: #84CC16;
-  --color-lime-600: #74B626;
-  --color-lime-700: #65A30D;
+  --color-forest-800: #003D2B;
+  --color-forest-900: #00291D;
+  --color-forest-950: #001A12;
 
-  --color-gold-50: #FFFBEA;
-  --color-gold-100: #FFF3BF;
-  --color-gold-200: #FFE78A;
-  --color-gold-300: #FFD34D;
-  --color-gold-400: #F5B800;
-  --color-gold-500: #D9A000;
-  --color-gold-600: #C89000;
-  --color-gold-700: #9A6F00;
+  --color-gold-premium: #D9A514;
+  --color-gold-soft: #FFF7DD;
+  --color-gold-50: #FFFDF5;
+  --color-gold-100: #FFF7DD;
+  --color-gold-200: #FFEBB2;
+  --color-gold-300: #FFDC80;
+  --color-gold-400: #F0C240;
+  --color-gold-500: #D9A514;
+  --color-gold-600: #B8860B;
+  --color-gold-700: #946A05;
 
   --color-surface: #FFFFFF;
-  --color-surface-muted: #E8EDE9;
-  --color-surface-green: #E8EDE9;
+  --color-surface-muted: #EAF7F0;
+  --color-surface-green: #EAF7F0;
   --color-surface-card: #FFFFFF;
+  --color-surface-gold: #FFF7DD;
 
-  --color-text-primary: #072115;
-  --color-text-secondary: #3D5648;
-  --color-text-muted: #6A8274;
+  --color-text-primary: #0A1F16;
+  --color-text-secondary: #345547;
+  --color-text-muted: #5E7D6F;
 
-  --color-border: #DCE8DF;
+  --color-border: #D2E8DC;
 }
 
 body {
-  background-color: #E8EDE9;
+  background-color: #EAF7F0;
   color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;

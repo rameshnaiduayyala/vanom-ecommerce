@@ -137,10 +137,12 @@ export function AdmUSDeports() {
 }
 
 export function AdminAuditLogs() {
-  const { data: logs = [] } = useQuery({
+  const { data: logsData = [] } = useQuery({
     queryKey: ["admin-audit-logs"],
     queryFn: () => Api.admin.getAuditLogs(),
   });
+
+  const logs = Array.isArray(logsData) ? logsData : Array.isArray(logsData?.items) ? logsData.items : [];
 
   return (
     <div className="space-y-6">
@@ -160,17 +162,25 @@ export function AdminAuditLogs() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {logs.map((log, idx) => (
-              <tr key={log.id || idx} className="hover:bg-surface-muted/50 transition-colors">
-                <td className="p-4 text-text-muted">{formatDate(log.createdAt || new Date())}</td>
-                <td className="p-4 font-semibold text-text-primary">{log.actorId || "admin@vanom.com"}</td>
-                <td className="p-4">
-                  <Badge variant="green" size="sm">{log.action || "SYSTEM_EVENT"}</Badge>
+            {logs.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="p-8 text-center text-text-muted">
+                  No system audit logs found.
                 </td>
-                <td className="p-4 font-mono">{log.entityType || "Resource"}</td>
-                <td className="p-4 font-mono text-text-secondary">{log.entityId || "N/A"}</td>
               </tr>
-            ))}
+            ) : (
+              logs.map((log, idx) => (
+                <tr key={log.id || idx} className="hover:bg-surface-muted/50 transition-colors">
+                  <td className="p-4 text-text-muted">{formatDate(log.createdAt || new Date())}</td>
+                  <td className="p-4 font-semibold text-text-primary">{log.actorId || log.actor?.email || "admin@vanom.com"}</td>
+                  <td className="p-4">
+                    <Badge variant="green" size="sm">{log.action || "SYSTEM_EVENT"}</Badge>
+                  </td>
+                  <td className="p-4 font-mono">{log.entityType || "Resource"}</td>
+                  <td className="p-4 font-mono text-text-secondary">{log.entityId || "N/A"}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -179,10 +189,12 @@ export function AdminAuditLogs() {
 }
 
 export function AdminUsers() {
-  const { data: users = [] } = useQuery({
+  const { data: usersData = [] } = useQuery({
     queryKey: ["admin-users"],
     queryFn: () => Api.admin.getUsers(),
   });
+
+  const users = Array.isArray(usersData) ? usersData : Array.isArray(usersData?.items) ? usersData.items : [];
 
   return (
     <div className="space-y-6">
@@ -202,23 +214,31 @@ export function AdminUsers() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {users.map((u, idx) => (
-              <tr key={u.id || idx} className="hover:bg-surface-muted/50 transition-colors">
-                <td className="p-4 font-bold text-text-primary">{u.firstName} {u.lastName}</td>
-                <td className="p-4 text-text-secondary">{u.email}</td>
-                <td className="p-4">
-                  <Badge variant={u.customerType === "B2B" ? "gold" : "default"} size="sm">
-                    {u.customerType === "B2B" ? "B2B Wholesale" : "B2C Retail"}
-                  </Badge>
-                </td>
-                <td className="p-4 font-mono">{Array.isArray(u.roles) ? u.roles.join(", ") : u.roles || "CUSTOMER"}</td>
-                <td className="p-4 text-right">
-                  <Badge variant={u.status === "ACTIVE" ? "green" : "gray"} size="sm">
-                    {u.status || "ACTIVE"}
-                  </Badge>
+            {users.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="p-8 text-center text-text-muted">
+                  No registered users found.
                 </td>
               </tr>
-            ))}
+            ) : (
+              users.map((u, idx) => (
+                <tr key={u.id || idx} className="hover:bg-surface-muted/50 transition-colors">
+                  <td className="p-4 font-bold text-text-primary">{u.firstName} {u.lastName}</td>
+                  <td className="p-4 text-text-secondary">{u.email}</td>
+                  <td className="p-4">
+                    <Badge variant={u.customerType === "B2B" ? "gold" : "default"} size="sm">
+                      {u.customerType === "B2B" ? "B2B Wholesale" : "B2C Retail"}
+                    </Badge>
+                  </td>
+                  <td className="p-4 font-mono">{Array.isArray(u.roles) ? u.roles.join(", ") : u.roles || "CUSTOMER"}</td>
+                  <td className="p-4 text-right">
+                    <Badge variant={u.status === "ACTIVE" ? "green" : "gray"} size="sm">
+                      {u.status || "ACTIVE"}
+                    </Badge>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -227,10 +247,12 @@ export function AdminUsers() {
 }
 
 export function AdminCompanies() {
-  const { data: companies = [] } = useQuery({
+  const { data: companiesData = [] } = useQuery({
     queryKey: ["admin-companies"],
     queryFn: () => Api.admin.getCompanies(),
   });
+
+  const companies = Array.isArray(companiesData) ? companiesData : Array.isArray(companiesData?.items) ? companiesData.items : [];
 
   return (
     <div className="space-y-6">
@@ -250,21 +272,29 @@ export function AdminCompanies() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {companies.map((c, idx) => (
-              <tr key={c.id || idx} className="hover:bg-surface-muted/50 transition-colors">
-                <td className="p-4 font-bold text-text-primary">{c.legalName || c.tradingName}</td>
-                <td className="p-4">{c.country?.name || "India (IN)"}</td>
-                <td className="p-4 font-mono text-text-secondary">{c.taxId || "GSTIN-VALID"}</td>
-                <td className="p-4 font-bold text-emerald-800">
-                  {formatPrice(c.creditLimit || 500000, "USD")} (NET {c.paymentTermsDays || 30})
-                </td>
-                <td className="p-4 text-right">
-                  <Badge variant={c.status === "APPROVED" ? "green" : "yellow"} size="sm">
-                    {c.status || "APPROVED"}
-                  </Badge>
+            {companies.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="p-8 text-center text-text-muted">
+                  No B2B corporate entities found.
                 </td>
               </tr>
-            ))}
+            ) : (
+              companies.map((c, idx) => (
+                <tr key={c.id || idx} className="hover:bg-surface-muted/50 transition-colors">
+                  <td className="p-4 font-bold text-text-primary">{c.legalName || c.tradingName}</td>
+                  <td className="p-4">{c.country?.name || "India (IN)"}</td>
+                  <td className="p-4 font-mono text-text-secondary">{c.taxId || "GSTIN-VALID"}</td>
+                  <td className="p-4 font-bold text-emerald-800">
+                    {formatPrice(c.creditLimit || 500000, "USD")} (NET {c.paymentTermsDays || 30})
+                  </td>
+                  <td className="p-4 text-right">
+                    <Badge variant={c.status === "APPROVED" ? "green" : "yellow"} size="sm">
+                      {c.status || "APPROVED"}
+                    </Badge>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

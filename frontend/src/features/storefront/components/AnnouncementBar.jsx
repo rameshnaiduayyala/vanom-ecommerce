@@ -1,95 +1,129 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Mail, Phone, ChevronDown, Sparkles } from "lucide-react";
+/**
+ * AnnouncementBar.jsx
+ * Top-of-page announcement bar rendered ABOVE the header in PublicLayout.
+ * Matches reference: delivery pin | rotating promos | track/help/sell/sign-in links
+ */
+import React, { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
+import { MapPin, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useCountryStore } from "../../../stores/country.store.js";
 import { SUPPORTED_COUNTRIES } from "../../../constants/countries.js";
 
+const PROMO_MESSAGES = [
+  "Free shipping on orders above ₹999",
+  "Use code VANOM10 for 10% off your first order",
+  "Now delivering to 30+ countries worldwide",
+  "Best Prices Guaranteed • Genuine Brands • Easy Returns",
+];
+
 export function AnnouncementBar() {
   const { country, setCountry } = useCountryStore();
-  const [showMenu, setShowMenu] = useState(false);
-  const menuRef = useRef(null);
+  const [msgIdx, setMsgIdx] = useState(0);
+  const [visible, setVisible] = useState(true);
+  const [showCurrency, setShowCurrency] = useState(false);
+  const currencyRef = useRef(null);
 
+  // Auto-rotate promo messages every 4 seconds
+  useEffect(() => {
+    const t = setInterval(() => setMsgIdx((i) => (i + 1) % PROMO_MESSAGES.length), 4000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setShowMenu(false);
-      }
+      if (currencyRef.current && !currencyRef.current.contains(e.target)) setShowCurrency(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  if (!visible) return null;
+
   return (
-    <div className="bg-gradient-to-r from-[#0D442F] via-[#145239] to-[#0D442F] text-emerald-100/90 text-[11px] border-b border-[#1D6347]/50 select-none relative z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-9 flex items-center justify-between gap-4">
-        {/* Left: Brand motto with stylized mint badge */}
-        <div className="flex items-center gap-2.5">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#12553B] border border-[#34D399]/30 text-[#6EE7B7] text-[10px] font-bold tracking-wide uppercase">
-            <span>VANOM</span>
-          </span>
-          <span className="w-1 h-1 rounded-full bg-[#34D399]/60 hidden sm:block" />
-          <span className="text-emerald-100/80 font-medium hidden sm:inline text-[11px]">
-            Global Retail & Commercial Enterprise Supplies • Express Worldwide
+    <div className="w-full bg-[#1a3c2e] text-white text-[11px] select-none z-50">
+      <div
+        className="max-w-[1400px] mx-auto px-3 sm:px-6 h-8 flex items-center justify-between gap-2"
+        style={{ fontSize: "11px" }}
+      >
+
+        {/* ── LEFT: Delivery location ── */}
+        <div className="flex items-center gap-1 shrink-0">
+          <MapPin className="w-3 h-3 text-[#D9A514]" />
+          <span className="text-white/70 hidden sm:inline">Deliver to:</span>
+          <span className="text-white font-semibold">
+            {country.name}&nbsp;{country.code}
           </span>
         </div>
 
-        {/* Right: Contact & Currency */}
-        <div className="flex items-center gap-5">
-          <a
-            href="mailto:ayyalarameshnaidu@gmail.com"
-            className="hidden md:flex items-center gap-1.5 text-emerald-100/80 hover:text-[#6EE7B7] transition-colors"
+        {/* ── CENTER: Rotating promo message ── */}
+        <div className="flex items-center gap-1.5 flex-1 justify-center min-w-0">
+          <button
+            onClick={() => setMsgIdx((i) => (i - 1 + PROMO_MESSAGES.length) % PROMO_MESSAGES.length)}
+            className="text-white/50 hover:text-white transition-colors cursor-pointer shrink-0"
           >
-            <Mail className="w-3 h-3 text-[#34D399]" />
-            <span>ayyalarameshnaidu@gmail.com</span>
-          </a>
-
-          <div className="hidden md:block w-px h-3 bg-[#1D6347]" />
-
-          <a
-            href="tel:+917989419864"
-            className="hidden sm:flex items-center gap-1.5 text-emerald-100/80 hover:text-[#6EE7B7] transition-colors"
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+          <span className="text-white/90 font-medium truncate text-center">
+            {PROMO_MESSAGES[msgIdx]}
+          </span>
+          <button
+            onClick={() => setMsgIdx((i) => (i + 1) % PROMO_MESSAGES.length)}
+            className="text-white/50 hover:text-white transition-colors cursor-pointer shrink-0"
           >
-            <Phone className="w-3 h-3 text-[#34D399]" />
-            <span>+91 7989419864</span>
-          </a>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
-          <div className="hidden sm:block w-px h-3 bg-[#1D6347]" />
+        {/* ── RIGHT: Nav links + currency ── */}
+        <div className="flex items-center gap-0 shrink-0">
 
-          {/* Currency Selector */}
-          <div className="relative" ref={menuRef}>
+          {/* Currency / Country selector */}
+          <div className="relative flex items-center h-8" ref={currencyRef}>
             <button
-              onClick={() => setShowMenu((v) => !v)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#12553B]/60 hover:bg-[#12553B] border border-[#34D399]/20 text-emerald-100 hover:text-white transition-all cursor-pointer"
-              title="Change Currency & Market"
+              onClick={() => setShowCurrency((v) => !v)}
+              className="flex items-center gap-1.5 px-2.5 h-8 text-white/80 hover:text-white hover:bg-white/10 transition-colors border-r border-white/10 cursor-pointer"
+              title="Change Country & Currency"
             >
-              <span className="text-xs leading-none">{country.flag}</span>
-              <span className="font-semibold text-[11px] text-white">{country.code}</span>
-              <span className="text-[#6EE7B7]">({country.symbol})</span>
-              <ChevronDown className={`w-3 h-3 text-[#6EE7B7] transition-transform duration-200 ${showMenu ? "rotate-180" : ""}`} />
+              {/* Circular flag image */}
+              <img
+                src={country.flagUrl || `https://flagcdn.com/w40/${country.code.toLowerCase()}.png`}
+                alt={country.name}
+                className="w-4 h-4 rounded-full object-cover border border-white/20 shrink-0"
+                onError={(e) => { e.target.style.display = "none"; e.target.nextSibling.style.display = "inline"; }}
+              />
+              <span className="hidden" style={{ display: "none" }}>{country.flag}</span>
+              <span className="font-semibold text-[11px]">{country.code}</span>
+              <span className="hidden sm:inline text-white/60 text-[10px]">{country.currency}</span>
+              <ChevronDown className={`w-3 h-3 text-white/60 transition-transform duration-200 ${showCurrency ? "rotate-180" : ""}`} />
             </button>
 
-            {showMenu && (
-              <div className="absolute right-0 mt-1.5 w-48 bg-white rounded-xl border border-emerald-100 shadow-2xl py-1 text-slate-800 z-50 overflow-hidden animate-in fade-in-50 zoom-in-95 duration-150">
-                <div className="px-3 py-1.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                  Currency & Market
+            {showCurrency && (
+              <div className="absolute right-0 top-full mt-0.5 w-52 bg-white rounded-xl shadow-2xl border border-gray-100 py-1 z-[200] overflow-hidden">
+                <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                  Select Country
                 </div>
                 {SUPPORTED_COUNTRIES.map((c) => {
                   const isSelected = c.code === country.code;
                   return (
                     <button
                       key={c.code}
-                      onClick={() => {
-                        setCountry(c);
-                        setShowMenu(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-[#F0FAF4] transition-colors cursor-pointer ${isSelected ? "bg-[#F0FAF4] text-[#0D442F] font-bold" : "text-slate-600"
-                        }`}
+                      onClick={() => { setCountry(c); setShowCurrency(false); }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-[#EAF7F0] transition-colors cursor-pointer ${
+                        isSelected ? "bg-[#EAF7F0] text-[#003D2B] font-bold" : "text-gray-700"
+                      }`}
                     >
-                      <span className="flex items-center gap-2">
-                        <span className="text-sm">{c.flag}</span>
-                        <span>{c.name}</span>
-                      </span>
-                      <span className="font-mono text-[11px] text-[#0D442F]">
-                        {c.symbol}
+                      {/* Circular flag image in dropdown */}
+                      <img
+                        src={c.flagUrl || `https://flagcdn.com/w40/${c.code.toLowerCase()}.png`}
+                        alt={c.name}
+                        className="w-6 h-6 rounded-full object-cover border border-gray-200 shrink-0"
+                        onError={(e) => { e.target.style.display = "none"; e.target.nextSibling.style.display = "inline"; }}
+                      />
+                      <span className="hidden" style={{ display: "none" }}>{c.flag}</span>
+                      <span className="flex-1 text-left">{c.name}</span>
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${isSelected ? "bg-[#006B3C] text-white" : "bg-gray-100 text-gray-500"}`}>
+                        {c.symbol} {c.currency}
                       </span>
                     </button>
                   );
@@ -97,6 +131,23 @@ export function AnnouncementBar() {
               </div>
             )}
           </div>
+
+          {/* For Bussiness */}
+          <Link
+            to="/bulk-buyers"
+            className="hidden sm:flex items-center px-2.5 h-8 text-white/75 hover:text-white hover:bg-white/10 transition-colors border-r border-white/10 whitespace-nowrap"
+          >
+            For Bussiness
+          </Link>
+
+          {/* Dismiss */}
+          <button
+            onClick={() => setVisible(false)}
+            className="flex items-center px-2 h-8 text-white/40 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            title="Close"
+          >
+            <X className="w-3 h-3" />
+          </button>
         </div>
       </div>
     </div>
