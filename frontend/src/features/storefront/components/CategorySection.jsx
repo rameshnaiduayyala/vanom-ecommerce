@@ -82,21 +82,37 @@ const CATEGORY_ITEMS = [
   },
 ];
 
+const DEFAULT_BORDER_COLORS = [
+  "#1E3A8A",
+  "#B45309",
+  "#065F46",
+  "#9F1239",
+  "#0369A1",
+  "#4338CA",
+  "#9A3412",
+  "#0F766E",
+  "#15803D",
+];
+
 export function CategorySection({ categories = [] }) {
   const scrollContainerRef = useRef(null);
 
-  const catList = Array.isArray(categories) && categories.length > 0
-    ? categories
-    : CATEGORY_ITEMS;
+  const rawList = Array.isArray(categories) ? categories : (categories?.items || []);
 
-  const displayList = CATEGORY_ITEMS.map((item) => {
-    const backendMatch = catList.find((c) => c.id === item.id || c.name === item.name);
-    return {
-      ...item,
-      name: backendMatch?.name || item.name,
-      count: backendMatch?.count ? `${backendMatch.count}+ Products` : item.count,
-    };
-  });
+  const displayList = rawList.length > 0
+    ? rawList.map((backendCat, index) => {
+        const fallback = CATEGORY_ITEMS[index % CATEGORY_ITEMS.length];
+        return {
+          id: backendCat.id,
+          slug: backendCat.slug || backendCat.id,
+          name: backendCat.name,
+          count: backendCat.productCount ? `${backendCat.productCount}+ Products` : `${(index + 2) * 45}+ Products`,
+          icon: fallback.icon || ShoppingBag,
+          image: backendCat.imageUrl || fallback.image,
+          borderColor: fallback.borderColor || DEFAULT_BORDER_COLORS[index % DEFAULT_BORDER_COLORS.length],
+        };
+      })
+    : CATEGORY_ITEMS;
 
   const handleScrollLeft = () => {
     if (scrollContainerRef.current) {
