@@ -1,5 +1,3 @@
-export * from "./repository.js";
-export * from "./service.js";
-export * from "./controller.js";
-export * from "./routes.js";
+export { OrderService } from "./service.js";
+export { OrderController } from "./controller.js";
 export { default as orderRoutes } from "./routes.js";

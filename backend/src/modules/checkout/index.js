@@ -1,3 +1,3 @@
-export * from "./service.js";
-export * from "./routes.js";
+export { CheckoutService } from "./service.js";
+export { CheckoutController } from "./controller.js";
 export { default as checkoutRoutes } from "./routes.js";

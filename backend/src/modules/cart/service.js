@@ -1,18 +1,71 @@
 import { prisma } from "../../infrastructure/database/prisma.js";
-import { CartRepository } from "./repository.js";
-import { GeographyRepository } from "../geography/repository.js";
 import { PriceResolver } from "../pricing/price-resolver.js";
-import { InventoryRepository } from "../inventory/repository.js";
 import { Money } from "../../common/utils/money.js";
 import { BusinessRuleError, NotFoundError } from "../../common/errors/index.js";
 import { ERROR_CODES } from "../../common/constants/index.js";
 
+/**
+ * CartService
+ * Handles Cart and CartItem operations directly via Prisma with dynamic pricing & multi-country logic
+ */
 export class CartService {
-  async getCart(user, companyId = null, countryCode = "IN", currencyCode = "INR") {
-    const country = await GeographyRepository.getCountryByCode(countryCode);
-    const currency = await GeographyRepository.getCurrencyByCode(currencyCode);
+  async _getOrCreateCart({ userId, companyId = null, countryId, currencyId }) {
+    let cart = await prisma.cart.findFirst({
+      where: {
+        userId,
+        companyId: companyId || null,
+        active: true,
+      },
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: true,
+                packaging: { include: { unit: true, type: true, pallet: true } },
+              },
+            },
+          },
+        },
+        country: true,
+        currency: true,
+      },
+    });
 
-    const cart = await CartRepository.getOrCreateCart({
+    if (!cart) {
+      cart = await prisma.cart.create({
+        data: {
+          userId,
+          companyId,
+          countryId,
+          currencyId,
+        },
+        include: {
+          items: {
+            include: {
+              variant: {
+                include: { product: true, packaging: true },
+              },
+            },
+          },
+          country: true,
+          currency: true,
+        },
+      });
+    }
+
+    return cart;
+  }
+
+  async getCart(user, companyId = null, countryCode = "IN", currencyCode = "INR") {
+    const country = await prisma.country.findUnique({ where: { code: countryCode } });
+    const currency = await prisma.currency.findUnique({ where: { code: currencyCode } });
+
+    if (!country || !currency) {
+      throw new NotFoundError("Country or currency not supported");
+    }
+
+    const cart = await this._getOrCreateCart({
       userId: user.id,
       companyId,
       countryId: country.id,
@@ -36,10 +89,18 @@ export class CartService {
       throw new NotFoundError("Product variant is not available", ERROR_CODES.VARIANT_NOT_FOUND);
     }
 
-    const stock = await InventoryRepository.getAvailableStock(variantId);
-    if (stock.available < quantity) {
+    // Check available stock
+    const stockAgg = await prisma.inventoryItem.aggregate({
+      where: { variantId },
+      _sum: { onHand: true, reserved: true },
+    });
+    const onHand = stockAgg._sum.onHand || 0;
+    const reserved = stockAgg._sum.reserved || 0;
+    const available = Math.max(0, onHand - reserved);
+
+    if (available < quantity) {
       throw new BusinessRuleError(
-        `Requested quantity (${quantity}) exceeds available stock (${stock.available})`,
+        `Requested quantity (${quantity}) exceeds available stock (${available})`,
         ERROR_CODES.INSUFFICIENT_STOCK
       );
     }
@@ -54,21 +115,30 @@ export class CartService {
       companyId,
     });
 
-    const country = await GeographyRepository.getCountryByCode(countryCode);
-    const currency = await GeographyRepository.getCurrencyByCode(currencyCode);
+    const country = await prisma.country.findUnique({ where: { code: countryCode } });
+    const currency = await prisma.currency.findUnique({ where: { code: currencyCode } });
 
-    const cart = await CartRepository.getOrCreateCart({
+    const cart = await this._getOrCreateCart({
       userId: user.id,
       companyId,
       countryId: country.id,
       currencyId: currency.id,
     });
 
-    await CartRepository.addItem({
-      cartId: cart.id,
-      variantId,
-      quantity,
-      unitPrice: priceResolution.unitPrice,
+    await prisma.cartItem.upsert({
+      where: {
+        cartId_variantId: { cartId: cart.id, variantId },
+      },
+      create: {
+        cartId: cart.id,
+        variantId,
+        quantity,
+        unitPrice: priceResolution.unitPrice,
+      },
+      update: {
+        quantity: { increment: quantity },
+        unitPrice: priceResolution.unitPrice,
+      },
     });
 
     return this.getCart(user, companyId, countryCode, currencyCode);
@@ -78,19 +148,32 @@ export class CartService {
     if (quantity < 0) {
       throw new BusinessRuleError("Quantity cannot be negative", ERROR_CODES.INVALID_QUANTITY);
     }
-    await CartRepository.updateItemQuantity(itemId, quantity);
+    if (quantity === 0) {
+      await prisma.cartItem.delete({ where: { id: itemId } });
+    } else {
+      await prisma.cartItem.update({
+        where: { id: itemId },
+        data: { quantity },
+      });
+    }
     return this.getCart(user, null, countryCode, currencyCode);
   }
 
   async removeItem(user, itemId, countryCode = "IN", currencyCode = "INR") {
-    await CartRepository.removeItem(itemId);
+    await prisma.cartItem.delete({ where: { id: itemId } });
     return this.getCart(user, null, countryCode, currencyCode);
   }
 
   async clearCart(user, companyId = null) {
-    const cart = await CartRepository.findActiveCart(user.id, companyId);
+    const cart = await prisma.cart.findFirst({
+      where: {
+        userId: user.id,
+        companyId: companyId || null,
+        active: true,
+      },
+    });
     if (cart) {
-      await CartRepository.clearCart(cart.id);
+      await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
     }
     return { cleared: true };
   }

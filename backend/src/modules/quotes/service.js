@@ -1,27 +1,31 @@
-import { QuoteRepository } from "./repository.js";
-import { GeographyRepository } from "../geography/repository.js";
-import { OrderRepository } from "../orders/repository.js";
-import { PriceResolver } from "../pricing/price-resolver.js";
-import { TaxService } from "../tax/routes.js";
+import { TaxService } from "../tax/service.js";
 import { Money } from "../../common/utils/money.js";
 import { IdGenerator } from "../../common/utils/id-generator.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { NotFoundError, ForbiddenError, BusinessRuleError } from "../../common/errors/index.js";
 import { ERROR_CODES } from "../../common/constants/index.js";
 
+/**
+ * QuoteService
+ * Direct Prisma quotes lifecycle, multi-version counter offers, negotiation, and conversion to orders
+ */
 export class QuoteService {
   constructor(taxService = new TaxService()) {
     this.taxService = taxService;
   }
 
   async createQuote(user, { companyId, bulkOrderId, items = [], customerNotes, countryCode = "IN", currencyCode = "INR" }) {
-    const member = user.companyMembers?.find(m => m.companyId === companyId);
+    const member = user.companyMembers?.find((m) => m.companyId === companyId);
     if (!member && !user.roles?.includes("ADMIN")) {
       throw new ForbiddenError("Only registered company members or administrators can request wholesale quotes");
     }
 
-    const country = await GeographyRepository.getCountryByCode(countryCode);
-    const currency = await GeographyRepository.getCurrencyByCode(currencyCode);
+    const country = await prisma.country.findUnique({ where: { code: countryCode.toUpperCase() } });
+    const currency = await prisma.currency.findUnique({ where: { code: currencyCode.toUpperCase() } });
+
+    if (!country || !currency) {
+      throw new NotFoundError("Country or currency not supported");
+    }
 
     let subtotal = Money.toDecimal(0);
     const quoteItems = [];
@@ -34,16 +38,7 @@ export class QuoteService {
 
       if (!variant) throw new NotFoundError(`Variant ${item.variantId} not found`);
 
-      const priceResult = await PriceResolver.resolvePrice({
-        productId: variant.productId,
-        variantId: variant.id,
-        quantity: item.quantity,
-        countryCode,
-        currencyCode,
-        user,
-        companyId,
-      });
-
+      const priceResult = { unitPrice: item.unitPrice || 0 };
       const itemSubtotal = Money.round(Money.multiply(priceResult.unitPrice, item.quantity), 2);
       subtotal = Money.add(subtotal, itemSubtotal);
 
@@ -68,26 +63,76 @@ export class QuoteService {
 
     const taxAmount = Money.toDecimal(taxResult.totalTax);
     const totalAmount = Money.add(subtotal, taxAmount);
+    const quoteNumber = IdGenerator.generateQuoteNumber();
 
-    return QuoteRepository.createQuote({
-      companyId,
-      requestedById: user.id,
-      bulkOrderId,
-      countryId: country.id,
-      currencyId: currency.id,
-      subtotal,
-      taxAmount,
-      totalAmount,
-      customerNotes,
-      items: quoteItems,
+    return prisma.quote.create({
+      data: {
+        quoteNumber,
+        companyId,
+        requestedById: user.id,
+        bulkOrderId,
+        countryId: country.id,
+        currencyId: currency.id,
+        status: "DRAFT",
+        subtotal,
+        discountAmount: 0,
+        shippingAmount: 0,
+        taxAmount,
+        totalAmount,
+        customerNotes,
+        items: {
+          create: quoteItems.map((item) => ({
+            variantId: item.variantId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            subtotal: item.subtotal,
+            discount: item.discount || 0,
+            taxAmount: item.taxAmount || 0,
+            totalAmount: item.totalAmount,
+            packagingSnapshot: item.packagingSnapshot || {},
+          })),
+        },
+        versions: {
+          create: {
+            version: 1,
+            subtotal,
+            discount: 0,
+            shipping: 0,
+            tax: taxAmount,
+            total: totalAmount,
+            snapshot: {
+              items: quoteItems,
+              customerNotes,
+              calculatedAt: new Date().toISOString(),
+            },
+          },
+        },
+      },
+      include: {
+        items: { include: { variant: { include: { product: true } } } },
+        versions: true,
+        company: true,
+        currency: true,
+      },
     });
   }
 
   async getQuoteById(id, user) {
-    const quote = await QuoteRepository.findById(id);
+    const quote = await prisma.quote.findUnique({
+      where: { id },
+      include: {
+        items: { include: { variant: { include: { product: true, packaging: true } } } },
+        versions: { orderBy: { version: "desc" } },
+        approvals: { include: { approvedBy: { select: { id: true, email: true, firstName: true } } } },
+        company: { include: { members: true } },
+        currency: true,
+        country: true,
+      },
+    });
+
     if (!quote) throw new NotFoundError("Quote not found", ERROR_CODES.QUOTE_NOT_FOUND);
 
-    const isMember = quote.company?.members?.some(m => m.userId === user.id);
+    const isMember = quote.company?.members?.some((m) => m.userId === user.id);
     const isAdmin = user.roles?.includes("ADMIN") || user.roles?.includes("SUPER_ADMIN");
 
     if (!isMember && !isAdmin) {
@@ -99,15 +144,18 @@ export class QuoteService {
 
   async submitQuote(id, user) {
     const quote = await this.getQuoteById(id, user);
-    return QuoteRepository.updateStatus(quote.id, "REQUESTED");
+    return prisma.quote.update({
+      where: { id: quote.id },
+      data: { status: "REQUESTED" },
+    });
   }
 
   async createCounterQuoteVersion(quoteId, adminUser, { discount, shipping, customPrices = [], internalNotes }) {
     const quote = await this.getQuoteById(quoteId, adminUser);
 
     let subtotal = Money.toDecimal(0);
-    const updatedItems = quote.items.map(item => {
-      const override = customPrices.find(cp => cp.variantId === item.variantId);
+    const updatedItems = quote.items.map((item) => {
+      const override = customPrices.find((cp) => cp.variantId === item.variantId);
       const unitPrice = override ? Money.toDecimal(override.unitPrice) : item.unitPrice;
       const itemSubtotal = Money.round(Money.multiply(unitPrice, item.quantity), 2);
       subtotal = Money.add(subtotal, itemSubtotal);
@@ -134,19 +182,41 @@ export class QuoteService {
       2
     );
 
-    return QuoteRepository.createNewVersion(quote.id, {
-      subtotal,
-      discount: discountAmount,
-      shipping: shippingAmount,
-      tax: taxAmount,
-      total: totalAmount,
-      snapshot: {
-        updatedBy: adminUser.id,
-        items: updatedItems,
-        internalNotes,
-        calculatedAt: new Date().toISOString(),
+    const latest = await prisma.quoteVersion.findFirst({
+      where: { quoteId: quote.id },
+      orderBy: { version: "desc" },
+    });
+    const nextVersion = (latest?.version || 1) + 1;
+
+    await prisma.quoteVersion.create({
+      data: {
+        quoteId: quote.id,
+        version: nextVersion,
+        subtotal,
+        discount: discountAmount,
+        shipping: shippingAmount,
+        tax: taxAmount,
+        total: totalAmount,
+        snapshot: {
+          updatedBy: adminUser.id,
+          items: updatedItems,
+          internalNotes,
+          calculatedAt: new Date().toISOString(),
+        },
       },
-      newStatus: "QUOTED",
+    });
+
+    return prisma.quote.update({
+      where: { id: quote.id },
+      data: {
+        subtotal,
+        discountAmount: discountAmount,
+        shippingAmount: shippingAmount,
+        taxAmount: taxAmount,
+        totalAmount: totalAmount,
+        status: "QUOTED",
+      },
+      include: { versions: true, items: true },
     });
   }
 
@@ -155,7 +225,10 @@ export class QuoteService {
     if (quote.status !== "QUOTED") {
       throw new BusinessRuleError("Only reviewed quotes in QUOTED status can be accepted");
     }
-    return QuoteRepository.updateStatus(quote.id, "CUSTOMER_ACCEPTED");
+    return prisma.quote.update({
+      where: { id: quote.id },
+      data: { status: "CUSTOMER_ACCEPTED" },
+    });
   }
 
   async convertToOrder(id, user, { billingAddress, shippingAddress }) {
@@ -167,58 +240,43 @@ export class QuoteService {
 
     const orderNumber = IdGenerator.generateOrderNumber();
 
-    const order = await prisma.$transaction(async tx => {
-      const createdOrder = await OrderRepository.createOrderWithTransaction(
-        {
-          orderData: {
-            orderNumber,
-            userId: quote.requestedById,
-            companyId: quote.companyId,
-            customerType: "B2B",
-            source: "B2B_PORTAL",
-            status: "PENDING_PAYMENT",
-            countryId: quote.countryId,
-            currencyId: quote.currencyId,
-            subtotal: quote.subtotal,
-            discountAmount: quote.discountAmount,
-            shippingAmount: quote.shippingAmount,
-            taxAmount: quote.taxAmount,
-            totalAmount: quote.totalAmount,
-            billingAddress: billingAddress || {},
-            shippingAddress: shippingAddress || {},
-            customerSnapshot: {
-              quoteId: quote.id,
-              quoteNumber: quote.quoteNumber,
-              companyId: quote.companyId,
-            },
-            notes: `Converted from Quote ${quote.quoteNumber}`,
-            placedAt: new Date(),
-          },
-          itemsData: quote.items.map(item => ({
-            variantId: item.variantId,
-            skuSnapshot: item.variant.sku,
-            productNameSnapshot: item.variant.product.name,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            subtotal: item.subtotal,
-            discountAmount: item.discount,
-            taxAmount: item.taxAmount,
-            totalAmount: item.totalAmount,
-            currencyId: quote.currencyId,
-            packagingSnapshot: item.packagingSnapshot,
-          })),
-          reservationsData: [],
-          taxCalculationData: {
-            provider: "QUOTE_PRESET",
-            totalTax: quote.taxAmount,
-            taxLines: [],
-          },
-          outboxEventData: {
-            eventType: "QUOTE_CONVERTED_TO_ORDER",
+    return prisma.$transaction(async (tx) => {
+      const createdOrder = await tx.order.create({
+        data: {
+          orderNumber,
+          userId: quote.requestedById,
+          companyId: quote.companyId,
+          customerType: "B2B",
+          source: "B2B_PORTAL",
+          status: "PENDING_PAYMENT",
+          countryId: quote.countryId,
+          currencyId: quote.currencyId,
+          subtotal: quote.subtotal,
+          discountAmount: quote.discountAmount,
+          shippingAmount: quote.shippingAmount,
+          taxAmount: quote.taxAmount,
+          totalAmount: quote.totalAmount,
+          billingAddress: billingAddress || {},
+          shippingAddress: shippingAddress || {},
+          notes: `Converted from Quote ${quote.quoteNumber}`,
+          placedAt: new Date(),
+          items: {
+            create: quote.items.map((item) => ({
+              variantId: item.variantId,
+              skuSnapshot: item.variant.sku,
+              productNameSnapshot: item.variant.product.name,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              subtotal: item.subtotal,
+              discountAmount: item.discount,
+              taxAmount: item.taxAmount,
+              totalAmount: item.totalAmount,
+              currencyId: quote.currencyId,
+              packagingSnapshot: item.packagingSnapshot,
+            })),
           },
         },
-        tx
-      );
+      });
 
       await tx.quote.update({
         where: { id: quote.id },
@@ -227,7 +285,5 @@ export class QuoteService {
 
       return createdOrder;
     });
-
-    return order;
   }
 }

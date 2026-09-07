@@ -1,4 +1,3 @@
-export * from "./repository.js";
-export * from "./service.js";
-export * from "./routes.js";
+export { QuoteService } from "./service.js";
+export { QuoteController } from "./controller.js";
 export { default as quoteRoutes } from "./routes.js";

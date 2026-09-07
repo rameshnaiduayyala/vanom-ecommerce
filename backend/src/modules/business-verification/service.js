@@ -1,4 +1,3 @@
-import { BusinessVerificationRepository } from "./repository.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { OutboxService } from "../../infrastructure/outbox/outbox.service.js";
 import { AuditService } from "../audit/service.js";
@@ -6,6 +5,10 @@ import { NotificationService } from "../notifications/service.js";
 import { NotFoundError, BusinessRuleError } from "../../common/errors/index.js";
 import { ERROR_CODES } from "../../common/constants/index.js";
 
+/**
+ * BusinessVerificationService
+ * Direct Prisma queries for verification workflows, reviews, and compliance transitions
+ */
 export class BusinessVerificationService {
   constructor(
     notificationService = new NotificationService(),
@@ -15,12 +18,50 @@ export class BusinessVerificationService {
     this.auditService = auditService;
   }
 
-  async listApplications({ status, page, limit }) {
-    return BusinessVerificationRepository.listApplications({ status, page, limit });
+  async listApplications({ status, page = 1, limit = 20 } = {}) {
+    const where = status ? { status } : {};
+    const [total, items] = await Promise.all([
+      prisma.verificationApplication.count({ where }),
+      prisma.verificationApplication.findMany({
+        where,
+        include: {
+          company: {
+            include: {
+              country: true,
+              documents: { include: { file: true } },
+              members: { include: { user: true } },
+            },
+          },
+          reviews: {
+            include: { reviewer: true },
+          },
+        },
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
+        orderBy: { submittedAt: "desc" },
+      }),
+    ]);
+    return { total, items };
   }
 
   async getApplicationById(id) {
-    const app = await BusinessVerificationRepository.getApplicationById(id);
+    const app = await prisma.verificationApplication.findUnique({
+      where: { id },
+      include: {
+        company: {
+          include: {
+            country: true,
+            documents: { include: { file: true } },
+            members: { include: { user: true } },
+          },
+        },
+        reviews: {
+          include: { reviewer: true },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+
     if (!app) {
       throw new NotFoundError("Business verification application not found");
     }
@@ -44,19 +85,42 @@ export class BusinessVerificationService {
 
     const beforeData = { status: company.status };
 
-    // Atomically approve company, create review, create outbox event, and create audit log
-    const result = await prisma.$transaction(async tx => {
-      const approval = await BusinessVerificationRepository.approveApplication(
-        {
+    const result = await prisma.$transaction(async (tx) => {
+      const application = await tx.verificationApplication.update({
+        where: { id: applicationId },
+        data: {
+          status: "APPROVED",
+          decidedAt: new Date(),
+          decisionReason: notes || "Approved by Administrator",
+        },
+      });
+
+      await tx.company.update({
+        where: { id: company.id },
+        data: {
+          status: "APPROVED",
+          approvedAt: new Date(),
+          approvedById: reviewer.id,
+        },
+      });
+
+      await tx.businessDocument.updateMany({
+        where: { companyId: company.id },
+        data: {
+          status: "VERIFIED",
+          verifiedAt: new Date(),
+        },
+      });
+
+      const review = await tx.verificationReview.create({
+        data: {
           applicationId,
-          companyId: company.id,
           reviewerId: reviewer.id,
+          decision: "APPROVED",
           notes,
         },
-        tx
-      );
+      });
 
-      // Create Outbox Event
       await OutboxService.recordEvent(
         {
           aggregateType: "COMPANY",
@@ -72,10 +136,9 @@ export class BusinessVerificationService {
         tx
       );
 
-      return approval;
+      return { application, review };
     });
 
-    // Record Audit Log
     await this.auditService.log({
       actorId: reviewer.id,
       action: "APPROVE",
@@ -86,8 +149,7 @@ export class BusinessVerificationService {
       metadata: { applicationId, notes },
     });
 
-    // Send Notification to company primary admin
-    const primaryMember = company.members.find(m => m.isPrimary) || company.members[0];
+    const primaryMember = company.members.find((m) => m.isPrimary) || company.members[0];
     if (primaryMember?.user) {
       await this.notificationService.sendNotification({
         userId: primaryMember.userId,
@@ -111,16 +173,29 @@ export class BusinessVerificationService {
 
     const beforeData = { status: company.status };
 
-    const result = await prisma.$transaction(async tx => {
-      const rejection = await BusinessVerificationRepository.rejectApplication(
-        {
-          applicationId,
-          companyId: company.id,
-          reviewerId: reviewer.id,
-          reason,
+    const result = await prisma.$transaction(async (tx) => {
+      const application = await tx.verificationApplication.update({
+        where: { id: applicationId },
+        data: {
+          status: "REJECTED",
+          decidedAt: new Date(),
+          decisionReason: reason,
         },
-        tx
-      );
+      });
+
+      await tx.company.update({
+        where: { id: company.id },
+        data: { status: "REJECTED" },
+      });
+
+      const review = await tx.verificationReview.create({
+        data: {
+          applicationId,
+          reviewerId: reviewer.id,
+          decision: "REJECTED",
+          notes: reason,
+        },
+      });
 
       await OutboxService.recordEvent(
         {
@@ -136,7 +211,7 @@ export class BusinessVerificationService {
         tx
       );
 
-      return rejection;
+      return { application, review };
     });
 
     await this.auditService.log({
@@ -149,7 +224,7 @@ export class BusinessVerificationService {
       metadata: { applicationId, reason },
     });
 
-    const primaryMember = company.members.find(m => m.isPrimary) || company.members[0];
+    const primaryMember = company.members.find((m) => m.isPrimary) || company.members[0];
     if (primaryMember?.user) {
       await this.notificationService.sendNotification({
         userId: primaryMember.userId,

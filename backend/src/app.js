@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import multipart from "@fastify/multipart";
 import securityPlugin from "./plugins/security.plugin.js";
 import corsPlugin from "./plugins/cors.plugin.js";
 import authPlugin from "./plugins/auth.plugin.js";
@@ -18,6 +19,14 @@ export async function buildApp(opts = {}) {
   const app = Fastify({
     logger: opts.logger !== undefined ? opts.logger : true,
     requestIdHeader: "x-request-id",
+  });
+
+  // Multipart file uploads (images, docs)
+  await app.register(multipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB max file size
+      files: 5,
+    },
   });
 
   // Security and Utility Plugins

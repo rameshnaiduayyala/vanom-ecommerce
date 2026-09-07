@@ -1,5 +1,4 @@
 export * from "./providers/index.js";
-export * from "./repository.js";
-export * from "./service.js";
-export * from "./routes.js";
+export { PaymentService } from "./service.js";
+export { PaymentController } from "./controller.js";
 export { default as paymentRoutes } from "./routes.js";

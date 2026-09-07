@@ -1,12 +1,14 @@
-import { PaymentRepository } from "./repository.js";
 import { StripeProvider, RazorpayProvider } from "./providers/index.js";
-import { OrderRepository } from "../orders/repository.js";
 import { OutboxService } from "../../infrastructure/outbox/outbox.service.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { Money } from "../../common/utils/money.js";
-import { NotFoundError, BusinessRuleError, ConflictError } from "../../common/errors/index.js";
+import { NotFoundError, BusinessRuleError } from "../../common/errors/index.js";
 import { ERROR_CODES } from "../../common/constants/index.js";
 
+/**
+ * PaymentService
+ * Direct Prisma queries, payment provider integrations (Stripe, Razorpay), webhooks, and ledger transactions
+ */
 export class PaymentService {
   constructor() {
     this.providers = {
@@ -24,7 +26,10 @@ export class PaymentService {
   }
 
   async createPaymentIntent(user, { orderId, provider = "RAZORPAY" }) {
-    const order = await OrderRepository.findById(orderId);
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { currency: true },
+    });
     if (!order) throw new NotFoundError("Order not found", ERROR_CODES.ORDER_NOT_FOUND);
 
     const paymentProvider = this._getProvider(provider);
@@ -35,14 +40,25 @@ export class PaymentService {
       metadata: { orderNumber: order.orderNumber, userId: user.id },
     });
 
-    const payment = await PaymentRepository.createPayment({
-      orderId: order.id,
-      currencyId: order.currencyId,
-      provider: provider.toUpperCase(),
-      providerPaymentId: intent.providerPaymentId,
-      amount: order.totalAmount,
-      status: "PENDING",
-      metadata: intent,
+    const payment = await prisma.payment.create({
+      data: {
+        orderId: order.id,
+        currencyId: order.currencyId,
+        provider: provider.toUpperCase(),
+        providerPaymentId: intent.providerPaymentId,
+        amount: order.totalAmount,
+        status: "PENDING",
+        metadata: intent || {},
+        transactions: {
+          create: {
+            type: "AUTHORIZE",
+            providerReference: intent.providerPaymentId,
+            amount: order.totalAmount,
+            status: "PENDING",
+          },
+        },
+      },
+      include: { transactions: true, order: true },
     });
 
     return {
@@ -55,7 +71,15 @@ export class PaymentService {
   }
 
   async capturePayment(paymentId, amount = null) {
-    const payment = await PaymentRepository.findById(paymentId);
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: {
+        order: true,
+        transactions: true,
+        refunds: true,
+        currency: true,
+      },
+    });
     if (!payment) throw new NotFoundError("Payment not found");
 
     const captureAmount = amount ? Money.toDecimal(amount) : payment.amount;
@@ -63,19 +87,25 @@ export class PaymentService {
 
     const result = await paymentProvider.capturePayment(payment.providerPaymentId, captureAmount);
 
-    return prisma.$transaction(async tx => {
-      await PaymentRepository.updatePaymentStatus(payment.id, "CAPTURED", captureAmount, tx);
-      await PaymentRepository.recordTransaction(
-        {
+    return prisma.$transaction(async (tx) => {
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: "CAPTURED",
+          capturedAmount: captureAmount,
+        },
+      });
+
+      await tx.paymentTransaction.create({
+        data: {
           paymentId: payment.id,
           type: "CAPTURE",
           amount: captureAmount,
           status: "CAPTURED",
           providerReference: payment.providerPaymentId,
-          response: result,
+          response: result || {},
         },
-        tx
-      );
+      });
 
       // Update Order Status to PAID
       await tx.order.update({
@@ -104,7 +134,15 @@ export class PaymentService {
   }
 
   async refundPayment(paymentId, user, { amount = null, reason = "Customer request" }) {
-    const payment = await PaymentRepository.findById(paymentId);
+    const payment = await prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: {
+        order: true,
+        transactions: true,
+        refunds: true,
+        currency: true,
+      },
+    });
     if (!payment) throw new NotFoundError("Payment not found");
 
     const refundAmount = amount ? Money.toDecimal(amount) : payment.amount;
@@ -112,17 +150,24 @@ export class PaymentService {
 
     const result = await paymentProvider.refundPayment(payment.providerPaymentId, refundAmount, reason);
 
-    return prisma.$transaction(async tx => {
-      const refund = await PaymentRepository.recordRefund(
-        {
+    return prisma.$transaction(async (tx) => {
+      const refund = await tx.refund.create({
+        data: {
           paymentId: payment.id,
           amount: refundAmount,
           reason,
           providerRefundId: result.providerRefundId,
           status: "REFUNDED",
         },
-        tx
-      );
+      });
+
+      await tx.payment.update({
+        where: { id: paymentId },
+        data: {
+          refundedAmount: { increment: refundAmount },
+          status: "REFUNDED",
+        },
+      });
 
       await tx.order.update({
         where: { id: payment.orderId },
@@ -148,28 +193,38 @@ export class PaymentService {
       throw new BusinessRuleError("externalEventId is required for webhook processing");
     }
 
-    // Idempotent webhook check
-    const existing = await PaymentRepository.findWebhookEvent(externalEventId);
+    const existing = await prisma.paymentWebhook.findUnique({
+      where: { externalEventId },
+    });
     if (existing) {
       return { status: "ALREADY_PROCESSED", duplicate: true };
     }
 
     const providerPaymentId = payload.providerPaymentId || payload.id;
-    const payment = await PaymentRepository.findByProviderPaymentId(providerPaymentId);
+    const payment = await prisma.payment.findFirst({
+      where: { providerPaymentId },
+      include: { order: true, transactions: true },
+    });
 
-    await prisma.$transaction(async tx => {
-      await PaymentRepository.recordWebhookEvent(
-        {
+    await prisma.$transaction(async (tx) => {
+      await tx.paymentWebhook.create({
+        data: {
           provider,
           externalEventId,
           status: "PROCESSED",
           payload,
         },
-        tx
-      );
+      });
 
       if (payment && (eventType === "payment.captured" || eventType === "charge.succeeded")) {
-        await PaymentRepository.updatePaymentStatus(payment.id, "CAPTURED", payment.amount, tx);
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: "CAPTURED",
+            capturedAmount: payment.amount,
+          },
+        });
+
         await tx.order.update({
           where: { id: payment.orderId },
           data: { status: "PAID" },

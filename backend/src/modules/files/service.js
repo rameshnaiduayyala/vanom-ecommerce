@@ -1,8 +1,12 @@
-import { FileRepository } from "./repository.js";
+import { prisma } from "../../infrastructure/database/prisma.js";
 import { getStorageProvider } from "../../infrastructure/storage/index.js";
 import { HashUtil } from "../../common/utils/hash.js";
 import { NotFoundError, ForbiddenError } from "../../common/errors/index.js";
 
+/**
+ * FileService
+ * Direct Prisma queries and storage driver operations without repository layer
+ */
 export class FileService {
   constructor(storageProvider = getStorageProvider()) {
     this.storageProvider = storageProvider;
@@ -15,14 +19,16 @@ export class FileService {
 
     await this.storageProvider.upload(fileBuffer, uniqueKey, { originalName, mimeType });
 
-    const asset = await FileRepository.createFileAsset({
-      type,
-      storageKey: uniqueKey,
-      originalName,
-      mimeType,
-      sizeBytes: fileBuffer.length,
-      checksum,
-      uploadedById,
+    const asset = await prisma.fileAsset.create({
+      data: {
+        type,
+        storageKey: uniqueKey,
+        originalName,
+        mimeType,
+        sizeBytes: BigInt(fileBuffer.length),
+        checksum,
+        uploadedById,
+      },
     });
 
     return {
@@ -36,7 +42,19 @@ export class FileService {
   }
 
   async getFileStream(storageKey, user) {
-    const asset = await FileRepository.findByStorageKey(storageKey);
+    const asset = await prisma.fileAsset.findUnique({
+      where: { storageKey },
+      include: {
+        businessDocuments: {
+          include: {
+            company: {
+              include: { members: true },
+            },
+          },
+        },
+      },
+    });
+
     if (!asset) {
       throw new NotFoundError("File not found");
     }
@@ -47,8 +65,8 @@ export class FileService {
       }
       const isAdmin = user.roles?.includes("ADMIN") || user.roles?.includes("SUPER_ADMIN");
       const isOwner = asset.uploadedById === user.id;
-      const isCompanyMember = asset.businessDocuments?.some(bd =>
-        bd.company?.members?.some(m => m.userId === user.id)
+      const isCompanyMember = asset.businessDocuments?.some((bd) =>
+        bd.company?.members?.some((m) => m.userId === user.id)
       );
 
       if (!isAdmin && !isOwner && !isCompanyMember) {

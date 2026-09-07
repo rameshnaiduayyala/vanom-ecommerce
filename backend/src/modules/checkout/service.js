@@ -1,10 +1,6 @@
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { PriceResolver } from "../pricing/price-resolver.js";
-import { TaxService } from "../tax/routes.js";
-import { GeographyRepository } from "../geography/repository.js";
-import { InventoryRepository } from "../inventory/repository.js";
-import { CartRepository } from "../cart/repository.js";
-import { OrderRepository } from "../orders/repository.js";
+import { TaxService } from "../tax/service.js";
 import { NotificationService } from "../notifications/service.js";
 import { Money } from "../../common/utils/money.js";
 import { IdGenerator } from "../../common/utils/id-generator.js";
@@ -16,6 +12,10 @@ import {
 } from "../../common/errors/index.js";
 import { ERROR_CODES } from "../../common/constants/index.js";
 
+/**
+ * CheckoutService
+ * Direct Prisma queries, authoritative commercial validation, tax recalculation, and atomic order placement
+ */
 export class CheckoutService {
   constructor(
     taxService = new TaxService(),
@@ -25,10 +25,6 @@ export class CheckoutService {
     this.notificationService = notificationService;
   }
 
-  /**
-   * Authoritative validation & recalculation of commercial total.
-   * Browser-submitted amounts are strictly ignored.
-   */
   async validateCheckout(user, {
     items = [],
     companyId = null,
@@ -40,25 +36,34 @@ export class CheckoutService {
     fulfillmentType = "STANDARD",
   }) {
     if (!items || items.length === 0) {
-      // If no direct items provided, load from active cart
-      const cart = await CartRepository.findActiveCart(user.id, companyId);
+      const cart = await prisma.cart.findFirst({
+        where: {
+          userId: user.id,
+          companyId: companyId || null,
+          active: true,
+        },
+        include: { items: true },
+      });
       if (!cart || !cart.items || cart.items.length === 0) {
         throw new BusinessRuleError("Cart is empty", ERROR_CODES.CART_EMPTY);
       }
-      items = cart.items.map(item => ({
+      items = cart.items.map((item) => ({
         variantId: item.variantId,
         quantity: item.quantity,
       }));
     }
 
-    const country = await GeographyRepository.getCountryByCode(countryCode);
-    const currency = await GeographyRepository.getCurrencyByCode(currencyCode);
+    const country = await prisma.country.findUnique({ where: { code: countryCode.toUpperCase() } });
+    const currency = await prisma.currency.findUnique({ where: { code: currencyCode.toUpperCase() } });
+
+    if (!country || !currency) {
+      throw new NotFoundError("Country or currency not supported");
+    }
 
     let subtotal = Money.toDecimal(0);
     const validatedItems = [];
     const stockReservations = [];
 
-    // 1. Authoritative Price Resolution, MOQ & Inventory Check per item
     for (const item of items) {
       const variant = await prisma.productVariant.findUnique({
         where: { id: item.variantId },
@@ -72,16 +77,21 @@ export class CheckoutService {
         throw new NotFoundError(`Variant ${item.variantId} is inactive or not found`, ERROR_CODES.VARIANT_NOT_FOUND);
       }
 
-      // Check stock availability
-      const stock = await InventoryRepository.getAvailableStock(variant.id);
-      if (stock.available < item.quantity) {
+      const stockAgg = await prisma.inventoryItem.aggregate({
+        where: { variantId: variant.id },
+        _sum: { onHand: true, reserved: true },
+      });
+      const onHand = stockAgg._sum.onHand || 0;
+      const reserved = stockAgg._sum.reserved || 0;
+      const available = Math.max(0, onHand - reserved);
+
+      if (available < item.quantity) {
         throw new BusinessRuleError(
-          `Insufficient stock for '${variant.name}'. Available: ${stock.available}, Requested: ${item.quantity}`,
+          `Insufficient stock for '${variant.name}'. Available: ${available}, Requested: ${item.quantity}`,
           ERROR_CODES.INSUFFICIENT_STOCK
         );
       }
 
-      // Find primary warehouse with stock
       const warehouseItem = await prisma.inventoryItem.findFirst({
         where: {
           variantId: variant.id,
@@ -96,7 +106,6 @@ export class CheckoutService {
         quantity: item.quantity,
       });
 
-      // Authoritative Price Resolution
       const priceResult = await PriceResolver.resolvePrice({
         productId: variant.productId,
         variantId: variant.id,
@@ -127,7 +136,6 @@ export class CheckoutService {
       });
     }
 
-    // 2. Shipping calculation
     let shippingAmount = Money.toDecimal(0);
     if (fulfillmentType === "EXPRESS") {
       shippingAmount = countryCode === "IN" ? Money.toDecimal(150) : Money.toDecimal(25);
@@ -137,7 +145,6 @@ export class CheckoutService {
       shippingAmount = countryCode === "IN" ? Money.toDecimal(70) : Money.toDecimal(10);
     }
 
-    // 3. Tax Calculation
     const taxResult = await this.taxService.calculateTax({
       countryCode,
       regionCode: shippingAddress?.state || null,
@@ -148,7 +155,6 @@ export class CheckoutService {
 
     const taxAmount = Money.toDecimal(taxResult.totalTax);
 
-    // Apply item tax distribution
     taxResult.taxLines.forEach((line, index) => {
       if (validatedItems[index]) {
         validatedItems[index].taxAmount = line.taxAmount;
@@ -157,7 +163,6 @@ export class CheckoutService {
       }
     });
 
-    // 4. Discounts / Coupons
     let discountAmount = Money.toDecimal(0);
     if (couponCode) {
       const coupon = await prisma.coupon.findUnique({
@@ -173,7 +178,6 @@ export class CheckoutService {
       }
     }
 
-    // 5. Final Authoritative Total
     const totalAmount = Money.round(
       Money.add(Money.subtract(subtotal, discountAmount), Money.add(shippingAmount, taxAmount)),
       2
@@ -204,71 +208,131 @@ export class CheckoutService {
       id: user.id,
       email: user.email,
       customerType: user.customerType,
-      company: user.companyMembers?.find(m => m.companyId === checkoutPayload.companyId)?.company || null,
+      company: user.companyMembers?.find((m) => m.companyId === checkoutPayload.companyId)?.company || null,
     };
 
-    const order = await prisma.$transaction(async tx => {
-      const createdOrder = await OrderRepository.createOrderWithTransaction(
-        {
-          orderData: {
-            orderNumber,
-            userId: user.id,
-            companyId: checkoutPayload.companyId || null,
-            customerType: user.customerType || "B2C",
-            source: checkoutPayload.companyId ? "B2B_PORTAL" : "WEB",
-            status: "PENDING_PAYMENT",
-            countryId: calculation.country.id,
-            currencyId: calculation.currency.id,
-            subtotal: calculation.subtotal,
-            discountAmount: calculation.discountAmount,
-            shippingAmount: calculation.shippingAmount,
-            taxAmount: calculation.taxAmount,
-            totalAmount: calculation.totalAmount,
-            billingAddress: calculation.billingAddress,
-            shippingAddress: calculation.shippingAddress,
-            customerSnapshot,
-            notes: checkoutPayload.notes || null,
-            placedAt: new Date(),
+    const order = await prisma.$transaction(async (tx) => {
+      const createdOrder = await tx.order.create({
+        data: {
+          orderNumber,
+          userId: user.id,
+          companyId: checkoutPayload.companyId || null,
+          customerType: user.customerType || "B2C",
+          source: checkoutPayload.companyId ? "B2B_PORTAL" : "WEB",
+          status: "PENDING_PAYMENT",
+          countryId: calculation.country.id,
+          currencyId: calculation.currency.id,
+          subtotal: calculation.subtotal,
+          discountAmount: calculation.discountAmount,
+          shippingAmount: calculation.shippingAmount,
+          taxAmount: calculation.taxAmount,
+          totalAmount: calculation.totalAmount,
+          billingAddress: calculation.billingAddress,
+          shippingAddress: calculation.shippingAddress,
+          customerSnapshot,
+          notes: checkoutPayload.notes || null,
+          placedAt: new Date(),
+          items: {
+            create: calculation.items.map((item) => ({
+              productId: item.productId,
+              variantId: item.variantId,
+              skuSnapshot: item.skuSnapshot,
+              productNameSnapshot: item.productNameSnapshot,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              subtotal: item.subtotal,
+              discountAmount: item.discountAmount,
+              taxAmount: item.taxAmount,
+              totalAmount: item.totalAmount,
+              currencyId: calculation.currency.id,
+              taxRateSnapshot: item.taxRateSnapshot || 0,
+              packagingSnapshot: item.packagingSnapshot,
+            })),
           },
-          itemsData: calculation.items.map(item => ({
-            productId: item.productId,
-            variantId: item.variantId,
-            skuSnapshot: item.skuSnapshot,
-            productNameSnapshot: item.productNameSnapshot,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            subtotal: item.subtotal,
-            discountAmount: item.discountAmount,
-            taxAmount: item.taxAmount,
-            totalAmount: item.totalAmount,
-            currencyId: calculation.currency.id,
-            taxRateSnapshot: item.taxRateSnapshot || 0,
-            packagingSnapshot: item.packagingSnapshot,
-          })),
-          reservationsData: calculation.stockReservations,
-          taxCalculationData: calculation.taxCalculation,
-          outboxEventData: {
-            eventType: "ORDER_CREATED",
+          statusHistory: {
+            create: {
+              toStatus: "PENDING_PAYMENT",
+              reason: "Initial order placement",
+            },
           },
         },
-        tx
-      );
+        include: {
+          items: true,
+          country: true,
+          currency: true,
+          company: true,
+        },
+      });
 
-      // Clear the user's active cart upon successful order creation
-      const activeCart = await CartRepository.findActiveCart(user.id, checkoutPayload.companyId);
-      if (activeCart) {
-        await CartRepository.clearCart(activeCart.id);
+      for (const res of calculation.stockReservations) {
+        await tx.inventoryReservation.create({
+          data: {
+            warehouseId: res.warehouseId,
+            variantId: res.variantId,
+            orderId: createdOrder.id,
+            quantity: res.quantity,
+            status: "ACTIVE",
+            expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
+          },
+        });
+
+        await tx.inventoryItem.updateMany({
+          where: {
+            warehouseId: res.warehouseId,
+            variantId: res.variantId,
+          },
+          data: {
+            reserved: { increment: res.quantity },
+          },
+        });
+
+        await tx.inventoryMovement.create({
+          data: {
+            warehouseId: res.warehouseId,
+            variantId: res.variantId,
+            type: "RESERVATION",
+            quantity: res.quantity,
+            referenceType: "ORDER",
+            referenceId: createdOrder.id,
+            reason: "Order placement reservation",
+          },
+        });
       }
+
+      const activeCart = await tx.cart.findFirst({
+        where: {
+          userId: user.id,
+          companyId: checkoutPayload.companyId || null,
+          active: true,
+        },
+      });
+      if (activeCart) {
+        await tx.cartItem.deleteMany({ where: { cartId: activeCart.id } });
+      }
+
+      await tx.outboxEvent.create({
+        data: {
+          aggregateType: "ORDER",
+          aggregateId: createdOrder.id,
+          eventType: "ORDER_CREATED",
+          payload: {
+            orderId: createdOrder.id,
+            orderNumber: createdOrder.orderNumber,
+            totalAmount: createdOrder.totalAmount,
+            currency: calculation.currency.code,
+            userId: createdOrder.userId,
+            companyId: createdOrder.companyId,
+          },
+        },
+      });
 
       return createdOrder;
     });
 
-    // Save response into PostgreSQL idempotency key record if key provided
     if (idempotencyKey) {
       await saveIdempotentResponse(idempotencyKey, 201, { success: true, data: order }, order.id);
     }
 
-    // Send confirmation notification
     await this.notificationService.sendNotification({
       userId: user.id,
       channel: "EMAIL",

@@ -1,36 +1,47 @@
 import { prisma } from "../../infrastructure/database/prisma.js";
 
-export class AuditRepository {
-  static async createLog({
-    actorId,
-    action,
-    entityType,
-    entityId,
-    requestId,
-    ipAddress,
-    userAgent,
-    beforeData,
-    afterData,
-    metadata,
-  }, tx = null) {
+/**
+ * AuditService
+ * Direct Prisma queries for audit logging
+ */
+export class AuditService {
+  async log(
+    {
+      actorId,
+      action,
+      entityType,
+      entityId,
+      requestId,
+      ipAddress,
+      userAgent,
+      beforeData,
+      afterData,
+      metadata,
+    },
+    tx = null
+  ) {
     const db = tx || prisma;
-    return db.auditLog.create({
-      data: {
-        actorId,
-        action,
-        entityType,
-        entityId,
-        requestId,
-        ipAddress,
-        userAgent,
-        beforeData,
-        afterData,
-        metadata,
-      },
-    });
+    try {
+      return await db.auditLog.create({
+        data: {
+          actorId,
+          action,
+          entityType,
+          entityId,
+          requestId,
+          ipAddress,
+          userAgent,
+          beforeData,
+          afterData,
+          metadata,
+        },
+      });
+    } catch (err) {
+      console.error("Failed to write audit log:", err.message);
+    }
   }
 
-  static async listLogs({ entityType, entityId, actorId, page = 1, limit = 50 }) {
+  async list({ entityType, entityId, actorId, page = 1, limit = 50 } = {}) {
     const where = {};
     if (entityType) where.entityType = entityType;
     if (entityId) where.entityId = entityId;
@@ -43,25 +54,11 @@ export class AuditRepository {
         include: {
           actor: { select: { id: true, email: true, firstName: true, lastName: true } },
         },
-        skip: (page - 1) * limit,
-        take: limit,
+        skip: (Number(page) - 1) * Number(limit),
+        take: Number(limit),
         orderBy: { createdAt: "desc" },
       }),
     ]);
     return { total, items };
-  }
-}
-
-export class AuditService {
-  async log(auditData, tx = null) {
-    try {
-      return await AuditRepository.createLog(auditData, tx);
-    } catch (err) {
-      console.error("Failed to write audit log:", err.message);
-    }
-  }
-
-  async list(params) {
-    return AuditRepository.listLogs(params);
   }
 }
