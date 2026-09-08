@@ -84,8 +84,8 @@ export function Orders() {
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }) => Api.admin.updateOrderStatus(id, status),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries(["admin-orders"]);
-      queryClient.invalidateQueries(["admin-dashboard-metrics"]);
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-dashboard-metrics"] });
       toast.success("Order Updated", `Order status transitioned to ${variables.status}.`);
     },
     onError: (err) => toast.error("Update Failed", err.message),

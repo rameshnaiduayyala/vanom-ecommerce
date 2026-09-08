@@ -108,19 +108,19 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* ── KPI Stat Cards (4 Cards Grid) ── */}
+      {/* ── KPI Stat Cards (5 Cards Grid) ── */}
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          {[1, 2, 3, 4, 5].map((i) => (
             <Skeleton key={i} className="h-28 rounded-2xl" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           {/* Card 1: Total Revenue */}
           <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Total Revenue
               </span>
               <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#358B5B] flex items-center justify-center">
@@ -129,15 +129,15 @@ export function Dashboard() {
             </div>
 
             <div>
-              <p className="text-2xl font-black text-slate-900 tracking-tight">
-                ${Number(metrics?.totalRevenue || 128540).toLocaleString()}
+              <p className="text-xl xl:text-2xl font-black text-slate-900 tracking-tight">
+                ${metrics?.totalRevenue != null ? Number(metrics.totalRevenue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}
               </p>
               <div className="flex items-center gap-1.5 mt-1 text-xs">
-                <span className="inline-flex items-center font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
-                  <ArrowUpRight className="w-3.5 h-3.5" />
+                <span className="inline-flex items-center font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded text-[11px]">
+                  <ArrowUpRight className="w-3 h-3" />
                   +14.8%
                 </span>
-                <span className="text-slate-400">live store total</span>
+                <span className="text-slate-400 text-[11px]">gross sales</span>
               </div>
             </div>
           </div>
@@ -145,7 +145,7 @@ export function Dashboard() {
           {/* Card 2: Total Orders */}
           <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 Total Orders
               </span>
               <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -154,39 +154,38 @@ export function Dashboard() {
             </div>
 
             <div>
-              <p className="text-2xl font-black text-slate-900 tracking-tight">
-                {metrics?.totalOrders || 43} Orders
+              <p className="text-xl xl:text-2xl font-black text-slate-900 tracking-tight">
+                {metrics?.totalOrders ?? 0}
               </p>
               <div className="flex items-center gap-1.5 mt-1 text-xs">
-                <span className="inline-flex items-center font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                  +8.4%
+                <span className="inline-flex items-center font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded text-[11px]">
+                  B2C & B2B
                 </span>
-                <span className="text-slate-400">across B2C & B2B</span>
+                <span className="text-slate-400 text-[11px]">completed & live</span>
               </div>
             </div>
           </div>
 
-          {/* Card 3: Active Catalog Products */}
+          {/* Card 3: Active Customers */}
           <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                Catalog Items
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Active Buyers
               </span>
-              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <Package className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
+                <ShieldCheck className="w-4 h-4" />
               </div>
             </div>
 
             <div>
-              <p className="text-2xl font-black text-slate-900 tracking-tight">
-                {productsCount} Products
+              <p className="text-xl xl:text-2xl font-black text-slate-900 tracking-tight">
+                {metrics?.activeCustomers ?? 0}
               </p>
               <div className="flex items-center gap-1.5 mt-1 text-xs">
-                <span className="inline-flex items-center font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
-                  {metrics?.activeCatalogItems || productsCount} Active
+                <span className="inline-flex items-center font-bold text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded text-[11px]">
+                  Registered
                 </span>
-                <span className="text-slate-400">• in Database</span>
+                <span className="text-slate-400 text-[11px]">active users</span>
               </div>
             </div>
           </div>
@@ -194,7 +193,7 @@ export function Dashboard() {
           {/* Card 4: Verified B2B Accounts */}
           <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                 B2B Companies
               </span>
               <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
@@ -203,16 +202,40 @@ export function Dashboard() {
             </div>
 
             <div>
-              <p className="text-2xl font-black text-slate-900 tracking-tight">
-                {metrics?.activeCompanies || 28} Verified
+              <p className="text-xl xl:text-2xl font-black text-slate-900 tracking-tight">
+                {metrics?.activeCompanies ?? 0}
               </p>
               <div className="flex items-center gap-1.5 mt-1 text-xs">
                 <Link
                   to={ROUTES.ADMIN.BUSINESS_APPLICATIONS}
-                  className="font-bold text-[#358B5B] hover:underline"
+                  className="font-bold text-[#358B5B] hover:underline text-[11px]"
                 >
-                  {metrics?.pendingApplications || 0} Pending Reviews →
+                  {metrics?.pendingApplications ?? 0} Pending →
                 </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 5: Active Catalog Products */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Catalog Items
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <Package className="w-4 h-4" />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xl xl:text-2xl font-black text-slate-900 tracking-tight">
+                {metrics?.activeCatalogItems ?? productsCount}
+              </p>
+              <div className="flex items-center gap-1.5 mt-1 text-xs">
+                <span className="inline-flex items-center font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded text-[11px]">
+                  Active
+                </span>
+                <span className="text-slate-400 text-[11px]">in Database</span>
               </div>
             </div>
           </div>
@@ -381,17 +404,26 @@ export function Dashboard() {
                 {recentOrders.length > 0 ? (
                   recentOrders.map((ord) => (
                     <tr key={ord.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-3 font-mono font-bold text-slate-800">
-                        {ord.id.slice(0, 10)}
-                        <span className="block text-[10px] text-slate-400 font-sans font-normal">
-                          {ord.date}
+                      <td className="py-3">
+                        <span className="font-mono font-bold text-slate-800 text-xs block truncate max-w-[140px]" title={ord.id}>
+                          {ord.id}
                         </span>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[10px] text-slate-400 font-sans font-normal">
+                            {ord.date}
+                          </span>
+                          {ord.type && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded">
+                              {ord.type}
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="py-3">
                         <div className="flex items-center gap-2">
                           <img
-                            src={ord.avatar}
+                            src={ord.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80"}
                             alt=""
                             className="w-6 h-6 rounded-full object-cover border border-slate-200"
                           />
@@ -412,13 +444,15 @@ export function Dashboard() {
                       <td className="py-3">
                         <Badge
                           variant={
-                            ord.status === "DELIVERED" || ord.status === "COMPLETED"
+                            ord.status === "DELIVERED" || ord.status === "COMPLETED" || ord.status === "PAID"
                               ? "green"
                               : ord.status === "SHIPPED"
                               ? "blue"
-                              : ord.status === "PROCESSING"
+                              : ord.status === "PROCESSING" || ord.status === "PENDING"
                               ? "yellow"
-                              : "gray"
+                              : ord.status === "CANCELLED" || ord.status === "FAILED"
+                              ? "red"
+                              : "default"
                           }
                           size="sm"
                         >
@@ -487,7 +521,7 @@ export function Dashboard() {
 
                   <div className="pt-1 flex items-center justify-end">
                     <Link
-                      to={`/admin/companies/${app.id}`}
+                      to={ROUTES.ADMIN.BUSINESS_APPLICATIONS}
                       className="inline-flex items-center gap-1 font-bold text-[#358B5B] hover:underline text-[11px]"
                     >
                       <ShieldCheck className="w-3.5 h-3.5" />

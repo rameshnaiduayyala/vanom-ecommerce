@@ -380,12 +380,12 @@ export class CategoryService {
   }
 
   /**
-   * Delete category (soft or hard)
+   * Delete category (hard removal by default or soft)
    */
-  async delete(id, { hard = false } = {}) {
+  async delete(id, { hard = true } = {}) {
     const existing = await prisma.category.findUnique({
       where: { id },
-      include: { imageAsset: true },
+      include: { imageAsset: true, children: true, products: true },
     });
 
     if (!existing) {
@@ -393,14 +393,30 @@ export class CategoryService {
     }
 
     if (hard) {
+      // Unlink any sub-categories so foreign key constraint doesn't fail
+      if (existing.children && existing.children.length > 0) {
+        await prisma.category.updateMany({
+          where: { parentId: id },
+          data: { parentId: existing.parentId || null },
+        });
+      }
+
+      // Remove product-category relationships
+      if (existing.products && existing.products.length > 0) {
+        await prisma.productCategory.deleteMany({
+          where: { categoryId: id },
+        });
+      }
+
       if (existing.imageAsset) {
         try {
           await this.storageProvider.delete(existing.imageAsset.storageKey);
           await prisma.fileAsset.delete({ where: { id: existing.imageAsset.id } });
         } catch (e) {
-          // ignore
+          // ignore cleanup error
         }
       }
+
       return prisma.category.delete({ where: { id } });
     }
 

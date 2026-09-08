@@ -3,35 +3,28 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { ROUTES } from "../../../constants/routes.js";
-import { BRAND_COLORS } from "../../../constants/colors.js";
 import { toast } from "../../../components/ui/Toast.jsx";
 import {
   ArrowLeft,
   UploadCloud,
   X,
   Plus,
-  HelpCircle,
-  Lightbulb,
-  Bold,
-  Italic,
-  Underline,
-  List,
-  ListOrdered,
-  AlignLeft,
-  Link as LinkIcon,
-  Image as ImageIcon,
-  Video,
-  Code,
+  Trash2,
   Sparkles,
+  DollarSign,
+  Tag,
+  Package,
+  Layers,
+  Flame,
   CheckCircle2,
-  AlertCircle,
+  Eye,
 } from "lucide-react";
 
 export function AddProductPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Categories & Brands Queries
+  // Load Categories from Backend API
   const { data: categories = [] } = useQuery({
     queryKey: ["admin-categories"],
     queryFn: () => Api.admin.getCategories(),
@@ -39,140 +32,146 @@ export function AddProductPage() {
 
   // Form State
   const [formData, setFormData] = useState({
-    // Basic Info
     name: "",
-    shortDescription: "",
-    detailedDescription: "",
-
-    // Product Status & Visibility
-    status: "PUBLISH", // "DRAFT" | "PUBLISH"
-    showOnWebsite: true,
-    includeInSearch: true,
-    isFeatured: false,
-    tags: "",
-
-    // Images
-    images: [
-      {
-        id: "img-1",
-        url: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=400&q=80",
-        isMain: true,
-      },
-      {
-        id: "img-2",
-        url: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=400&q=80",
-        isMain: false,
-      },
-      {
-        id: "img-3",
-        url: "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=400&q=80",
-        isMain: false,
-      },
-      {
-        id: "img-4",
-        url: "https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&w=400&q=80",
-        isMain: false,
-      },
-    ],
-
-    // Shipping
-    weightKg: "",
-    lengthCm: "",
-    widthCm: "",
-    heightCm: "",
-    isDigital: false,
-
-    // Additional Options
-    allowCustomerReviews: true,
-    showStockAvailability: true,
-    isPreorder: false,
-    isNonReturnable: false,
-
-    // Pricing & Inventory
-    price: "",
-    comparePrice: "",
-    costPrice: "",
-    sku: "",
-    barcode: "",
-    stockQuantity: "",
-    lowStockAlert: "5",
-
-    // Category & Brand
+    description: "",
     categoryId: "",
-    subCategoryId: "",
-    brandId: "Vanom Commercial",
-
-    // Variants
+    imageUrl: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80",
+    oldPrice: "",
+    priceUS: "",
+    priceCA: "",
+    isBestSeller: false,
+    isNewProduct: true,
+    isFeatured: false,
+    stock: "100",
+    sku: "",
+    status: "ACTIVE",
     hasVariants: false,
-
-    // SEO
-    pageTitle: "",
-    metaDescription: "",
-    metaKeywords: "",
+    variants: [
+      { id: "v-1", name: "500g Pack", sku: "", weight: 0.5, priceUS: "", priceCA: "", stock: 50 },
+      { id: "v-2", name: "1 KG Pack", sku: "", weight: 1.0, priceUS: "", priceCA: "", stock: 100 },
+    ],
   });
+
+  // Set default category once loaded
+  React.useEffect(() => {
+    if (categories.length > 0 && !formData.categoryId) {
+      setFormData((prev) => ({ ...prev, categoryId: categories[0].id }));
+    }
+  }, [categories]);
 
   // Create Product Mutation
   const createMutation = useMutation({
     mutationFn: (payload) => Api.admin.createProduct(payload),
     onSuccess: (res) => {
-      queryClient.invalidateQueries(["admin-products"]);
-      queryClient.invalidateQueries(["home-products"]);
-      toast.success("Product Created", `${formData.name || "Product"} published successfully.`);
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["home-products"] });
+      toast.success("Product Created", `"${formData.name}" has been published successfully.`);
       navigate(ROUTES.ADMIN.PRODUCTS);
     },
     onError: (err) => {
-      toast.error("Creation Failed", err.message || "Failed to save product.");
+      toast.error("Creation Failed", err.message || "Failed to create product.");
     },
   });
 
-  const handleSave = (publishMode) => {
-    if (!formData.name) {
-      toast.error("Missing Field", "Please enter a product title.");
+  const addVariantRow = () => {
+    const newIdx = formData.variants.length + 1;
+    setFormData((prev) => ({
+      ...prev,
+      variants: [
+        ...prev.variants,
+        {
+          id: `v-${Date.now()}`,
+          name: `Option ${newIdx}`,
+          sku: "",
+          weight: 1.0,
+          priceUS: prev.priceUS || "",
+          priceCA: prev.priceCA || "",
+          stock: 50,
+        },
+      ],
+    }));
+  };
+
+  const removeVariantRow = (id) => {
+    if (formData.variants.length <= 1) {
+      toast.error("Minimum 1 Variant", "You must keep at least one variant.");
+      return;
+    }
+    setFormData((prev) => ({
+      ...prev,
+      variants: prev.variants.filter((v) => v.id !== id),
+    }));
+  };
+
+  const updateVariantRow = (id, field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      variants: prev.variants.map((v) => (v.id === id ? { ...v, [field]: value } : v)),
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    if (e) e.preventDefault();
+
+    if (!formData.name.trim()) {
+      toast.error("Missing Title", "Please provide a product title.");
       return;
     }
 
+    if (!formData.priceUS) {
+      toast.error("Missing Price", "Please enter the USA price.");
+      return;
+    }
+
+    const selectedCat = categories.find((c) => c.id === formData.categoryId);
+    const mainSku = formData.sku.trim() || `VAN-${Date.now().toString().slice(-6)}`;
+
+    // Prepare variants
+    const processedVariants = formData.hasVariants
+      ? formData.variants.map((v, i) => ({
+          name: v.name.trim() || `Variant ${i + 1}`,
+          sku: v.sku.trim() || `${mainSku}-V${i + 1}`,
+          weight: parseFloat(v.weight) || 1.0,
+          priceUS: v.priceUS ? parseFloat(v.priceUS) : parseFloat(formData.priceUS) || 0,
+          priceCA: v.priceCA ? parseFloat(v.priceCA) : (parseFloat(formData.priceUS) * 1.35),
+          stock: parseInt(v.stock, 10) || 50,
+        }))
+      : [
+          {
+            name: `${formData.name.trim()} Standard`,
+            sku: `${mainSku}-VAR`,
+            weight: 1.0,
+            priceUS: parseFloat(formData.priceUS) || 0,
+            priceCA: formData.priceCA ? parseFloat(formData.priceCA) : (parseFloat(formData.priceUS) * 1.35),
+            stock: parseInt(formData.stock, 10) || 100,
+          },
+        ];
+
     const payload = {
-      name: formData.name,
-      sku: formData.sku || `VAN-${Date.now().toString().slice(-6)}`,
-      category: categories.find((c) => c.id === formData.categoryId)?.name || "General Catalog",
-      categoryId: formData.categoryId || (categories[0]?.id || "cat-1"),
-      brand: formData.brandId,
-      image: formData.images[0]?.url || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80",
-      description: formData.detailedDescription || formData.shortDescription,
-      stock: Number(formData.stockQuantity) || 100,
-      isFeatured: formData.isFeatured,
-      isBestSeller: false,
-      status: publishMode === "PUBLISH" ? "ACTIVE" : "DRAFT",
-      pricing: {
-        retailPrice: Number(formData.price) || 0,
-        wholesalePrice: Number(formData.costPrice) || Number(formData.price) * 0.8 || 0,
-      },
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      categoryId: formData.categoryId || (categories[0]?.id || undefined),
+      category: selectedCat ? selectedCat.name : "General",
+      image: formData.imageUrl,
+      oldPrice: formData.oldPrice ? parseFloat(formData.oldPrice) : null,
+      priceUS: parseFloat(formData.priceUS) || 0,
+      priceCA: formData.priceCA ? parseFloat(formData.priceCA) : (parseFloat(formData.priceUS) * 1.35),
+      isBestSeller: Boolean(formData.isBestSeller),
+      isNewProduct: Boolean(formData.isNewProduct),
+      isFeatured: Boolean(formData.isFeatured),
+      stock: parseInt(formData.stock, 10) || 100,
+      sku: mainSku,
+      status: formData.status || "ACTIVE",
+      variants: processedVariants,
     };
 
     createMutation.mutate(payload);
   };
 
-  const removeImage = (id) => {
-    setFormData((prev) => ({
-      ...prev,
-      images: prev.images.filter((img) => img.id !== id),
-    }));
-  };
-
-  const setMainImage = (id) => {
-    setFormData((prev) => ({
-      ...prev,
-      images: prev.images.map((img) => ({
-        ...img,
-        isMain: img.id === id,
-      })),
-    }));
-  };
-
   return (
-    <div className="max-w-[1400px] mx-auto pb-24 space-y-6">
-      {/* ── Breadcrumb & Top Bar ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="max-w-5xl mx-auto pb-24 space-y-6">
+      {/* ── Top Header Bar ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
             <Link to={ROUTES.ADMIN.PRODUCTS} className="hover:text-slate-800 transition-colors">
@@ -184,15 +183,16 @@ export function AddProductPage() {
 
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => navigate(ROUTES.ADMIN.PRODUCTS)}
-              className="w-8 h-8 rounded-lg border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition-colors cursor-pointer"
+              className="w-9 h-9 rounded-xl border border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div>
               <h1 className="text-2xl font-black tracking-tight text-slate-900">Add Product</h1>
               <p className="text-xs text-slate-500">
-                Add a new product to your store. Fill in the details below and publish when ready.
+                Configure your product details, variants, multi-currency prices, and badges.
               </p>
             </div>
           </div>
@@ -201,711 +201,424 @@ export function AddProductPage() {
         <Link
           to={ROUTES.HOME}
           target="_blank"
-          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-950 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg shadow-xs transition-colors self-start sm:self-auto cursor-pointer"
+          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-950 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl shadow-xs transition-colors self-start sm:self-auto cursor-pointer"
         >
-          <span>View Store</span>
+          <Eye className="w-3.5 h-3.5 text-slate-500" />
+          <span>View Live Store</span>
         </Link>
       </div>
 
-      {/* ── Main Layout Grid (2 Columns: Left 65%, Right 35%) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* ========================================================= */}
-        {/* LEFT COLUMN (8 cols)                                      */}
-        {/* ========================================================= */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Card 1: Basic Information */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-5">
-            <h3 className="text-base font-bold text-slate-900">Basic Information</h3>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* ── Main Left Form (8 cols) ── */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Card 1: Essential Details */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Package className="w-4 h-4 text-[#358B5B]" />
+                <span>Product Information</span>
+              </h3>
 
-            {/* Product Name */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700">
-                Product Name <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter product name"
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C] focus:ring-1 focus:ring-[#006B3C] transition-all placeholder:text-slate-400"
-                maxLength={300}
-              />
-              <div className="text-right text-[10px] text-slate-400">
-                {formData.name.length}/300
-              </div>
-            </div>
-
-            {/* Short Description */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700">
-                Short Description <span className="text-rose-500">*</span>
-              </label>
-              <textarea
-                value={formData.shortDescription}
-                onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
-                placeholder="Enter short description (will be visible on product listing)"
-                rows={2}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C] focus:ring-1 focus:ring-[#006B3C] transition-all placeholder:text-slate-400 resize-y"
-                maxLength={300}
-              />
-              <div className="text-right text-[10px] text-slate-400">
-                {formData.shortDescription.length}/300
-              </div>
-            </div>
-
-            {/* Detailed Description with Rich Text Toolbar */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700">
-                Detailed Description <span className="text-rose-500">*</span>
-              </label>
-
-              <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
-                {/* Formatting Toolbar */}
-                <div className="flex flex-wrap items-center gap-1 p-2 bg-slate-50 border-b border-slate-200 text-slate-600">
-                  <select className="text-xs bg-transparent border-r border-slate-200 pr-2 py-0.5 font-medium outline-none cursor-pointer">
-                    <option>Paragraph</option>
-                    <option>Heading 1</option>
-                    <option>Heading 2</option>
-                  </select>
-
-                  <button type="button" className="p-1.5 hover:bg-slate-200/70 rounded cursor-pointer">
-                    <Bold className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" className="p-1.5 hover:bg-slate-200/70 rounded cursor-pointer">
-                    <Italic className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" className="p-1.5 hover:bg-slate-200/70 rounded cursor-pointer">
-                    <Underline className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="h-4 w-px bg-slate-200 mx-1" />
-                  <button type="button" className="p-1.5 hover:bg-slate-200/70 rounded cursor-pointer">
-                    <List className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" className="p-1.5 hover:bg-slate-200/70 rounded cursor-pointer">
-                    <ListOrdered className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" className="p-1.5 hover:bg-slate-200/70 rounded cursor-pointer">
-                    <AlignLeft className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="h-4 w-px bg-slate-200 mx-1" />
-                  <button type="button" className="p-1.5 hover:bg-slate-200/70 rounded cursor-pointer">
-                    <LinkIcon className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" className="p-1.5 hover:bg-slate-200/70 rounded cursor-pointer">
-                    <ImageIcon className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" className="p-1.5 hover:bg-slate-200/70 rounded cursor-pointer">
-                    <Video className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" className="p-1.5 hover:bg-slate-200/70 rounded cursor-pointer">
-                    <Code className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <textarea
-                  value={formData.detailedDescription}
-                  onChange={(e) => setFormData({ ...formData, detailedDescription: e.target.value })}
-                  placeholder="Enter detailed product description..."
-                  rows={5}
-                  className="w-full p-3.5 text-xs sm:text-sm bg-transparent outline-none placeholder:text-slate-400"
-                  maxLength={5000}
+              {/* Product Title */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700">
+                  Product Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g. Royal Kashmiri Saffron Grade-A"
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#358B5B] focus:ring-1 focus:ring-[#358B5B] transition-all placeholder:text-slate-400"
                 />
               </div>
-              <div className="text-right text-[10px] text-slate-400">
-                {formData.detailedDescription.length}/5000
+
+              {/* Description */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700">
+                  Description <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Enter detailed product description, specifications, or packaging details..."
+                  className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#358B5B] focus:ring-1 focus:ring-[#358B5B] transition-all placeholder:text-slate-400 resize-y"
+                />
+              </div>
+
+              {/* Category Dropdown & SKU */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Category <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={formData.categoryId}
+                    onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#358B5B] cursor-pointer"
+                  >
+                    {categories.length > 0 ? (
+                      categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">No categories available</option>
+                    )}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700">SKU / Code</label>
+                  <input
+                    type="text"
+                    value={formData.sku}
+                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                    placeholder="Auto-generated if blank (e.g. VAN-8392)"
+                    className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#358B5B] transition-all"
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Card 2: Product Images */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">Product Images</h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Upload high-quality images of your product. First image will be used as the main image.
+            {/* Card 2: Multi-Currency Pricing & Old Price */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-[#358B5B]" />
+                <span>Base Pricing</span>
+              </h3>
+              <p className="text-xs text-slate-500">
+                Set standard cross-border prices for USA, Canada, and optional original strike-through price.
               </p>
-            </div>
 
-            {/* Dropzone */}
-            <div className="border-2 border-dashed border-slate-200 hover:border-[#006B3C] rounded-2xl p-8 text-center bg-slate-50/50 hover:bg-emerald-50/20 transition-all cursor-pointer">
-              <UploadCloud className="w-9 h-9 text-[#006B3C] mx-auto mb-2" />
-              <p className="text-xs font-bold text-slate-800">
-                Drag & drop images here or click to upload
-              </p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Supports JPG, PNG, WebP (Max 5MB each)</p>
-
-              <button
-                type="button"
-                className="mt-3 px-4 py-1.5 rounded-lg border border-[#006B3C] text-[#006B3C] hover:bg-[#006B3C] hover:text-white text-xs font-semibold transition-all cursor-pointer inline-flex items-center gap-1.5"
-              >
-                <span>Upload Images</span>
-              </button>
-            </div>
-
-            {/* Uploaded Thumbnails Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-              {formData.images.map((img) => (
-                <div
-                  key={img.id}
-                  className="relative group rounded-xl overflow-hidden border border-slate-200 aspect-square bg-slate-100"
-                >
-                  <img src={img.url} alt="Thumbnail" className="w-full h-full object-cover" />
-
-                  {/* Main Badge */}
-                  {img.isMain && (
-                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-[#003D2B] text-white text-[10px] font-bold shadow-xs">
-                      Main
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+                {/* USA Price */}
+                <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200/70 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-900">🇺🇸 USA Price ($ USD) *</span>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                      USD
                     </span>
-                  )}
+                  </div>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={formData.priceUS}
+                    onChange={(e) => setFormData({ ...formData, priceUS: e.target.value })}
+                    placeholder="34.99"
+                    className="w-full px-3 py-2 text-sm bg-white border border-emerald-300 rounded-lg focus:outline-none focus:border-[#358B5B] font-semibold"
+                  />
+                </div>
 
-                  {/* Close button */}
+                {/* Canada Price */}
+                <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-200/70 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-blue-900">🇨🇦 Canada Price (CA$ CAD)</span>
+                    <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded">
+                      CAD
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.priceCA}
+                    onChange={(e) => setFormData({ ...formData, priceCA: e.target.value })}
+                    placeholder={formData.priceUS ? (Number(formData.priceUS) * 1.35).toFixed(2) : "46.99"}
+                    className="w-full px-3 py-2 text-sm bg-white border border-blue-300 rounded-lg focus:outline-none focus:border-[#358B5B] font-semibold"
+                  />
+                </div>
+
+                {/* Old Price (MRP / Compare Price) */}
+                <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-200/70 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-900">Old Price / Strike ($)</span>
+                    <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                      Crossed out
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.oldPrice}
+                    onChange={(e) => setFormData({ ...formData, oldPrice: e.target.value })}
+                    placeholder="49.99"
+                    className="w-full px-3 py-2 text-sm bg-white border border-amber-300 rounded-lg focus:outline-none focus:border-[#358B5B] font-semibold line-through text-slate-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Product Variants (Sizes, Weights, Options) */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-[#358B5B]" />
+                    <span>Product Variants</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Enable this if the product comes in multiple sizes, weights, or options.
+                  </p>
+                </div>
+
+                <label className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer bg-slate-100 px-3 py-1.5 rounded-xl hover:bg-slate-200 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={formData.hasVariants}
+                    onChange={(e) => setFormData({ ...formData, hasVariants: e.target.checked })}
+                    className="accent-[#358B5B] w-4 h-4 rounded cursor-pointer"
+                  />
+                  <span>Has Multiple Variants</span>
+                </label>
+              </div>
+
+              {formData.hasVariants && (
+                <div className="space-y-3 pt-2">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          <th className="pb-2">Variant Name / Pack</th>
+                          <th className="pb-2">Weight (KG)</th>
+                          <th className="pb-2">USA Price ($)</th>
+                          <th className="pb-2">Stock</th>
+                          <th className="pb-2 text-right">Remove</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {formData.variants.map((v) => (
+                          <tr key={v.id} className="hover:bg-slate-50/70">
+                            <td className="py-2 pr-2">
+                              <input
+                                type="text"
+                                value={v.name}
+                                onChange={(e) => updateVariantRow(v.id, "name", e.target.value)}
+                                placeholder="e.g. 500g Pack"
+                                className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B]"
+                              />
+                            </td>
+                            <td className="py-2 pr-2 w-28">
+                              <input
+                                type="number"
+                                step="0.1"
+                                value={v.weight}
+                                onChange={(e) => updateVariantRow(v.id, "weight", e.target.value)}
+                                className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B]"
+                              />
+                            </td>
+                            <td className="py-2 pr-2 w-28">
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={v.priceUS}
+                                onChange={(e) => updateVariantRow(v.id, "priceUS", e.target.value)}
+                                placeholder={formData.priceUS || "0.00"}
+                                className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B]"
+                              />
+                            </td>
+                            <td className="py-2 pr-2 w-24">
+                              <input
+                                type="number"
+                                value={v.stock}
+                                onChange={(e) => updateVariantRow(v.id, "stock", e.target.value)}
+                                className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B]"
+                              />
+                            </td>
+                            <td className="py-2 text-right">
+                              <button
+                                type="button"
+                                onClick={() => removeVariantRow(v.id)}
+                                className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
                   <button
                     type="button"
-                    onClick={() => removeImage(img.id)}
-                    className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/90 text-slate-700 hover:bg-rose-500 hover:text-white flex items-center justify-center shadow-xs transition-colors cursor-pointer"
+                    onClick={addVariantRow}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-[#358B5B] text-[#358B5B] hover:bg-[#358B5B]/10 text-xs font-bold transition-colors cursor-pointer"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Another Variant</span>
                   </button>
+                </div>
+              )}
+            </div>
 
-                  {/* Set as main overlay */}
-                  {!img.isMain && (
-                    <button
-                      type="button"
-                      onClick={() => setMainImage(img.id)}
-                      className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-semibold transition-opacity"
-                    >
-                      Set as Main
-                    </button>
+            {/* Card 4: Image URL & Live Preview */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <UploadCloud className="w-4 h-4 text-[#358B5B]" />
+                <span>Product Image</span>
+              </h3>
+
+              <div className="flex flex-col sm:flex-row items-start gap-4">
+                <div className="w-28 h-28 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shrink-0 flex items-center justify-center">
+                  {formData.imageUrl ? (
+                    <img
+                      src={formData.imageUrl}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.src = "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=400&q=80";
+                      }}
+                    />
+                  ) : (
+                    <span className="text-xs text-slate-400">No Image</span>
                   )}
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Card 3: Pricing & Inventory */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Pricing & Inventory</h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700">
-                  Price ($) <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  placeholder="0.00"
-                  className="w-full px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C] transition-all"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-slate-700">Compare Price ($)</label>
-                  <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
+                <div className="flex-1 w-full space-y-2">
+                  <label className="block text-xs font-bold text-slate-700">Image URL</label>
+                  <input
+                    type="url"
+                    value={formData.imageUrl}
+                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                    placeholder="https://images.unsplash.com/photo-..."
+                    className="w-full px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#358B5B]"
+                  />
+                  <p className="text-[11px] text-slate-400">
+                    Paste a direct image URL (Unsplash, CDN, or S3 bucket link).
+                  </p>
                 </div>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.comparePrice}
-                  onChange={(e) => setFormData({ ...formData, comparePrice: e.target.value })}
-                  placeholder="0.00"
-                  className="w-full px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C] transition-all"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-slate-700">Cost Price ($)</label>
-                  <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
-                </div>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.costPrice}
-                  onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
-                  placeholder="0.00"
-                  className="w-full px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C] transition-all"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700">
-                  SKU <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.sku}
-                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                  placeholder="Enter SKU (e.g. VAN-TS-001)"
-                  className="w-full px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C] transition-all"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700">
-                  Barcode (ISBN / EAN)
-                </label>
-                <input
-                  type="text"
-                  value={formData.barcode}
-                  onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                  placeholder="Enter barcode"
-                  className="w-full px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C] transition-all"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700">
-                  Stock Quantity <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="number"
-                  value={formData.stockQuantity}
-                  onChange={(e) => setFormData({ ...formData, stockQuantity: e.target.value })}
-                  placeholder="0"
-                  className="w-full px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C] transition-all"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1">
-                  <label className="block text-xs font-bold text-slate-700">Low Stock Alert</label>
-                  <HelpCircle className="w-3.5 h-3.5 text-slate-400" />
-                </div>
-                <input
-                  type="number"
-                  value={formData.lowStockAlert}
-                  onChange={(e) => setFormData({ ...formData, lowStockAlert: e.target.value })}
-                  placeholder="5"
-                  className="w-full px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C] transition-all"
-                />
               </div>
             </div>
           </div>
 
-          {/* Card 4: Category & Attributes */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Category & Attributes</h3>
+          {/* ── Sidebar Right Column (4 cols) ── */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* Card: Product Badges & Highlighting */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                Product Badges & Tags
+              </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700">
-                  Category <span className="text-rose-500">*</span>
+              <div className="space-y-3">
+                {/* Bestseller Toggle */}
+                <label className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                      <Flame className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-800">Bestseller</p>
+                      <p className="text-[10px] text-slate-400">Display "BESTSELLER" tag</p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={formData.isBestSeller}
+                    onChange={(e) => setFormData({ ...formData, isBestSeller: e.target.checked })}
+                    className="accent-[#358B5B] w-4 h-4 rounded cursor-pointer"
+                  />
                 </label>
-                <select
-                  value={formData.categoryId}
-                  onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                  className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C] cursor-pointer"
-                >
-                  <option value="">Select category</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700">Sub Category</label>
-                <select
-                  value={formData.subCategoryId}
-                  onChange={(e) => setFormData({ ...formData, subCategoryId: e.target.value })}
-                  className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C] cursor-pointer"
-                >
-                  <option value="">Select sub category</option>
-                  <option value="sub-1">General Department</option>
-                  <option value="sub-2">Industrial Grade</option>
-                </select>
-              </div>
+                {/* New Product Toggle */}
+                <label className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-800">New Product</p>
+                      <p className="text-[10px] text-slate-400">Display "NEW" badge</p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={formData.isNewProduct}
+                    onChange={(e) => setFormData({ ...formData, isNewProduct: e.target.checked })}
+                    className="accent-[#358B5B] w-4 h-4 rounded cursor-pointer"
+                  />
+                </label>
 
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700">Brand</label>
-                <select
-                  value={formData.brandId}
-                  onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
-                  className="w-full px-3 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C] cursor-pointer"
-                >
-                  <option value="Vanom Commercial">Vanom Commercial</option>
-                  <option value="Vanom Direct">Vanom Direct</option>
-                  <option value="Global Brand">Global Partner Brand</option>
-                </select>
+                {/* Featured Product Toggle */}
+                <label className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                      <Tag className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-800">Featured</p>
+                      <p className="text-[10px] text-slate-400">Highlight in top storefront carousels</p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={formData.isFeatured}
+                    onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
+                    className="accent-[#358B5B] w-4 h-4 rounded cursor-pointer"
+                  />
+                </label>
               </div>
             </div>
 
-            {/* Attributes Button */}
-            <div className="pt-2">
+            {/* Card: Inventory & Status */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                Stock & Status
+              </h4>
+
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-slate-700">Stock Quantity</label>
+                  <input
+                    type="number"
+                    value={formData.stock}
+                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                    className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-slate-700">Publish Status</label>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                    className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B] cursor-pointer"
+                  >
+                    <option value="ACTIVE">Active (Live in Store)</option>
+                    <option value="DRAFT">Draft (Hidden)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2.5">
+              <button
+                type="submit"
+                disabled={createMutation.isPending}
+                className="w-full py-3 rounded-xl bg-[#204B38] hover:bg-[#358B5B] text-white text-sm font-bold shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                {createMutation.isPending && (
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                )}
+                <span>Publish Product</span>
+              </button>
+
               <button
                 type="button"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-[#006B3C] text-slate-700 hover:text-[#006B3C] text-xs font-semibold transition-all cursor-pointer"
+                onClick={() => navigate(ROUTES.ADMIN.PRODUCTS)}
+                className="w-full py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Attribute</span>
+                Cancel
               </button>
-              <span className="text-[11px] text-slate-400 ml-3">
-                Add product attributes like size, color, material etc.
-              </span>
-            </div>
-          </div>
-
-          {/* Card 5: Variants (Optional) */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">Variants (Optional)</h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Add variants if this product has multiple options (e.g., size, color).
-              </p>
-            </div>
-
-            <div className="flex items-center gap-6 pt-1">
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-800 cursor-pointer">
-                <input
-                  type="radio"
-                  name="hasVariants"
-                  checked={!formData.hasVariants}
-                  onChange={() => setFormData({ ...formData, hasVariants: false })}
-                  className="accent-[#006B3C] w-4 h-4 cursor-pointer"
-                />
-                <span>No variants (Single product)</span>
-              </label>
-
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-800 cursor-pointer">
-                <input
-                  type="radio"
-                  name="hasVariants"
-                  checked={formData.hasVariants}
-                  onChange={() => setFormData({ ...formData, hasVariants: true })}
-                  className="accent-[#006B3C] w-4 h-4 cursor-pointer"
-                />
-                <span>This product has variants (e.g., size, color, etc.)</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Card 6: SEO Information */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
-            <h3 className="text-base font-bold text-slate-900">SEO Information</h3>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700">Page Title</label>
-              <input
-                type="text"
-                value={formData.pageTitle}
-                onChange={(e) => setFormData({ ...formData, pageTitle: e.target.value })}
-                placeholder="Enter SEO title"
-                className="w-full px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C] transition-all placeholder:text-slate-400"
-                maxLength={60}
-              />
-              <div className="text-right text-[10px] text-slate-400">
-                {formData.pageTitle.length}/60
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700">Meta Description</label>
-                <textarea
-                  value={formData.metaDescription}
-                  onChange={(e) => setFormData({ ...formData, metaDescription: e.target.value })}
-                  placeholder="Enter meta description"
-                  rows={2}
-                  className="w-full px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C] transition-all placeholder:text-slate-400 resize-y"
-                  maxLength={160}
-                />
-                <div className="text-right text-[10px] text-slate-400">
-                  {formData.metaDescription.length}/160
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700">Meta Keywords</label>
-                <textarea
-                  value={formData.metaKeywords}
-                  onChange={(e) => setFormData({ ...formData, metaKeywords: e.target.value })}
-                  placeholder="Enter keywords (comma separated)"
-                  rows={2}
-                  className="w-full px-3.5 py-2 text-xs sm:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C] transition-all placeholder:text-slate-400 resize-y"
-                  maxLength={255}
-                />
-                <div className="text-right text-[10px] text-slate-400">
-                  {formData.metaKeywords.length}/255
-                </div>
-              </div>
             </div>
           </div>
         </div>
-
-        {/* ========================================================= */}
-        {/* RIGHT COLUMN (4 cols)                                     */}
-        {/* ========================================================= */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* Card: Product Status */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-              Product Status
-            </h4>
-
-            <div className="space-y-3">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="productStatus"
-                  checked={formData.status === "DRAFT"}
-                  onChange={() => setFormData({ ...formData, status: "DRAFT" })}
-                  className="accent-[#006B3C] w-4 h-4 mt-0.5 cursor-pointer"
-                />
-                <div>
-                  <p className="text-xs font-bold text-slate-800">Draft</p>
-                  <p className="text-[11px] text-slate-400">Save as draft (not visible in store)</p>
-                </div>
-              </label>
-
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="productStatus"
-                  checked={formData.status === "PUBLISH"}
-                  onChange={() => setFormData({ ...formData, status: "PUBLISH" })}
-                  className="accent-[#006B3C] w-4 h-4 mt-0.5 cursor-pointer"
-                />
-                <div>
-                  <p className="text-xs font-bold text-slate-800">Publish</p>
-                  <p className="text-[11px] text-slate-400">Make product visible in store</p>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          {/* Card: Product Visibility */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-              Product Visibility
-            </h4>
-
-            <div className="space-y-2.5">
-              <label className="flex items-center gap-2.5 text-xs font-medium text-slate-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.showOnWebsite}
-                  onChange={(e) => setFormData({ ...formData, showOnWebsite: e.target.checked })}
-                  className="accent-[#006B3C] w-4 h-4 rounded cursor-pointer"
-                />
-                <span>Show on website</span>
-              </label>
-
-              <label className="flex items-center gap-2.5 text-xs font-medium text-slate-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.includeInSearch}
-                  onChange={(e) => setFormData({ ...formData, includeInSearch: e.target.checked })}
-                  className="accent-[#006B3C] w-4 h-4 rounded cursor-pointer"
-                />
-                <span>Include in search results</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Card: Featured Product */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between gap-4">
-            <div>
-              <h4 className="text-xs font-bold text-slate-800">Featured Product</h4>
-              <p className="text-[11px] text-slate-400 mt-0.5">Mark this product as featured</p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setFormData({ ...formData, isFeatured: !formData.isFeatured })}
-              className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                formData.isFeatured ? "bg-[#006B3C]" : "bg-slate-300"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                  formData.isFeatured ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Card: Tags */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">Tags</h4>
-            <input
-              type="text"
-              value={formData.tags}
-              onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-              placeholder="Enter tags (comma separated)"
-              className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C]"
-            />
-            <p className="text-[10px] text-slate-400">
-              Add tags to help customers find this product (e.g., new, bestseller, organic)
-            </p>
-          </div>
-
-          {/* Card: Shipping Information */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-              Shipping Information
-            </h4>
-
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold text-slate-700">Weight (kg)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.weightKg}
-                onChange={(e) => setFormData({ ...formData, weightKg: e.target.value })}
-                placeholder="0.00"
-                className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C]"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold text-slate-700">Dimensions (cm)</label>
-              <div className="grid grid-cols-3 gap-2">
-                <input
-                  type="number"
-                  placeholder="Length"
-                  value={formData.lengthCm}
-                  onChange={(e) => setFormData({ ...formData, lengthCm: e.target.value })}
-                  className="w-full px-2 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C]"
-                />
-                <input
-                  type="number"
-                  placeholder="Width"
-                  value={formData.widthCm}
-                  onChange={(e) => setFormData({ ...formData, widthCm: e.target.value })}
-                  className="w-full px-2 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C]"
-                />
-                <input
-                  type="number"
-                  placeholder="Height"
-                  value={formData.heightCm}
-                  onChange={(e) => setFormData({ ...formData, heightCm: e.target.value })}
-                  className="w-full px-2 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C]"
-                />
-              </div>
-            </div>
-
-            <label className="flex items-center gap-2 pt-1 text-xs text-slate-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.isDigital}
-                onChange={(e) => setFormData({ ...formData, isDigital: e.target.checked })}
-                className="accent-[#006B3C] w-4 h-4 rounded cursor-pointer"
-              />
-              <span>This is a digital product (no shipping required)</span>
-            </label>
-          </div>
-
-          {/* Card: Additional Options */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-              Additional Options
-            </h4>
-
-            <div className="space-y-2.5">
-              <label className="flex items-center gap-2.5 text-xs font-medium text-slate-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.allowCustomerReviews}
-                  onChange={(e) => setFormData({ ...formData, allowCustomerReviews: e.target.checked })}
-                  className="accent-[#006B3C] w-4 h-4 rounded cursor-pointer"
-                />
-                <span>Allow customer reviews</span>
-              </label>
-
-              <label className="flex items-center gap-2.5 text-xs font-medium text-slate-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.showStockAvailability}
-                  onChange={(e) => setFormData({ ...formData, showStockAvailability: e.target.checked })}
-                  className="accent-[#006B3C] w-4 h-4 rounded cursor-pointer"
-                />
-                <span>Show stock availability</span>
-              </label>
-
-              <label className="flex items-center gap-2.5 text-xs font-medium text-slate-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.isPreorder}
-                  onChange={(e) => setFormData({ ...formData, isPreorder: e.target.checked })}
-                  className="accent-[#006B3C] w-4 h-4 rounded cursor-pointer"
-                />
-                <span>This is a preorder product</span>
-              </label>
-
-              <label className="flex items-center gap-2.5 text-xs font-medium text-slate-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.isNonReturnable}
-                  onChange={(e) => setFormData({ ...formData, isNonReturnable: e.target.checked })}
-                  className="accent-[#006B3C] w-4 h-4 rounded cursor-pointer"
-                />
-                <span>This product is non-returnable</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Card: Tips Box */}
-          <div className="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/70 space-y-2.5 text-slate-800">
-            <div className="flex items-center gap-2 text-xs font-bold text-[#006B3C]">
-              <Lightbulb className="w-4 h-4" />
-              <span>Tips for a great product listing</span>
-            </div>
-
-            <ul className="text-[11px] text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed">
-              <li>Use high-quality images (at least 800x800px)</li>
-              <li>Write clear and detailed descriptions</li>
-              <li>Set the correct category and attributes</li>
-              <li>Add relevant tags for better discoverability</li>
-              <li>Keep your pricing competitive</li>
-              <li>Check all information before publishing</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Fixed Bottom Actions Footer ── */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex items-center justify-between z-30 shadow-lg">
-        <button
-          type="button"
-          onClick={() => navigate(ROUTES.ADMIN.PRODUCTS)}
-          className="px-5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors cursor-pointer"
-        >
-          Cancel
-        </button>
-
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => handleSave("DRAFT")}
-            disabled={createMutation.isPending}
-            className="px-5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-800 transition-colors cursor-pointer"
-          >
-            Save as Draft
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSave("PUBLISH")}
-            disabled={createMutation.isPending}
-            className="px-6 py-2 rounded-xl bg-[#003D2B] hover:bg-[#006B3C] text-white text-xs font-bold shadow-sm transition-all cursor-pointer flex items-center gap-2"
-          >
-            {createMutation.isPending && (
-              <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            )}
-            <span>Publish Product</span>
-          </button>
-        </div>
-      </div>
+      </form>
     </div>
   );
 }
