@@ -92,6 +92,7 @@ export function FeaturedProductsSection({
   featuredProducts = [],
   bestSellers = [],
   isLoading = false,
+  className = "",
 }) {
   const [activeFilter, setActiveFilter] = useState("ALL");
   const scrollRef = useRef(null);
@@ -115,7 +116,7 @@ export function FeaturedProductsSection({
   const scroll = (dir) => scrollRef.current?.scrollBy({ left: dir * 280, behavior: "smooth" });
 
   return (
-    <section className="py-10 bg-white">
+    <section className={`py-10 bg-white/60 ${className}`}>
       <div className="max-w-[1400px] mx-auto px-4 sm:px-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">

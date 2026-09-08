@@ -19,9 +19,9 @@ const WHY_VANOM = [
   { icon: Headphones, label: "24/7 Support", subtext: "We're here to help" },
 ];
 
-export function WhyVanomSection() {
+export function WhyVanomSection({ className = "" }) {
   return (
-    <section className="py-10 bg-white border-t border-gray-100">
+    <section className={`py-10 bg-white/60 border-t border-[#ebdcb0]/50 ${className}`}>
       <div className="max-w-[1440px] mx-auto px-4 sm:px-8">
         <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight mb-6">
           Why Choose Vanom

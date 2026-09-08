@@ -5,7 +5,7 @@
  */
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { MapPin, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { MapPin, ChevronDown, X } from "lucide-react";
 import { useCountryStore } from "../../../stores/country.store.js";
 import { SUPPORTED_COUNTRIES } from "../../../constants/countries.js";
 
@@ -18,16 +18,9 @@ const PROMO_MESSAGES = [
 
 export function AnnouncementBar() {
   const { country, setCountry } = useCountryStore();
-  const [msgIdx, setMsgIdx] = useState(0);
   const [visible, setVisible] = useState(true);
   const [showCurrency, setShowCurrency] = useState(false);
   const currencyRef = useRef(null);
-
-  // Auto-rotate promo messages every 4 seconds
-  useEffect(() => {
-    const t = setInterval(() => setMsgIdx((i) => (i + 1) % PROMO_MESSAGES.length), 4000);
-    return () => clearInterval(t);
-  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -41,38 +34,31 @@ export function AnnouncementBar() {
   if (!visible) return null;
 
   return (
-    <div className="w-full bg-[#1a3c2e] text-white text-[11px] select-none z-50">
+    <div className="w-full bg-[#2d6852] text-white select-none z-50">
       <div
         className="max-w-[1400px] mx-auto px-3 sm:px-6 h-8 flex items-center justify-between gap-2"
         style={{ fontSize: "11px" }}
       >
 
         {/* ── LEFT: Delivery location ── */}
-        <div className="flex items-center gap-1 shrink-0">
-          <MapPin className="w-3 h-3 text-[#D9A514]" />
+        {/* <div className="flex items-center gap-1 shrink-0">
+          <MapPin className="w-3 h-3 text-[#D9A514]"  />
           <span className="text-white/70 hidden sm:inline">Deliver to:</span>
           <span className="text-white font-semibold">
             {country.name}&nbsp;{country.code}
           </span>
-        </div>
+        </div> */}
 
-        {/* ── CENTER: Rotating promo message ── */}
-        <div className="flex items-center gap-1.5 flex-1 justify-center min-w-0">
-          <button
-            onClick={() => setMsgIdx((i) => (i - 1 + PROMO_MESSAGES.length) % PROMO_MESSAGES.length)}
-            className="text-white/50 hover:text-white transition-colors cursor-pointer shrink-0"
-          >
-            <ChevronLeft className="w-3.5 h-3.5" />
-          </button>
-          <span className="text-white/90 font-medium truncate text-center">
-            {PROMO_MESSAGES[msgIdx]}
-          </span>
-          <button
-            onClick={() => setMsgIdx((i) => (i + 1) % PROMO_MESSAGES.length)}
-            className="text-white/50 hover:text-white transition-colors cursor-pointer shrink-0"
-          >
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+        {/* ── CENTER: Scrolling Marquee Announcements ── */}
+        <div className="flex-1 overflow-hidden relative mx-2 sm:mx-6 flex items-center min-w-0 [mask-image:linear-gradient(to_right,transparent,black_20px,black_calc(100%-20px),transparent)]">
+          <div className="animate-marquee flex items-center gap-8 text-white/90 font-medium">
+            {[...PROMO_MESSAGES, ...PROMO_MESSAGES].map((msg, idx) => (
+              <span key={idx} className="flex items-center gap-3 shrink-0 cursor-pointer hover:text-[#D9A514]">
+                <span>{msg}</span>
+                <span className="text-[#D9A514]">•</span>
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* ── RIGHT: Nav links + currency ── */}
@@ -109,9 +95,8 @@ export function AnnouncementBar() {
                     <button
                       key={c.code}
                       onClick={() => { setCountry(c); setShowCurrency(false); }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-[#EAF7F0] transition-colors cursor-pointer ${
-                        isSelected ? "bg-[#EAF7F0] text-[#003D2B] font-bold" : "text-gray-700"
-                      }`}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs hover:bg-[#EAF7F0] transition-colors cursor-pointer ${isSelected ? "bg-[#EAF7F0] text-[#003D2B] font-bold" : "text-gray-700"
+                        }`}
                     >
                       {/* Circular flag image in dropdown */}
                       <img

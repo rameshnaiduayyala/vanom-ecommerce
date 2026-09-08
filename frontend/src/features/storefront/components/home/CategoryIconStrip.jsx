@@ -36,7 +36,7 @@ const DEFAULT_CATEGORIES = [
   { id: "garden-outdoors", name: "Garden & Outdoors", icon: Trees, color: "#006B3C", bg: "#EAF7F0" },
 ];
 
-export function CategoryIconStrip({ categories = [] }) {
+export function CategoryIconStrip({ categories = [], activeCategory = null, onSelectCategory, className = "" }) {
   const scrollRef = useRef(null);
 
   const items =
@@ -47,57 +47,58 @@ export function CategoryIconStrip({ categories = [] }) {
       })
       : DEFAULT_CATEGORIES).slice(0, 10);
 
-
   const scroll = (dir) => scrollRef.current?.scrollBy({ left: dir * 260, behavior: "smooth" });
 
   return (
-    <div className="w-full bg-white border-b border-gray-100 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-8 relative py-4">
+    <div className={`w-full ${className}`}>
+      <div className="max-w-[1440px] mx-auto px-8 sm:px-8 relative py-3">
         {/* Scroll Left */}
         <button
           onClick={() => scroll(-1)}
           aria-label="Previous categories"
-          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 w-7 h-7 bg-white shadow-md rounded-full flex items-center justify-center text-gray-500 hover:text-gray-900 transition-all cursor-pointer border border-gray-100 hover:scale-105"
+          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 shadow-md rounded-full flex items-center justify-center text-gray-600 hover:text-gray-900 transition-all cursor-pointer border border-gray-200/80 hover:scale-105"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
 
-        {/* Scrollable strip */}
+        {/* Scrollable pill strip */}
         <div
           ref={scrollRef}
-          className="flex items-center justify-start lg:justify-between overflow-x-auto scrollbar-none gap-2 sm:gap-4 px-6"
+          className="flex items-center justify-start lg:justify-center overflow-x-auto scrollbar-none gap-2 sm:gap-3 px-6 py-2"
         >
-          {items.map((cat) => {
+          {items.map((cat, idx) => {
             const Icon = cat.icon;
+            const isFirst = idx === 0 && !activeCategory;
+            const isActive = activeCategory === cat.id || isFirst;
+
             return (
               <Link
                 key={cat.id}
                 to={`${ROUTES.PRODUCTS}?category=${cat.id}`}
-                className="flex flex-col items-center gap-2 shrink-0 min-w-[76px] sm:min-w-[88px] group cursor-pointer py-1 transition-all"
+                className={`flex items-center gap-2.5 px-4 sm:px-5 py-2.5 rounded-full border transition-all duration-200 shrink-0 whitespace-nowrap cursor-pointer select-none font-bold text-xs uppercase tracking-wider ${isActive
+                  ? "bg-[#358B5B] text-white border-[#358B5B] shadow-sm"
+                  : "bg-transparent text-[#264D3B] border-[#7CA98B]/60 hover:bg-[#358B5B] hover:text-white hover:border-[#358B5B]"
+                  }`}
               >
-                {/* Icon circle matching reference (light green bg + dark green outline/icon) */}
-                <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-full flex items-center justify-center bg-[#EAF7F0] group-hover:bg-[#d5eee0] group-hover:scale-108 transition-all duration-200 shadow-2xs">
-                  <Icon className="w-6 h-6 text-[#006B3C] group-hover:text-[#003D2B] transition-colors" strokeWidth={1.75} />
-                </div>
-                {/* Label */}
-                <span className="text-[10px] sm:text-[11px] font-medium text-gray-700 group-hover:text-[#003D2B] text-center leading-tight max-w-[80px] line-clamp-2 transition-colors">
-                  {cat.name}
-                </span>
+                {/* Left side outline line icon matching reference */}
+                <Icon
+                  className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-white" : "text-[#264D3B] group-hover:text-white"
+                    }`}
+                  strokeWidth={1.8}
+                />
+                {/* Right side category uppercase name */}
+                <span>{cat.name}</span>
               </Link>
             );
           })}
 
-          {/* "Show All" / "View All" Button */}
+          {/* "Show All" Pill */}
           <Link
             to={ROUTES.PRODUCTS}
-            className="flex flex-col items-center gap-2 shrink-0 min-w-[76px] sm:min-w-[88px] group cursor-pointer py-1 transition-all"
+            className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-full border border-[#7CA98B]/60 text-[#264D3B] hover:bg-[#358B5B] hover:text-white hover:border-[#358B5B] transition-all duration-200 shrink-0 whitespace-nowrap cursor-pointer font-bold text-xs uppercase tracking-wider"
           >
-            <div className="w-13 h-13 sm:w-14 sm:h-14 rounded-full flex items-center justify-center bg-gray-100 group-hover:bg-[#003D2B] group-hover:scale-108 transition-all duration-200 shadow-2xs">
-              <Grid className="w-5 h-5 text-gray-600 group-hover:text-white transition-colors" strokeWidth={1.75} />
-            </div>
-            <span className="text-[10px] sm:text-[11px] font-bold text-gray-800 group-hover:text-[#003D2B] text-center leading-tight transition-colors">
-              Show All
-            </span>
+            <Grid className="w-4 h-4 shrink-0" strokeWidth={1.8} />
+            <span>Show All</span>
           </Link>
         </div>
 
@@ -105,7 +106,7 @@ export function CategoryIconStrip({ categories = [] }) {
         <button
           onClick={() => scroll(1)}
           aria-label="Next categories"
-          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 w-7 h-7 bg-white shadow-md rounded-full flex items-center justify-center text-gray-500 hover:text-gray-900 transition-all cursor-pointer border border-gray-100 hover:scale-105"
+          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 shadow-md rounded-full flex items-center justify-center text-gray-600 hover:text-gray-900 transition-all cursor-pointer border border-gray-200/80 hover:scale-105"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -115,4 +116,5 @@ export function CategoryIconStrip({ categories = [] }) {
 }
 
 export default CategoryIconStrip;
+
 

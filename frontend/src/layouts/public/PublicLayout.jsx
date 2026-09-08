@@ -16,12 +16,12 @@ export function PublicLayout() {
   const { country } = useCountryStore();
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#E8EDE9] text-text-primary">
+    <div className="min-h-screen flex flex-col bg-[#FFF7DD] text-text-primary">
       {/* Announcement bar sits above the sticky header */}
       <AnnouncementBar />
       <PublicHeader />
 
-      <main className="flex-1 bg-[#E8EDE9]">
+      <main className="flex-1 bg-[#FFF7DD]">
         <Outlet />
       </main>
 

@@ -42,7 +42,7 @@ const NAV_CATEGORIES = [
 ];
 
 const SEARCH_CATEGORIES = [
-  "All Categories",
+  "Shop by Concern",
   "Electronics",
   "Home & Living",
   "Kitchen & Dining",
@@ -108,12 +108,12 @@ export function PublicHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+      <header className="sticky top-0 z-40 bg-[#FFF7DD] border-b border-[#ebdcb0] shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
         {/* ─── ROW 1: Main Bar (Logo, Search with Category Selector, Wishlist, Account, Cart) ─── */}
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-[68px] flex items-center justify-between gap-4 sm:gap-8">
-          
-          {/* Logo & Mobile Menu Trigger */}
-          <div className="flex items-center gap-3 shrink-0">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-[76px] flex items-center justify-between gap-2 sm:gap-8 relative">
+
+          {/* Left: Mobile Menu Trigger (Desktop: sits inline with Logo) */}
+          <div className="flex items-center gap-3 shrink-0 lg:w-auto">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
@@ -122,11 +122,24 @@ export function PublicHeader() {
             >
               <Menu className="w-5 h-5" />
             </button>
-            <Link to={ROUTES.HOME} className="flex items-center">
+
+            {/* Logo on Desktop (inline) */}
+            <Link to={ROUTES.HOME} className="hidden lg:flex items-center py-1">
               <img
                 src="/logo.png"
                 alt="Vanom"
-                className="h-9 sm:h-10 w-auto object-contain hover:opacity-95 transition-opacity"
+                className="h-12 sm:h-14 w-auto object-contain hover:scale-103 transition-transform duration-200"
+              />
+            </Link>
+          </div>
+
+          {/* Mobile Logo (Centered absolutely in the header bar on small screens) */}
+          <div className="lg:hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto">
+            <Link to={ROUTES.HOME} className="flex items-center py-1">
+              <img
+                src="/logo.png"
+                alt="Vanom"
+                className="h-11 sm:h-12 w-auto object-contain"
               />
             </Link>
           </div>
@@ -157,11 +170,10 @@ export function PublicHeader() {
                         setSelectedCategory(cat);
                         setShowCategoryDropdown(false);
                       }}
-                      className={`w-full text-left px-3.5 py-1.5 text-xs transition-colors flex items-center justify-between ${
-                        selectedCategory === cat
-                          ? "bg-[#EAF7F0] text-[#003D2B] font-bold"
-                          : "text-gray-700 hover:bg-gray-50"
-                      }`}
+                      className={`w-full text-left px-3.5 py-1.5 text-xs transition-colors flex items-center justify-between ${selectedCategory === cat
+                        ? "bg-[#EAF7F0] text-[#003D2B] font-bold"
+                        : "text-gray-700 hover:bg-gray-50"
+                        }`}
                     >
                       <span>{cat}</span>
                       {selectedCategory === cat && <span className="text-[10px] text-[#006B3C]">✓</span>}
@@ -203,7 +215,7 @@ export function PublicHeader() {
 
           {/* Right Action Links (Wishlist, Account, Cart) */}
           <div className="flex items-center gap-4 sm:gap-6 shrink-0">
-            
+
             {/* Wishlist */}
             <Link
               to={ROUTES.WISHLIST || "/wishlist"}
@@ -286,63 +298,6 @@ export function PublicHeader() {
           </div>
         </div>
 
-        {/* ─── ROW 2: Horizontal Category Navigation Bar matching reference ─── */}
-        <div className="border-t border-gray-200 bg-white">
-          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-10 flex items-center gap-2 overflow-x-auto scrollbar-none">
-            
-            {/* "All Categories" Dark Green Pill Button */}
-            <div className="relative shrink-0" ref={allCategoriesRef}>
-              <button
-                type="button"
-                onClick={() => setShowAllCategoriesMenu((v) => !v)}
-                className="inline-flex items-center gap-2 bg-[#003D2B] hover:bg-[#002d20] text-white text-[11px] font-bold px-3 py-1.5 rounded-md transition-colors cursor-pointer"
-              >
-                <Menu className="w-3.5 h-3.5" />
-                <span>All Categories</span>
-                <ChevronDown className="w-3 h-3 text-white/70" />
-              </button>
-
-              {showAllCategoriesMenu && (
-                <div className="absolute left-0 top-full mt-1.5 w-60 bg-white rounded-xl border border-gray-200 shadow-xl py-2 z-50 animate-in fade-in-50 duration-100">
-                  <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">
-                    Departments
-                  </div>
-                  {NAV_CATEGORIES.map((cat) => {
-                    const IconComp = cat.icon;
-                    return (
-                      <Link
-                        key={cat.id}
-                        to={cat.path}
-                        className="flex items-center gap-2.5 px-3.5 py-2 text-xs text-gray-700 hover:bg-[#EAF7F0] hover:text-[#003D2B] transition-colors"
-                      >
-                        <IconComp className="w-4 h-4 text-gray-500" />
-                        <span className="font-medium">{cat.label}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Categories Links with Small Icons */}
-            <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none py-1">
-              {NAV_CATEGORIES.map((cat) => {
-                const IconComp = cat.icon;
-                return (
-                  <Link
-                    key={cat.id}
-                    to={cat.path}
-                    className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:text-[#003D2B] hover:bg-gray-100/70 rounded-md transition-colors whitespace-nowrap group"
-                  >
-                    <IconComp className="w-3.5 h-3.5 text-gray-500 group-hover:text-[#003D2B] transition-colors" />
-                    <span>{cat.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-
-          </div>
-        </div>
 
         {/* Mobile Search Row (visible on small screens) */}
         <div className="md:hidden px-4 pb-2.5 pt-1 bg-white border-t border-gray-100">
@@ -417,7 +372,7 @@ export function PublicHeader() {
 
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-2 block mb-2">
-                  All Categories
+                  Shop by Concern
                 </span>
                 <div className="space-y-0.5">
                   {NAV_CATEGORIES.map((cat) => {

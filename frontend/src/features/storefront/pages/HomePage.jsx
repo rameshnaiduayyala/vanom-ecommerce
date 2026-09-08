@@ -27,9 +27,10 @@ import { HeroBanner } from "../components/home/HeroBanner.jsx";
 import { CategoryIconStrip } from "../components/home/CategoryIconStrip.jsx";
 import { PromoBannerGrid } from "../components/home/PromoBannerGrid.jsx";
 import { FeaturedProductsSection } from "../components/home/FeaturedProductsSection.jsx";
+import { NewLaunchesSection } from "../components/home/NewLaunchesSection.jsx";
+import { UserVideoReelsSection } from "../components/home/UserVideoReelsSection.jsx";
 import { ShopByCategoryGrid } from "../components/home/ShopByCategoryGrid.jsx";
 import { SustainabilityBanner } from "../components/home/SustainabilityBanner.jsx";
-import { BrandBadgeStrip } from "../components/home/BrandBadgeStrip.jsx";
 import { WhyVanomSection } from "../components/home/WhyVanomSection.jsx";
 import { TestimonialsSection } from "../components/home/TestimonialsSection.jsx";
 import { NewsletterAppBanner } from "../components/home/NewsletterAppBanner.jsx";
@@ -81,19 +82,14 @@ export function HomePage() {
   const categoryList = Array.isArray(categories) ? categories : (categories?.items || []);
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa]">
-      {/* ── 1. Hero Banner Slider ── */}
+    <div className="min-h-screen bg-[#FFF7DD]">
+      {/* ── 1. Hero Banner Slider (Primary promotional marketing) ── */}
       <HeroBanner banners={heroBanners} />
 
-      {/* ── 3. Category Icon Scrolling Strip ── */}
-      <CategoryIconStrip categories={categoryList} />
+      {/* ── 2. Quick Category Pills Strip (High-intent instant browsing) ── */}
+      <CategoryIconStrip className="bg-white/60" categories={categoryList} />
 
-      {/* ── 4. Promo Banner 3-Grid ── */}
-      <section className="py-6 bg-white">
-        <PromoBannerGrid banners={promoBanners} />
-      </section>
-
-      {/* ── 5. Featured Products with Filter Tabs ── */}
+      {/* ── 3. Featured & Best Seller Products (Immediate product conversion) ── */}
       <FeaturedProductsSection
         products={products}
         featuredProducts={featuredProducts}
@@ -101,22 +97,30 @@ export function HomePage() {
         isLoading={loadingProducts}
       />
 
-      {/* ── 6. Shop by Category (Image Grid) ── */}
+      {/* ── 4. Promo Banner 3-Grid (Mid-page visual campaign breaks) ── */}
+      <section className="py-6 bg-white/60">
+        <PromoBannerGrid banners={promoBanners} />
+      </section>
+
+      {/* ── 5. New Launches Carousel (Fresh arrival discovery) ── */}
+      <NewLaunchesSection className="bg-white/60" products={featuredProducts} />
+
+      {/* ── 6. Shop by Category Visual Grid (Deep category exploration) ── */}
       <ShopByCategoryGrid categories={categoryList} />
 
-      {/* ── 7. Sustainability Brand Banner ── */}
+      {/* ── 7. Real User Video Reels (Social proof & UGC shopping experience) ── */}
+      <UserVideoReelsSection />
+
+      {/* ── 8. Sustainability & Brand Story Banner ── */}
       <SustainabilityBanner />
 
-      {/* ── 8. Top Brands Strip ── */}
-      <BrandBadgeStrip />
-
-      {/* ── 9. Why Choose Vanom ── */}
+      {/* ── 9. Why Choose Vanom (Core value propositions & trust building) ── */}
       <WhyVanomSection />
 
-      {/* ── 10. Customer Testimonials ── */}
+      {/* ── 10. Customer Testimonials & Reviews ── */}
       <TestimonialsSection />
 
-      {/* ── 11. Newsletter & App Download ── */}
+      {/* ── 11. Newsletter & Mobile App Download (Retention & growth) ── */}
       <NewsletterAppBanner />
     </div>
   );
