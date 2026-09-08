@@ -19,25 +19,25 @@ export function PublicFooter() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#1f4e3c] text-white border-t border-[#2d6852] mt-auto select-none overflow-hidden">
+    <footer className="bg-[#2d6852] text-white border-t border-[#3b8569] mt-auto select-none overflow-hidden">
       {/* ── 1. Top Section: Dedicated "About Vanom" Brand Feature ── */}
-      <div className="border-b border-[#2d6852]/80 py-10 px-4 sm:px-8 lg:px-12">
+      <div className="border-b border-[#3b8569]/80 py-10 px-4 sm:px-8 lg:px-12">
         <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
           {/* Logo & Headline */}
           <div className="flex flex-col sm:flex-row items-center md:items-start gap-5 text-center sm:text-left">
 
             <div className="max-w-xl">
               <div className="flex items-center justify-center sm:justify-start gap-2 mb-1.5">
-                <span className="text-[10px] uppercase font-extrabold tracking-widest text-[#F9BC15] bg-[#F9BC15]/10 px-2.5 py-0.5 rounded-full border border-[#F9BC15]/20">
+                <span className="text-[10px] uppercase font-extrabold tracking-widest text-[#F9BC15] bg-[#F9BC15]/20 px-2.5 py-0.5 rounded-full border border-[#F9BC15]/30">
                   About Vanom
                 </span>
-                <span className="text-xs text-white/50">•</span>
-                <span className="text-xs font-semibold text-white/80">Pure • Sustainable • Global</span>
+                <span className="text-xs text-white/70">•</span>
+                <span className="text-xs font-semibold text-white/90">Pure • Sustainable • Global</span>
               </div>
               <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight mb-2">
                 Empowering mindful living through authentic organic essentials.
               </h3>
-              <p className="text-xs text-white/75 leading-relaxed">
+              <p className="text-xs text-white/85 leading-relaxed">
                 Founded with a mission to bring conscious wellness and natural living directly to your doorstep. We partner exclusively with certified ethical makers and artisanal cultivators across India to deliver non-toxic, eco-friendly lifestyle products worldwide.
               </p>
             </div>
@@ -268,7 +268,7 @@ export function PublicFooter() {
 
 
       {/* ── 4. Bottom Sub-Bar: Copyright, Legal Links & Made in India ── */}
-      <div className="border-t border-[#2d6852] bg-[#143529] py-4 px-4 sm:px-8 lg:px-12 text-[11px] text-white/70">
+      <div className="border-t border-[#3b8569] bg-[#2d6852] py-4 px-4 sm:px-8 lg:px-12 text-[11px] text-white/80">
         <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Copyright */}
           <div>

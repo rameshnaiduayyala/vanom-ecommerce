@@ -34,7 +34,7 @@ export function AnnouncementBar() {
   if (!visible) return null;
 
   return (
-    <div className="w-full bg-[#1f4e3c] text-white select-none z-50">
+    <div className="w-full bg-[#2d6852] text-white select-none z-50">
       <div
         className="max-w-[1400px] mx-auto px-3 sm:px-6 h-8 flex items-center justify-between gap-2"
         style={{ fontSize: "11px" }}
@@ -42,7 +42,7 @@ export function AnnouncementBar() {
 
         {/* ── LEFT: Delivery location ── */}
         {/* <div className="flex items-center gap-1 shrink-0">
-          <MapPin className="w-3 h-3 text-[#D9A514]" />
+          <MapPin className="w-3 h-3 text-[#D9A514]"  />
           <span className="text-white/70 hidden sm:inline">Deliver to:</span>
           <span className="text-white font-semibold">
             {country.name}&nbsp;{country.code}
