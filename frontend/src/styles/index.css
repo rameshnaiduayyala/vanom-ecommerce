@@ -113,3 +113,15 @@ select:disabled {
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+/* Hide scrollbar utility for horizontal scroll strips */
+.scrollbar-none,
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

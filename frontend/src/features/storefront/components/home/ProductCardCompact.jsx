@@ -49,9 +49,9 @@ export function ProductCardCompact({ product, badge = null }) {
   const effectiveBadge = product.badge || badge;
 
   return (
-    <div className="group relative bg-white rounded-2xl border border-gray-200/90 hover:border-[#006B3C]/50 hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden p-3 bg-white">
+    <div className="group relative bg-white rounded-2xl border border-gray-200/90 hover:border-[#358B5B]/50 hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden p-2.5 sm:p-3 w-full min-w-0">
       {/* Product Image Box */}
-      <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-gray-50/50 flex items-center justify-center p-2 mb-2">
+      <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-gray-50/60 flex items-center justify-center p-2 mb-2">
         <Link to={`/products/${product.slug || product.id}`} className="w-full h-full flex items-center justify-center">
           <img
             src={image}
@@ -61,19 +61,19 @@ export function ProductCardCompact({ product, badge = null }) {
           />
         </Link>
 
-        {/* Top-Left Pill Badge matching reference (Bestseller yellow / New green) */}
+        {/* Top-Left Pill Badge (Bestseller gold / New green) */}
         {effectiveBadge && (
           <div className="absolute top-2 left-2 z-10">
             {effectiveBadge.toLowerCase().includes("best") ? (
-              <span className="bg-[#F9BC15] text-[#003D2B] text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow-2xs">
+              <span className="bg-[#F9BC15] text-[#204B38] text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow-2xs">
                 Bestseller
               </span>
             ) : effectiveBadge.toLowerCase().includes("new") ? (
-              <span className="bg-[#059669] text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow-2xs">
+              <span className="bg-[#358B5B] text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow-2xs">
                 New
               </span>
             ) : (
-              <span className="bg-[#003D2B] text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow-2xs">
+              <span className="bg-[#358B5B] text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow-2xs">
                 {effectiveBadge}
               </span>
             )}
@@ -82,22 +82,22 @@ export function ProductCardCompact({ product, badge = null }) {
       </div>
 
       {/* Product Info Section */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Title */}
-        <Link to={`/products/${product.slug || product.id}`} className="group-hover:text-[#006B3C] transition-colors">
+        <Link to={`/products/${product.slug || product.id}`} className="group-hover:text-[#358B5B] transition-colors">
           <h3 className="text-xs font-bold text-gray-900 line-clamp-1 leading-snug">
             {product.name}
           </h3>
         </Link>
 
         {/* Subtitle / Key Spec */}
-        <p className="text-[10px] text-gray-500 line-clamp-1 mb-2">
+        <p className="text-[10px] text-gray-500 line-clamp-1 mb-1.5">
           {product.subtitle || product.category || "Premium Quality"}
         </p>
 
         {/* Price & Discount Row */}
         <div className="flex items-center gap-1.5 flex-wrap mb-1">
-          <span className="text-sm font-black text-gray-900">
+          <span className="text-xs sm:text-sm font-black text-gray-900">
             {formatPrice(price, country.currency, country.symbol)}
           </span>
           {originalPrice > price && (
@@ -106,14 +106,14 @@ export function ProductCardCompact({ product, badge = null }) {
             </span>
           )}
           {discount > 0 && (
-            <span className="text-[9px] font-bold text-[#059669] bg-[#EAF7F0] px-1.5 py-0.2 rounded">
+            <span className="text-[9px] font-bold text-[#358B5B] bg-[#EAF7F0] px-1.5 py-0.2 rounded">
               {discount}% OFF
             </span>
           )}
         </div>
 
         {/* Rating Stars & Count */}
-        <div className="flex items-center gap-1 mb-3">
+        <div className="flex items-center gap-1 mb-2.5">
           <div className="flex items-center">
             {[1, 2, 3, 4, 5].map((s) => (
               <Star
@@ -129,14 +129,14 @@ export function ProductCardCompact({ product, badge = null }) {
           <span className="text-[9px] text-gray-400">({reviews.toLocaleString()})</span>
         </div>
 
-        {/* Full-width Add to Cart Button matching reference image */}
-        <div className="mt-auto">
+        {/* Full-width Add to Cart Button */}
+        <div className="mt-auto pt-1">
           <button
             onClick={handleAddToCart}
-            className={`w-full py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 cursor-pointer shadow-2xs ${
+            className={`w-full py-2 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 cursor-pointer shadow-2xs ${
               added
-                ? "bg-[#059669] text-white"
-                : "bg-[#003D2B] hover:bg-[#002d20] text-white"
+                ? "bg-[#358B5B] text-white"
+                : "bg-[#358B5B] hover:bg-[#204B38] text-white"
             }`}
           >
             {added ? (
@@ -158,4 +158,3 @@ export function ProductCardCompact({ product, badge = null }) {
 }
 
 export default ProductCardCompact;
-

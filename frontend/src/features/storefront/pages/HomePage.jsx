@@ -87,7 +87,7 @@ export function HomePage() {
       <HeroBanner banners={heroBanners} />
 
       {/* ── 2. Quick Category Pills Strip (High-intent instant browsing) ── */}
-      <CategoryIconStrip className="bg-white/60" categories={categoryList} />
+      <CategoryIconStrip className="py-4 bg-white/60" categories={categoryList} />
 
       {/* ── 3. Featured & Best Seller Products (Immediate product conversion) ── */}
       <FeaturedProductsSection
