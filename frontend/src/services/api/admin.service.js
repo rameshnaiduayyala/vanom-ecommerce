@@ -36,8 +36,11 @@ export const adminService = {
       }
 
       const inrPrice = p.prices?.find((pr) => pr.currency?.code === "INR")?.amount;
-      const usdPrice = p.prices?.find((pr) => pr.currency?.code === "USD")?.amount;
+      const usdPrice = p.prices?.find((pr) => pr.currency?.code === "USD")?.amount || p.priceUS || p.price;
+      const cadPrice = p.prices?.find((pr) => pr.currency?.code === "CAD")?.amount || p.priceCA;
       const gbpPrice = p.prices?.find((pr) => pr.currency?.code === "GBP")?.amount;
+      const oldPriceAttr = p.attributes?.find((a) => a.attribute?.code === "old_price")?.customValue || p.oldPrice || p.comparePrice;
+      const isNewAttr = p.attributes?.find((a) => a.attribute?.code === "is_new")?.customValue === "true" || p.isNewProduct || p.isNew;
 
       return {
         ...p,
@@ -49,6 +52,12 @@ export const adminService = {
           p.images?.[0]?.url ||
           p.image ||
           "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=400&q=80",
+        oldPrice: oldPriceAttr ? Number(oldPriceAttr) : null,
+        priceUS: usdPrice ? Number(usdPrice) : null,
+        priceCA: cadPrice ? Number(cadPrice) : null,
+        isBestSeller: Boolean(p.isBestSeller),
+        isNewProduct: Boolean(isNewAttr),
+        isFeatured: Boolean(p.isFeatured),
         stock: p.variants?.[0]?.inventoryItems?.reduce((sum, item) => sum + (item.onHand || 0), 0) || p.stock || 500,
         packaging: p.variants?.[0]?.packaging?.[0]
           ? {
@@ -66,8 +75,9 @@ export const adminService = {
               palletWeightKg: 1000,
             },
         pricing: p.pricing || {
+          US: { currency: "USD", symbol: "$", retailPrice: Number(usdPrice || 35.0), oldPrice: oldPriceAttr ? Number(oldPriceAttr) : null, moq: 1 },
+          CA: { currency: "CAD", symbol: "CA$", retailPrice: Number(cadPrice || 45.0), oldPrice: oldPriceAttr ? Number(oldPriceAttr) * 1.3 : null, moq: 1 },
           IN: { currency: "INR", symbol: "₹", retailPrice: Number(inrPrice || 1499), moq: 1 },
-          US: { currency: "USD", symbol: "$", retailPrice: Number(usdPrice || 35.0), moq: 1 },
           GB: { currency: "GBP", symbol: "£", retailPrice: Number(gbpPrice || 28.0), moq: 1 },
         },
       };
@@ -101,7 +111,12 @@ export const adminService = {
       sortOrder: c.sortOrder || 0,
       parentId: c.parentId || null,
       parentName: c.parent?.name || null,
-      count: c._count?.products !== undefined ? c._count.products : (c.count || c.products?.length || 0),
+      count:
+        c.productCount !== undefined
+          ? c.productCount
+          : c._count?.products !== undefined
+          ? c._count.products
+          : c.count || c.products?.length || 0,
     }));
   },
 
@@ -114,7 +129,7 @@ export const adminService = {
   },
 
   deleteCategory: async (id) => {
-    return apiClient.delete(`/categories/${id}`);
+    return apiClient.delete(`/categories/${id}?hard=true`);
   },
 
   getOrders: async () => {

@@ -86,9 +86,9 @@ export function ComboProductCard({ combo, badge = null }) {
   const effectiveBadge = combo.badge || badge || "SUPER SAVER";
 
   return (
-    <div className="group relative bg-white rounded-3xl border border-[#3e8e45]/20 hover:border-[#3e8e45]/60 hover:shadow-2xl hover:shadow-[#3e8e45]/15 transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-sm w-full min-w-0">
+    <div className="group relative bg-white rounded-3xl border border-[#7C3AED]/20 hover:border-[#7C3AED]/50 hover:shadow-2xl hover:shadow-[#7C3AED]/15 transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-xs w-full min-w-0">
       {/* ─── 1. Combo Hero Image Area ─── */}
-      <div className="relative w-full aspect-[4/3.5] bg-gradient-to-b from-[#F2F8F4] via-[#E8F3EB] to-[#DCECE0]/70 overflow-hidden flex items-center justify-center border-b border-[#E1EFE4]">
+      <div className="relative w-full aspect-[4/3.5] bg-gradient-to-b from-[#F9F6FF] via-[#F3EDFF] to-[#ECE2FF]/70 overflow-hidden flex items-center justify-center border-b border-[#E9DEFF]">
         <Link
           to={`/products/${combo.slug || combo.id}`}
           className="w-full h-full flex items-center justify-center p-4 relative"
@@ -109,7 +109,7 @@ export function ComboProductCard({ combo, badge = null }) {
               <Sparkles className="w-2.5 h-2.5 fill-current text-[#F9BC15]" />
               {effectiveBadge}
             </span>
-            <span className="inline-flex items-center gap-1 bg-[#3e8e45] text-white text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full shadow-md">
+            <span className="inline-flex items-center gap-1 bg-[#7C3AED] text-white text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded-full shadow-md">
               <Layers className="w-2.5 h-2.5" />
               Combo
             </span>
@@ -137,9 +137,9 @@ export function ComboProductCard({ combo, badge = null }) {
         </div>
 
         {/* Bottom Bar on Image: Items Count */}
-        <div className="absolute bottom-2 right-2 z-10 bg-white/90 backdrop-blur-xs px-2.5 py-0.5 rounded-lg border border-gray-200/60 shadow-2xs">
-          <span className="text-[10px] font-bold text-[#1E3B2B] flex items-center gap-1">
-            <PackageCheck className="w-3 h-3 text-[#3e8e45]" />
+        <div className="absolute bottom-2 right-2 z-10 bg-white/90 backdrop-blur-xs px-2.5 py-0.5 rounded-lg border border-purple-200/60 shadow-2xs">
+          <span className="text-[10px] font-bold text-[#4C1D95] flex items-center gap-1">
+            <PackageCheck className="w-3 h-3 text-[#7C3AED]" />
             {itemsIncluded.length} Items Included
           </span>
         </div>

@@ -131,6 +131,7 @@ export class AdminService {
 
   async listCategories() {
     return prisma.category.findMany({
+      where: { active: true },
       include: {
         _count: { select: { products: true } },
         parent: { select: { id: true, name: true, slug: true } },

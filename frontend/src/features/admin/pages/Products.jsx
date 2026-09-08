@@ -59,59 +59,18 @@ export function Products() {
   // Product Form Initial State
   const defaultProductForm = {
     name: "",
-    sku: "",
-    category: "Groceries & FMCG Bulk",
-    categoryId: "cat-2",
-    brand: "Vanom Brand",
-    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80",
     description: "",
-    stock: 1000,
-    packaging: {
-      unitName: "Sack (25 KG)",
-      weightKg: 25,
-      dimensionsCm: "60 x 40 x 15",
-      palletQuantity: 40,
-      palletWeightKg: 1000,
-    },
-    attributes: [
-      { name: "Organic Grade", value: "Grade A Certified" },
-      { name: "Moisture Content", value: "< 12%" },
-    ],
-    pricing: {
-      IN: {
-        currency: "USD",
-        symbol: "$",
-        retailPrice: 1999,
-        moq: 20,
-        wholesaleTiers: [
-          { minQuantity: 20, maxQuantity: 49, unitPrice: 1750 },
-          { minQuantity: 50, maxQuantity: 99, unitPrice: 1550 },
-          { minQuantity: 100, maxQuantity: null, unitPrice: 1350 },
-        ],
-      },
-      US: {
-        currency: "USD",
-        symbol: "$",
-        retailPrice: 35.0,
-        moq: 20,
-        wholesaleTiers: [
-          { minQuantity: 20, maxQuantity: 49, unitPrice: 29.0 },
-          { minQuantity: 50, maxQuantity: 99, unitPrice: 25.0 },
-          { minQuantity: 100, maxQuantity: null, unitPrice: 22.0 },
-        ],
-      },
-      GB: {
-        currency: "GBP",
-        symbol: "£",
-        retailPrice: 28.0,
-        moq: 20,
-        wholesaleTiers: [
-          { minQuantity: 20, maxQuantity: 49, unitPrice: 24.0 },
-          { minQuantity: 50, maxQuantity: 99, unitPrice: 21.0 },
-          { minQuantity: 100, maxQuantity: null, unitPrice: 18.0 },
-        ],
-      },
-    },
+    categoryId: "",
+    category: "",
+    image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80",
+    oldPrice: "",
+    priceUS: "",
+    priceCA: "",
+    isBestSeller: false,
+    isNewProduct: true,
+    isFeatured: false,
+    stock: 100,
+    sku: "",
   };
 
   const [productForm, setProductForm] = useState(defaultProductForm);
@@ -143,9 +102,9 @@ export function Products() {
   const createProductMutation = useMutation({
     mutationFn: (newProd) => Api.admin.createProduct(newProd),
     onSuccess: (created) => {
-      queryClient.invalidateQueries(["admin-products"]);
-      queryClient.invalidateQueries(["home-products"]);
-      toast.success("Product Created", `${created.name} has been added to the master catalog.`);
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["home-products"] });
+      toast.success("Product Created", `${created.name || "Product"} has been added to the master catalog.`);
       setIsProductModalOpen(false);
       setProductForm(defaultProductForm);
     },
@@ -155,9 +114,9 @@ export function Products() {
   const updateProductMutation = useMutation({
     mutationFn: ({ id, data }) => Api.admin.updateProduct(id, data),
     onSuccess: (updated) => {
-      queryClient.invalidateQueries(["admin-products"]);
-      queryClient.invalidateQueries(["home-products"]);
-      toast.success("Product Updated", `${updated.name} changes have been saved.`);
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["home-products"] });
+      toast.success("Product Updated", `${updated.name || "Product"} changes have been saved.`);
       setIsProductModalOpen(false);
       setEditingProduct(null);
     },
@@ -167,8 +126,8 @@ export function Products() {
   const deleteProductMutation = useMutation({
     mutationFn: (id) => Api.admin.deleteProduct(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(["admin-products"]);
-      queryClient.invalidateQueries(["home-products"]);
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["home-products"] });
       toast.success("Product Deleted", "The product has been removed from the platform.");
       setDeletingProduct(null);
     },
@@ -179,8 +138,8 @@ export function Products() {
   const createCategoryMutation = useMutation({
     mutationFn: (newCat) => Api.admin.createCategory(newCat),
     onSuccess: (created) => {
-      queryClient.invalidateQueries(["admin-categories"]);
-      queryClient.invalidateQueries(["home-categories"]);
+      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["home-categories"] });
       toast.success("Category Created", `Category "${created.name || created.data?.name || "New Category"}" created successfully.`);
       setIsCategoryModalOpen(false);
       setCategoryForm(defaultCategoryForm);
@@ -191,8 +150,8 @@ export function Products() {
   const updateCategoryMutation = useMutation({
     mutationFn: ({ id, data }) => Api.admin.updateCategory(id, data),
     onSuccess: (updated) => {
-      queryClient.invalidateQueries(["admin-categories"]);
-      queryClient.invalidateQueries(["home-categories"]);
+      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["home-categories"] });
       toast.success("Category Updated", `Category "${updated.name || updated.data?.name || "Category"}" updated successfully.`);
       setIsCategoryModalOpen(false);
       setEditingCategory(null);
@@ -203,8 +162,8 @@ export function Products() {
   const deleteCategoryMutation = useMutation({
     mutationFn: (id) => Api.admin.deleteCategory(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(["admin-categories"]);
-      queryClient.invalidateQueries(["home-categories"]);
+      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["home-categories"] });
       toast.success("Category Deleted", "Category removed successfully.");
       setDeletingCategory(null);
     },
@@ -214,35 +173,46 @@ export function Products() {
   // Handlers
   const openAddProduct = () => {
     setEditingProduct(null);
-    setProductForm(defaultProductForm);
+    setProductForm({
+      ...defaultProductForm,
+      categoryId: categories[0]?.id || "",
+    });
     setIsProductModalOpen(true);
   };
 
   const openEditProduct = (prod) => {
     setEditingProduct(prod);
-    const existingAttributes = Array.isArray(prod.attributes)
-      ? prod.attributes.map((a) => ({
-          name: a.attribute?.name || a.name || "Attribute",
-          value: a.customValue || a.value?.value || a.value || "",
-        }))
-      : defaultProductForm.attributes;
-
     setProductForm({
-      ...defaultProductForm,
-      ...prod,
-      attributes: existingAttributes,
-      packaging: { ...defaultProductForm.packaging, ...prod.packaging },
-      pricing: { ...defaultProductForm.pricing, ...prod.pricing },
+      name: prod.name || "",
+      description: prod.description || "",
+      categoryId: prod.categoryId || prod.categories?.[0]?.categoryId || "",
+      category: prod.category || "",
+      image: prod.image || prod.images?.[0]?.file?.url || "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80",
+      oldPrice: prod.oldPrice || "",
+      priceUS: prod.priceUS || prod.pricing?.US?.retailPrice || "",
+      priceCA: prod.priceCA || prod.pricing?.CA?.retailPrice || "",
+      isBestSeller: Boolean(prod.isBestSeller),
+      isNewProduct: Boolean(prod.isNewProduct),
+      isFeatured: Boolean(prod.isFeatured),
+      stock: prod.stock || 100,
+      sku: prod.sku || "",
     });
     setIsProductModalOpen(true);
   };
 
   const handleProductSubmit = (e) => {
     e.preventDefault();
+    const payload = {
+      ...productForm,
+      priceUS: parseFloat(productForm.priceUS) || 0,
+      priceCA: productForm.priceCA ? parseFloat(productForm.priceCA) : undefined,
+      oldPrice: productForm.oldPrice ? parseFloat(productForm.oldPrice) : undefined,
+      stock: parseInt(productForm.stock, 10) || 100,
+    };
     if (editingProduct) {
-      updateProductMutation.mutate({ id: editingProduct.id, data: productForm });
+      updateProductMutation.mutate({ id: editingProduct.id, data: payload });
     } else {
-      createProductMutation.mutate(productForm);
+      createProductMutation.mutate(payload);
     }
   };
 
@@ -496,13 +466,13 @@ export function Products() {
                             >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => openEditProduct(p)}
-                              className="p-1.5 text-text-muted hover:text-blue-600 rounded-lg hover:bg-surface-muted transition-colors"
+                            <Link
+                              to={`/admin/products/new?edit=${p.id || p.slug}`}
+                              className="p-1.5 text-text-muted hover:text-blue-600 rounded-lg hover:bg-surface-muted transition-colors inline-flex items-center justify-center"
                               title="Edit Product"
                             >
                               <Edit2 className="w-4 h-4" />
-                            </button>
+                            </Link>
                             <button
                               onClick={() => setDeletingProduct(p)}
                               className="p-1.5 text-text-muted hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
@@ -657,18 +627,17 @@ export function Products() {
                 label="Product Title"
                 value={productForm.name}
                 onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                placeholder="e.g. Royal Heritage Aged Basmati Rice (25 KG Sack)"
+                placeholder="e.g. Royal Kashmiri Saffron Grade-A"
                 required
               />
               <Input
                 label="SKU Code"
                 value={productForm.sku}
                 onChange={(e) => setProductForm({ ...productForm, sku: e.target.value })}
-                placeholder="e.g. FMCG-RICE-25KG"
-                required
+                placeholder="e.g. VAN-SAF-01"
               />
               <Select
-                label="Category Taxonomy"
+                label="Category"
                 value={productForm.categoryId}
                 onChange={(e) => {
                   const sel = categories.find((c) => c.id === e.target.value);
@@ -681,11 +650,11 @@ export function Products() {
                 options={categories.map((c) => ({ label: c.name, value: c.id }))}
               />
               <Input
-                label="Brand / Manufacturer"
-                value={productForm.brand}
-                onChange={(e) => setProductForm({ ...productForm, brand: e.target.value })}
-                placeholder="e.g. Vanom Pantry"
-                required
+                label="Stock Quantity"
+                type="number"
+                value={productForm.stock}
+                onChange={(e) => setProductForm({ ...productForm, stock: parseInt(e.target.value) || 0 })}
+                placeholder="100"
               />
               <div className="md:col-span-2">
                 <Input
@@ -698,11 +667,11 @@ export function Products() {
               </div>
               <div className="md:col-span-2">
                 <Textarea
-                  label="Description & Specifications"
+                  label="Description"
                   value={productForm.description}
                   onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
-                  placeholder="Provide detailed commercial and retail specifications..."
-                  rows={2}
+                  placeholder="Provide product details, specifications, or packaging info..."
+                  rows={3}
                   required
                 />
               </div>
@@ -712,164 +681,103 @@ export function Products() {
           {/* Pricing & Regional Tiers */}
           <div className="space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-brand-700 border-b border-border pb-1">
-              2. Multi-Market Retail Prices & MOQ
+              2. Multi-Currency Pricing
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-3.5 rounded-xl bg-surface-muted border border-border space-y-3">
-                <span className="text-xs font-bold text-text-primary block">🇮🇳 India (USD • $)</span>
+              <div className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-200/70 space-y-2">
+                <span className="text-xs font-bold text-emerald-900 block">🇺🇸 USA Price ($ USD) *</span>
                 <Input
-                  label="Retail Price ($)"
                   type="number"
-                  value={productForm.pricing.IN.retailPrice}
+                  step="0.01"
+                  value={productForm.priceUS || productForm.pricing?.US?.retailPrice || ""}
                   onChange={(e) =>
                     setProductForm({
                       ...productForm,
+                      priceUS: e.target.value,
                       pricing: {
                         ...productForm.pricing,
-                        IN: { ...productForm.pricing.IN, retailPrice: parseFloat(e.target.value) || 0 },
+                        US: { ...productForm.pricing?.US, retailPrice: parseFloat(e.target.value) || 0 },
                       },
                     })
                   }
-                  required
-                />
-                <Input
-                  label="Wholesale MOQ (units)"
-                  type="number"
-                  value={productForm.pricing.IN.moq}
-                  onChange={(e) =>
-                    setProductForm({
-                      ...productForm,
-                      pricing: {
-                        ...productForm.pricing,
-                        IN: { ...productForm.pricing.IN, moq: parseInt(e.target.value) || 1 },
-                      },
-                    })
-                  }
+                  placeholder="34.99"
                   required
                 />
               </div>
 
-              <div className="p-3.5 rounded-xl bg-surface-muted border border-border space-y-3">
-                <span className="text-xs font-bold text-text-primary block">🇺🇸 United States (USD • $)</span>
+              <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200/70 space-y-2">
+                <span className="text-xs font-bold text-blue-900 block">🇨🇦 Canada Price (CA$ CAD)</span>
                 <Input
-                  label="Retail Price ($)"
                   type="number"
                   step="0.01"
-                  value={productForm.pricing.US.retailPrice}
+                  value={productForm.priceCA || productForm.pricing?.CA?.retailPrice || ""}
                   onChange={(e) =>
                     setProductForm({
                       ...productForm,
+                      priceCA: e.target.value,
                       pricing: {
                         ...productForm.pricing,
-                        US: { ...productForm.pricing.US, retailPrice: parseFloat(e.target.value) || 0 },
+                        CA: { ...productForm.pricing?.CA, retailPrice: parseFloat(e.target.value) || 0 },
                       },
                     })
                   }
-                  required
-                />
-                <Input
-                  label="Wholesale MOQ (units)"
-                  type="number"
-                  value={productForm.pricing.US.moq}
-                  onChange={(e) =>
-                    setProductForm({
-                      ...productForm,
-                      pricing: {
-                        ...productForm.pricing,
-                        US: { ...productForm.pricing.US, moq: parseInt(e.target.value) || 1 },
-                      },
-                    })
-                  }
-                  required
+                  placeholder="46.99"
                 />
               </div>
 
-              <div className="p-3.5 rounded-xl bg-surface-muted border border-border space-y-3">
-                <span className="text-xs font-bold text-text-primary block">🇬🇧 United Kingdom (GBP • £)</span>
+              <div className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-200/70 space-y-2">
+                <span className="text-xs font-bold text-amber-900 block">Old Price / Strike ($)</span>
                 <Input
-                  label="Retail Price (£)"
                   type="number"
                   step="0.01"
-                  value={productForm.pricing.GB.retailPrice}
+                  value={productForm.oldPrice || productForm.pricing?.US?.oldPrice || ""}
                   onChange={(e) =>
                     setProductForm({
                       ...productForm,
-                      pricing: {
-                        ...productForm.pricing,
-                        GB: { ...productForm.pricing.GB, retailPrice: parseFloat(e.target.value) || 0 },
-                      },
+                      oldPrice: e.target.value,
                     })
                   }
-                  required
-                />
-                <Input
-                  label="Wholesale MOQ (units)"
-                  type="number"
-                  value={productForm.pricing.GB.moq}
-                  onChange={(e) =>
-                    setProductForm({
-                      ...productForm,
-                      pricing: {
-                        ...productForm.pricing,
-                        GB: { ...productForm.pricing.GB, moq: parseInt(e.target.value) || 1 },
-                      },
-                    })
-                  }
-                  required
+                  placeholder="49.99"
                 />
               </div>
             </div>
           </div>
 
-          {/* Logistics & Pallet Specifications */}
-          <div className="space-y-4">
+          {/* Badges & Tags */}
+          <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-brand-700 border-b border-border pb-1">
-              3. Packaging & Pallet Specifications
+              3. Badges & Tags
             </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <Input
-                label="Unit Packaging"
-                value={productForm.packaging.unitName}
-                onChange={(e) =>
-                  setProductForm({
-                    ...productForm,
-                    packaging: { ...productForm.packaging, unitName: e.target.value },
-                  })
-                }
-                placeholder="e.g. Sack (25 KG)"
-                required
-              />
-              <Input
-                label="Unit Weight (KG)"
-                type="number"
-                value={productForm.packaging.weightKg}
-                onChange={(e) =>
-                  setProductForm({
-                    ...productForm,
-                    packaging: { ...productForm.packaging, weightKg: parseFloat(e.target.value) || 0 },
-                  })
-                }
-                required
-              />
-              <Input
-                label="Pallet Capacity (Units)"
-                type="number"
-                value={productForm.packaging.palletQuantity}
-                onChange={(e) =>
-                  setProductForm({
-                    ...productForm,
-                    packaging: { ...productForm.packaging, palletQuantity: parseInt(e.target.value) || 1 },
-                  })
-                }
-                required
-              />
-              <Input
-                label="Initial Stock"
-                type="number"
-                value={productForm.stock}
-                onChange={(e) => setProductForm({ ...productForm, stock: parseInt(e.target.value) || 0 })}
-                required
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+              <label className="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50/50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(productForm.isBestSeller)}
+                  onChange={(e) => setProductForm({ ...productForm, isBestSeller: e.target.checked })}
+                  className="accent-[#358B5B] w-4 h-4 rounded"
+                />
+                <span className="text-xs font-bold text-slate-800">Bestseller</span>
+              </label>
+
+              <label className="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50/50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(productForm.isNewProduct)}
+                  onChange={(e) => setProductForm({ ...productForm, isNewProduct: e.target.checked })}
+                  className="accent-[#358B5B] w-4 h-4 rounded"
+                />
+                <span className="text-xs font-bold text-slate-800">New Product</span>
+              </label>
+
+              <label className="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50/50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(productForm.isFeatured)}
+                  onChange={(e) => setProductForm({ ...productForm, isFeatured: e.target.checked })}
+                  className="accent-[#358B5B] w-4 h-4 rounded"
+                />
+                <span className="text-xs font-bold text-slate-800">Featured</span>
+              </label>
             </div>
           </div>
 

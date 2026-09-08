@@ -9,24 +9,18 @@ import {
   FileCheck2,
   Warehouse,
   FileText,
-  Megaphone,
-  Tag,
   BarChart3,
   CreditCard,
-  RotateCcw,
-  Globe,
-  Settings,
   ShieldCheck,
-  Percent,
 } from "lucide-react";
 import { ROUTES } from "./routes.js";
 
 /**
  * Admin Navigation Configuration
- * Defines menu hierarchy, icons, routes, badges, and RBAC permissions.
+ * Simple, clean structure with intuitive sub-items.
  */
 export const ADMIN_NAV_CONFIG = [
-  // ── CORE ──
+  // ── MAIN ──
   {
     header: "Main",
   },
@@ -35,126 +29,164 @@ export const ADMIN_NAV_CONFIG = [
     label: "Dashboard",
     icon: LayoutDashboard,
     path: ROUTES.ADMIN.DASHBOARD,
-    permission: "admin.dashboard",
   },
   {
-    id: "orders",
+    id: "orders-group",
     label: "Orders",
     icon: ShoppingCart,
-    path: ROUTES.ADMIN.ORDERS,
-    badge: 12,
-    badgeColor: "bg-rose-500",
-    permission: "admin.orders",
+    badge: 43,
+    badgeColor: "bg-emerald-600",
+    children: [
+      {
+        id: "all-orders",
+        label: "All Orders",
+        path: ROUTES.ADMIN.ORDERS,
+      },
+      {
+        id: "orders-retail",
+        label: "Retail Orders",
+        path: `${ROUTES.ADMIN.ORDERS}?type=B2C`,
+      },
+      {
+        id: "orders-wholesale",
+        label: "Wholesale Orders",
+        path: `${ROUTES.ADMIN.ORDERS}?type=B2B`,
+      },
+    ],
   },
 
-  // ── CATALOG MANAGEMENT ──
+  // ── CATALOG & INVENTORY ──
   {
-    header: "Catalog & Inventory",
+    header: "Catalog & Stock",
   },
   {
-    id: "products",
+    id: "products-group",
     label: "Products",
     icon: Package,
-    permission: "catalog.read",
     children: [
       {
         id: "all-products",
         label: "All Products",
         path: ROUTES.ADMIN.PRODUCTS,
-        permission: "catalog.read",
       },
       {
         id: "add-product",
         label: "Add Product",
         icon: PlusCircle,
-        path: "/admin/products/new",
-        permission: "catalog.create",
+        path: ROUTES.ADMIN.PRODUCT_NEW,
       },
       {
         id: "categories",
         label: "Categories",
         icon: FolderTree,
         path: `${ROUTES.ADMIN.PRODUCTS}?tab=categories`,
-        permission: "catalog.read",
       },
       {
         id: "pricing-tiers",
         label: "Pricing & Tiers",
         path: ROUTES.ADMIN.PRICING,
-        permission: "pricing.read",
       },
     ],
   },
   {
-    id: "inventory",
-    label: "Warehouse & Stock",
+    id: "inventory-group",
+    label: "Inventory",
     icon: Warehouse,
-    path: ROUTES.ADMIN.INVENTORY,
-    permission: "inventory.read",
+    children: [
+      {
+        id: "stock-overview",
+        label: "Stock Overview",
+        path: ROUTES.ADMIN.INVENTORY,
+      },
+      {
+        id: "warehouses",
+        label: "Warehouses",
+        path: `${ROUTES.ADMIN.INVENTORY}?tab=warehouses`,
+      },
+    ],
   },
 
-  // ── B2B WHOLESALE & CUSTOMERS ──
+  // ── B2B & CUSTOMERS ──
   {
-    header: "B2B & Customer CRM",
+    header: "B2B & Accounts",
   },
   {
-    id: "applications",
-    label: "Business Approvals",
-    icon: FileCheck2,
-    path: ROUTES.ADMIN.BUSINESS_APPLICATIONS,
-    badge: 3,
-    badgeColor: "bg-amber-500",
-    permission: "companies.approve",
-  },
-  {
-    id: "companies",
-    label: "Sellers & B2B Accounts",
+    id: "b2b-group",
+    label: "B2B Wholesale",
     icon: Building2,
-    path: ROUTES.ADMIN.COMPANIES,
-    permission: "admin.companies",
+    children: [
+      {
+        id: "applications",
+        label: "Business Approvals",
+        icon: FileCheck2,
+        path: ROUTES.ADMIN.BUSINESS_APPLICATIONS,
+        badge: 3,
+        badgeColor: "bg-amber-500",
+      },
+      {
+        id: "companies",
+        label: "Verified Companies",
+        path: ROUTES.ADMIN.COMPANIES,
+      },
+      {
+        id: "quotes",
+        label: "Wholesale RFQ Quotes",
+        icon: FileText,
+        path: ROUTES.ADMIN.QUOTES,
+      },
+    ],
   },
   {
-    id: "customers",
-    label: "Customers & Users",
+    id: "customers-group",
+    label: "Customers",
     icon: Users,
-    path: ROUTES.ADMIN.USERS,
-    permission: "admin.users",
-  },
-  {
-    id: "quotes",
-    label: "Wholesale RFQ Quotes",
-    icon: FileText,
-    path: ROUTES.ADMIN.QUOTES,
-    permission: "quotes.read",
+    children: [
+      {
+        id: "all-customers",
+        label: "All Users",
+        path: ROUTES.ADMIN.USERS,
+      },
+      {
+        id: "buyer-accounts",
+        label: "Active Buyers",
+        path: `${ROUTES.ADMIN.USERS}?role=BUYER`,
+      },
+    ],
   },
 
-  // ── SALES & FINANCE ──
+  // ── FINANCE & SYSTEM ──
   {
-    header: "Finance & Analytics",
+    header: "Finance & Security",
   },
   {
-    id: "payments",
-    label: "Payments & Invoices",
+    id: "finance-group",
+    label: "Finance",
     icon: CreditCard,
-    path: ROUTES.ADMIN.PAYMENTS,
-    permission: "payments.read",
+    children: [
+      {
+        id: "payments",
+        label: "Payments & Invoices",
+        path: ROUTES.ADMIN.PAYMENTS,
+      },
+      {
+        id: "reports",
+        label: "Revenue Reports",
+        icon: BarChart3,
+        path: ROUTES.ADMIN.REPORTS,
+      },
+    ],
   },
   {
-    id: "reports",
-    label: "Revenue & Tax Reports",
-    icon: BarChart3,
-    path: ROUTES.ADMIN.REPORTS,
-  },
-
-  // ── SYSTEM ──
-  {
-    header: "System & Governance",
-  },
-  {
-    id: "audit-logs",
-    label: "Audit Logs & Security",
+    id: "system-group",
+    label: "System",
     icon: ShieldCheck,
-    path: ROUTES.ADMIN.AUDIT_LOGS,
+    children: [
+      {
+        id: "audit-logs",
+        label: "Audit Logs & Security",
+        path: ROUTES.ADMIN.AUDIT_LOGS,
+      },
+    ],
   },
 ];
 

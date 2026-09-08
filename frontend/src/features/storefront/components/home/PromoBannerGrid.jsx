@@ -11,10 +11,10 @@ const DEFAULT_BANNERS = [
     title: "Upto 50% Off",
     cta: "Shop Deals",
     link: ROUTES.PRODUCTS,
-    bg: "bg-[#0b1f17]",
-    badgeColor: "#F9BC15",
+    bg: "bg-[#FAF9F6]",
+    badgeColor: "#1a3c2e",
     image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=400&q=80",
-    dark: true,
+    dark: false,
   },
   {
     id: "deal-2",
