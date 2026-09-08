@@ -34,7 +34,7 @@ export function AnnouncementBar() {
   if (!visible) return null;
 
   return (
-    <div className="w-full bg-[#1a3c2e] text-white text-[11px] select-none z-50">
+    <div className="w-full bg-[#1f4e3c] text-white select-none z-50">
       <div
         className="max-w-[1400px] mx-auto px-3 sm:px-6 h-8 flex items-center justify-between gap-2"
         style={{ fontSize: "11px" }}

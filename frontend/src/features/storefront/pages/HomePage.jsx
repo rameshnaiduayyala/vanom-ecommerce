@@ -29,7 +29,6 @@ import { PromoBannerGrid } from "../components/home/PromoBannerGrid.jsx";
 import { FeaturedProductsSection } from "../components/home/FeaturedProductsSection.jsx";
 import { ShopByCategoryGrid } from "../components/home/ShopByCategoryGrid.jsx";
 import { SustainabilityBanner } from "../components/home/SustainabilityBanner.jsx";
-import { BrandBadgeStrip } from "../components/home/BrandBadgeStrip.jsx";
 import { WhyVanomSection } from "../components/home/WhyVanomSection.jsx";
 import { TestimonialsSection } from "../components/home/TestimonialsSection.jsx";
 import { NewsletterAppBanner } from "../components/home/NewsletterAppBanner.jsx";
@@ -81,12 +80,12 @@ export function HomePage() {
   const categoryList = Array.isArray(categories) ? categories : (categories?.items || []);
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa]">
+    <div className="min-h-screen bg-[#FFF7DD]">
       {/* ── 1. Hero Banner Slider ── */}
       <HeroBanner banners={heroBanners} />
 
       {/* ── 3. Category Icon Scrolling Strip ── */}
-      <CategoryIconStrip categories={categoryList} />
+      <CategoryIconStrip className="bg-white" categories={categoryList} />
 
       {/* ── 4. Promo Banner 3-Grid ── */}
       <section className="py-6 bg-white">
@@ -107,16 +106,13 @@ export function HomePage() {
       {/* ── 7. Sustainability Brand Banner ── */}
       <SustainabilityBanner />
 
-      {/* ── 8. Top Brands Strip ── */}
-      <BrandBadgeStrip />
-
-      {/* ── 9. Why Choose Vanom ── */}
+      {/* ── 8. Why Choose Vanom ── */}
       <WhyVanomSection />
 
-      {/* ── 10. Customer Testimonials ── */}
+      {/* ── 9. Customer Testimonials ── */}
       <TestimonialsSection />
 
-      {/* ── 11. Newsletter & App Download ── */}
+      {/* ── 10. Newsletter & App Download ── */}
       <NewsletterAppBanner />
     </div>
   );
