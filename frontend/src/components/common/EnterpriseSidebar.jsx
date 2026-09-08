@@ -107,7 +107,7 @@ export function EnterpriseSidebar({
         height: "100vh",
         display: "flex",
         flexDirection: "column",
-        color: "#EAF7F0",
+        color: "white",
         flexShrink: 0,
         zIndex: 30,
       }}
@@ -121,7 +121,7 @@ export function EnterpriseSidebar({
                 <img
                   src={brand.logoSrc}
                   alt={brand.title || "Vanom"}
-                  className="h-8 w-auto max-w-[180px] object-contain"
+                  className="h-10 w-auto max-w-[180px] object-contain"
                 />
               ) : (
                 <span className="text-xl font-black tracking-wider text-white">
@@ -212,9 +212,8 @@ export function EnterpriseSidebar({
                         suffix={
                           child.badge !== undefined && (
                             <span
-                              className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none text-white ${
-                                child.badgeColor || "bg-rose-500"
-                              }`}
+                              className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none text-white ${child.badgeColor || "bg-rose-500"
+                                }`}
                             >
                               {child.badge}
                             </span>
@@ -239,9 +238,8 @@ export function EnterpriseSidebar({
                 suffix={
                   item.badge !== undefined && (
                     <span
-                      className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none text-white ${
-                        item.badgeColor || "bg-rose-500"
-                      }`}
+                      className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none text-white ${item.badgeColor || "bg-rose-500"
+                        }`}
                     >
                       {item.badge}
                     </span>

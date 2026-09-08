@@ -67,6 +67,8 @@ export function PublicHeader() {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAllCategoriesMenu, setShowAllCategoriesMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const mobileSearchInputRef = useRef(null);
 
   const categoryDropdownRef = useRef(null);
   const allCategoriesRef = useRef(null);
@@ -78,8 +80,16 @@ export function PublicHeader() {
       const catParam = selectedCategory !== "All Categories" ? `&category=${encodeURIComponent(selectedCategory)}` : "";
       navigate(`${ROUTES.SEARCH}?q=${encodeURIComponent(searchQuery.trim())}${catParam}`);
       setMobileMenuOpen(false);
+      setMobileSearchOpen(false);
     }
   };
+
+  // Focus mobile input on open
+  useEffect(() => {
+    if (mobileSearchOpen) {
+      setTimeout(() => mobileSearchInputRef.current?.focus(), 100);
+    }
+  }, [mobileSearchOpen]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -104,6 +114,7 @@ export function PublicHeader() {
     setShowAllCategoriesMenu(false);
     setShowUserMenu(false);
     setMobileMenuOpen(false);
+    setMobileSearchOpen(false);
   }, [location.pathname]);
 
   return (
@@ -213,8 +224,22 @@ export function PublicHeader() {
             </button>
           </form>
 
-          {/* Right Action Links (Wishlist, Account, Cart) */}
-          <div className="flex items-center gap-4 sm:gap-6 shrink-0">
+          {/* Right Action Links (Mobile Search Trigger, Wishlist, Account, Cart) */}
+          <div className="flex items-center gap-2.5 sm:gap-6 shrink-0">
+
+            {/* Mobile Search Icon Toggle */}
+            <button
+              type="button"
+              onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+              className="md:hidden p-2 rounded-lg text-gray-700 hover:text-[#358B5B] hover:bg-black/5 transition-colors cursor-pointer"
+              aria-label="Toggle search"
+            >
+              {mobileSearchOpen ? (
+                <X className="w-5 h-5 text-gray-700" />
+              ) : (
+                <Search className="w-5 h-5 text-gray-700" />
+              )}
+            </button>
 
             {/* Wishlist */}
             <Link
@@ -298,25 +323,47 @@ export function PublicHeader() {
           </div>
         </div>
 
+        {/* Mobile Expandable Search Bar Dropdown */}
+        {mobileSearchOpen && (
+          <div className="md:hidden px-4 pb-3 pt-2 bg-[#FFF7DD] border-t border-[#ebdcb0]/60 animate-in slide-in-from-top-2 duration-150">
+            <form onSubmit={handleSearch} className="flex items-center border border-[#ebdcb0] rounded-xl overflow-hidden bg-white shadow-md focus-within:border-[#358B5B] focus-within:ring-1 focus-within:ring-[#358B5B] transition-all h-10">
+              {/* Left Search Icon */}
+              <div className="pl-3 pr-1.5 text-gray-400 flex items-center justify-center">
+                <Search className="w-4 h-4 text-[#358B5B]" />
+              </div>
 
-        {/* Mobile Search Row (visible on small screens) */}
-        <div className="md:hidden px-4 pb-2.5 pt-1 bg-white border-t border-gray-100">
-          <form onSubmit={handleSearch} className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search products..."
-              className="flex-1 px-3 py-1.5 text-xs text-gray-800 bg-transparent focus:outline-none"
-            />
-            <button
-              type="submit"
-              className="px-3 py-1.5 bg-[#003D2B] text-white text-xs font-semibold"
-            >
-              <Search className="w-3.5 h-3.5" />
-            </button>
-          </form>
-        </div>
+              {/* Input Field */}
+              <input
+                ref={mobileSearchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search products, concerns & brands..."
+                className="flex-1 px-1 py-2 text-xs text-gray-800 bg-transparent focus:outline-none placeholder:text-gray-400"
+              />
+
+              {/* Clear Button */}
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="p-1 mr-1 text-gray-400 hover:text-gray-600 rounded-full"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+
+              {/* Right Submit Button */}
+              <button
+                type="submit"
+                aria-label="Search"
+                className="h-full px-4 bg-[#358B5B] hover:bg-[#204B38] text-white text-xs font-semibold flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <Search className="w-3.5 h-3.5" />
+              </button>
+            </form>
+          </div>
+        )}
       </header>
 
       {/* ─── Mobile Slide-in Drawer ─── */}
