@@ -138,11 +138,10 @@ export function ProductCard({ product, badge = null }) {
           <button
             onClick={handleWishlist}
             aria-label="Add to Wishlist"
-            className={`w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-200 cursor-pointer shadow-md ${
-              wishlisted
-                ? "bg-rose-50 text-rose-600 border border-rose-200 scale-105"
-                : "bg-white/90 hover:bg-white text-gray-500 hover:text-rose-500 border border-white/80 hover:scale-110"
-            }`}
+            className={`w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-200 cursor-pointer shadow-md ${wishlisted
+              ? "bg-rose-50 text-rose-600 border border-rose-200 scale-105"
+              : "bg-white/90 hover:bg-white text-gray-500 hover:text-rose-500 border border-white/80 hover:scale-110"
+              }`}
           >
             <Heart className={`w-4 h-4 ${wishlisted ? "fill-current text-rose-500" : ""}`} />
           </button>
@@ -220,7 +219,11 @@ export function ProductCard({ product, badge = null }) {
           <button
             type="button"
             onClick={handleAddToCart}
-            className="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider text-white bg-[rgb(60,170,130)] hover:bg-[rgb(48,150,112)] active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+            className={`flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer flex items-center justify-center gap-1.5 border ${
+              addingToCart
+                ? "bg-[#3CAA82] text-white border-[#3CAA82]"
+                : "bg-[#F0F5D6] hover:bg-[#e4ecc0] text-[#1E3B2B] border-[#d7e4a7] active:scale-95"
+            }`}
           >
             {addingToCart ? (
               <>
