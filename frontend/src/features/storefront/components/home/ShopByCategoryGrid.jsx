@@ -8,7 +8,6 @@ const DEFAULT_CATEGORIES = [
   { id: "home-living", name: "Home & Living", subtext: "Make your home beautiful", image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=400&q=80" },
   { id: "kitchen-dining", name: "Kitchen & Dining", subtext: "Cook, Serve, Enjoy", image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=400&q=80" },
   { id: "beauty-care", name: "Beauty & Personal Care", subtext: "Care for a better you", image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=400&q=80" },
-  { id: "health-wellness", name: "Health & Wellness", subtext: "A healthier, happier you", image: "https://images.unsplash.com/photo-1576671081837-49000212a370?auto=format&fit=crop&w=400&q=80" },
   { id: "toys-baby", name: "Toys & Baby", subtext: "Happy childhood moments", image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=400&q=80" },
   { id: "sports-fitness", name: "Sports & Fitness", subtext: "Stronger every day", image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=400&q=80" },
   { id: "stationery-office", name: "Stationery & Office", subtext: "Productivity starts here", image: "https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?auto=format&fit=crop&w=400&q=80" },
