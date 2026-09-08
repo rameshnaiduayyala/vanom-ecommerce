@@ -5,6 +5,7 @@
 import React, { useRef } from "react";
 import { Link } from "react-router-dom";
 import {
+  ShoppingBasket,
   ChevronLeft,
   ChevronRight,
   Laptop,
@@ -23,6 +24,7 @@ import {
 import { ROUTES } from "../../../../constants/routes.js";
 
 const DEFAULT_CATEGORIES = [
+  { id: "groceries", name: "Groceries", icon: ShoppingBasket },
   { id: "electronics", name: "Electronics", icon: Laptop },
   { id: "home-living", name: "Home & Living", icon: Home },
   { id: "kitchen-dining", name: "Kitchen & Dining", icon: UtensilsCrossed },
@@ -32,8 +34,6 @@ const DEFAULT_CATEGORIES = [
   { id: "sports-fitness", name: "Sports & Fitness", icon: Dumbbell },
   { id: "stationery-office", name: "Stationery & Office", icon: BookOpen },
   { id: "pet-care", name: "Pet Care", icon: PawPrint },
-  { id: "automotive", name: "Automotive", icon: Car },
-  { id: "garden-outdoors", name: "Garden & Outdoors", icon: Trees },
 ];
 
 export function CategoryIconStrip({ categories = [], activeCategory = null, onSelectCategory, className = "" }) {

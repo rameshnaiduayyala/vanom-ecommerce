@@ -4,7 +4,7 @@ import { useCountryStore } from "../../../stores/country.store.js";
 import { useCartStore } from "../../../stores/cart.store.js";
 import { useUIStore } from "../../../stores/ui.store.js";
 import { formatPrice } from "../../../utils/formatters.js";
-import { Heart, ShoppingBag, Check, Star, Plus, Minus, Trash2, Sparkles } from "lucide-react";
+import { Heart, Check, Star, Plus, Minus, Sparkles } from "lucide-react";
 
 export function ProductCard({ product, badge = null }) {
   const { country } = useCountryStore();
@@ -12,6 +12,7 @@ export function ProductCard({ product, badge = null }) {
   const { addToast } = useUIStore();
   const [wishlisted, setWishlisted] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [quantity, setQuantity] = useState(1);
   const [isHovered, setIsHovered] = useState(false);
 
   const pricing = product.pricing?.[country.code] || product.pricing?.US || product.pricing?.IN || {};
@@ -21,61 +22,52 @@ export function ProductCard({ product, badge = null }) {
     product.variants?.[0]?.prices?.[0]?.amount ||
     pricing.retailPrice ||
     product.price ||
-    42990;
+    339;
   const price = Number(backendPrice);
-  const originalPrice = product.mrp || pricing.mrp || (price > 0 ? Math.round(price * 1.32) : 56999);
-  const discount = product.discount || (originalPrice > price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 24);
+  const originalPrice = product.mrp || pricing.mrp || (price > 0 ? Math.round(price * 1.32) : 400);
+  const discount = product.discount || (originalPrice > price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 15);
   const rating = product.rating || 4.8;
-  const reviewsCount = product.reviewsCount || product.reviews || 2349;
+  const reviewsCount = product.reviewsCount || product.reviews || 1104;
 
   const productImage =
     product.image ||
     product.images?.[0]?.file?.url ||
     product.images?.[0]?.url ||
-    "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=600&q=80";
+    "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=600&q=80";
 
   const effectiveBadge = product.badge || badge;
-
-  // Cart item state for this product
-  const cartItem = cart.items.find((i) => i.id === product.id);
-  const currentQuantity = cartItem?.quantity || 0;
 
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setAddingToCart(true);
+
+    const cartItem = cart.items.find((i) => i.id === product.id);
     let newItems = [];
     if (cartItem) {
       newItems = cart.items.map((i) =>
-        i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
+        i.id === product.id ? { ...i, quantity: i.quantity + quantity } : i
       );
     } else {
       newItems = [
         ...cart.items,
-        { id: product.id, name: product.name, price, quantity: 1, image: productImage },
+        { id: product.id, name: product.name, price, quantity, image: productImage },
       ];
     }
     const subtotal = newItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     setCart({ items: newItems, itemCount: newItems.length, subtotal });
-    addToast({ title: "Added to Cart", message: `${product.name} added.`, type: "success" });
+    addToast({
+      title: "Added to Cart",
+      message: `${quantity}x ${product.name} added.`,
+      type: "success",
+    });
     setTimeout(() => setAddingToCart(false), 800);
   };
 
-  const handleUpdateQuantity = (e, delta) => {
+  const handleStepQuantity = (e, delta) => {
     e.preventDefault();
     e.stopPropagation();
-    let newItems = [];
-    const newQty = currentQuantity + delta;
-    if (newQty <= 0) {
-      newItems = cart.items.filter((i) => i.id !== product.id);
-      addToast({ title: "Removed from Cart", message: product.name, type: "info" });
-    } else {
-      newItems = cart.items.map((i) =>
-        i.id === product.id ? { ...i, quantity: newQty } : i
-      );
-    }
-    const subtotal = newItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    setCart({ items: newItems, itemCount: newItems.length, subtotal });
+    setQuantity((q) => Math.max(1, q + delta));
   };
 
   const handleWishlist = (e) => {
@@ -146,10 +138,11 @@ export function ProductCard({ product, badge = null }) {
           <button
             onClick={handleWishlist}
             aria-label="Add to Wishlist"
-            className={`w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-200 cursor-pointer shadow-md ${wishlisted
+            className={`w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-200 cursor-pointer shadow-md ${
+              wishlisted
                 ? "bg-rose-50 text-rose-600 border border-rose-200 scale-105"
                 : "bg-white/90 hover:bg-white text-gray-500 hover:text-rose-500 border border-white/80 hover:scale-110"
-              }`}
+            }`}
           >
             <Heart className={`w-4 h-4 ${wishlisted ? "fill-current text-rose-500" : ""}`} />
           </button>
@@ -197,51 +190,47 @@ export function ProductCard({ product, badge = null }) {
           </div>
         </div>
 
-        {/* ─── Add to Cart / Quantity Controller (Fresh Green Theme) ─── */}
-        <div className="pt-1">
-          {currentQuantity > 0 ? (
-            <div className="w-full flex items-center justify-between bg-gradient-to-r from-[rgb(60,170,130)] to-[rgb(45,150,110)] text-white rounded-2xl p-1 shadow-md animate-in fade-in duration-200">
-              <button
-                type="button"
-                onClick={(e) => handleUpdateQuantity(e, -1)}
-                className="w-8 h-8 rounded-xl bg-black/15 hover:bg-black/30 active:scale-90 flex items-center justify-center text-white transition-all cursor-pointer"
-                title="Decrease quantity"
-              >
-                {currentQuantity === 1 ? <Trash2 className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
-              </button>
-
-              <div className="flex items-center gap-1.5 px-2 font-black text-xs select-none">
-                <span className="text-[10px] uppercase tracking-wider font-semibold opacity-90">In Cart:</span>
-                <span className="text-sm font-black bg-white/20 px-2 py-0.5 rounded-lg">{currentQuantity}</span>
-              </div>
-
-              <button
-                type="button"
-                onClick={(e) => handleUpdateQuantity(e, 1)}
-                className="w-8 h-8 rounded-xl bg-black/15 hover:bg-black/30 active:scale-90 flex items-center justify-center text-white transition-all cursor-pointer"
-                title="Increase quantity"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ) : (
+        {/* ─── Bottom Action Bar: [ - qty + ] Stepper + ADD TO CART Button ─── */}
+        <div className="pt-2 flex items-center gap-2 w-full">
+          {/* Quantity Stepper [- 1 +] */}
+          <div className="flex items-center justify-between border border-[rgb(60,170,130)]/40 bg-[rgb(60,170,130)]/8 rounded-xl px-2.5 py-2 min-w-[80px] sm:min-w-[90px]">
             <button
-              onClick={handleAddToCart}
-              className="w-full py-2.5 px-4 rounded-2xl text-xs sm:text-sm font-bold text-white transition-all duration-300 active:scale-95 cursor-pointer flex items-center justify-center gap-2 shadow-sm bg-gradient-to-r from-[rgb(60,170,130)] to-[rgb(45,150,110)] hover:brightness-105 hover:shadow-lg hover:shadow-[rgb(60,170,130)]/25"
+              type="button"
+              onClick={(e) => handleStepQuantity(e, -1)}
+              disabled={quantity <= 1}
+              className="text-gray-600 hover:text-gray-900 disabled:opacity-30 active:scale-90 transition-transform cursor-pointer"
+              aria-label="Decrease quantity"
             >
-              {addingToCart ? (
-                <>
-                  <Check className="w-4 h-4 text-white animate-in zoom-in" />
-                  <span>Added to Cart</span>
-                </>
-              ) : (
-                <>
-                  <ShoppingBag className="w-4 h-4" />
-                  <span>Add to Cart</span>
-                </>
-              )}
+              <Minus className="w-3.5 h-3.5" />
             </button>
-          )}
+            <span className="text-xs sm:text-sm font-black text-gray-900 select-none px-1">
+              {quantity}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => handleStepQuantity(e, 1)}
+              className="text-gray-600 hover:text-gray-900 active:scale-90 transition-transform cursor-pointer"
+              aria-label="Increase quantity"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* ADD TO CART Button */}
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            className="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider text-white bg-[rgb(60,170,130)] hover:bg-[rgb(48,150,112)] active:scale-95 transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            {addingToCart ? (
+              <>
+                <Check className="w-4 h-4 animate-in zoom-in" />
+                <span>ADDED</span>
+              </>
+            ) : (
+              <span>ADD TO CART</span>
+            )}
+          </button>
         </div>
       </div>
     </div>

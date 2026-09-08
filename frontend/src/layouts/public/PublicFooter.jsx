@@ -71,18 +71,18 @@ export function PublicFooter() {
 
           {/* Column 1: Brand & Socials (4.5 Cols) */}
           <div className="lg:col-span-4 space-y-4">
-            <Link to={ROUTES.HOME} className="inline-flex items-center p-2.5 px-3.5 bg-[#FFF7DD] rounded-xl border border-[#ebdcb0] shadow-sm hover:shadow-md hover:scale-102 transition-all duration-200">
+            <Link to={ROUTES.HOME} className="inline-flex items-center">
               <img
                 src="/logo.png"
                 alt="Vanom"
-                className="h-16 w-auto object-contain"
+                className="h-16 w-auto object-contain brightness-0 invert"
                 onError={(e) => {
                   e.target.style.display = "none";
                   e.target.nextSibling.style.display = "block";
                 }}
               />
-              <span className="hidden text-xl font-black text-[#003D2B] tracking-tight font-serif">
-                Vanom<span className="text-[#D9A514]">™</span>
+              <span className="hidden text-2xl font-black text-white tracking-tight font-serif">
+                Vanom<span className="text-[#F9BC15]">™</span>
               </span>
             </Link>
 
