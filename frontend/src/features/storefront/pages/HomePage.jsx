@@ -82,46 +82,67 @@ export function HomePage() {
   const categoryList = Array.isArray(categories) ? categories : (categories?.items || []);
 
   return (
-    <div className="min-h-screen bg-[#FFF7DD]">
+    <div className="min-h-screen bg-[#FFFDF7] flex flex-col">
       {/* ── 1. Hero Banner Slider (Primary promotional marketing) ── */}
-      <HeroBanner banners={heroBanners} />
+      <section className="bg-transparent">
+        <HeroBanner banners={heroBanners} />
+      </section>
 
-      {/* ── 2. Quick Category Pills Strip (High-intent instant browsing) ── */}
-      <CategoryIconStrip className="py-4 bg-white/60" categories={categoryList} />
+      {/* ── 2. Quick Category Pills Strip (Soft Warm Cream / Vanilla BG) ── */}
+      <section className="bg-[#FFF9EA] border-y border-[#ebdcb0]/50 py-3.5">
+        <CategoryIconStrip className="bg-transparent" categories={categoryList} />
+      </section>
 
-      {/* ── 3. Featured & Best Seller Products (Immediate product conversion) ── */}
-      <FeaturedProductsSection
-        products={products}
-        featuredProducts={featuredProducts}
-        bestSellers={bestSellers}
-        isLoading={loadingProducts}
-      />
+      {/* ── 3. Featured & Best Seller Products (Pure White Clean BG) ── */}
+      <section className="bg-[#FFFFFF] border-b border-gray-100/90 py-4">
+        <FeaturedProductsSection
+          className="bg-transparent"
+          products={products}
+          featuredProducts={featuredProducts}
+          bestSellers={bestSellers}
+          isLoading={loadingProducts}
+        />
+      </section>
 
-      {/* ── 4. Promo Banner 3-Grid (Mid-page visual campaign breaks) ── */}
-      <section className="py-6 bg-white/60">
+      {/* ── 4. Promo Banner 3-Grid (Subtle Mint Fresh Light BG) ── */}
+      <section className="py-8 bg-[#F0F9F5] border-b border-[#D8EDE2]">
         <PromoBannerGrid banners={promoBanners} />
       </section>
 
-      {/* ── 5. New Launches Carousel (Fresh arrival discovery) ── */}
-      <NewLaunchesSection className="bg-white/60" products={featuredProducts} />
+      {/* ── 5. New Launches Carousel (Soft Warm Ivory BG) ── */}
+      <section className="bg-[#FFFBF2] border-b border-[#F0E6D2]">
+        <NewLaunchesSection className="bg-transparent" products={featuredProducts} />
+      </section>
 
-      {/* ── 6. Shop by Category Visual Grid (Deep category exploration) ── */}
-      <ShopByCategoryGrid categories={categoryList} />
+      {/* ── 6. Shop by Category Visual Grid (Pure White BG) ── */}
+      <section className="bg-[#FFFFFF] border-b border-gray-100">
+        <ShopByCategoryGrid className="bg-transparent" categories={categoryList} />
+      </section>
 
-      {/* ── 7. Real User Video Reels (Social proof & UGC shopping experience) ── */}
-      <UserVideoReelsSection />
+      {/* ── 7. Real User Video Reels (Soft Sage/Earthy Light Tint BG) ── */}
+      <section className="bg-[#F3FAF6] border-b border-[#D8EDE2]">
+        <UserVideoReelsSection />
+      </section>
 
       {/* ── 8. Sustainability & Brand Story Banner ── */}
-      <SustainabilityBanner />
+      <section className="bg-transparent">
+        <SustainabilityBanner />
+      </section>
 
-      {/* ── 9. Why Choose Vanom (Core value propositions & trust building) ── */}
-      <WhyVanomSection />
+      {/* ── 9. Why Choose Vanom (Soft Warm Neutral BG) ── */}
+      <section className="bg-[#FAFBF9] border-b border-gray-200/70">
+        <WhyVanomSection className="bg-transparent border-t-0" />
+      </section>
 
-      {/* ── 10. Customer Testimonials & Reviews ── */}
-      <TestimonialsSection />
+      {/* ── 10. Customer Testimonials & Reviews (Soft Honey Gold Light Tint BG) ── */}
+      <section className="bg-[#FFFDF5] border-b border-[#F5EACB]">
+        <TestimonialsSection className="bg-transparent border-t-0" />
+      </section>
 
-      {/* ── 11. Newsletter & Mobile App Download (Retention & growth) ── */}
-      <NewsletterAppBanner />
+      {/* ── 11. Newsletter & Mobile App Download (Pure White Clean BG) ── */}
+      <section className="bg-[#FFFFFF]">
+        <NewsletterAppBanner />
+      </section>
     </div>
   );
 }
