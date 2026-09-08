@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { useCartStore } from "../../../stores/cart.store.js";
 import { useCountryStore } from "../../../stores/country.store.js";
@@ -72,23 +72,23 @@ export function CartPage() {
                 </div>
                 <div>
                   <h4 className="text-sm font-semibold text-text-primary">{item.name || item.productName}</h4>
-                  <p className="text-xs text-brand-700 font-bold mt-1">
+                  <p className="text-xs text-[rgb(60,170,130)] font-bold mt-1">
                     {formatPrice(item.price || item.unitPrice, country.currency, country.symbol)}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="flex items-center border border-border rounded-lg bg-white">
-                  <button onClick={() => handleQuantity(item.id, -1)} className="p-1.5 hover:bg-surface-muted">
+                <div className="flex items-center border border-border rounded-lg bg-white overflow-hidden shadow-2xs">
+                  <button onClick={() => handleQuantity(item.id, -1)} className="p-1.5 hover:bg-surface-muted cursor-pointer text-gray-700">
                     <Minus className="w-3.5 h-3.5" />
                   </button>
-                  <span className="w-8 text-center text-xs font-semibold">{item.quantity}</span>
-                  <button onClick={() => handleQuantity(item.id, 1)} className="p-1.5 hover:bg-surface-muted">
+                  <span className="w-8 text-center text-xs font-bold text-gray-900">{item.quantity}</span>
+                  <button onClick={() => handleQuantity(item.id, 1)} className="p-1.5 hover:bg-surface-muted cursor-pointer text-gray-700">
                     <Plus className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <button onClick={() => handleRemove(item.id)} className="text-text-muted hover:text-red-600 p-1.5">
+                <button onClick={() => handleRemove(item.id)} className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors cursor-pointer">
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -98,7 +98,7 @@ export function CartPage() {
 
         {/* Order Summary */}
         <div className="space-y-4">
-          <div className="p-5 rounded-xl bg-white border border-border space-y-4 shadow-xs">
+          <div className="p-5 rounded-2xl bg-white border border-border space-y-4 shadow-xs">
             <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">Order Summary</h3>
             <div className="space-y-2 text-xs text-text-secondary border-b border-border pb-3">
               <div className="flex justify-between">
@@ -107,19 +107,23 @@ export function CartPage() {
               </div>
               <div className="flex justify-between">
                 <span>Estimated Shipping</span>
-                <span className="text-emerald-700 font-medium">Standard Ground</span>
+                <span className="text-[rgb(60,170,130)] font-medium">Standard Ground</span>
               </div>
             </div>
 
             <div className="flex justify-between items-baseline text-base font-bold text-text-primary">
               <span>Estimated Total</span>
-              <span className="text-xl text-brand-700 font-black">{formatPrice(cart.subtotal, country.currency, country.symbol)}</span>
+              <span className="text-xl text-[rgb(60,170,130)] font-black">{formatPrice(cart.subtotal, country.currency, country.symbol)}</span>
             </div>
 
             <Link to={ROUTES.CHECKOUT} className="block">
-              <Button variant="primary" size="lg" className="w-full font-bold" icon={ArrowRight} iconPosition="right">
-                Proceed to Checkout
-              </Button>
+              <button
+                type="button"
+                className="w-full py-3 px-4 rounded-xl bg-[rgb(60,170,130)] hover:brightness-95 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+              >
+                <span>Proceed to Checkout</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </Link>
           </div>
         </div>

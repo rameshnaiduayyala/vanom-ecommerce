@@ -18,10 +18,13 @@ import {
   AlertTriangle,
   FolderTree,
   X,
+  Image as ImageIcon,
+  Tag,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "../../../components/ui/Button.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";
-import { Input, Textarea, Select } from "../../../components/ui/Input.jsx";
+import { Input, Textarea, Select, Checkbox } from "../../../components/ui/Input.jsx";
 import { Modal } from "../../../components/ui/Modal.jsx";
 import { ConfirmDialog, EmptyState } from "../../../components/ui/Alert.jsx";
 
@@ -118,6 +121,10 @@ export function Products() {
     name: "",
     slug: "",
     description: "",
+    imageUrl: "",
+    parentId: "",
+    active: true,
+    sortOrder: 0,
   };
   const [categoryForm, setCategoryForm] = useState(defaultCategoryForm);
 
@@ -174,11 +181,11 @@ export function Products() {
     onSuccess: (created) => {
       queryClient.invalidateQueries(["admin-categories"]);
       queryClient.invalidateQueries(["home-categories"]);
-      toast.success("Category Created", `Category "${created.name}" created successfully.`);
+      toast.success("Category Created", `Category "${created.name || created.data?.name || "New Category"}" created successfully.`);
       setIsCategoryModalOpen(false);
       setCategoryForm(defaultCategoryForm);
     },
-    onError: (err) => toast.error("Creation Failed", err.message),
+    onError: (err) => toast.error("Creation Failed", err.message || "Failed to create category"),
   });
 
   const updateCategoryMutation = useMutation({
@@ -186,11 +193,11 @@ export function Products() {
     onSuccess: (updated) => {
       queryClient.invalidateQueries(["admin-categories"]);
       queryClient.invalidateQueries(["home-categories"]);
-      toast.success("Category Updated", `Category "${updated.name}" updated successfully.`);
+      toast.success("Category Updated", `Category "${updated.name || updated.data?.name || "Category"}" updated successfully.`);
       setIsCategoryModalOpen(false);
       setEditingCategory(null);
     },
-    onError: (err) => toast.error("Update Failed", err.message),
+    onError: (err) => toast.error("Update Failed", err.message || "Failed to update category"),
   });
 
   const deleteCategoryMutation = useMutation({
@@ -201,7 +208,7 @@ export function Products() {
       toast.success("Category Deleted", "Category removed successfully.");
       setDeletingCategory(null);
     },
-    onError: (err) => toast.error("Deletion Failed", err.message),
+    onError: (err) => toast.error("Deletion Failed", err.message || "Failed to delete category"),
   });
 
   // Handlers
@@ -248,19 +255,50 @@ export function Products() {
   const openEditCategory = (cat) => {
     setEditingCategory(cat);
     setCategoryForm({
-      name: cat.name,
-      slug: cat.slug,
+      name: cat.name || "",
+      slug: cat.slug || "",
       description: cat.description || "",
+      imageUrl: cat.imageUrl || "",
+      parentId: cat.parentId || "",
+      active: cat.active !== undefined ? cat.active : true,
+      sortOrder: cat.sortOrder || 0,
     });
     setIsCategoryModalOpen(true);
   };
 
+  const handleCategoryNameChange = (val) => {
+    if (!editingCategory) {
+      const generatedSlug = val
+        .toLowerCase()
+        .trim()
+        .replace(/[\s\W-]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      setCategoryForm((prev) => ({
+        ...prev,
+        name: val,
+        slug: generatedSlug,
+      }));
+    } else {
+      setCategoryForm((prev) => ({ ...prev, name: val }));
+    }
+  };
+
   const handleCategorySubmit = (e) => {
     e.preventDefault();
+    const payload = {
+      name: categoryForm.name.trim(),
+      slug: categoryForm.slug?.trim() || undefined,
+      description: categoryForm.description?.trim() || undefined,
+      imageUrl: categoryForm.imageUrl?.trim() || undefined,
+      parentId: categoryForm.parentId || undefined,
+      active: Boolean(categoryForm.active),
+      sortOrder: Number(categoryForm.sortOrder) || 0,
+    };
+
     if (editingCategory) {
-      updateCategoryMutation.mutate({ id: editingCategory.id, data: categoryForm });
+      updateCategoryMutation.mutate({ id: editingCategory.id, data: payload });
     } else {
-      createCategoryMutation.mutate(categoryForm);
+      createCategoryMutation.mutate(payload);
     }
   };
 
@@ -489,68 +527,113 @@ export function Products() {
       ============================================================ */}
       {activeTab === "categories" && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="relative max-w-sm w-full">
               <Search className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={categorySearch}
                 onChange={(e) => setCategorySearch(e.target.value)}
-                placeholder="Search categories by name or slug..."
+                placeholder="Search categories by name, slug or description..."
                 className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-border bg-white focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
               />
             </div>
+            <div className="text-xs text-text-muted font-medium">
+              Showing <span className="font-bold text-text-primary">{filteredCategories.length}</span> of {categories.length} categories
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredCategories.map((cat) => (
-              <div
-                key={cat.id}
-                className="p-5 rounded-2xl bg-white border border-border hover:border-brand-300 transition-all flex flex-col justify-between gap-4 shadow-2xs"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center font-bold">
-                        <FolderTree className="w-4 h-4" />
+          {filteredCategories.length === 0 ? (
+            <div className="p-8 text-center bg-white rounded-2xl border border-border">
+              <FolderTree className="w-10 h-10 text-text-muted mx-auto mb-2 opacity-50" />
+              <p className="text-sm font-semibold text-text-primary">No categories found</p>
+              <p className="text-xs text-text-muted mt-1">
+                {categorySearch ? "Try adjusting your search query." : "Get started by adding your first category."}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredCategories.map((cat) => (
+                <div
+                  key={cat.id}
+                  className="p-5 rounded-2xl bg-white border border-border hover:border-brand-300 transition-all flex flex-col justify-between gap-4 shadow-2xs group"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        {cat.imageUrl ? (
+                          <img
+                            src={cat.imageUrl}
+                            alt={cat.name}
+                            className="w-11 h-11 rounded-xl object-cover border border-border shrink-0 bg-surface-muted"
+                          />
+                        ) : (
+                          <div className="w-11 h-11 rounded-xl bg-brand-50 text-brand-700 flex items-center justify-center font-bold border border-brand-100 shrink-0">
+                            <FolderTree className="w-5 h-5" />
+                          </div>
+                        )}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-text-primary text-sm leading-tight group-hover:text-brand-700 transition-colors">
+                              {cat.name}
+                            </h4>
+                            {cat.active === false && (
+                              <Badge variant="warning" size="sm">Inactive</Badge>
+                            )}
+                          </div>
+                          {cat.parentName && (
+                            <span className="text-[10px] text-text-muted flex items-center gap-1 mt-0.5">
+                              <span>Parent:</span>
+                              <span className="font-semibold text-text-secondary">{cat.parentName}</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <h4 className="font-bold text-text-primary text-sm">{cat.name}</h4>
+                      <Badge variant="brand" size="sm" className="shrink-0 font-bold">
+                        {cat.count || 0} {cat.count === 1 ? "Product" : "Products"}
+                      </Badge>
                     </div>
-                    <Badge variant="brand" size="sm">
-                      {cat.count || 0} Products
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-text-muted leading-relaxed">
-                    {cat.description || "Official product category classification."}
-                  </p>
-                  <span className="text-[10px] font-mono text-text-secondary bg-surface-muted px-2 py-0.5 rounded mt-2 inline-block">
-                    slug: {cat.slug}
-                  </span>
-                </div>
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    icon={Edit2}
-                    onClick={() => openEditCategory(cat)}
-                    className="text-xs"
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    icon={Trash2}
-                    onClick={() => setDeletingCategory(cat)}
-                    className="text-xs"
-                  >
-                    Delete
-                  </Button>
+                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">
+                      {cat.description || "Official product taxonomy classification."}
+                    </p>
+
+                    <div className="flex items-center gap-2 flex-wrap pt-1">
+                      <span className="text-[10px] font-mono text-text-muted bg-surface-muted px-2 py-0.5 rounded border border-border/50">
+                        /{cat.slug}
+                      </span>
+                      {cat.sortOrder !== undefined && cat.sortOrder > 0 && (
+                        <span className="text-[10px] font-mono text-text-muted bg-surface-muted px-2 py-0.5 rounded">
+                          Order: {cat.sortOrder}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      icon={Edit2}
+                      onClick={() => openEditCategory(cat)}
+                      className="text-xs font-semibold cursor-pointer"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      icon={Trash2}
+                      onClick={() => setDeletingCategory(cat)}
+                      className="text-xs font-semibold cursor-pointer"
+                    >
+                      Delete
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -1002,29 +1085,91 @@ export function Products() {
         isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}
         title={editingCategory ? `Edit Category: ${editingCategory.name}` : "Add New Category Taxonomy"}
-        maxWidth="max-w-md"
+        maxWidth="max-w-lg"
       >
         <form onSubmit={handleCategorySubmit} className="space-y-4">
           <Input
             label="Category Name"
             value={categoryForm.name}
-            onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-            placeholder="e.g. Industrial Automation"
+            onChange={(e) => handleCategoryNameChange(e.target.value)}
+            placeholder="e.g. Industrial Automation & Machinery"
             required
           />
-          <Input
-            label="URL Slug (Optional)"
-            value={categoryForm.slug}
-            onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
-            placeholder="e.g. industrial-automation"
-          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="URL Slug"
+              value={categoryForm.slug}
+              onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
+              placeholder="e.g. industrial-automation"
+              helperText="Auto-generated from name or custom"
+              required
+            />
+
+            <Select
+              label="Parent Category (Optional)"
+              value={categoryForm.parentId || ""}
+              onChange={(e) => setCategoryForm({ ...categoryForm, parentId: e.target.value })}
+              options={[
+                { label: "None (Root Category)", value: "" },
+                ...categories
+                  .filter((c) => !editingCategory || c.id !== editingCategory.id)
+                  .map((c) => ({ label: c.name, value: c.id })),
+              ]}
+            />
+          </div>
+
+          <div>
+            <Input
+              label="Category Image URL"
+              value={categoryForm.imageUrl}
+              onChange={(e) => setCategoryForm({ ...categoryForm, imageUrl: e.target.value })}
+              placeholder="https://images.unsplash.com/..."
+              helperText="Direct image URL for storefront display"
+            />
+            {categoryForm.imageUrl && (
+              <div className="mt-2 flex items-center gap-3 p-2 bg-surface-muted rounded-xl border border-border">
+                <img
+                  src={categoryForm.imageUrl}
+                  alt="Preview"
+                  className="w-12 h-12 rounded-lg object-cover border border-border shrink-0 bg-white"
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                  }}
+                />
+                <div className="text-xs text-text-secondary truncate">
+                  <span className="font-semibold block text-text-primary">Image Preview</span>
+                  <span className="text-[10px] text-text-muted truncate block">{categoryForm.imageUrl}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
           <Textarea
             label="Description"
             value={categoryForm.description}
             onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-            placeholder="Category scope and supported product types..."
-            rows={3}
+            placeholder="Commercial scope and product specifications for this category..."
+            rows={2}
           />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <Input
+              label="Sort Order"
+              type="number"
+              value={categoryForm.sortOrder}
+              onChange={(e) => setCategoryForm({ ...categoryForm, sortOrder: parseInt(e.target.value) || 0 })}
+              placeholder="0"
+            />
+
+            <div className="flex items-center pt-6">
+              <Checkbox
+                label="Active & Visible in Storefront"
+                checked={categoryForm.active}
+                onChange={(e) => setCategoryForm({ ...categoryForm, active: e.target.checked })}
+              />
+            </div>
+          </div>
 
           <div className="pt-3 border-t border-border flex items-center justify-end gap-3">
             <Button
@@ -1042,7 +1187,7 @@ export function Products() {
               isLoading={createCategoryMutation.isPending || updateCategoryMutation.isPending}
               className="font-bold"
             >
-              {editingCategory ? "Save Category" : "Create Category"}
+              {editingCategory ? "Save Category Changes" : "Create Category"}
             </Button>
           </div>
         </form>

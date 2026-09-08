@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUIStore, toast } from "../../stores/ui.store.js";
 import {
@@ -34,32 +34,36 @@ function ToastItem({ toastItem, onDismiss }) {
 
   const configs = {
     success: {
-      border: "border-emerald-500/30",
-      accentBg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-      barBg: "bg-emerald-500",
       icon: CheckCircle2,
-      shadow: "shadow-emerald-500/5",
+      iconColor: "text-[#358B5B]",
+      iconBg: "bg-[#EAF7F0] border-[#358B5B]/20",
+      accentBar: "bg-[#358B5B]",
+      borderColor: "border-[#358B5B]/20",
+      glow: "shadow-[0_8px_30px_rgb(53,139,91,0.12)]",
     },
     error: {
-      border: "border-red-500/30",
-      accentBg: "bg-red-500/10 text-red-600 dark:text-red-400",
-      barBg: "bg-red-500",
       icon: AlertCircle,
-      shadow: "shadow-red-500/5",
+      iconColor: "text-rose-600",
+      iconBg: "bg-rose-50 border-rose-200/60",
+      accentBar: "bg-rose-600",
+      borderColor: "border-rose-200",
+      glow: "shadow-[0_8px_30px_rgb(225,29,72,0.12)]",
     },
     warning: {
-      border: "border-amber-500/30",
-      accentBg: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-      barBg: "bg-amber-500",
       icon: AlertTriangle,
-      shadow: "shadow-amber-500/5",
+      iconColor: "text-amber-600",
+      iconBg: "bg-amber-50 border-amber-200/60",
+      accentBar: "bg-amber-500",
+      borderColor: "border-amber-200",
+      glow: "shadow-[0_8px_30px_rgb(217,119,6,0.12)]",
     },
     info: {
-      border: "border-brand-500/30",
-      accentBg: "bg-brand-500/10 text-brand-600 dark:text-brand-400",
-      barBg: "bg-brand-500",
       icon: Info,
-      shadow: "shadow-brand-500/5",
+      iconColor: "text-sky-600",
+      iconBg: "bg-sky-50 border-sky-200/60",
+      accentBar: "bg-sky-500",
+      borderColor: "border-sky-200",
+      glow: "shadow-[0_8px_30px_rgb(2,132,199,0.12)]",
     },
   };
 
@@ -69,73 +73,78 @@ function ToastItem({ toastItem, onDismiss }) {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: -20, scale: 0.95 }}
+      initial={{ opacity: 0, y: -16, scale: 0.94 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      exit={{ opacity: 0, y: -10, scale: 0.94, transition: { duration: 0.15 } }}
+      transition={{ type: "spring", stiffness: 450, damping: 30 }}
       role="alert"
       className={cn(
-        "pointer-events-auto relative w-full max-w-sm overflow-hidden rounded-2xl border bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-4 shadow-[0_10px_35px_-4px_rgba(0,0,0,0.12)]",
-        config.border,
-        config.shadow
+        "pointer-events-auto relative w-full max-w-[360px] overflow-hidden rounded-2xl border bg-white/95 backdrop-blur-xl p-3.5 shadow-[0_12px_36px_-6px_rgba(0,0,0,0.14)] select-none",
+        config.borderColor,
+        config.glow
       )}
     >
-      <div className="flex items-start gap-3.5">
-        {/* Glowing Icon Capsule */}
-        <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl", config.accentBg)}>
-          <Icon className="h-5 w-5" />
+      <div className="flex items-start gap-3">
+        {/* Modern Circular Icon */}
+        <div
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border",
+            config.iconBg
+          )}
+        >
+          <Icon className={cn("h-4 w-4", config.iconColor)} strokeWidth={2.2} />
         </div>
 
-        {/* Content */}
+        {/* Text Details */}
         <div className="flex-1 min-w-0 pt-0.5">
           <div className="flex items-center justify-between gap-2">
-            <h5 className="text-[13px] font-bold text-text-primary dark:text-white tracking-tight">
+            <h5 className="text-[13px] font-bold text-gray-900 tracking-tight leading-tight">
               {toastItem.title}
             </h5>
-            <span className="text-[10px] font-medium text-text-muted dark:text-slate-400 shrink-0">
+            <span className="text-[10px] font-medium text-gray-400 shrink-0">
               just now
             </span>
           </div>
 
           {toastItem.message && (
-            <p className="mt-0.5 text-xs text-text-secondary dark:text-slate-300 leading-relaxed">
+            <p className="mt-0.5 text-xs text-gray-600 leading-snug line-clamp-2">
               {toastItem.message}
             </p>
           )}
 
           {toastItem.action && (
-            <div className="mt-2.5">
+            <div className="mt-2">
               <button
                 type="button"
                 onClick={() => {
                   toastItem.action.onClick?.();
                   onDismiss(toastItem.id);
                 }}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-600 hover:text-brand-700 dark:text-brand-400 hover:underline"
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-[#358B5B] hover:text-[#204B38] hover:underline"
               >
                 <span>{toastItem.action.label}</span>
-                <ExternalLink className="h-3 w-3" />
+                <ExternalLink className="h-2.5 w-2.5" />
               </button>
             </div>
           )}
         </div>
 
-        {/* Close Button */}
+        {/* Minimalist Close Button */}
         <button
           type="button"
           onClick={() => onDismiss(toastItem.id)}
-          className="text-text-muted hover:text-text-primary dark:text-slate-400 dark:hover:text-white p-1 rounded-lg hover:bg-surface-muted dark:hover:bg-slate-800 transition-colors"
-          aria-label="Close notification"
+          className="text-gray-400 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer shrink-0 -mr-1 -mt-1"
+          aria-label="Close"
         >
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
 
-      {/* Auto-dismiss Animated Progress Bar */}
+      {/* Slim Progress Bar */}
       {toastItem.duration > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-border/40 dark:bg-slate-800">
+        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gray-100">
           <div
-            className={cn("h-full transition-all duration-100 ease-linear", config.barBg)}
+            className={cn("h-full transition-all duration-100 ease-linear opacity-80", config.accentBar)}
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -150,7 +159,7 @@ export function ToastContainer() {
   return (
     <div
       aria-live="polite"
-      className="fixed top-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"
+      className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[9999] flex flex-col gap-2.5 max-w-[360px] w-[calc(100vw-32px)] sm:w-full pointer-events-none"
     >
       <AnimatePresence mode="popLayout">
         {toasts.map((item) => (

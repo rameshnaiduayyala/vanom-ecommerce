@@ -97,7 +97,7 @@ export function AdminPayments() {
   );
 }
 
-export function AdmUSDeports() {
+export function AdminReports() {
   const { data: reports } = useQuery({
     queryKey: ["admin-reports"],
     queryFn: () => Api.admin.getReports(),

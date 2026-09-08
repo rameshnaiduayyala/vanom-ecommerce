@@ -19,9 +19,9 @@ export function PublicFooter() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#2d6852] text-white border-t border-[#3b8569] mt-auto select-none overflow-hidden">
+    <footer className="bg-[#246B52] text-white border-t border-[rgb(60,170,130)] mt-auto select-none overflow-hidden">
       {/* ── 1. Top Section: Dedicated "About Vanom" Brand Feature ── */}
-      <div className="border-b border-[#3b8569]/80 py-10 px-4 sm:px-8 lg:px-12">
+      <div className="border-b border-white/15 py-10 px-4 sm:px-8 lg:px-12">
         <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
           {/* Logo & Headline */}
           <div className="flex flex-col sm:flex-row items-center md:items-start gap-5 text-center sm:text-left">
@@ -268,7 +268,7 @@ export function PublicFooter() {
 
 
       {/* ── 4. Bottom Sub-Bar: Copyright, Legal Links & Made in India ── */}
-      <div className="border-t border-[#3b8569] bg-[#2d6852] py-4 px-4 sm:px-8 lg:px-12 text-[11px] text-white/80">
+      <div className="border-t border-white/15 bg-[#1B5641] py-4 px-4 sm:px-8 lg:px-12 text-[11px] text-white/80">
         <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Copyright */}
           <div>

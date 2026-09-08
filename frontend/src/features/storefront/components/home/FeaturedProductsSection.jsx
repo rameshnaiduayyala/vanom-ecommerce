@@ -4,14 +4,6 @@ import { ArrowRight } from "lucide-react";
 import { ProductCardCompact } from "./ProductCardCompact.jsx";
 import { ROUTES } from "../../../../constants/routes.js";
 
-const FILTER_TABS = [
-  { key: "ALL", label: "All" },
-  { key: "BEST_SELLERS", label: "Best Sellers" },
-  { key: "NEW", label: "New Arrivals" },
-  { key: "TOP_RATED", label: "Top Rated" },
-  { key: "OFFERS", label: "Offers" },
-];
-
 const REFERENCE_PRODUCTS = [
   {
     id: "prod-1",
@@ -127,22 +119,6 @@ export function FeaturedProductsSection({
           </div>
 
           <div className="flex items-center gap-4 w-full md:w-auto overflow-hidden">
-            {/* Filter Tabs - Horizontal scrollable on small screens */}
-            <div className="flex items-center gap-1.5 bg-gray-100/90 p-1 rounded-xl overflow-x-auto scrollbar-none w-full md:w-auto min-w-0 touch-pan-x">
-              {FILTER_TABS.map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveFilter(tab.key)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                    activeFilter === tab.key
-                      ? "bg-[#358B5B] text-white shadow-xs"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-white/60"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
 
             <Link
               to={ROUTES.PRODUCTS}

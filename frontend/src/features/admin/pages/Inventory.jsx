@@ -1,11 +1,11 @@
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { formatPrice, formatDate } from "../../../utils/formatters.js";
 import { ORDER_STATUSES } from "../../../constants/countries.js";
-import { Boxes, PackageCheck, AlertTriangle } from "lucide-react";
 import { Badge } from "../../../components/ui/Badge.jsx";
-import { Button } from "../../../components/ui/Button.jsx";
+import { toast } from "../../../components/ui/Toast.jsx";
+import { CheckCircle2, RefreshCw } from "lucide-react";
 
 export function Inventory() {
   const { data: warehouses = [], isLoading } = useQuery({
@@ -35,13 +35,14 @@ export function Inventory() {
 
   return (
     <div className="space-y-6">
-      <div className="pb-6 border-b border-border">
-        <h1 className="text-2xl font-bold text-text-primary">Multi-Warehouse Inventory Tracking</h1>
+      <div className="pb-6 border-b border-slate-200">
+        <h1 className="text-2xl font-bold text-slate-900">Multi-Warehouse Inventory Tracking</h1>
+        <p className="text-xs text-slate-500 mt-0.5">Real-time stock levels across regional fulfillment centers.</p>
       </div>
 
-      <div className="rounded-xl bg-white border border-border overflow-hidden text-xs">
+      <div className="rounded-2xl bg-white border border-slate-200/80 overflow-hidden text-xs shadow-xs">
         <table className="w-full text-left">
-          <thead className="bg-surface-muted text-text-secondary text-[11px] uppercase font-semibold border-b border-border">
+          <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase font-bold border-b border-slate-200">
             <tr>
               <th className="p-4">Warehouse Facility</th>
               <th className="p-4">Country Jurisdiction</th>
@@ -51,14 +52,14 @@ export function Inventory() {
               <th className="p-4 text-right">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border">
+          <tbody className="divide-y divide-slate-100">
             {items.map((wh, idx) => (
-              <tr key={idx} className="hover:bg-surface-muted/50 transition-colors">
-                <td className="p-4 font-bold text-text-primary">{wh.name}</td>
-                <td className="p-4 text-text-secondary">{wh.country}</td>
+              <tr key={idx} className="hover:bg-slate-50/60 transition-colors">
+                <td className="p-4 font-bold text-slate-900">{wh.name}</td>
+                <td className="p-4 text-slate-600">{wh.country}</td>
                 <td className="p-4 font-mono font-semibold">{wh.stock}</td>
                 <td className="p-4 font-mono text-amber-600">{wh.reserved}</td>
-                <td className="p-4 font-mono font-black text-brand-700">{wh.available}</td>
+                <td className="p-4 font-mono font-black text-[#358B5B]">{wh.available}</td>
                 <td className="p-4 text-right">
                   <Badge variant="green" size="sm">Optimal Stock</Badge>
                 </td>
@@ -72,58 +73,99 @@ export function Inventory() {
 }
 
 export function Orders() {
-  const { data: orders = [] } = useQuery({
+  const queryClient = useQueryClient();
+  const { data: rawOrders = [], isLoading } = useQuery({
     queryKey: ["admin-orders"],
     queryFn: () => Api.admin.getOrders(),
   });
 
+  const orders = Array.isArray(rawOrders) ? rawOrders : Array.isArray(rawOrders?.items) ? rawOrders.items : [];
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }) => Api.admin.updateOrderStatus(id, status),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries(["admin-orders"]);
+      queryClient.invalidateQueries(["admin-dashboard-metrics"]);
+      toast.success("Order Updated", `Order status transitioned to ${variables.status}.`);
+    },
+    onError: (err) => toast.error("Update Failed", err.message),
+  });
+
+  const handleStatusChange = (orderId, newStatus) => {
+    updateStatusMutation.mutate({ id: orderId, status: newStatus });
+  };
+
   return (
     <div className="space-y-6">
-      <div className="pb-6 border-b border-border">
-        <h1 className="text-2xl font-bold text-text-primary">Master Orders & Fulfillment</h1>
+      <div className="pb-6 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Master Orders & Fulfillment</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Live store orders from database with real-time status management.</p>
+        </div>
       </div>
 
-      <div className="rounded-xl bg-white border border-border overflow-hidden text-xs">
+      <div className="rounded-2xl bg-white border border-slate-200/80 overflow-hidden text-xs shadow-xs">
         <table className="w-full text-left">
-          <thead className="bg-surface-muted text-text-secondary text-[11px] uppercase font-semibold border-b border-border">
+          <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase font-bold border-b border-slate-200">
             <tr>
               <th className="p-4">Order #</th>
               <th className="p-4">Type</th>
               <th className="p-4">Customer / Company</th>
               <th className="p-4">Date</th>
               <th className="p-4">Total Amount</th>
-              <th className="p-4">Payment Terms</th>
-              <th className="p-4 text-right">Status</th>
+              <th className="p-4">Status</th>
+              <th className="p-4 text-right">Update Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border">
-            {orders.map((o) => {
-              const statusConfig = ORDER_STATUSES[o.status] || { label: o.status, color: "gray" };
+          <tbody className="divide-y divide-slate-100">
+            {orders.length > 0 ? (
+              orders.map((o) => {
+                const statusConfig = ORDER_STATUSES[o.status] || { label: o.status || "PROCESSING", color: "yellow" };
+                const customerName = `${o.user?.firstName || ""} ${o.user?.lastName || ""}`.trim() || o.user?.email || o.shippingAddress?.name || "Customer";
 
-              return (
-                <tr key={o.id} className="hover:bg-surface-muted/50 transition-colors">
-                  <td className="p-4 font-mono font-bold text-text-primary">{o.orderNumber}</td>
-                  <td className="p-4">
-                    <Badge variant={o.type === "B2B" ? "gold" : "default"} size="sm">
-                      {o.type}
-                    </Badge>
-                  </td>
-                  <td className="p-4 font-medium text-text-primary">
-                    {o.companyName || o.shippingAddress?.name || "Direct Customer"}
-                  </td>
-                  <td className="p-4 text-text-muted">{formatDate(o.createdAt)}</td>
-                  <td className="p-4 font-bold text-brand-700">
-                    {formatPrice(o.totalAmount, o.currency, o.symbol)}
-                  </td>
-                  <td className="p-4 font-mono text-text-secondary">{o.paymentTerms || "PREPAID"}</td>
-                  <td className="p-4 text-right">
-                    <Badge variant={statusConfig.color} size="sm">
-                      {statusConfig.label}
-                    </Badge>
-                  </td>
-                </tr>
-              );
-            })}
+                return (
+                  <tr key={o.id} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="p-4 font-mono font-bold text-slate-900">{o.orderNumber || o.id?.slice(0, 10)}</td>
+                    <td className="p-4">
+                      <Badge variant={o.customerGroupCode === "B2B" ? "gold" : "default"} size="sm">
+                        {o.customerGroupCode || "B2C"}
+                      </Badge>
+                    </td>
+                    <td className="p-4 font-semibold text-slate-800">
+                      {customerName}
+                    </td>
+                    <td className="p-4 text-slate-500">{formatDate(o.createdAt)}</td>
+                    <td className="p-4 font-bold text-slate-900">
+                      {formatPrice(o.totalAmount || 0, o.currency?.code || "USD")}
+                    </td>
+                    <td className="p-4">
+                      <Badge variant={statusConfig.color} size="sm">
+                        {o.status || statusConfig.label}
+                      </Badge>
+                    </td>
+                    <td className="p-4 text-right">
+                      <select
+                        value={o.status || "PROCESSING"}
+                        onChange={(e) => handleStatusChange(o.id, e.target.value)}
+                        className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 bg-slate-50 hover:bg-white text-slate-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-[#358B5B]"
+                      >
+                        <option value="PENDING">PENDING</option>
+                        <option value="PROCESSING">PROCESSING</option>
+                        <option value="SHIPPED">SHIPPED</option>
+                        <option value="DELIVERED">DELIVERED</option>
+                        <option value="CANCELLED">CANCELLED</option>
+                      </select>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={7} className="text-center py-8 text-slate-400 text-xs">
+                  No orders found in database.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
