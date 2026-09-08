@@ -8,13 +8,13 @@ export const SUPPORTED_COUNTRIES = [
     flagUrl: "https://flagcdn.com/w40/us.png",
   },
   {
-    code: "GB",
-    name: "United Kingdom",
-    currency: "GBP",
-    symbol: "£",
-    flag: "🇬🇧",
-    flagUrl: "https://flagcdn.com/w40/gb.png",
-  }
+    code: "CA",
+    name: "Canada",
+    currency: "CAD",
+    symbol: "CA$",
+    flag: "🇨🇦",
+    flagUrl: "https://flagcdn.com/w40/ca.png",
+  },
 ];
 
 export const ORDER_STATUSES = {

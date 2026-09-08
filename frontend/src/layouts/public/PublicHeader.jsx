@@ -4,6 +4,7 @@ import { useCountryStore } from "../../stores/country.store.js";
 import { useCartStore } from "../../stores/cart.store.js";
 import { useAuthStore } from "../../stores/auth.store.js";
 import { ROUTES } from "../../constants/routes.js";
+import { SUPPORTED_COUNTRIES } from "../../constants/countries.js";
 import {
   Search,
   ShoppingCart,
@@ -39,14 +40,17 @@ const NAV_CATEGORIES = [
   { id: "pet-care", label: "Pet Care", icon: Dog, path: `${ROUTES.PRODUCTS}?category=pet-care` },
   { id: "automotive", label: "Automotive", icon: Car, path: `${ROUTES.PRODUCTS}?category=automotive` },
   { id: "garden-outdoors", label: "Garden & Outdoors", icon: Trees, path: `${ROUTES.PRODUCTS}?category=garden-outdoors` },
+  { id: "all-categories", label: "All Categories", icon: Package, path: ROUTES.PRODUCTS },
 ];
 
 const SEARCH_CATEGORIES = [
-  "Shop by Concern",
-  "Electronics",
-  "Home & Living",
-  "Kitchen & Dining",
-  "Beauty & Personal Care",
+  "All Categories",
+  "Groceries & Staples",
+  "Beverages & Mixes",
+  "Snacks & Packaged Foods",
+  "Personal Care & Hygiene",
+  "Household & Cleaning",
+  "Beauty & Cosmetics",
   "Health & Wellness",
   "Toys & Baby",
   "Sports & Fitness",
@@ -57,13 +61,14 @@ const SEARCH_CATEGORIES = [
 export function PublicHeader() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { country } = useCountryStore();
+  const { country, setCountry } = useCountryStore();
   const { cart, openCart } = useCartStore();
   const { user, isAuthenticated, logout } = useAuthStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAllCategoriesMenu, setShowAllCategoriesMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -71,6 +76,7 @@ export function PublicHeader() {
   const mobileSearchInputRef = useRef(null);
 
   const categoryDropdownRef = useRef(null);
+  const countryDropdownRef = useRef(null);
   const allCategoriesRef = useRef(null);
   const userRef = useRef(null);
 
@@ -97,6 +103,9 @@ export function PublicHeader() {
       if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(e.target)) {
         setShowCategoryDropdown(false);
       }
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target)) {
+        setShowCountryDropdown(false);
+      }
       if (allCategoriesRef.current && !allCategoriesRef.current.contains(e.target)) {
         setShowAllCategoriesMenu(false);
       }
@@ -111,6 +120,7 @@ export function PublicHeader() {
   // Close on route change
   useEffect(() => {
     setShowCategoryDropdown(false);
+    setShowCountryDropdown(false);
     setShowAllCategoriesMenu(false);
     setShowUserMenu(false);
     setMobileMenuOpen(false);
@@ -240,6 +250,75 @@ export function PublicHeader() {
                 <Search className="w-[19px] h-[19px] text-gray-700" />
               )}
             </button>
+
+            {/* Country / Currency Selector (Desktop) */}
+            <div className="relative hidden sm:block" ref={countryDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setShowCountryDropdown((prev) => !prev)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#ebdcb0] bg-white/70 hover:bg-white hover:border-[#358B5B] text-gray-800 text-xs font-semibold transition-all shadow-2xs cursor-pointer select-none"
+                title="Change Country & Currency"
+              >
+                <img
+                  src={country.flagUrl || `https://flagcdn.com/w40/${country.code.toLowerCase()}.png`}
+                  alt={country.name}
+                  className="w-4 h-4 rounded-full object-cover border border-gray-200 shrink-0"
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                    if (e.target.nextSibling) e.target.nextSibling.style.display = "inline";
+                  }}
+                />
+                <span className="hidden" style={{ display: "none" }}>{country.flag}</span>
+                <span className="font-bold text-[11px] text-gray-900">{country.code}</span>
+                <span className="text-[10px] text-gray-500 font-normal">({country.symbol})</span>
+                <ChevronDown className={`w-3 h-3 text-gray-500 transition-transform duration-200 ${showCountryDropdown ? "rotate-180" : ""}`} />
+              </button>
+
+              {showCountryDropdown && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-1.5 z-50 overflow-hidden animate-in fade-in-50 duration-100">
+                  <div className="px-3 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                    Ship To / Currency
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    {SUPPORTED_COUNTRIES.map((c) => {
+                      const isSelected = c.code === country.code;
+                      return (
+                        <button
+                          key={c.code}
+                          type="button"
+                          onClick={() => {
+                            setCountry(c);
+                            setShowCountryDropdown(false);
+                          }}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-[#EAF7F0] transition-colors cursor-pointer ${
+                            isSelected ? "bg-[#EAF7F0] text-[#003D2B] font-bold" : "text-gray-700"
+                          }`}
+                        >
+                          <img
+                            src={c.flagUrl || `https://flagcdn.com/w40/${c.code.toLowerCase()}.png`}
+                            alt={c.name}
+                            className="w-5 h-5 rounded-full object-cover border border-gray-200 shrink-0"
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                              if (e.target.nextSibling) e.target.nextSibling.style.display = "inline";
+                            }}
+                          />
+                          <span className="hidden" style={{ display: "none" }}>{c.flag}</span>
+                          <span className="flex-1 text-left truncate">{c.name}</span>
+                          <span
+                            className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                              isSelected ? "bg-[#006B3C] text-white font-bold" : "bg-gray-100 text-gray-500"
+                            }`}
+                          >
+                            {c.symbol} {c.currency}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Wishlist */}
             <Link
@@ -415,6 +494,27 @@ export function PublicHeader() {
                 >
                   For Business / Wholesale
                 </Link>
+              </div>
+
+              {/* Country Selector in Mobile Drawer */}
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-500 block mb-1.5">
+                  Ship To & Currency
+                </label>
+                <select
+                  value={country.code}
+                  onChange={(e) => {
+                    const sel = SUPPORTED_COUNTRIES.find((c) => c.code === e.target.value);
+                    if (sel) setCountry(sel);
+                  }}
+                  className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-800 font-semibold focus:outline-none focus:ring-1 focus:ring-[#358B5B]"
+                >
+                  {SUPPORTED_COUNTRIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.name} ({c.symbol} {c.currency})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>

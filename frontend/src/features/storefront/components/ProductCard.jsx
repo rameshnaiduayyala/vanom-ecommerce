@@ -4,7 +4,7 @@ import { useCountryStore } from "../../../stores/country.store.js";
 import { useCartStore } from "../../../stores/cart.store.js";
 import { useUIStore } from "../../../stores/ui.store.js";
 import { formatPrice } from "../../../utils/formatters.js";
-import { Heart, ShoppingCart, Check, Star } from "lucide-react";
+import { Heart, ShoppingCart, Check, Star, Plus, Minus, Trash2 } from "lucide-react";
 
 export function ProductCard({ product, badge = null }) {
   const { country } = useCountryStore();
@@ -13,7 +13,7 @@ export function ProductCard({ product, badge = null }) {
   const [wishlisted, setWishlisted] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
 
-  const pricing = product.pricing?.[country.code] || product.pricing?.IN || {};
+  const pricing = product.pricing?.[country.code] || product.pricing?.US || product.pricing?.IN || {};
   const backendPrice =
     product.resolvedPrice?.unitPrice ||
     product.prices?.[0]?.amount ||
@@ -35,13 +35,16 @@ export function ProductCard({ product, badge = null }) {
 
   const effectiveBadge = product.badge || badge;
 
+  // Cart item state for this product
+  const cartItem = cart.items.find((i) => i.id === product.id);
+  const currentQuantity = cartItem?.quantity || 0;
+
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setAddingToCart(true);
-    const existing = cart.items.find((i) => i.id === product.id);
     let newItems = [];
-    if (existing) {
+    if (cartItem) {
       newItems = cart.items.map((i) =>
         i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
       );
@@ -54,7 +57,24 @@ export function ProductCard({ product, badge = null }) {
     const subtotal = newItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
     setCart({ items: newItems, itemCount: newItems.length, subtotal });
     addToast({ title: "Added to Cart", message: `${product.name} added.`, type: "success" });
-    setTimeout(() => setAddingToCart(false), 1000);
+    setTimeout(() => setAddingToCart(false), 800);
+  };
+
+  const handleUpdateQuantity = (e, delta) => {
+    e.preventDefault();
+    e.stopPropagation();
+    let newItems = [];
+    const newQty = currentQuantity + delta;
+    if (newQty <= 0) {
+      newItems = cart.items.filter((i) => i.id !== product.id);
+      addToast({ title: "Removed from Cart", message: product.name, type: "info" });
+    } else {
+      newItems = cart.items.map((i) =>
+        i.id === product.id ? { ...i, quantity: newQty } : i
+      );
+    }
+    const subtotal = newItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    setCart({ items: newItems, itemCount: newItems.length, subtotal });
   };
 
   const handleWishlist = (e) => {
@@ -69,9 +89,9 @@ export function ProductCard({ product, badge = null }) {
   };
 
   return (
-    <div className="group relative bg-white rounded-2xl p-4 border border-gray-200/90 hover:border-[#006B3C]/50 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+    <div className="group relative bg-white rounded-2xl p-4 border border-gray-200/90 hover:border-[rgb(60,170,130)]/60 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
       
-      {/* ─── Product Image Container matching reference ─── */}
+      {/* ─── Product Image Container ─── */}
       <div className="relative h-48 sm:h-52 w-full rounded-xl overflow-hidden bg-[#fafafa] mb-3 shrink-0 flex items-center justify-center p-3 border border-gray-100">
         <Link
           to={`/products/${product.slug || product.id}`}
@@ -86,15 +106,15 @@ export function ProductCard({ product, badge = null }) {
           />
         </Link>
 
-        {/* Top-Left Pill Badges matching reference */}
+        {/* Top-Left Pill Badges */}
         {effectiveBadge && (
           <div className="absolute top-2.5 left-2.5 z-10">
             {effectiveBadge.toLowerCase().includes("best") ? (
-              <span className="bg-[#F9BC15] text-[#003D2B] text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-2xs">
+              <span className="bg-[#F9BC15] text-[#204B38] text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-2xs">
                 Bestseller
               </span>
             ) : effectiveBadge.toLowerCase().includes("new") ? (
-              <span className="bg-[#059669] text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-2xs">
+              <span className="bg-[rgb(60,170,130)] text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-2xs">
                 New
               </span>
             ) : effectiveBadge.toLowerCase().includes("trend") ? (
@@ -106,14 +126,14 @@ export function ProductCard({ product, badge = null }) {
                 Sale
               </span>
             ) : (
-              <span className="bg-[#003D2B] text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-2xs">
+              <span className="bg-[rgb(60,170,130)] text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-2xs">
                 {effectiveBadge}
               </span>
             )}
           </div>
         )}
 
-        {/* Floating Wishlist Heart Button matching reference */}
+        {/* Floating Wishlist Heart Button */}
         <button
           onClick={handleWishlist}
           aria-label="Add to Wishlist"
@@ -131,15 +151,15 @@ export function ProductCard({ product, badge = null }) {
       <div className="flex-1 flex flex-col justify-between">
         <div>
           {/* Product Name */}
-          <Link to={`/products/${product.slug || product.id}`} className="block group-hover:text-[#006B3C] transition-colors">
+          <Link to={`/products/${product.slug || product.id}`} className="block group-hover:text-[rgb(60,170,130)] transition-colors">
             <h3 className="text-sm font-bold text-gray-900 line-clamp-1 leading-snug">
               {product.name}
             </h3>
           </Link>
 
-          {/* Subtitle / Key Specs line matching reference */}
+          {/* Subtitle / Key Specs line */}
           <p className="text-xs text-gray-500 line-clamp-1 mt-0.5 mb-2 font-normal">
-            {product.specs || product.subtitle || product.description || "Intel Core i5 13th Gen | 16GB | 512GB SSD | 15.6\" FHD"}
+            {product.specs || product.subtitle || product.description || "Premium Certified Quality"}
           </p>
 
           {/* Price, MRP and Discount pill */}
@@ -153,13 +173,13 @@ export function ProductCard({ product, badge = null }) {
               </span>
             )}
             {discount > 0 && (
-              <span className="text-[10px] font-bold text-[#059669] bg-[#EAF7F0] px-1.5 py-0.5 rounded">
+              <span className="text-[10px] font-bold text-[rgb(60,170,130)] bg-[rgb(60,170,130)]/10 px-1.5 py-0.5 rounded">
                 {discount}% OFF
               </span>
             )}
           </div>
 
-          {/* Rating Stars & Count matching reference */}
+          {/* Rating Stars & Count */}
           <div className="flex items-center gap-1.5 mb-3.5">
             <div className="flex items-center">
               {[1, 2, 3, 4, 5].map((s) => (
@@ -177,28 +197,51 @@ export function ProductCard({ product, badge = null }) {
           </div>
         </div>
 
-        {/* Full-width Add to Cart Button matching reference image */}
+        {/* ─── Add to Cart / Quantity Controller (Color: rgb(60,170,130)) ─── */}
         <div>
-          <button
-            onClick={handleAddToCart}
-            className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-2 shadow-xs ${
-              addingToCart
-                ? "bg-[#059669] text-white"
-                : "bg-[#003D2B] hover:bg-[#002e20] text-white"
-            }`}
-          >
-            {addingToCart ? (
-              <>
-                <Check className="w-4 h-4 text-white" />
-                <span>Added to Cart</span>
-              </>
-            ) : (
-              <>
-                <ShoppingCart className="w-4 h-4" />
-                <span>Add to Cart</span>
-              </>
-            )}
-          </button>
+          {currentQuantity > 0 ? (
+            <div className="w-full flex items-center justify-between bg-[rgb(60,170,130)] text-white rounded-xl px-1.5 py-1 shadow-xs animate-in fade-in duration-200">
+              <button
+                type="button"
+                onClick={(e) => handleUpdateQuantity(e, -1)}
+                className="w-8 h-8 rounded-lg bg-black/15 hover:bg-black/25 active:scale-90 flex items-center justify-center text-white transition-all cursor-pointer"
+                title="Decrease quantity"
+              >
+                {currentQuantity === 1 ? <Trash2 className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+              </button>
+
+              <div className="flex items-center gap-1 px-2 font-black text-xs select-none">
+                <span className="text-[10px] uppercase font-bold opacity-90">In Cart:</span>
+                <span className="text-sm font-extrabold">{currentQuantity}</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={(e) => handleUpdateQuantity(e, 1)}
+                className="w-8 h-8 rounded-lg bg-black/15 hover:bg-black/25 active:scale-90 flex items-center justify-center text-white transition-all cursor-pointer"
+                title="Increase quantity"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleAddToCart}
+              className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white transition-all duration-200 active:scale-95 cursor-pointer flex items-center justify-center gap-2 shadow-xs bg-[rgb(60,170,130)] hover:brightness-95 hover:shadow-md"
+            >
+              {addingToCart ? (
+                <>
+                  <Check className="w-4 h-4 text-white" />
+                  <span>Added</span>
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="w-4 h-4" />
+                  <span>Add to Cart</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>
