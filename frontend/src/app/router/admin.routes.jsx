@@ -10,20 +10,20 @@ import { Inventory, Orders } from "../../features/admin/pages/Inventory.jsx";
 import {
   AdminQuotes,
   AdminPayments,
-  AdmUSDeports,
+  AdminReports,
   AdminAuditLogs,
   AdminUsers,
   AdminCompanies,
 } from "../../features/admin/pages/Quotes.jsx";
-import { AdmUSDoute } from "../guards/ProtectedRoute.jsx";
+import { AdminRoute } from "../guards/ProtectedRoute.jsx";
 import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
 
-export const admUSDoutes = {
+export const adminRoutes = {
   path: "/admin",
   element: (
-    <AdmUSDoute>
+    <AdminRoute>
       <AdminLayout />
-    </AdmUSDoute>
+    </AdminRoute>
   ),
   errorElement: <RouteErrorBoundary />,
   children: [
@@ -40,7 +40,7 @@ export const admUSDoutes = {
     { path: "orders", element: <Orders /> },
     { path: "quotes", element: <AdminQuotes /> },
     { path: "payments", element: <AdminPayments /> },
-    { path: "reports", element: <AdmUSDeports /> },
+    { path: "reports", element: <AdminReports /> },
     { path: "audit-logs", element: <AdminAuditLogs /> },
   ],
 };

@@ -163,19 +163,78 @@ export class CatalogService {
 
   async createProduct(data, tx = null) {
     const db = tx || prisma;
-    return db.product.create({
-      data,
+    const {
+      name,
+      slug,
+      sku,
+      description,
+      status = "ACTIVE",
+      isFeatured = false,
+      isBestSeller = false,
+      brandId,
+      categoryId,
+      categories,
+      images,
+      pricing,
+      stock = 100,
+      ...rest
+    } = data;
+
+    const generatedSlug = slug || (name ? name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + `-${Date.now().toString().slice(-4)}` : `prod-${Date.now()}`);
+    const generatedSku = sku || `SKU-${Date.now().toString().slice(-6)}`;
+
+    // Resolve category relation
+    let categoryConnect = undefined;
+    if (categoryId) {
+      categoryConnect = { create: { categoryId } };
+    } else if (categories && Array.isArray(categories) && categories.length > 0) {
+      const firstCat = categories[0];
+      const catId = typeof firstCat === "string" ? firstCat : firstCat.categoryId || firstCat.id;
+      if (catId) categoryConnect = { create: { categoryId: catId } };
+    }
+
+    const created = await db.product.create({
+      data: {
+        name: name || "New Product",
+        slug: generatedSlug,
+        sku: generatedSku,
+        description: description || "",
+        status: status || "ACTIVE",
+        isFeatured: Boolean(isFeatured),
+        isBestSeller: Boolean(isBestSeller),
+        brandId: brandId || undefined,
+        categories: categoryConnect,
+        variants: {
+          create: {
+            name: `${name || "Product"} Standard`,
+            sku: `${generatedSku}-VAR`,
+            status: "ACTIVE",
+            weight: 1.0,
+          },
+        },
+      },
       include: {
         variants: true,
+        categories: { include: { category: true } },
       },
     });
+
+    return created;
   }
 
   async updateProduct(id, data, tx = null) {
     const db = tx || prisma;
+    const { categories, categoryId, pricing, ...rest } = data;
+
     return db.product.update({
       where: { id },
-      data,
+      data: {
+        ...rest,
+      },
+      include: {
+        variants: true,
+        categories: { include: { category: true } },
+      },
     });
   }
 

@@ -21,6 +21,21 @@ export async function buildApp(opts = {}) {
     requestIdHeader: "x-request-id",
   });
 
+  // Custom JSON parser allowing empty string bodies (e.g. DELETE/GET with Content-Type header)
+  app.addContentTypeParser("application/json", { parseAs: "string" }, (req, body, done) => {
+    if (!body || (typeof body === "string" && body.trim() === "")) {
+      done(null, {});
+      return;
+    }
+    try {
+      const json = JSON.parse(body);
+      done(null, json);
+    } catch (err) {
+      err.statusCode = 400;
+      done(err, undefined);
+    }
+  });
+
   // Multipart file uploads (images, docs)
   await app.register(multipart, {
     limits: {

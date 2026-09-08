@@ -25,6 +25,13 @@ export class AdminController {
     return reply.send({ success: true, data });
   };
 
+  updateOrderStatus = async (req, reply) => {
+    const { id } = req.params;
+    const { status } = req.body || {};
+    const data = await this.service.updateOrderStatus(id, status);
+    return reply.send({ success: true, data });
+  };
+
   listCompanies = async (req, reply) => {
     const data = await this.service.listCompanies();
     return reply.send({ success: true, data });
@@ -52,6 +59,11 @@ export class AdminController {
 
   getReports = async (req, reply) => {
     const data = await this.service.getReports();
+    return reply.send({ success: true, data });
+  };
+
+  listAuditLogs = async (req, reply) => {
+    const data = await this.service.listAuditLogs();
     return reply.send({ success: true, data });
   };
 }
