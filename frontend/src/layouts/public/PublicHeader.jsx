@@ -128,7 +128,7 @@ export function PublicHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-[#FFF7DD] border-b border-[#ebdcb0] shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+      <header className="sticky top-0 z-40 bg-[#F7F2DF] border-b border-[#ebdcb0] shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
         {/* ─── ROW 1: Main Bar (Logo, Search with Category Selector, Wishlist, Account, Cart) ─── */}
         <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-[76px] flex items-center justify-between gap-1 sm:gap-8 relative">
 
@@ -289,9 +289,8 @@ export function PublicHeader() {
                             setCountry(c);
                             setShowCountryDropdown(false);
                           }}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-[#EAF7F0] transition-colors cursor-pointer ${
-                            isSelected ? "bg-[#EAF7F0] text-[#003D2B] font-bold" : "text-gray-700"
-                          }`}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-[#EAF7F0] transition-colors cursor-pointer ${isSelected ? "bg-[#EAF7F0] text-[#003D2B] font-bold" : "text-gray-700"
+                            }`}
                         >
                           <img
                             src={c.flagUrl || `https://flagcdn.com/w40/${c.code.toLowerCase()}.png`}
@@ -305,9 +304,8 @@ export function PublicHeader() {
                           <span className="hidden" style={{ display: "none" }}>{c.flag}</span>
                           <span className="flex-1 text-left truncate">{c.name}</span>
                           <span
-                            className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                              isSelected ? "bg-[#006B3C] text-white font-bold" : "bg-gray-100 text-gray-500"
-                            }`}
+                            className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${isSelected ? "bg-[#006B3C] text-white font-bold" : "bg-gray-100 text-gray-500"
+                              }`}
                           >
                             {c.symbol} {c.currency}
                           </span>

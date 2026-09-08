@@ -116,7 +116,7 @@ export function HomePage() {
       </section>
 
       {/* ── 6. Shop by Category Visual Grid (Pure White BG) ── */}
-      <section className="bg-[#EBF5ED] border-b border-gray-100">
+      <section className="bg-[#F1F5D6] border-b border-gray-100">
         <ShopByCategoryGrid className="bg-transparent" categories={categoryList} />
       </section>
 
@@ -141,7 +141,7 @@ export function HomePage() {
       </section>
 
       {/* ── 10. Customer Testimonials & Reviews (Soft Honey Gold Light Tint BG) ── */}
-      <section className="bg-[#FFFDF5] border-b border-[#F5EACB]">
+      <section className="bg-[#EEF8F6] border-b border-[#F5EACB]">
         <TestimonialsSection className="bg-transparent border-t-0" />
       </section>
 
