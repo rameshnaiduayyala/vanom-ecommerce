@@ -110,7 +110,7 @@ export function FeaturedProductsSection({
   }, [activeFilter, productList, featuredList, bestSellerList]);
 
   return (
-    <section className={`py-8 sm:py-10 bg-white/60 w-full max-w-full overflow-hidden ${className}`}>
+    <section className={`py-8 sm:py-10 w-full max-w-full overflow-hidden ${className}`}>
       <div className="max-w-[1440px] mx-auto px-4 sm:px-8 w-full min-w-0">
         {/* Header & Filter Tabs */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 mb-6">

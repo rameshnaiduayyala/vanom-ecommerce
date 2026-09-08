@@ -4,7 +4,6 @@ const INITIAL_CATEGORIES = [
   { id: "cat-2", name: "Home & Living", slug: "home-and-living", count: 180, description: "Furniture, decor, lighting and indoor plants." },
   { id: "cat-3", name: "Kitchen & Dining", slug: "kitchen-and-dining", count: 120, description: "Air fryers, mixer grinders, cookware and appliances." },
   { id: "cat-4", name: "Beauty & Personal Care", slug: "beauty-and-personal-care", count: 96, description: "Skincare, grooming, fragrance and cosmetics." },
-  { id: "cat-5", name: "Health & Wellness", slug: "health-and-wellness", count: 85, description: "Fitness trackers, supplements, organic essentials." },
   { id: "cat-6", name: "Toys & Baby", slug: "toys-and-baby", count: 64, description: "Educational toys, baby care and nursery essentials." },
   { id: "cat-7", name: "Sports & Fitness", slug: "sports-and-fitness", count: 72, description: "Gym equipment, smart wearables and outdoor gear." },
   { id: "cat-8", name: "Stationery & Office", slug: "stationery-and-office", count: 54, description: "Desk setups, notebooks, writing and office supply." },
@@ -572,8 +571,8 @@ const INITIAL_PRODUCTS = [
 
 // In-memory live store with LocalStorage persistence for realistic Admin CRUD
 const STORAGE_KEYS = {
-  PRODUCTS: "vanom_mock_products_v5",
-  CATEGORIES: "vanom_mock_categories_v5",
+  PRODUCTS: "vanom_mock_products_v6",
+  CATEGORIES: "vanom_mock_categories_v6",
 };
 
 export { INITIAL_PRODUCTS, INITIAL_CATEGORIES };

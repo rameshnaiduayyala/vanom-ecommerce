@@ -29,11 +29,11 @@ import {
 } from "lucide-react";
 
 const NAV_CATEGORIES = [
+  { id: "groceries", label: "Groceries", icon: Package, path: `${ROUTES.PRODUCTS}?category=groceries` },
   { id: "electronics", label: "Electronics", icon: Laptop, path: `${ROUTES.PRODUCTS}?category=electronics` },
   { id: "home-living", label: "Home & Living", icon: Home, path: `${ROUTES.PRODUCTS}?category=home-living` },
   { id: "kitchen-dining", label: "Kitchen & Dining", icon: UtensilsCrossed, path: `${ROUTES.PRODUCTS}?category=kitchen-dining` },
   { id: "beauty-care", label: "Beauty & Personal Care", icon: Sparkles, path: `${ROUTES.PRODUCTS}?category=beauty-care` },
-  { id: "health-wellness", label: "Health & Wellness", icon: HeartPulse, path: `${ROUTES.PRODUCTS}?category=health-wellness` },
   { id: "toys-baby", label: "Toys & Baby", icon: Gamepad2, path: `${ROUTES.PRODUCTS}?category=toys-baby` },
   { id: "sports-fitness", label: "Sports & Fitness", icon: Dumbbell, path: `${ROUTES.PRODUCTS}?category=sports-fitness` },
   { id: "stationery-office", label: "Stationery & Office", icon: Briefcase, path: `${ROUTES.PRODUCTS}?category=stationery-office` },
@@ -45,15 +45,14 @@ const NAV_CATEGORIES = [
 
 const SEARCH_CATEGORIES = [
   "All Categories",
-  "Groceries & Staples",
-  "Beverages & Mixes",
-  "Snacks & Packaged Foods",
-  "Personal Care & Hygiene",
-  "Household & Cleaning",
-  "Beauty & Cosmetics",
-  "Health & Wellness",
+  "Groceries",
+  "Electronics",
+  "Home & Living",
+  "Kitchen & Dining",
+  "Beauty & Personal Care",
   "Toys & Baby",
   "Sports & Fitness",
+  "Stationery & Office",
   "Pet Care",
   "Automotive",
 ];

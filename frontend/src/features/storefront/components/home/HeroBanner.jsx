@@ -1,34 +1,67 @@
 /**
- * HeroBanner.jsx — Full-width hero slider matching the exact reference design.
+ * HeroBanner.jsx — Full-width hero slider with automatic scroll & vertical right-side dots.
  * Visuals:
- * - Full photographic tabletop scene with electronics, home & kitchen appliances, laptop, plants, headphones, smartwatch
- * - Elegant typography: "Better Products / Brighter Everyday" with warm colors & serif accent
- * - Golden/Yellow rounded CTA button with Arrow
- * - Right side circular feature badges with dark green rounded icons ("Top Brands", "Great Prices", "Fast Delivery", "Easy Returns")
- * - Rounded slider navigation arrows and bottom dot indicators
+ * - Smooth auto-scrolling photographic tabletop scenes (Groceries, Organic Staples, Tech, etc.)
+ * - Elegant typography & gold rounded CTA button
+ * - Right-side circular feature badges & vertical dot indicators
  */
 import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
-  ChevronLeft,
-  ChevronRight,
   ArrowRight,
   Award,
   BadgePercent,
   Truck,
   RotateCcw,
   Sparkles,
+  Leaf,
+  ShoppingBasket,
+  ShieldCheck,
 } from "lucide-react";
 import { ROUTES } from "../../../../constants/routes.js";
 
 const DEFAULT_SLIDES = [
+  {
+    id: "slide-groceries-1",
+    titleLine1: "Fresh & Organic",
+    titleLine2: "Groceries",
+    titleLine3: "Farm To",
+    titleLine4: "Kitchen",
+    description: "Daily cold-pressed oils, aged Himalayan basmati rice, raw honey, and 100% certified organic pantry staples.",
+    ctaText: "Shop Groceries",
+    ctaLink: `${ROUTES.PRODUCTS}?category=groceries`,
+    image: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1600&q=85",
+    sideFeatures: [
+      { label: "100% Organic", icon: Leaf },
+      { label: "Farm Fresh", icon: Sparkles },
+      { label: "Same-Day Delivery", icon: Truck },
+      { label: "Lab Certified", icon: ShieldCheck },
+    ],
+  },
+  {
+    id: "slide-groceries-2",
+    titleLine1: "Pure Pantry",
+    titleLine2: "Superfoods",
+    titleLine3: "Health In",
+    titleLine4: "Every Bite",
+    description: "First-harvest ceremonial matcha, California almonds, raw seeds, spices and Ayurvedic wellness essentials.",
+    ctaText: "Explore Superfoods",
+    ctaLink: `${ROUTES.PRODUCTS}?category=groceries`,
+    image: "https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=1600&q=85",
+    sideFeatures: [
+      { label: "Raw & Unprocessed", icon: ShoppingBasket },
+      { label: "Best Value", icon: BadgePercent },
+      { label: "Zero Additives", icon: Award },
+      { label: "Express Shipping", icon: Truck },
+    ],
+  },
   {
     id: "slide-1",
     titleLine1: "Better",
     titleLine2: "Products",
     titleLine3: "Brighter",
     titleLine4: "Everyday",
-    description: "Everything you need for your home, life and beyond.",
+    description: "Everything you need for your home, kitchen, life and beyond.",
     ctaText: "Shop Now",
     ctaLink: ROUTES.PRODUCTS || "/products",
     image: "/hero-banner-main.jpg",
@@ -75,58 +108,49 @@ const DEFAULT_SLIDES = [
   },
 ];
 
-const SLIDE_DURATION = 6000;
+const AUTO_SCROLL_INTERVAL = 4500;
 
 export function HeroBanner({ banners = [] }) {
   const slides = DEFAULT_SLIDES;
-
   const [current, setCurrent] = useState(0);
-  const [paused, setPaused] = useState(false);
 
-  const prev = useCallback(
-    () => setCurrent((i) => (i - 1 + slides.length) % slides.length),
-    [slides.length]
-  );
-  const next = useCallback(
-    () => setCurrent((i) => (i + 1) % slides.length),
-    [slides.length]
-  );
+  const next = useCallback(() => {
+    setCurrent((i) => (i + 1) % slides.length);
+  }, [slides.length]);
 
   useEffect(() => {
-    if (paused) return;
-    const t = setInterval(next, SLIDE_DURATION);
-    return () => clearInterval(t);
-  }, [next, paused]);
+    const timer = setInterval(next, AUTO_SCROLL_INTERVAL);
+    return () => clearInterval(timer);
+  }, [next, current]);
 
   const slide = slides[current];
 
   return (
-    <div
-      className="relative w-full overflow-hidden bg-[#eef2eb]"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-    >
-      {/* Background Image Layer */}
+    <div className="relative w-full overflow-hidden bg-[#eef2eb]">
+      {/* Background Image Layer with Crossfade */}
       <div className="relative w-full min-h-[440px] sm:min-h-[480px] lg:min-h-[620px] flex items-center">
-        <img
-          key={slide.id}
-          src={slide.image}
-          alt="Hero background"
-          className="absolute inset-0 w-full h-full object-cover object-center sm:object-right transition-opacity duration-700"
-          onError={(e) => {
-            e.target.src =
-              "https://images.unsplash.com/photo-1556909172-8c2f041fca1e?auto=format&fit=crop&w=1600&q=85";
-          }}
-        />
+        {slides.map((s, idx) => (
+          <img
+            key={s.id}
+            src={s.image}
+            alt="Hero background"
+            className={`absolute inset-0 w-full h-full object-cover object-center sm:object-right transition-opacity duration-1000 ease-in-out ${
+              idx === current ? "opacity-100 z-0" : "opacity-0 pointer-events-none"
+            }`}
+            onError={(e) => {
+              e.target.src =
+                "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1600&q=85";
+            }}
+          />
+        ))}
 
-        {/* Soft gradient wash on the left to make text effortlessly legible while keeping photographic background visible */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#fdfbf7]/95 via-[#fdfbf7]/80 to-transparent sm:w-[65%] lg:w-[48%] z-0" />
+        {/* Soft gradient wash on the left to make text effortlessly legible */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#fdfbf7]/95 via-[#fdfbf7]/85 to-transparent sm:w-[65%] lg:w-[48%] z-1" />
 
         {/* Inner Content Grid */}
         <div className="max-w-[1440px] w-full mx-auto px-6 sm:px-10 lg:px-16 py-10 sm:py-14 relative z-10 flex items-center justify-between">
-
-          {/* ── LEFT: Typography & CTA matching reference ── */}
-          <div className="max-w-lg sm:max-w-xl">
+          {/* ── LEFT: Typography & CTA ── */}
+          <div className="max-w-lg sm:max-w-xl transition-all duration-500 key={current}">
             <h1 className="font-serif text-[2.4rem] sm:text-[3.2rem] lg:text-[3.8rem] leading-[1.08] tracking-tight text-[#1a382b]">
               <span className="block font-serif font-normal text-[#1e3c2f]">
                 {slide.titleLine1} {slide.titleLine2}
@@ -140,7 +164,7 @@ export function HeroBanner({ banners = [] }) {
               {slide.description}
             </p>
 
-            {/* CTA Button matching the reference bright gold/yellow pill */}
+            {/* CTA Button */}
             <div className="mt-6 sm:mt-7">
               <Link
                 to={slide.ctaLink}
@@ -152,7 +176,7 @@ export function HeroBanner({ banners = [] }) {
             </div>
           </div>
 
-          {/* ── RIGHT: Feature Badges matching reference (circular green icons + clean label) ── */}
+          {/* ── RIGHT: Feature Badges ── */}
           <div className="hidden lg:flex flex-col gap-3 shrink-0">
             {slide.sideFeatures?.map((item, i) => {
               const IconComp = item.icon;
@@ -171,36 +195,20 @@ export function HeroBanner({ banners = [] }) {
               );
             })}
           </div>
-
         </div>
 
-        {/* ── Navigation Arrows matching reference ── */}
-        <button
-          onClick={prev}
-          aria-label="Previous slide"
-          className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/20 hover:bg-black/50 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs border border-white/20 shadow-sm"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <button
-          onClick={next}
-          aria-label="Next slide"
-          className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/20 hover:bg-black/50 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xs border border-white/20 shadow-sm"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-
-        {/* ── Dot Indicators matching reference (center bottom) ── */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
+        {/* ── Right-Side Vertical Small Dot Indicators ── */}
+        <div className="absolute right-3.5 sm:right-6 top-1/2 -translate-y-1/2 flex flex-col items-center gap-2.5 z-20 bg-black/25 backdrop-blur-md px-1.5 py-3 rounded-full border border-white/20 shadow-md">
           {slides.map((_, i) => (
             <button
               key={i}
               onClick={() => setCurrent(i)}
               aria-label={`Go to slide ${i + 1}`}
-              className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${i === current
-                ? "w-6 bg-[#003D2B]"
-                : "w-2 bg-gray-400/60 hover:bg-gray-600"
-                }`}
+              className={`rounded-full transition-all duration-500 cursor-pointer ${
+                i === current
+                  ? "h-5 w-1.5 bg-[#F9BC15] shadow-xs"
+                  : "h-1.5 w-1.5 bg-white/60 hover:bg-white hover:scale-125"
+              }`}
             />
           ))}
         </div>
@@ -210,4 +218,3 @@ export function HeroBanner({ banners = [] }) {
 }
 
 export default HeroBanner;
-

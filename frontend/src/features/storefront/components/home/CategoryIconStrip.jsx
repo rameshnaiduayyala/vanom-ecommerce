@@ -29,7 +29,6 @@ const DEFAULT_CATEGORIES = [
   { id: "home-living", name: "Home & Living", icon: Home },
   { id: "kitchen-dining", name: "Kitchen & Dining", icon: UtensilsCrossed },
   { id: "beauty-care", name: "Beauty & Personal Care", icon: Sparkles },
-  { id: "health-wellness", name: "Health & Wellness", icon: HeartPulse },
   { id: "toys-baby", name: "Toys & Baby", icon: Baby },
   { id: "sports-fitness", name: "Sports & Fitness", icon: Dumbbell },
   { id: "stationery-office", name: "Stationery & Office", icon: BookOpen },

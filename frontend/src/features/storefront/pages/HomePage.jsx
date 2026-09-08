@@ -89,12 +89,12 @@ export function HomePage() {
       </section>
 
       {/* ── 2. Quick Category Pills Strip (Soft Warm Cream / Vanilla BG) ── */}
-      <section className="bg-[#FFF9EA] border-y border-[#ebdcb0]/50 py-3.5">
+      <section className="bg-[#DAEFDC] border-y border-[#ebdcb0]/50 py-3.5">
         <CategoryIconStrip className="bg-transparent" categories={categoryList} />
       </section>
 
       {/* ── 3. Featured & Best Seller Products (Pure White Clean BG) ── */}
-      <section className="bg-[#FFFFFF] border-b border-gray-100/90 py-4">
+      <section className="bg-[#DAEFDC] border-b border-gray-100/90 py-4">
         <FeaturedProductsSection
           className="bg-transparent"
           products={products}
@@ -110,12 +110,12 @@ export function HomePage() {
       </section>
 
       {/* ── 5. New Launches Carousel (Soft Warm Ivory BG) ── */}
-      <section className="bg-[#FFFBF2] border-b border-[#F0E6D2]">
+      <section className="bg-[#EEF9F5] border-b border-[#F0E6D2]">
         <NewLaunchesSection className="bg-transparent" products={featuredProducts} />
       </section>
 
       {/* ── 6. Shop by Category Visual Grid (Pure White BG) ── */}
-      <section className="bg-[#FFFFFF] border-b border-gray-100">
+      <section className="bg-[#F0F5D6] border-b border-gray-100">
         <ShopByCategoryGrid className="bg-transparent" categories={categoryList} />
       </section>
 
@@ -130,7 +130,7 @@ export function HomePage() {
       </section>
 
       {/* ── 9. Why Choose Vanom (Soft Warm Neutral BG) ── */}
-      <section className="bg-[#FAFBF9] border-b border-gray-200/70">
+      <section className="bg-[#F0F5D6] border-b border-gray-200/70">
         <WhyVanomSection className="bg-transparent border-t-0" />
       </section>
 
@@ -140,7 +140,7 @@ export function HomePage() {
       </section>
 
       {/* ── 11. Newsletter & Mobile App Download (Pure White Clean BG) ── */}
-      <section className="bg-[#FFFFFF]">
+      <section className="bg-[#F0F5D6]">
         <NewsletterAppBanner />
       </section>
     </div>
