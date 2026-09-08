@@ -384,7 +384,7 @@ export function ProductDetailsPage() {
             <div className="grid grid-cols-2 gap-4 pt-2">
               <button
                 onClick={handleAddToCart}
-                className="py-3 px-6 rounded-xl border-2 border-[#003D2B] text-[#003D2B] hover:bg-[#003D2B]/5 font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+                className="py-3 px-6 rounded-xl border-2 border-[rgb(60,170,130)] text-[rgb(60,170,130)] hover:bg-[rgb(60,170,130)]/10 font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
               >
                 {addingToCart ? (
                   <>
@@ -401,7 +401,7 @@ export function ProductDetailsPage() {
 
               <button
                 onClick={handleAddToCart}
-                className="py-3 px-6 rounded-xl bg-[#003D2B] hover:bg-[#002d20] text-white font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md"
+                className="py-3 px-6 rounded-xl bg-[rgb(60,170,130)] hover:brightness-95 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md"
               >
                 <Zap className="w-4 h-4 fill-white" />
                 <span>Buy Now</span>
