@@ -30,6 +30,7 @@ import { FeaturedProductsSection } from "../components/home/FeaturedProductsSect
 import { NewLaunchesSection } from "../components/home/NewLaunchesSection.jsx";
 import { UserVideoReelsSection } from "../components/home/UserVideoReelsSection.jsx";
 import { ShopByCategoryGrid } from "../components/home/ShopByCategoryGrid.jsx";
+import { ComboProductsSection } from "../components/home/ComboProductsSection.jsx";
 import { SustainabilityBanner } from "../components/home/SustainabilityBanner.jsx";
 import { WhyVanomSection } from "../components/home/WhyVanomSection.jsx";
 import { TestimonialsSection } from "../components/home/TestimonialsSection.jsx";
@@ -105,7 +106,7 @@ export function HomePage() {
       </section>
 
       {/* ── 4. Promo Banner 3-Grid (Subtle Mint Fresh Light BG) ── */}
-      <section className="py-8 bg-[#F0F9F5] border-b border-[#D8EDE2]">
+      <section className="py-8 bg-green-100/10 border-b border-[#D8EDE2]">
         <PromoBannerGrid banners={promoBanners} />
       </section>
 
@@ -119,7 +120,12 @@ export function HomePage() {
         <ShopByCategoryGrid className="bg-transparent" categories={categoryList} />
       </section>
 
-      {/* ── 7. Real User Video Reels (Soft Sage/Earthy Light Tint BG) ── */}
+      {/* ── 7. Super Saver Combo Bundles (Fresh Light Green BG) ── */}
+      <section className="bg-[#EDF6F1] border-b border-[#D4E8DC]">
+        <ComboProductsSection className="bg-transparent" />
+      </section>
+
+      {/* ── 8. Real User Video Reels (Soft Sage/Earthy Light Tint BG) ── */}
       <section className="bg-[#F3FAF6] border-b border-[#D8EDE2]">
         <UserVideoReelsSection />
       </section>

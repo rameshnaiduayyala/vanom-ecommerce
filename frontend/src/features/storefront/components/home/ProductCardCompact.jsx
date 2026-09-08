@@ -124,11 +124,10 @@ export function ProductCardCompact({ product, badge = null }) {
         <button
           onClick={handleWishlist}
           aria-label="Wishlist"
-          className={`absolute top-2.5 right-2.5 z-10 w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-200 cursor-pointer shadow-md ${
-            wishlisted
-              ? "bg-rose-50 text-rose-600 border border-rose-200 scale-105"
-              : "bg-white/85 hover:bg-white text-gray-400 hover:text-rose-500 border border-white/80 hover:scale-110"
-          }`}
+          className={`absolute top-2.5 right-2.5 z-10 w-7 h-7 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-200 cursor-pointer shadow-md ${wishlisted
+            ? "bg-rose-50 text-rose-600 border border-rose-200 scale-105"
+            : "bg-white/85 hover:bg-white text-gray-400 hover:text-rose-500 border border-white/80 hover:scale-110"
+            }`}
         >
           <Heart className={`w-3.5 h-3.5 ${wishlisted ? "fill-current text-rose-500" : ""}`} />
         </button>
@@ -203,7 +202,10 @@ export function ProductCardCompact({ product, badge = null }) {
           <button
             type="button"
             onClick={handleAddToCart}
-            className="flex-1 py-1.5 sm:py-2 px-2 rounded-lg text-[10px] sm:text-[11px] font-black uppercase tracking-wide text-white bg-[rgb(60,170,130)] hover:bg-[rgb(48,150,112)] active:scale-95 transition-all duration-200 shadow-2xs cursor-pointer flex items-center justify-center gap-1"
+            className={`flex-1 py-1.5 sm:py-2 px-2 rounded-lg text-[10px] sm:text-[11px] font-black uppercase tracking-wide transition-all duration-200 shadow-2xs cursor-pointer flex items-center justify-center gap-1 border ${added
+              ? "bg-[#3e8e45] text-white border-[#3CAA82]"
+              : "bg-[#3e8e45] hover:bg-green-500 text-white border-[#d7e4a7] active:scale-95"
+              }`}
           >
             {added ? (
               <>
