@@ -116,7 +116,7 @@ export function HomePage() {
       </section>
 
       {/* ── 6. Shop by Category Visual Grid (Pure White BG) ── */}
-      <section className="bg-[#FAF9F6] border-b border-gray-100">
+      <section className="bg-[#EBF5ED] border-b border-gray-100">
         <ShopByCategoryGrid className="bg-transparent" categories={categoryList} />
       </section>
 

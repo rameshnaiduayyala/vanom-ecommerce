@@ -276,26 +276,26 @@ export function PublicFooter() {
           </div>
 
           {/* Legal Links & Country Badge */}
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-            <Link to="/privacy-policy" className="hover:text-white transition-colors">
+          <div className="flex items-center gap-2.5 sm:gap-6 overflow-x-auto max-w-full no-scrollbar whitespace-nowrap text-[10.5px] sm:text-[11px] py-1">
+            <Link to="/privacy-policy" className="hover:text-white transition-colors shrink-0">
               Privacy Policy
             </Link>
-            <span className="text-white/20">|</span>
-            <Link to="/terms-conditions" className="hover:text-white transition-colors">
+            <span className="text-white/20 shrink-0">|</span>
+            <Link to="/terms-conditions" className="hover:text-white transition-colors shrink-0">
               Terms &amp; Conditions
             </Link>
-            <span className="text-white/20">|</span>
-            <Link to="/cookie-policy" className="hover:text-white transition-colors">
+            <span className="text-white/20 shrink-0">|</span>
+            <Link to="/cookie-policy" className="hover:text-white transition-colors shrink-0">
               Cookie Policy
             </Link>
-            <span className="text-white/20">|</span>
-            <div className="inline-flex items-center gap-1.5 text-white/90">
+            <span className="text-white/20 shrink-0">|</span>
+            <div className="inline-flex items-center gap-1 text-white/90 shrink-0">
               <span className="text-[10px] font-medium text-white/80">Developed by</span>
               <a
                 href="https://www.linkedin.com/in/ramesh-ayyala/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[11px] font-bold text-white hover:text-[#F9BC15] underline decoration-white/40 hover:decoration-[#F9BC15] transition-colors"
+                className="text-[10.5px] sm:text-[11px] font-bold text-white hover:text-[#F9BC15] underline decoration-white/40 hover:decoration-[#F9BC15] transition-colors shrink-0"
               >
                 Ramesh Ayyala
               </a>
