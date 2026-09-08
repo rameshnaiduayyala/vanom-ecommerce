@@ -466,13 +466,13 @@ export function Products() {
                             >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => openEditProduct(p)}
-                              className="p-1.5 text-text-muted hover:text-blue-600 rounded-lg hover:bg-surface-muted transition-colors"
+                            <Link
+                              to={`/admin/products/new?edit=${p.id || p.slug}`}
+                              className="p-1.5 text-text-muted hover:text-blue-600 rounded-lg hover:bg-surface-muted transition-colors inline-flex items-center justify-center"
                               title="Edit Product"
                             >
                               <Edit2 className="w-4 h-4" />
-                            </button>
+                            </Link>
                             <button
                               onClick={() => setDeletingProduct(p)}
                               className="p-1.5 text-text-muted hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"

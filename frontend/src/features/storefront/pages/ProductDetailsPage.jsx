@@ -60,6 +60,7 @@ export function ProductDetailsPage() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [wishlisted, setWishlisted] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState(null);
 
   useEffect(() => {
     setSelectedImage(0);
@@ -76,11 +77,30 @@ export function ProductDetailsPage() {
     queryFn: () => Api.catalog.getProducts(),
   });
 
+  const selectedVariantObj = useMemo(() => {
+    if (!product?.variants || product.variants.length === 0) return null;
+    return product.variants.find((v) => v.id === selectedVariantId) || product.variants[0];
+  }, [product, selectedVariantId]);
+
   const title = product?.name || "Product Name";
   const subtitle = product?.specs || product?.subtitle || product?.description || "High Performance Quality Product";
   const brand = product?.brand || "Vanom Choice";
-  const price = Number(product?.price || product?.pricing?.[country.code]?.retailPrice || product?.pricing?.IN?.retailPrice || 1999);
-  const mrp = Number(product?.mrp || product?.pricing?.[country.code]?.mrp || (price > 0 ? Math.round(price * 1.35) : 2699));
+  
+  // Dynamic price resolving variant USD / CAD or country price
+  const basePrice = country.code === "CA"
+    ? (selectedVariantObj?.price_cad || product?.price_cad || product?.priceCA || (product?.price_usd ? product.price_usd * 1.35 : 45))
+    : country.code === "US"
+    ? (selectedVariantObj?.price_usd || product?.price_usd || product?.priceUS || 35)
+    : (product?.price || product?.pricing?.[country.code]?.retailPrice || product?.pricing?.IN?.retailPrice || 1999);
+
+  const price = Number(basePrice);
+  const baseMrp = country.code === "CA"
+    ? (selectedVariantObj?.old_price_cad || product?.old_price_cad || Math.round(price * 1.35))
+    : country.code === "US"
+    ? (selectedVariantObj?.old_price_usd || product?.old_price_usd || product?.oldPrice || Math.round(price * 1.35))
+    : (product?.mrp || product?.pricing?.[country.code]?.mrp || (price > 0 ? Math.round(price * 1.35) : 2699));
+
+  const mrp = Number(baseMrp);
   const discount = product?.discount || (mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 25);
   const rating = product?.rating || 4.7;
   const reviewsCount = product?.reviewsCount || 1420;
@@ -346,6 +366,43 @@ export function ProductDetailsPage() {
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
+
+            {/* Dynamic Variant Selector (if product has variants) */}
+            {product?.variants && product.variants.length > 0 && (
+              <div className="pt-2 pb-1 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-gray-800">
+                    Select Option / Size:
+                  </span>
+                  <span className="text-[11px] font-semibold text-emerald-700">
+                    {selectedVariantObj ? selectedVariantObj.variant_name || selectedVariantObj.name : "Standard"}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {product.variants.map((v) => {
+                    const isSelected = (selectedVariantObj?.id || product.variants[0]?.id) === v.id;
+                    const vPrice = v.price_usd || v.price_cad || price;
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => setSelectedVariantId(v.id)}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex flex-col items-start gap-0.5 ${
+                          isSelected
+                            ? "bg-emerald-50/80 border-[#003D2B] text-[#003D2B] ring-2 ring-[#003D2B]/20"
+                            : "bg-white border-gray-200 text-gray-700 hover:border-gray-400"
+                        }`}
+                      >
+                        <span>{v.variant_name || v.name}</span>
+                        <span className="text-[10px] font-normal text-gray-500">
+                          {formatPrice(vPrice, country.currency, country.symbol)} {v.stock_quantity !== undefined ? `• ${v.stock_quantity} left` : ""}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* 3 Inline Trust / Delivery Pillars */}
             <div className="grid grid-cols-3 gap-2.5 py-2">

@@ -94,8 +94,8 @@ export function HomePage() {
         <CategoryIconStrip className="bg-transparent" categories={categoryList} />
       </section>
 
-      {/* ── 3. Featured & Best Seller Products (Pure White Clean BG) ── */}
-      <section className="bg-[#DAEFDC] border-b border-gray-100/90 py-4">
+      {/* ── 3. Featured & Best Seller Products (Candy White Clean BG) ── */}
+      <section className="bg-[#FAF9F6] border-b border-gray-100/90 py-4">
         <FeaturedProductsSection
           className="bg-transparent"
           products={products}
@@ -105,8 +105,8 @@ export function HomePage() {
         />
       </section>
 
-      {/* ── 4. Promo Banner 3-Grid (Subtle Mint Fresh Light BG) ── */}
-      <section className="py-8 bg-green-100/10 border-b border-[#D8EDE2]">
+      {/* ── 4. Promo Banner 3-Grid (Candy White BG) ── */}
+      <section className="py-8 bg-[#D5EBD5] border-b border-gray-200/60">
         <PromoBannerGrid banners={promoBanners} />
       </section>
 
@@ -116,17 +116,17 @@ export function HomePage() {
       </section>
 
       {/* ── 6. Shop by Category Visual Grid (Pure White BG) ── */}
-      <section className="bg-[#F0F5D6] border-b border-gray-100">
+      <section className="bg-[#FAF9F6] border-b border-gray-100">
         <ShopByCategoryGrid className="bg-transparent" categories={categoryList} />
       </section>
 
-      {/* ── 7. Super Saver Combo Bundles (Fresh Light Green BG) ── */}
-      <section className="bg-[#EDF6F1] border-b border-[#D4E8DC]">
+      {/* ── 7. Super Saver Combo Bundles (Light Purple BG) ── */}
+      <section className="bg-[#F6F2FF] border-b border-[#E9DEFF]">
         <ComboProductsSection className="bg-transparent" />
       </section>
 
       {/* ── 8. Real User Video Reels (Soft Sage/Earthy Light Tint BG) ── */}
-      <section className="bg-[#F3FAF6] border-b border-[#D8EDE2]">
+      <section className="bg-[#DDDFF8] border-b border-[#D8EDE2]">
         <UserVideoReelsSection />
       </section>
 
@@ -136,7 +136,7 @@ export function HomePage() {
       </section>
 
       {/* ── 9. Why Choose Vanom (Soft Warm Neutral BG) ── */}
-      <section className="bg-[#F0F5D6] border-b border-gray-200/70">
+      <section className="bg-[#AEDBE4] border-b border-gray-200/70">
         <WhyVanomSection className="bg-transparent border-t-0" />
       </section>
 
