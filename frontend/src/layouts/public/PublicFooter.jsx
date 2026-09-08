@@ -290,8 +290,15 @@ export function PublicFooter() {
             </Link>
             <span className="text-white/20">|</span>
             <div className="inline-flex items-center gap-1.5 text-white/90">
-              <span className="text-sm leading-none">🇮🇳</span>
-              <span className="text-[10px] font-medium text-white/80">Made with care in India</span>
+              <span className="text-[10px] font-medium text-white/80">Developed by</span>
+              <a
+                href="https://www.linkedin.com/in/ramesh-ayyala/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[11px] font-bold text-white hover:text-[#F9BC15] underline decoration-white/40 hover:decoration-[#F9BC15] transition-colors"
+              >
+                Ramesh Ayyala
+              </a>
             </div>
           </div>
         </div>

@@ -11,7 +11,7 @@ const DEFAULT_BANNERS = [
     title: "Upto 50% Off",
     cta: "Shop Deals",
     link: ROUTES.PRODUCTS,
-    bg: "bg-[#FAF9F6]",
+    bg: "bg-[#AEDBE4]",
     badgeColor: "#1a3c2e",
     image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=400&q=80",
     dark: false,
@@ -45,12 +45,12 @@ const DEFAULT_BANNERS = [
 export function PromoBannerGrid({ banners = [] }) {
   const items = banners.length >= 3
     ? banners.slice(0, 3).map((b, i) => ({
-        ...DEFAULT_BANNERS[i],
-        ...b,
-        image: b.imageUrl || DEFAULT_BANNERS[i].image,
-        link: b.buttonLink || DEFAULT_BANNERS[i].link,
-        cta: b.buttonText || DEFAULT_BANNERS[i].cta,
-      }))
+      ...DEFAULT_BANNERS[i],
+      ...b,
+      image: b.imageUrl || DEFAULT_BANNERS[i].image,
+      link: b.buttonLink || DEFAULT_BANNERS[i].link,
+      cta: b.buttonText || DEFAULT_BANNERS[i].cta,
+    }))
     : DEFAULT_BANNERS;
 
   return (
