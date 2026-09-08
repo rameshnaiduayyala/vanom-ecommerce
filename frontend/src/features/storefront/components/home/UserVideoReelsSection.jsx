@@ -4,7 +4,6 @@ import {
   Play,
   Volume2,
   VolumeX,
-  Sparkles,
   ShoppingBag,
   ChevronLeft,
   ChevronRight,
@@ -61,15 +60,15 @@ const USER_VIDEO_REELS = [
   },
   {
     id: "reel-3",
-    authorName: "Pooja Hegde",
-    authorRole: "Yoga & Wellness Coach",
-    authorAvatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
-    videoThumbnail: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
-    videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-putting-serum-on-the-face-with-a-dropper-41314-large.mp4",
-    title: "Why Himalayan Shilajit is essential for daily energy",
+    authorName: "Priya Sundaram",
+    authorRole: "Yoga Practitioner & Nutritionist",
+    authorAvatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80",
+    videoThumbnail: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80",
+    videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-pouring-milk-into-a-glass-bowl-with-muesli-42289-large.mp4",
+    title: "Why Himalayan Shilajit Gold is my non-negotiable daily fuel",
     product: {
       id: "prod-vid-3",
-      name: "Cold-Pressed Himalayan Shilajit Resin (Gold Grade)",
+      name: "Pure Shilajit Gold Resin 20g Grade A+",
       category: "Vitality & Strength",
       price: 1499,
       mrp: 2499,
@@ -81,12 +80,12 @@ const USER_VIDEO_REELS = [
   },
   {
     id: "reel-4",
-    authorName: "Kunal Mehra",
-    authorRole: "Culinary & Nutritionist",
+    authorName: "Chef Kabir Sen",
+    authorRole: "Culinary Expert",
     authorAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
-    videoThumbnail: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80",
-    videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-fresh-vegetable-salad-in-a-bowl-42337-large.mp4",
-    title: "Cooking with authentic Vedic Bilona A2 Desi Cow Ghee",
+    videoThumbnail: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=600&q=80",
+    videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-cooking-with-a-cast-iron-skillet-42412-large.mp4",
+    title: "The aroma test: Bilona A2 Desi Cow Ghee cooked in copper",
     product: {
       id: "prod-vid-4",
       name: "Vedic Bilona A2 Desi Gir Cow Cultured Ghee 1L",
@@ -111,7 +110,7 @@ export function UserVideoReelsSection() {
   const { country } = useCountryStore();
 
   const scroll = (dir) => {
-    scrollRef.current?.scrollBy({ left: dir * 340, behavior: "smooth" });
+    scrollRef.current?.scrollBy({ left: dir * 300, behavior: "smooth" });
   };
 
   const handleAddToCart = (e, product) => {
@@ -129,16 +128,16 @@ export function UserVideoReelsSection() {
   };
 
   return (
-    <section className="py-10 px-4 sm:px-8 lg:px-12 bg-transparent select-none">
-      <div className="max-w-[1440px] mx-auto">
+    <section className="py-8 sm:py-10 px-4 sm:px-8 lg:px-12 bg-transparent select-none w-full max-w-full overflow-hidden">
+      <div className="max-w-[1440px] mx-auto w-full min-w-0">
         {/* Header Strip */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#006B3C]/10 text-[#006B3C] text-[11px] font-extrabold uppercase tracking-wider mb-1.5 border border-[#006B3C]/20">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#358B5B]/10 text-[#358B5B] text-[11px] font-extrabold uppercase tracking-wider mb-1.5 border border-[#358B5B]/20">
               <Video className="w-3 h-3 text-[#D9A514]" />
               <span>Customer Reviews & Unboxings</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-[#003D2B] tracking-tight">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#204B38] tracking-tight">
               Real Experiences in Action
             </h2>
             <p className="text-xs text-[#345547] mt-0.5">
@@ -151,14 +150,14 @@ export function UserVideoReelsSection() {
             <button
               onClick={() => scroll(-1)}
               aria-label="Scroll left"
-              className="w-8 h-8 rounded-full bg-white border border-[#ebdcb0] hover:bg-[#003D2B] hover:text-white text-gray-700 shadow-2xs flex items-center justify-center transition-all cursor-pointer hover:scale-105"
+              className="w-8 h-8 rounded-full bg-white border border-[#ebdcb0] hover:bg-[#358B5B] hover:text-white text-gray-700 shadow-2xs flex items-center justify-center transition-all cursor-pointer hover:scale-105"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={() => scroll(1)}
               aria-label="Scroll right"
-              className="w-8 h-8 rounded-full bg-white border border-[#ebdcb0] hover:bg-[#003D2B] hover:text-white text-gray-700 shadow-2xs flex items-center justify-center transition-all cursor-pointer hover:scale-105"
+              className="w-8 h-8 rounded-full bg-white border border-[#ebdcb0] hover:bg-[#358B5B] hover:text-white text-gray-700 shadow-2xs flex items-center justify-center transition-all cursor-pointer hover:scale-105"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -168,17 +167,17 @@ export function UserVideoReelsSection() {
         {/* Video Cards Reel */}
         <div
           ref={scrollRef}
-          className="flex items-stretch gap-5 overflow-x-auto scrollbar-none pb-4 pt-1 px-1"
+          className="flex items-stretch gap-4 sm:gap-5 overflow-x-auto scrollbar-none pb-4 pt-1 px-1 w-full min-w-0 touch-pan-x"
         >
           {USER_VIDEO_REELS.map((story) => (
             <div
               key={story.id}
-              className="min-w-[280px] sm:min-w-[310px] max-w-[310px] rounded-3xl overflow-hidden bg-white border border-[#ebdcb0] shadow-2xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group shrink-0"
+              className="w-[260px] sm:w-[290px] rounded-3xl overflow-hidden bg-white border border-[#ebdcb0] shadow-2xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group shrink-0"
             >
               {/* Top: Video Thumbnail & Play Trigger */}
               <div
                 onClick={() => setActiveStory(story)}
-                className="relative h-64 sm:h-72 w-full overflow-hidden cursor-pointer bg-black/90"
+                className="relative h-60 sm:h-72 w-full overflow-hidden cursor-pointer bg-black/90"
               >
                 <img
                   src={story.videoThumbnail}
@@ -202,7 +201,7 @@ export function UserVideoReelsSection() {
 
                 {/* Center Play Button Pulse */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-md border border-white/60 flex items-center justify-center text-white group-hover:bg-[#006B3C] group-hover:scale-115 transition-all duration-300 shadow-xl">
+                  <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-md border border-white/60 flex items-center justify-center text-white group-hover:bg-[#358B5B] group-hover:scale-115 transition-all duration-300 shadow-xl">
                     <Play className="w-5 h-5 fill-white ml-0.5" />
                   </div>
                 </div>
@@ -225,17 +224,17 @@ export function UserVideoReelsSection() {
                   <img
                     src={story.product.image}
                     alt={story.product.name}
-                    className="w-13 h-13 rounded-xl object-cover border border-[#ebdcb0] shrink-0 bg-white p-0.5 shadow-2xs"
+                    className="w-12 h-12 sm:w-13 sm:h-13 rounded-xl object-cover border border-[#ebdcb0] shrink-0 bg-white p-0.5 shadow-2xs"
                   />
                   <div className="min-w-0 flex-1">
-                    <span className="text-[9px] font-bold text-[#006B3C] uppercase tracking-wider">
+                    <span className="text-[9px] font-bold text-[#358B5B] uppercase tracking-wider">
                       {story.product.category}
                     </span>
                     <h4 className="text-xs font-bold text-gray-900 truncate" title={story.product.name}>
                       {story.product.name}
                     </h4>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-xs font-black text-[#003D2B]">
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <span className="text-xs font-black text-[#204B38]">
                         {formatPrice(story.product.price, country.currency, country.symbol)}
                       </span>
                       {story.product.mrp && (
@@ -257,7 +256,7 @@ export function UserVideoReelsSection() {
                     className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs ${
                       addedItem === story.product.id
                         ? "bg-emerald-600 text-white"
-                        : "bg-[#003D2B] hover:bg-[#00291D] text-white hover:shadow-md"
+                        : "bg-[#358B5B] hover:bg-[#204B38] text-white hover:shadow-md"
                     }`}
                   >
                     {addedItem === story.product.id ? (
@@ -275,7 +274,7 @@ export function UserVideoReelsSection() {
 
                   <Link
                     to={`${ROUTES.PRODUCTS}/${story.product.id}`}
-                    className="p-2 rounded-xl border border-[#ebdcb0] hover:bg-white text-gray-700 hover:text-[#003D2B] transition-colors flex items-center justify-center cursor-pointer"
+                    className="p-2 rounded-xl border border-[#ebdcb0] hover:bg-white text-gray-700 hover:text-[#358B5B] transition-colors flex items-center justify-center cursor-pointer"
                     title="View Product"
                   >
                     <ArrowUpRight className="w-4 h-4" />
@@ -335,7 +334,7 @@ export function UserVideoReelsSection() {
             </div>
 
             {/* Modal Product Buy Footer */}
-            <div className="p-4 bg-[#1a3c2e] text-white border-t border-white/10 flex items-center gap-3">
+            <div className="p-4 bg-[#204B38] text-white border-t border-white/10 flex items-center gap-3">
               <img
                 src={activeStory.product.image}
                 alt={activeStory.product.name}
@@ -356,7 +355,7 @@ export function UserVideoReelsSection() {
               </div>
               <button
                 onClick={(e) => handleAddToCart(e, activeStory.product)}
-                className="px-4 py-2.5 rounded-xl bg-[#F9BC15] hover:bg-[#e5ab10] text-[#003D2B] font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shrink-0 cursor-pointer"
+                className="px-4 py-2.5 rounded-xl bg-[#F9BC15] hover:bg-[#e5ab10] text-[#204B38] font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shrink-0 cursor-pointer"
               >
                 <ShoppingBag className="w-4 h-4" />
                 <span>Buy Now</span>
