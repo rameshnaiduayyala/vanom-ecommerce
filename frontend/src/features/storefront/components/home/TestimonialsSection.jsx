@@ -28,11 +28,11 @@ const REVIEWS = [
   },
 ];
 
-export function TestimonialsSection({ reviews = REVIEWS }) {
+export function TestimonialsSection({ reviews = REVIEWS, className = "" }) {
   const items = reviews.length > 0 ? reviews : REVIEWS;
 
   return (
-    <section className="py-10 bg-white border-t border-gray-100">
+    <section className={`py-10 bg-white/60 border-t border-[#ebdcb0]/50 ${className}`}>
       <div className="max-w-[1440px] mx-auto px-4 sm:px-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">

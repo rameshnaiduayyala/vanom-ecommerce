@@ -15,7 +15,7 @@ const DEFAULT_CATEGORIES = [
   { id: "automotive", name: "Automotive", subtext: "Drive with confidence", image: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=400&q=80" },
 ];
 
-export function ShopByCategoryGrid({ categories = [] }) {
+export function ShopByCategoryGrid({ categories = [], className = "" }) {
   const items = categories.length > 0
     ? categories.map((c, i) => ({
         ...DEFAULT_CATEGORIES[i % DEFAULT_CATEGORIES.length],
@@ -26,7 +26,7 @@ export function ShopByCategoryGrid({ categories = [] }) {
     : DEFAULT_CATEGORIES;
 
   return (
-    <section className="py-10 bg-white">
+    <section className={`py-10 bg-white/60 ${className}`}>
       <div className="max-w-[1440px] mx-auto px-4 sm:px-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
