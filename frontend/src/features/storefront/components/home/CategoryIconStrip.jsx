@@ -76,8 +76,8 @@ export function CategoryIconStrip({ categories = [], activeCategory = null, onSe
                 key={cat.id}
                 to={`${ROUTES.PRODUCTS}?category=${cat.id}`}
                 className={`flex items-center gap-2.5 px-4 sm:px-5 py-2.5 rounded-full border transition-all duration-200 shrink-0 whitespace-nowrap cursor-pointer select-none font-bold text-xs uppercase tracking-wider ${isActive
-                    ? "bg-[#358B5B] text-white border-[#358B5B] shadow-sm"
-                    : "bg-transparent text-[#264D3B] border-[#7CA98B]/60 hover:bg-[#358B5B] hover:text-white hover:border-[#358B5B]"
+                  ? "bg-[#358B5B] text-white border-[#358B5B] shadow-sm"
+                  : "bg-transparent text-[#264D3B] border-[#7CA98B]/60 hover:bg-[#358B5B] hover:text-white hover:border-[#358B5B]"
                   }`}
               >
                 {/* Left side outline line icon matching reference */}

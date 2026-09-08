@@ -18,11 +18,11 @@ const DEFAULT_CATEGORIES = [
 export function ShopByCategoryGrid({ categories = [], className = "" }) {
   const items = categories.length > 0
     ? categories.map((c, i) => ({
-        ...DEFAULT_CATEGORIES[i % DEFAULT_CATEGORIES.length],
-        id: c.id || `cat-${i}`,
-        name: c.name || DEFAULT_CATEGORIES[i % DEFAULT_CATEGORIES.length].name,
-        image: c.imageUrl || DEFAULT_CATEGORIES[i % DEFAULT_CATEGORIES.length].image,
-      }))
+      ...DEFAULT_CATEGORIES[i % DEFAULT_CATEGORIES.length],
+      id: c.id || `cat-${i}`,
+      name: c.name || DEFAULT_CATEGORIES[i % DEFAULT_CATEGORIES.length].name,
+      image: c.imageUrl || DEFAULT_CATEGORIES[i % DEFAULT_CATEGORIES.length].image,
+    }))
     : DEFAULT_CATEGORIES;
 
   return (

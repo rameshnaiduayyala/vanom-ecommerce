@@ -42,7 +42,7 @@ const NAV_CATEGORIES = [
 ];
 
 const SEARCH_CATEGORIES = [
-  "All Categories",
+  "Shop by Concern",
   "Electronics",
   "Home & Living",
   "Kitchen & Dining",
@@ -171,8 +171,8 @@ export function PublicHeader() {
                         setShowCategoryDropdown(false);
                       }}
                       className={`w-full text-left px-3.5 py-1.5 text-xs transition-colors flex items-center justify-between ${selectedCategory === cat
-                          ? "bg-[#EAF7F0] text-[#003D2B] font-bold"
-                          : "text-gray-700 hover:bg-gray-50"
+                        ? "bg-[#EAF7F0] text-[#003D2B] font-bold"
+                        : "text-gray-700 hover:bg-gray-50"
                         }`}
                     >
                       <span>{cat}</span>
@@ -372,7 +372,7 @@ export function PublicHeader() {
 
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 px-2 block mb-2">
-                  All Categories
+                  Shop by Concern
                 </span>
                 <div className="space-y-0.5">
                   {NAV_CATEGORIES.map((cat) => {
