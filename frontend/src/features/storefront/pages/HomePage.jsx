@@ -90,12 +90,12 @@ export function HomePage() {
       </section>
 
       {/* ── 2. Quick Category Pills Strip (Soft Warm Cream / Vanilla BG) ── */}
-      <section className="bg-[#DAEFDC] border-y border-[#ebdcb0]/50 py-3.5">
+      <section className="bg-[#D5EBD5] border-y border-[#ebdcb0]/50 py-3.5">
         <CategoryIconStrip className="bg-transparent" categories={categoryList} />
       </section>
 
       {/* ── 3. Featured & Best Seller Products (Candy White Clean BG) ── */}
-      <section className="bg-[#FAF9F6] border-b border-gray-100/90 py-4">
+      <section className="bg-[#D5EBD5] border-b border-gray-100/90 py-4">
         <FeaturedProductsSection
           className="bg-transparent"
           products={products}
@@ -106,7 +106,7 @@ export function HomePage() {
       </section>
 
       {/* ── 4. Promo Banner 3-Grid (Candy White BG) ── */}
-      <section className="py-8 bg-[#D5EBD5] border-b border-gray-200/60">
+      <section className="py-8 bg-[#FAF9F6] border-b border-gray-200/60">
         <PromoBannerGrid banners={promoBanners} />
       </section>
 
@@ -126,7 +126,7 @@ export function HomePage() {
       </section>
 
       {/* ── 8. Real User Video Reels (Soft Sage/Earthy Light Tint BG) ── */}
-      <section className="bg-[#DDDFF8] border-b border-[#D8EDE2]">
+      <section className="bg-[#F7EEDF] border-b border-[#D8EDE2]">
         <UserVideoReelsSection />
       </section>
 
@@ -136,7 +136,7 @@ export function HomePage() {
       </section>
 
       {/* ── 9. Why Choose Vanom (Soft Warm Neutral BG) ── */}
-      <section className="bg-[#AEDBE4] border-b border-gray-200/70">
+      <section className="bg-[#EBFDEC] border-b border-gray-200/70">
         <WhyVanomSection className="bg-transparent border-t-0" />
       </section>
 
