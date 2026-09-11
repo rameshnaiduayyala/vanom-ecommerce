@@ -106,35 +106,9 @@ export const ADMIN_NAV_CONFIG = [
     ],
   },
 
-  // ── B2B & CUSTOMERS ──
+  // ── ACCOUNTS & CORPORATE ──
   {
-    header: "B2B & Accounts",
-  },
-  {
-    id: "b2b-group",
-    label: "B2B Wholesale",
-    icon: Building2,
-    children: [
-      {
-        id: "applications",
-        label: "Business Approvals",
-        icon: FileCheck2,
-        path: ROUTES.ADMIN.BUSINESS_APPLICATIONS,
-        badge: 3,
-        badgeColor: "bg-amber-500",
-      },
-      {
-        id: "companies",
-        label: "Verified Companies",
-        path: ROUTES.ADMIN.COMPANIES,
-      },
-      {
-        id: "quotes",
-        label: "Wholesale RFQ Quotes",
-        icon: FileText,
-        path: ROUTES.ADMIN.QUOTES,
-      },
-    ],
+    header: "Accounts & Directory",
   },
   {
     id: "customers-group",
@@ -142,14 +116,47 @@ export const ADMIN_NAV_CONFIG = [
     icon: Users,
     children: [
       {
-        id: "all-customers",
-        label: "All Users",
+        id: "users-list",
+        label: "List Customers",
         path: ROUTES.ADMIN.USERS,
       },
       {
-        id: "buyer-accounts",
-        label: "Active Buyers",
-        path: `${ROUTES.ADMIN.USERS}?role=BUYER`,
+        id: "users-add",
+        label: "Add Customer",
+        icon: PlusCircle,
+        path: `${ROUTES.ADMIN.USERS}?action=new`,
+      },
+    ],
+  },
+  {
+    id: "companies-group",
+    label: "Companies",
+    icon: Building2,
+    children: [
+      {
+        id: "companies-list",
+        label: "List Companies",
+        path: ROUTES.ADMIN.COMPANIES,
+      },
+      {
+        id: "companies-add",
+        label: "Add Company",
+        icon: PlusCircle,
+        path: `${ROUTES.ADMIN.COMPANIES}?action=new`,
+      },
+      {
+        id: "companies-approvals",
+        label: "Verification Queue",
+        icon: FileCheck2,
+        path: ROUTES.ADMIN.BUSINESS_APPLICATIONS,
+        badge: 3,
+        badgeColor: "bg-amber-500",
+      },
+      {
+        id: "quotes",
+        label: "Wholesale Quotes",
+        icon: FileText,
+        path: ROUTES.ADMIN.QUOTES,
       },
     ],
   },

@@ -233,5 +233,45 @@ describe("B2B Company Onboarding & Verification Tests", () => {
       expect(adminBody.data.items.some((c) => c.id === createdCompanyId)).toBe(true);
     }
   });
+
+  it("should register a company with business name, legal name, address, and admin user in a single request", async () => {
+    const adminEmail = `newadmin_${Date.now()}@organicfoods.com`;
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/companies/register",
+      payload: {
+        legalName: "Pure Organic Foods Private Limited",
+        businessName: "Pure Organics",
+        registrationNumber: "U01111DL2024PTC123456",
+        taxId: "07AAACP9999P1Z1",
+        countryCode: "IN",
+        address: {
+          line1: "Plot 88, Okhla Industrial Area Phase 3",
+          line2: "Near Metro Station",
+          city: "New Delhi",
+          state: "Delhi",
+          postalCode: "110020",
+          phone: "+91 98765 43210",
+        },
+        adminUser: {
+          email: adminEmail,
+          password: "SecurePassword123!",
+          firstName: "Vikram",
+          lastName: "Mehta",
+          phone: "+91 98765 43210",
+        },
+      },
+    });
+
+    expect(res.statusCode).toBe(201);
+    const body = JSON.parse(res.payload);
+    expect(body.success).toBe(true);
+    expect(body.data.legalName).toBe("Pure Organic Foods Private Limited");
+    expect(body.data.tradingName).toBe("Pure Organics");
+    expect(body.data.addresses.length).toBeGreaterThan(0);
+    expect(body.data.addresses[0].city).toBe("New Delhi");
+    expect(body.data.members[0].user.email).toBe(adminEmail);
+  });
 });
+
 

@@ -41,8 +41,25 @@ async function authPlugin(fastify, options) {
         },
       });
 
-      if (!user || user.status !== "ACTIVE") {
-        throw new UnauthorizedError("User account is inactive or disabled");
+      if (!user) {
+        throw new UnauthorizedError("User account not found");
+      }
+
+      if (user.status !== "ACTIVE") {
+        if (user.status === "PENDING") {
+          const companyName = user.companyMembers?.[0]?.company?.tradingName || user.companyMembers?.[0]?.company?.legalName;
+          const msg = companyName
+            ? `Your business account for '${companyName}' is currently pending administrator verification and approval.`
+            : "Your account is currently pending administrator verification.";
+          throw new UnauthorizedError(msg);
+        }
+        if (user.status === "SUSPENDED") {
+          throw new UnauthorizedError("Your account has been suspended. Please contact Vanom Support.");
+        }
+        if (user.status === "DELETED") {
+          throw new UnauthorizedError("This account is no longer active.");
+        }
+        throw new UnauthorizedError(`Your account is ${user.status.toLowerCase()}. Please contact administrator.`);
       }
 
       // Flatten permissions for high-performance RBAC evaluations

@@ -12,9 +12,9 @@ import {
   AdminPayments,
   AdminReports,
   AdminAuditLogs,
-  AdminUsers,
-  AdminCompanies,
 } from "../../features/admin/pages/Quotes.jsx";
+import { AdminUsersPage } from "../../features/admin/pages/users/AdminUsersPage.jsx";
+import { AdminCompaniesPage } from "../../features/admin/pages/companies/AdminCompaniesPage.jsx";
 import { AdminRoute } from "../guards/ProtectedRoute.jsx";
 import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
 
@@ -29,8 +29,8 @@ export const adminRoutes = {
   children: [
     { index: true, element: <Navigate to="/admin/dashboard" replace /> },
     { path: "dashboard", element: <Dashboard /> },
-    { path: "users", element: <AdminUsers /> },
-    { path: "companies", element: <AdminCompanies /> },
+    { path: "users", element: <AdminUsersPage /> },
+    { path: "companies", element: <AdminCompaniesPage /> },
     { path: "companies/:id", element: <CompanyReviewPage /> },
     { path: "business-applications", element: <BusinessApplications /> },
     { path: "products", element: <Products /> },

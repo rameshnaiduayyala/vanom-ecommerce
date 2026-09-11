@@ -8,9 +8,11 @@ export class CompanyController {
   }
 
   register = async (request, reply) => {
-    const result = await this.service.registerCompany(request.user.id, request.body);
+    const userId = request.user?.id || null;
+    const result = await this.service.registerCompany(userId, request.body);
     return reply.status(HTTP_STATUS.CREATED).send(ApiResponse.success(result));
   };
+
 
   list = async (request, reply) => {
     const { page, limit, status, search } = request.query || {};

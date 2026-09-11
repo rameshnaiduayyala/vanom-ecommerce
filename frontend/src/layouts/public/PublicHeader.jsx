@@ -485,10 +485,11 @@ export function PublicHeader() {
                   <Heart className="w-4 h-4" /> Wishlist
                 </Link>
                 <Link
-                  to="/bulk-buyers"
+                  to={ROUTES.REGISTER_BUSINESS}
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-bold text-[#006B3C] bg-[#EAF7F0]"
                 >
+                  <Briefcase className="w-4 h-4 text-[#006B3C]" />
                   For Business / Wholesale
                 </Link>
               </div>

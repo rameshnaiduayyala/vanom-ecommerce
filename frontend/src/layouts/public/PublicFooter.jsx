@@ -224,8 +224,8 @@ export function PublicFooter() {
                 </Link>
               </li>
               <li>
-                <Link to="/bulk-buyers" className="hover:text-[#F9BC15] transition-colors">
-                  Partner With Us
+                <Link to={ROUTES.REGISTER_BUSINESS} className="hover:text-[#F9BC15] transition-colors font-medium">
+                  Business / Wholesale Onboarding
                 </Link>
               </li>
             </ul>

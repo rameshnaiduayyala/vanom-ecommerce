@@ -37,8 +37,44 @@ export class AdminController {
     return reply.send({ success: true, data });
   };
 
+  listBusinessApplications = async (req, reply) => {
+    const data = await this.service.listBusinessApplications();
+    return reply.send({ success: true, data });
+  };
+
+  approveBusinessApplication = async (req, reply) => {
+    const { id } = req.params;
+    const { notes } = req.body || {};
+    const data = await this.service.approveBusinessApplication(id, notes);
+    return reply.send({ success: true, data });
+  };
+
+  rejectBusinessApplication = async (req, reply) => {
+    const { id } = req.params;
+    const { reason } = req.body || {};
+    const data = await this.service.rejectBusinessApplication(id, reason);
+    return reply.send({ success: true, data });
+  };
+
   listUsers = async (req, reply) => {
     const data = await this.service.listUsers();
+    return reply.send({ success: true, data });
+  };
+
+  createUser = async (req, reply) => {
+    const data = await this.service.createUser(req.body);
+    return reply.status(201).send({ success: true, data });
+  };
+
+  updateUser = async (req, reply) => {
+    const { id } = req.params;
+    const data = await this.service.updateUser(id, req.body);
+    return reply.send({ success: true, data });
+  };
+
+  deleteUser = async (req, reply) => {
+    const { id } = req.params;
+    const data = await this.service.deleteUser(id);
     return reply.send({ success: true, data });
   };
 

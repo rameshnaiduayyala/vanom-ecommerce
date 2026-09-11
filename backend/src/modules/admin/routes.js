@@ -13,6 +13,9 @@ export default async function adminRoutes(fastify, options) {
   fastify.patch("/admin/orders/:id/status", { preHandler: adminGuard, handler: controller.updateOrderStatus });
   fastify.get("/admin/companies", { preHandler: adminGuard, handler: controller.listCompanies });
   fastify.get("/admin/users", { preHandler: adminGuard, handler: controller.listUsers });
+  fastify.post("/admin/users", { preHandler: adminGuard, handler: controller.createUser });
+  fastify.patch("/admin/users/:id", { preHandler: adminGuard, handler: controller.updateUser });
+  fastify.delete("/admin/users/:id", { preHandler: adminGuard, handler: controller.deleteUser });
   fastify.get("/admin/inventory", { preHandler: adminGuard, handler: controller.listInventory });
   fastify.get("/admin/quotes", { preHandler: adminGuard, handler: controller.listQuotes });
   fastify.get("/admin/payments", { preHandler: adminGuard, handler: controller.listPayments });

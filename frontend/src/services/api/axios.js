@@ -56,8 +56,12 @@ apiClient.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
+    const isAuthRoute =
+      originalRequest?.url?.includes("/auth/login") ||
+      originalRequest?.url?.includes("/auth/register") ||
+      originalRequest?.url?.includes("/auth/refresh");
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -76,6 +80,14 @@ apiClient.interceptors.response.use(
       if (!refreshToken) {
         TokenStorage.clear();
         isRefreshing = false;
+        const apiError = error.response?.data?.error;
+        if (apiError) {
+          const customErr = new Error(apiError.message || apiError.code || "Unauthorized");
+          customErr.code = apiError.code;
+          customErr.details = apiError.details;
+          customErr.requestId = error.response?.data?.requestId || apiError.requestId;
+          return Promise.reject(customErr);
+        }
         return Promise.reject(error);
       }
 
@@ -100,6 +112,15 @@ apiClient.interceptors.response.use(
       }
     }
 
-    return Promise.reject(error.response?.data?.error || error);
+    const apiError = error.response?.data?.error;
+    if (apiError) {
+      const customErr = new Error(apiError.message || apiError.code || "An unexpected error occurred");
+      customErr.code = apiError.code;
+      customErr.details = apiError.details;
+      customErr.requestId = apiError.requestId;
+      return Promise.reject(customErr);
+    }
+
+    return Promise.reject(error.response?.data || error);
   }
 );

@@ -193,15 +193,233 @@ export class AdminService {
     const users = await prisma.user.findMany({
       include: {
         roles: { include: { role: true } },
+        companyMembers: {
+          include: {
+            company: true,
+          },
+        },
         profile: true,
       },
       orderBy: { createdAt: "desc" },
     });
 
-    return users.map((u) => ({
-      ...u,
-      roles: u.roles.map((r) => r.role?.name || r.name),
-    }));
+    return users.map((u) => {
+      const { passwordHash, ...sanitized } = u;
+      return {
+        ...sanitized,
+        roles: u.roles.map((r) => r.role?.name || r.name),
+        company: u.companyMembers?.[0]?.company || null,
+      };
+    });
+  }
+
+  async createUser({
+    email,
+    password,
+    firstName,
+    lastName,
+    phone,
+    customerType = "B2C",
+    status = "ACTIVE",
+    roles = ["CUSTOMER"],
+    companyId,
+    newCompany,
+  }) {
+    const formattedEmail = email.toLowerCase().trim();
+    const existing = await prisma.user.findUnique({ where: { email: formattedEmail } });
+    if (existing) {
+      throw new ConflictError("A user with this email already exists");
+    }
+
+    const { HashUtil } = await import("../../common/utils/hash.js");
+    const { authConfig } = await import("../../config/auth.js");
+    const passwordHash = await HashUtil.hashPassword(password || "Password123!", authConfig.saltRounds || 10);
+
+    const roleRecords = await Promise.all(
+      (Array.isArray(roles) ? roles : [roles]).map((roleName) =>
+        prisma.role.upsert({
+          where: { name: roleName },
+          update: {},
+          create: { name: roleName, description: `${roleName} role` },
+        })
+      )
+    );
+
+    const user = await prisma.user.create({
+      data: {
+        email: formattedEmail,
+        passwordHash,
+        firstName: firstName || "",
+        lastName: lastName || "",
+        phone: phone || null,
+        customerType: customerType || "B2C",
+        status: status || "ACTIVE",
+        profile: { create: {} },
+        roles: {
+          create: roleRecords.map((r) => ({
+            roleId: r.id,
+          })),
+        },
+      },
+      include: {
+        roles: { include: { role: true } },
+        profile: true,
+      },
+    });
+
+    // Handle B2B company linking or new company registration
+    if (customerType === "B2B") {
+      let targetCompanyId = companyId;
+
+      if (!targetCompanyId && newCompany?.legalName) {
+        // Find default or requested country
+        let country = null;
+        if (newCompany.countryCode) {
+          country = await prisma.country.findFirst({
+            where: {
+              OR: [
+                { code: String(newCompany.countryCode).toUpperCase() },
+                { id: String(newCompany.countryCode) },
+              ],
+            },
+          });
+        }
+        if (!country) {
+          country = await prisma.country.findFirst({ where: { active: true } }) || await prisma.country.findFirst();
+        }
+
+        const createdCompany = await prisma.company.create({
+          data: {
+            legalName: newCompany.legalName,
+            tradingName: newCompany.businessName || newCompany.tradingName || newCompany.legalName,
+            registrationNumber: newCompany.registrationNumber || null,
+            taxId: newCompany.taxId || null,
+            countryId: country.id,
+            status: newCompany.status || "APPROVED",
+            addresses: newCompany.addressLine1
+              ? {
+                  create: {
+                    type: "BUSINESS",
+                    name: newCompany.legalName,
+                    line1: newCompany.addressLine1,
+                    city: newCompany.city || "City",
+                    state: newCompany.state || null,
+                    postalCode: newCompany.postalCode || "000000",
+                    countryId: country.id,
+                    isDefault: true,
+                  },
+                }
+              : undefined,
+          },
+        });
+        targetCompanyId = createdCompany.id;
+      }
+
+      if (targetCompanyId) {
+        await prisma.companyMember.upsert({
+          where: {
+            companyId_userId: {
+              companyId: targetCompanyId,
+              userId: user.id,
+            },
+          },
+          update: {
+            isPrimary: true,
+            title: "Company Administrator",
+          },
+          create: {
+            companyId: targetCompanyId,
+            userId: user.id,
+            title: "Company Administrator",
+            isPrimary: true,
+            roles: {
+              create: { roleName: "COMPANY_ADMIN" },
+            },
+          },
+        });
+      }
+    }
+
+    const reloaded = await prisma.user.findUnique({
+      where: { id: user.id },
+      include: {
+        roles: { include: { role: true } },
+        companyMembers: { include: { company: true } },
+        profile: true,
+      },
+    });
+
+    const { passwordHash: _, ...sanitized } = reloaded || user;
+    return {
+      ...sanitized,
+      roles: (reloaded || user).roles.map((r) => r.role?.name || r.name),
+      company: reloaded?.companyMembers?.[0]?.company || null,
+    };
+  }
+
+  async updateUser(id, data) {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: { roles: true },
+    });
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    const updateData = {};
+    if (data.firstName !== undefined) updateData.firstName = data.firstName;
+    if (data.lastName !== undefined) updateData.lastName = data.lastName;
+    if (data.phone !== undefined) updateData.phone = data.phone;
+    if (data.customerType !== undefined) updateData.customerType = data.customerType;
+    if (data.status !== undefined) updateData.status = data.status;
+
+    if (data.password) {
+      const { HashUtil } = await import("../../common/utils/hash.js");
+      const { authConfig } = await import("../../config/auth.js");
+      updateData.passwordHash = await HashUtil.hashPassword(data.password, authConfig.saltRounds || 10);
+    }
+
+    if (data.roles && Array.isArray(data.roles)) {
+      // Re-assign roles
+      await prisma.userRole.deleteMany({ where: { userId: id } });
+      for (const roleName of data.roles) {
+        const role = await prisma.role.upsert({
+          where: { name: roleName },
+          update: {},
+          create: { name: roleName, description: `${roleName} role` },
+        });
+        await prisma.userRole.create({
+          data: { userId: id, roleId: role.id },
+        });
+      }
+    }
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: updateData,
+      include: {
+        roles: { include: { role: true } },
+        companyMembers: { include: { company: true } },
+        profile: true,
+      },
+    });
+
+    const { passwordHash: _, ...sanitized } = updated;
+    return {
+      ...sanitized,
+      roles: updated.roles.map((r) => r.role?.name || r.name),
+      company: updated.companyMembers?.[0]?.company || null,
+    };
+  }
+
+  async deleteUser(id) {
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+
+    await prisma.user.delete({ where: { id } });
+    return { id, deleted: true };
   }
 
   async listInventory() {

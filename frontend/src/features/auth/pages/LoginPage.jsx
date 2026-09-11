@@ -16,6 +16,7 @@ import {
   Sparkles,
   CheckCircle2,
   LockKeyhole,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "../../../components/ui/Button.jsx";
 
@@ -29,9 +30,11 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState("B2C");
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
     setLoading(true);
 
     try {
@@ -58,11 +61,7 @@ export function LoginPage() {
         navigate(ROUTES.HOME);
       }
     } catch (err) {
-      addToast({
-        title: "Authentication Failed",
-        message: err.message || "Invalid credentials. Please try again.",
-        type: "error",
-      });
+      setErrorMessage(err.message || "Invalid email or password. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -70,6 +69,7 @@ export function LoginPage() {
 
   const handleQuickDemo = (demoType) => {
     setSelectedRole(demoType);
+    setErrorMessage("");
     if (demoType === "ADMIN") {
       setEmail("admin@vanom.com");
       setPassword("Password123!");
@@ -160,6 +160,15 @@ export function LoginPage() {
           onSubmit={handleSubmit}
           className="p-6 sm:p-8 rounded-3xl bg-white border border-[#DCE8DF] shadow-xl shadow-emerald-950/[0.04] space-y-4"
         >
+          {/* Error Message Text Banner */}
+          {errorMessage && (
+            <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2.5 animate-in fade-in duration-200">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+              <div className="flex-1 leading-relaxed font-medium">
+                {errorMessage}
+              </div>
+            </div>
+          )}
           {/* Email Address */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-[#0F2B1C] block">
@@ -242,14 +251,23 @@ export function LoginPage() {
           </button>
 
           {/* Create Account Link */}
-          <div className="text-center pt-3 border-t border-[#E8EDE9]">
+          <div className="pt-3 border-t border-[#E8EDE9] space-y-1.5 text-center">
             <p className="text-xs text-[#5E7D67]">
-              New to Vanom?{" "}
+              New customer?{" "}
               <Link
                 to={ROUTES.REGISTER}
                 className="text-[#00875A] font-bold hover:underline ml-1"
               >
                 Create an account
+              </Link>
+            </p>
+            <p className="text-xs text-[#5E7D67]">
+              Buying for your business?{" "}
+              <Link
+                to={ROUTES.REGISTER_BUSINESS}
+                className="text-[#00875A] font-bold hover:underline ml-1"
+              >
+                Register Business Entity
               </Link>
             </p>
           </div>

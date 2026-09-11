@@ -4,6 +4,7 @@ import { authConfig } from "../../config/auth.js";
 import {
   BadRequestError,
   UnauthorizedError,
+  ForbiddenError,
   ConflictError,
   NotFoundError,
 } from "../../common/errors/index.js";
@@ -115,26 +116,6 @@ export class AuthService {
       throw new UnauthorizedError("Invalid email or password", ERROR_CODES.INVALID_CREDENTIALS);
     }
 
-    if (user.status !== "ACTIVE") {
-      try {
-        await prisma.auditLog.create({
-          data: {
-            actorId: user.id,
-            action: "LOGIN",
-            entityType: "USER",
-            entityId: user.id,
-            requestId,
-            ipAddress,
-            userAgent,
-            metadata: { success: false, reason: `USER_${user.status}` },
-          },
-        });
-      } catch (err) {
-        // Safe fail on audit
-      }
-      throw new UnauthorizedError(`Account is ${user.status.toLowerCase()}`, ERROR_CODES.USER_INACTIVE);
-    }
-
     const isValid = await HashUtil.comparePassword(password, user.passwordHash);
     if (!isValid) {
       try {
@@ -154,6 +135,47 @@ export class AuthService {
         // Safe fail on audit
       }
       throw new UnauthorizedError("Invalid email or password", ERROR_CODES.INVALID_CREDENTIALS);
+    }
+
+    if (user.status !== "ACTIVE") {
+      try {
+        await prisma.auditLog.create({
+          data: {
+            actorId: user.id,
+            action: "LOGIN",
+            entityType: "USER",
+            entityId: user.id,
+            requestId,
+            ipAddress,
+            userAgent,
+            metadata: { success: false, reason: `USER_${user.status}` },
+          },
+        });
+      } catch (err) {
+        // Safe fail on audit
+      }
+
+      if (user.status === "PENDING") {
+        const companyName = user.companyMembers?.[0]?.company?.tradingName || user.companyMembers?.[0]?.company?.legalName;
+        const msg = companyName
+          ? `Your business application for '${companyName}' is currently pending administrator verification and approval. You will receive an email once approved.`
+          : "Your account is currently pending administrator verification. Please wait for approval.";
+        throw new ForbiddenError(msg, ERROR_CODES.USER_PENDING_APPROVAL, { status: "PENDING", companyName: companyName || null });
+      }
+
+      if (user.status === "SUSPENDED") {
+        throw new ForbiddenError("Your account has been suspended. Please contact Vanom Support for assistance.", ERROR_CODES.USER_SUSPENDED, { status: "SUSPENDED" });
+      }
+
+      if (user.status === "DELETED") {
+        throw new ForbiddenError("This account no longer exists.", ERROR_CODES.USER_DELETED, { status: "DELETED" });
+      }
+
+      if (user.status === "INVITED") {
+        throw new ForbiddenError("Your account invitation is pending activation. Please check your email for the activation link.", ERROR_CODES.USER_INVITED, { status: "INVITED" });
+      }
+
+      throw new ForbiddenError(`Your account is currently ${user.status.toLowerCase()}. Please contact administrator for approval.`, ERROR_CODES.USER_INACTIVE, { status: user.status });
     }
 
     // Enterprise session creation & token generation

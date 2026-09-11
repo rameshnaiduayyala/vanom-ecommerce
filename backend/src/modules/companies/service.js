@@ -1,8 +1,11 @@
 import { prisma } from "../../infrastructure/database/prisma.js";
+import { HashUtil } from "../../common/utils/hash.js";
+import { authConfig } from "../../config/auth.js";
 import {
   BadRequestError,
   NotFoundError,
   ForbiddenError,
+  ConflictError,
   BusinessRuleError,
 } from "../../common/errors/index.js";
 import { ERROR_CODES } from "../../common/constants/index.js";
@@ -12,36 +15,154 @@ import { ERROR_CODES } from "../../common/constants/index.js";
  * Direct Prisma company registration, multi-country tax entity setup, member management, and document uploads
  */
 export class CompanyService {
-  async registerCompany(userId, { legalName, tradingName, registrationNumber, taxId, countryCode }) {
-    if (!legalName || !countryCode) {
-      throw new BadRequestError("Legal name and country code are required");
+  /**
+   * Register a company with an admin user, legal name, business/trading name, and address
+   * If userId is provided or authenticated, links to that user.
+   * If adminUser object { email, password, firstName, lastName, phone } is provided, creates the admin user automatically.
+   */
+  async registerCompany(userId, {
+    legalName,
+    businessName,
+    tradingName,
+    registrationNumber,
+    taxId,
+    countryCode = "USA",
+    address,
+    user: adminUserData,
+    adminUser,
+  }) {
+    const finalTradingName = businessName || tradingName || legalName;
+
+    if (!legalName) {
+      throw new BadRequestError("Legal name is required");
     }
 
-    const country = await prisma.country.findUnique({
-      where: { code: countryCode.toUpperCase() },
-    });
+    // Resolve Country dynamically by code or id, or fallback to first available country
+    let country = null;
+    if (countryCode) {
+      country = await prisma.country.findFirst({
+        where: {
+          OR: [
+            { code: String(countryCode).toUpperCase() },
+            { id: String(countryCode) },
+            { name: { equals: String(countryCode), mode: "insensitive" } },
+          ],
+        },
+      });
+    }
     if (!country) {
-      throw new NotFoundError(`Country code '${countryCode}' not supported`);
+      country = await prisma.country.findFirst({
+        where: { active: true },
+        orderBy: { code: "asc" },
+      }) || await prisma.country.findFirst();
     }
 
+    let memberUserId = userId;
+    const userData = adminUserData || adminUser;
+
+    // If an admin user payload was passed (e.g. public business registration)
+    if (!memberUserId && userData?.email) {
+      const formattedEmail = userData.email.toLowerCase().trim();
+      const existingUser = await prisma.user.findUnique({ where: { email: formattedEmail } });
+      if (existingUser) {
+        throw new ConflictError("An account with this admin email already exists", ERROR_CODES.USER_ALREADY_EXISTS);
+      }
+
+      if (!userData.password) {
+        throw new BadRequestError("Password is required to create company admin user");
+      }
+
+      const roleCompanyAdmin = await prisma.role.upsert({
+        where: { name: "COMPANY_ADMIN" },
+        update: {},
+        create: { name: "COMPANY_ADMIN", description: "B2B wholesale company administrator" },
+      });
+
+      const passwordHash = await HashUtil.hashPassword(userData.password, authConfig.saltRounds);
+      const newUser = await prisma.user.create({
+        data: {
+          email: formattedEmail,
+          passwordHash,
+          firstName: userData.firstName || "",
+          lastName: userData.lastName || "",
+          phone: userData.phone || address?.phone || null,
+          customerType: "B2B",
+          status: "PENDING",
+          profile: { create: {} },
+          roles: {
+            create: {
+              roleId: roleCompanyAdmin.id,
+            },
+          },
+        },
+      });
+      memberUserId = newUser.id;
+    }
+
+    if (!memberUserId) {
+      throw new BadRequestError("Authenticated user or admin user details (email and password) are required to register a company");
+    }
+
+    // Ensure member has COMPANY_ADMIN role attached
+    const roleCompanyAdmin = await prisma.role.upsert({
+      where: { name: "COMPANY_ADMIN" },
+      update: {},
+      create: { name: "COMPANY_ADMIN", description: "B2B wholesale company administrator" },
+    });
+
+    const existingUserRole = await prisma.userRole.findUnique({
+      where: {
+        userId_roleId: {
+          userId: memberUserId,
+          roleId: roleCompanyAdmin.id,
+        },
+      },
+    });
+
+    if (!existingUserRole) {
+      await prisma.userRole.create({
+        data: {
+          userId: memberUserId,
+          roleId: roleCompanyAdmin.id,
+        },
+      });
+    }
+
+    // Create Company with optional address and verification application
     return prisma.company.create({
       data: {
         legalName,
-        tradingName,
+        tradingName: finalTradingName,
         registrationNumber,
         taxId,
         countryId: country.id,
         status: "PENDING",
         members: {
           create: {
-            userId,
-            title: "Founder / Primary Admin",
+            userId: memberUserId,
+            title: "Company Administrator",
             isPrimary: true,
             roles: {
               create: { roleName: "COMPANY_ADMIN" },
             },
           },
         },
+        addresses: address
+          ? {
+            create: {
+              type: address.type || "BUSINESS",
+              name: address.name || legalName,
+              line1: address.line1 || address.addressLine1 || "Address Line 1",
+              line2: address.line2 || address.addressLine2 || null,
+              city: address.city || "City",
+              state: address.state || null,
+              postalCode: address.postalCode || address.zip || "000000",
+              countryId: country.id,
+              phone: address.phone || null,
+              isDefault: true,
+            },
+          }
+          : undefined,
         verification: {
           create: {
             status: "PENDING",
@@ -50,12 +171,19 @@ export class CompanyService {
       },
       include: {
         country: true,
-        members: { include: { user: true } },
+        members: {
+          include: {
+            user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true } },
+            roles: true,
+          },
+        },
+        addresses: true,
         documents: true,
         verification: true,
       },
     });
   }
+
 
   async getCompanyById(id, user) {
     const company = await prisma.company.findUnique({

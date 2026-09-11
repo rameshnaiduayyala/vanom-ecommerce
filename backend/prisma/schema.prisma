@@ -23,6 +23,7 @@ datasource db {
 
 enum UserStatus {
   ACTIVE
+  PENDING
   INVITED
   SUSPENDED
   DELETED

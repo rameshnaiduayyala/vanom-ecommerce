@@ -144,8 +144,32 @@ export const adminService = {
     return apiClient.get("/admin/companies");
   },
 
+  createCompany: async (companyData) => {
+    return apiClient.post("/companies", companyData);
+  },
+
+  updateCompany: async (id, companyData) => {
+    return apiClient.patch(`/companies/${id}`, companyData);
+  },
+
+  deleteCompany: async (id) => {
+    return apiClient.delete(`/companies/${id}`);
+  },
+
   getUsers: async () => {
     return apiClient.get("/admin/users");
+  },
+
+  createUser: async (userData) => {
+    return apiClient.post("/admin/users", userData);
+  },
+
+  updateUser: async (id, userData) => {
+    return apiClient.patch(`/admin/users/${id}`, userData);
+  },
+
+  deleteUser: async (id) => {
+    return apiClient.delete(`/admin/users/${id}`);
   },
 
   getInventory: async () => {

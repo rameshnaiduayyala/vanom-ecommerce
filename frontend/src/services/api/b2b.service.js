@@ -26,10 +26,33 @@ export const b2bService = {
   registerCompany: async (payload) => {
     if (USE_MOCK) {
       await delay(200);
-      return { success: true, data: { id: `comp-${Date.now()}`, ...payload, status: "PENDING" } };
+      const newCompany = {
+        id: `comp-${Date.now()}`,
+        legalName: payload.legalName,
+        tradingName: payload.businessName || payload.tradingName || payload.legalName,
+        registrationNumber: payload.registrationNumber || "U01100DL2024PTC123456",
+        taxId: payload.taxId || "27AAACA1234A1Z1",
+        country: payload.countryCode === "US" ? "United States" : "India",
+        countryCode: payload.countryCode || "IN",
+        status: "PENDING",
+        addresses: payload.address ? [payload.address] : [],
+        members: payload.adminUser
+          ? [
+              {
+                id: `mem-${Date.now()}`,
+                name: `${payload.adminUser.firstName} ${payload.adminUser.lastName}`.trim(),
+                email: payload.adminUser.email,
+                role: "COMPANY_ADMIN",
+                isPrimary: true,
+              },
+            ]
+          : [],
+      };
+      return { success: true, data: newCompany };
     }
-    return apiClient.post("/companies", payload);
+    return apiClient.post("/companies/register", payload);
   },
+
 
   updateCompany: async (id, payload) => {
     if (USE_MOCK) {

@@ -3,10 +3,29 @@ import { CompanyController } from "./controller.js";
 export default async function companyRoutes(fastify, options) {
   const controller = new CompanyController();
 
-  fastify.post("/companies", {
-    preHandler: [fastify.authenticate],
+  // Public / Authenticated company registration endpoint (handles Business Name, Legal Name, Address, and Admin User)
+  fastify.post("/companies/register", {
+    preHandler: async (request, reply) => {
+      try {
+        await fastify.authenticate(request, reply);
+      } catch (e) {
+        // Optional auth: allows guest registration when admin user payload is passed
+      }
+    },
     handler: controller.register,
   });
+
+  fastify.post("/companies", {
+    preHandler: async (request, reply) => {
+      try {
+        await fastify.authenticate(request, reply);
+      } catch (e) {
+        // Optional auth: allows guest registration when admin user payload is passed
+      }
+    },
+    handler: controller.register,
+  });
+
 
   fastify.get("/companies", {
     preHandler: [fastify.authenticate],

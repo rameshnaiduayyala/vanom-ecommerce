@@ -4,9 +4,9 @@ import bcrypt from "bcrypt";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Starting Enterprise Ecommerce Database Seed...");
+  console.log("🌱 Starting Simple Database Seed (3 Roles/Users, 3 Categories, 3 Products)...");
 
-  // 1. Currencies
+  // 1. Currencies & Countries
   const inr = await prisma.currency.upsert({
     where: { code: "INR" },
     update: {},
@@ -19,13 +19,6 @@ async function main() {
     create: { code: "USD", name: "US Dollar", symbol: "$", decimals: 2 },
   });
 
-  const gbp = await prisma.currency.upsert({
-    where: { code: "GBP" },
-    update: {},
-    create: { code: "GBP", name: "British Pound", symbol: "£", decimals: 2 },
-  });
-
-  // 2. Countries
   const inCountry = await prisma.country.upsert({
     where: { code: "IN" },
     update: {},
@@ -38,13 +31,7 @@ async function main() {
     create: { code: "US", name: "United States", currencyId: usd.id },
   });
 
-  const gbCountry = await prisma.country.upsert({
-    where: { code: "GB" },
-    update: {},
-    create: { code: "GB", name: "United Kingdom", currencyId: gbp.id },
-  });
-
-  // 3. Customer Groups
+  // 2. Customer Groups
   const b2cGroup = await prisma.customerGroup.upsert({
     where: { code: "B2C" },
     update: {},
@@ -57,234 +44,7 @@ async function main() {
     create: { code: "B2B", name: "Wholesale Buyers", description: "Verified B2B bulk buyers" },
   });
 
-  // 4. Permissions
-  const permissionsList = [
-    { code: "catalog.read", description: "View products and categories" },
-    { code: "catalog.create", description: "Create products" },
-    { code: "catalog.update", description: "Update products" },
-    { code: "catalog.delete", description: "Delete products" },
-    { code: "pricing.read", description: "View price lists" },
-    { code: "pricing.create", description: "Create price lists" },
-    { code: "pricing.update", description: "Update price rules" },
-    { code: "inventory.read", description: "View inventory" },
-    { code: "inventory.adjust", description: "Adjust stock" },
-    { code: "inventory.transfer", description: "Transfer stock" },
-    { code: "orders.read", description: "Read orders" },
-    { code: "orders.create", description: "Create orders" },
-    { code: "orders.update", description: "Update orders" },
-    { code: "orders.cancel", description: "Cancel orders" },
-    { code: "companies.read", description: "Read companies" },
-    { code: "companies.create", description: "Register companies" },
-    { code: "companies.update", description: "Update companies" },
-    { code: "companies.approve", description: "Approve companies" },
-    { code: "companies.reject", description: "Reject companies" },
-    { code: "quotes.read", description: "Read quotes" },
-    { code: "quotes.create", description: "Request quotes" },
-    { code: "quotes.update", description: "Manage quotes" },
-    { code: "quotes.approve", description: "Approve quotes" },
-    { code: "payments.read", description: "Read payments" },
-    { code: "payments.refund", description: "Refund payments" },
-    { code: "admin.dashboard", description: "Access admin dashboard" },
-    { code: "admin.users", description: "Manage users" },
-    { code: "admin.companies", description: "Manage companies" },
-    { code: "admin.pricing", description: "Manage enterprise pricing" },
-    { code: "admin.inventory", description: "Manage warehouse inventory" },
-    { code: "admin.orders", description: "Manage all orders" },
-  ];
-
-  for (const perm of permissionsList) {
-    await prisma.permission.upsert({
-      where: { code: perm.code },
-      update: {},
-      create: perm,
-    });
-  }
-
-  // 5. Roles
-  const rolesList = [
-    "CUSTOMER",
-    "COMPANY_ADMIN",
-    "COMPANY_BUYER",
-    "SALES",
-    "INVENTORY_MANAGER",
-    "FINANCE",
-    "ADMIN",
-    "SUPER_ADMIN",
-  ];
-
-  for (const roleName of rolesList) {
-    const role = await prisma.role.upsert({
-      where: { name: roleName },
-      update: {},
-      create: { name: roleName, description: `${roleName} role` },
-    });
-
-    if (roleName === "ADMIN" || roleName === "SUPER_ADMIN") {
-      const allPerms = await prisma.permission.findMany();
-      for (const p of allPerms) {
-        await prisma.rolePermission.upsert({
-          where: { roleId_permissionId: { roleId: role.id, permissionId: p.id } },
-          update: {},
-          create: { roleId: role.id, permissionId: p.id },
-        });
-      }
-    }
-  }
-
-  // 6. Units and Packaging Types
-  const sackUnit = await prisma.unitOfMeasure.upsert({
-    where: { code: "SACK" },
-    update: {},
-    create: { code: "SACK", name: "Sack", decimals: 0 },
-  });
-
-  const pieceUnit = await prisma.unitOfMeasure.upsert({
-    where: { code: "PCS" },
-    update: {},
-    create: { code: "PCS", name: "Piece", decimals: 0 },
-  });
-
-  const palletPackagingType = await prisma.packagingType.upsert({
-    where: { code: "PALLET" },
-    update: {},
-    create: { code: "PALLET", name: "Standard Industrial Pallet" },
-  });
-
-  const boxPackagingType = await prisma.packagingType.upsert({
-    where: { code: "BOX" },
-    update: {},
-    create: { code: "BOX", name: "Corrugated Box" },
-  });
-
-  // 7. Warehouses
-  const mumbaiWarehouse = await prisma.warehouse.upsert({
-    where: { code: "WH-IN-MUM" },
-    update: {},
-    create: {
-      code: "WH-IN-MUM",
-      name: "Mumbai Central Warehouse",
-      countryId: inCountry.id,
-      addressLine1: "Plot 42, Logistics Park, Bhiwandi",
-      city: "Mumbai",
-      state: "Maharashtra",
-      postalCode: "421302",
-    },
-  });
-
-  const dallasWarehouse = await prisma.warehouse.upsert({
-    where: { code: "WH-US-DFW" },
-    update: {},
-    create: {
-      code: "WH-US-DFW",
-      name: "Dallas Fulfillment Hub",
-      countryId: usCountry.id,
-      addressLine1: "1200 Logistics Blvd",
-      city: "Dallas",
-      state: "TX",
-      postalCode: "75261",
-    },
-  });
-
-  const londonWarehouse = await prisma.warehouse.upsert({
-    where: { code: "WH-GB-LON" },
-    update: {},
-    create: {
-      code: "WH-GB-LON",
-      name: "London Distribution Hub",
-      countryId: gbCountry.id,
-      addressLine1: "Unit 7, Heathrow Cargo Terminal",
-      city: "London",
-      postalCode: "TW6 2GW",
-    },
-  });
-
-  // 8. Categories & Brands
-  const defaultCategories = [
-    {
-      name: "Electronics & POS",
-      slug: "electronics-pos",
-      description: "POS terminals, barcode scanners, commercial sensors, and hardware.",
-      imageUrl: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=400&q=80",
-    },
-    {
-      name: "Groceries & FMCG",
-      slug: "groceries-fmcg",
-      description: "Wholesale grains, food staples, seasonings, and bulk consumables.",
-      imageUrl: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=400&q=80",
-    },
-    {
-      name: "Industrial Packaging",
-      slug: "industrial-packaging",
-      description: "Heavy-duty corrugated boxes, stretch wrap, thermal strapping, and tape.",
-      imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80",
-    },
-    {
-      name: "Commercial Kitchen",
-      slug: "commercial-kitchen",
-      description: "Induction cooktops, stainless cutlery, food warmers, and culinary equipment.",
-      imageUrl: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=400&q=80",
-    },
-    {
-      name: "Safety & Security",
-      slug: "safety-security",
-      description: "Industrial PPE, high-vis wear, CCTV security, and biometric locks.",
-      imageUrl: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=400&q=80",
-    },
-    {
-      name: "Tools & Hardware",
-      slug: "tools-hardware",
-      description: "Hand tools, power tools, workshop consumables, and fasteners.",
-      imageUrl: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=400&q=80",
-    },
-    {
-      name: "Living & Decor",
-      slug: "living-decor",
-      description: "Modern acoustic wall panels, architectural accents, and lighting.",
-      imageUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=400&q=80",
-    },
-    {
-      name: "Gardening Supplies",
-      slug: "gardening-supplies",
-      description: "Commercial agricultural supplies, soils, and organic fertilizers.",
-      imageUrl: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=400&q=80",
-    },
-    {
-      name: "Pots & Planters",
-      slug: "pots-and-planters",
-      description: "Glazed architectural planters and ceramic horticultural containers.",
-      imageUrl: "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=400&q=80",
-    },
-  ];
-
-  const seededCategories = {};
-  for (const cat of defaultCategories) {
-    const created = await prisma.category.upsert({
-      where: { slug: cat.slug },
-      update: {
-        name: cat.name,
-        description: cat.description,
-        imageUrl: cat.imageUrl,
-      },
-      create: {
-        name: cat.name,
-        slug: cat.slug,
-        description: cat.description,
-        imageUrl: cat.imageUrl,
-      },
-    });
-    seededCategories[cat.slug] = created;
-  }
-
-  const gardenCategory = seededCategories["gardening-supplies"];
-  const potCategory = seededCategories["pots-and-planters"];
-
-  const vanomBrand = await prisma.brand.upsert({
-    where: { slug: "vanom-commercial" },
-    update: {},
-    create: { name: "Vanom Commercial", slug: "vanom-commercial" },
-  });
-
-  // 9. Price Lists (B2C and B2B per country)
+  // 3. Price Lists
   const inB2CList = await prisma.priceList.upsert({
     where: { code: "IN-B2C-RETAIL" },
     update: {},
@@ -311,286 +71,32 @@ async function main() {
     },
   });
 
-  const usB2CList = await prisma.priceList.upsert({
-    where: { code: "US-B2C-RETAIL" },
+  // 4. Roles (3 Roles: SUPER_ADMIN, COMPANY_ADMIN, CUSTOMER)
+  const roleSuperAdmin = await prisma.role.upsert({
+    where: { name: "SUPER_ADMIN" },
     update: {},
-    create: {
-      code: "US-B2C-RETAIL",
-      name: "USA Retail B2C",
-      countryId: usCountry.id,
-      currencyId: usd.id,
-      customerGroupId: b2cGroup.id,
-      priority: 1,
-    },
+    create: { name: "SUPER_ADMIN", description: "Full system super administrator" },
   });
 
-  const usB2BList = await prisma.priceList.upsert({
-    where: { code: "US-B2B-WHOLESALE" },
+  const roleB2BAdmin = await prisma.role.upsert({
+    where: { name: "COMPANY_ADMIN" },
     update: {},
-    create: {
-      code: "US-B2B-WHOLESALE",
-      name: "USA Wholesale B2B",
-      countryId: usCountry.id,
-      currencyId: usd.id,
-      customerGroupId: b2bGroup.id,
-      priority: 10,
-    },
+    create: { name: "COMPANY_ADMIN", description: "B2B wholesale company administrator" },
   });
 
-  const gbB2CList = await prisma.priceList.upsert({
-    where: { code: "GB-B2C-RETAIL" },
+  const roleCustomer = await prisma.role.upsert({
+    where: { name: "CUSTOMER" },
     update: {},
-    create: {
-      code: "GB-B2C-RETAIL",
-      name: "UK Retail B2C",
-      countryId: gbCountry.id,
-      currencyId: gbp.id,
-      customerGroupId: b2cGroup.id,
-      priority: 1,
-    },
+    create: { name: "CUSTOMER", description: "B2C retail consumer" },
   });
 
-  const gbB2BList = await prisma.priceList.upsert({
-    where: { code: "GB-B2B-WHOLESALE" },
-    update: {},
-    create: {
-      code: "GB-B2B-WHOLESALE",
-      name: "UK Wholesale B2B",
-      countryId: gbCountry.id,
-      currencyId: gbp.id,
-      customerGroupId: b2bGroup.id,
-      priority: 10,
-    },
-  });
-
-  // 10. Products & Multi-Tier Pr  // Product 1: Premium Garden Soil
-  const soilProduct = await prisma.product.upsert({
-    where: { slug: "premium-garden-soil" },
-    update: { isFeatured: true, isBestSeller: true },
-    create: {
-      name: "Premium Garden Soil",
-      slug: "premium-garden-soil",
-      sku: "SOIL-PREM-BASE",
-      brandId: vanomBrand.id,
-      status: "ACTIVE",
-      isFeatured: true,
-      isBestSeller: true,
-      description: "Organic nutrient-rich garden soil suitable for commercial nurseries and home gardening.",
-      categories: { create: { categoryId: gardenCategory.id } },
-    },
-  });
-
-  const soilVariant = await prisma.productVariant.upsert({
-    where: { sku: "SOIL-50KG-SACK" },
-    update: {},
-    create: {
-      productId: soilProduct.id,
-      sku: "SOIL-50KG-SACK",
-      name: "Premium Garden Soil - 50 KG Sack",
-      status: "ACTIVE",
-      weight: new Prisma.Decimal("50.00"),
-    },
-  });
-
-  // Packaging & Pallet: 40 Sacks / Pallet
-  const soilPackaging = await prisma.productPackaging.create({
-    data: {
-      variantId: soilVariant.id,
-      unitId: sackUnit.id,
-      packagingTypeId: palletPackagingType.id,
-      quantityPerPackage: 1,
-      isDefault: true,
-      pallet: {
-        create: {
-          packagesPerPallet: 40,
-          maxWeight: new Prisma.Decimal("2000.00"),
-        },
-      },
-    },
-  });
-
-  // Inventory in Mumbai & Dallas
-  await prisma.inventoryItem.upsert({
-    where: {
-      warehouseId_locationId_variantId: {
-        warehouseId: mumbaiWarehouse.id,
-        locationId: "",
-        variantId: soilVariant.id,
-      },
-    },
-    update: {},
-    create: {
-      warehouseId: mumbaiWarehouse.id,
-      locationId: null,
-      variantId: soilVariant.id,
-      productId: soilProduct.id,
-      onHand: 5000,
-      reserved: 0,
-    },
-  });
-
-  await prisma.inventoryItem.upsert({
-    where: {
-      warehouseId_locationId_variantId: {
-        warehouseId: dallasWarehouse.id,
-        locationId: "",
-        variantId: soilVariant.id,
-      },
-    },
-    update: {},
-    create: {
-      warehouseId: dallasWarehouse.id,
-      locationId: null,
-      variantId: soilVariant.id,
-      productId: soilProduct.id,
-      onHand: 2500,
-      reserved: 0,
-    },
-  });
-
-  // Prices for Soil:
-  // India B2C: ₹499
-  await prisma.productPrice.create({
-    data: {
-      productId: soilProduct.id,
-      variantId: soilVariant.id,
-      priceListId: inB2CList.id,
-      currencyId: inr.id,
-      amount: new Prisma.Decimal("499.00"),
-      minQuantity: 1,
-    },
-  });
-
-  // India B2B Tiers: 20-49: ₹420 (MOQ = 20), 50-99: ₹390, 100+: ₹350
-  await prisma.productPrice.createMany({
-    data: [
-      { productId: soilProduct.id, variantId: soilVariant.id, priceListId: inB2BList.id, currencyId: inr.id, amount: new Prisma.Decimal("420.00"), minQuantity: 20, maxQuantity: 49 },
-      { productId: soilProduct.id, variantId: soilVariant.id, priceListId: inB2BList.id, currencyId: inr.id, amount: new Prisma.Decimal("390.00"), minQuantity: 50, maxQuantity: 99 },
-      { productId: soilProduct.id, variantId: soilVariant.id, priceListId: inB2BList.id, currencyId: inr.id, amount: new Prisma.Decimal("350.00"), minQuantity: 100, maxQuantity: null },
-    ],
-  });
-
-  // USA B2C: $19.99
-  await prisma.productPrice.create({
-    data: {
-      productId: soilProduct.id,
-      variantId: soilVariant.id,
-      priceListId: usB2CList.id,
-      currencyId: usd.id,
-      amount: new Prisma.Decimal("19.99"),
-      minQuantity: 1,
-    },
-  });
-
-  // USA B2B: 20-49: $16.50, 50-99: $14.90, 100+: $13.50
-  await prisma.productPrice.createMany({
-    data: [
-      { productId: soilProduct.id, variantId: soilVariant.id, priceListId: usB2BList.id, currencyId: usd.id, amount: new Prisma.Decimal("16.50"), minQuantity: 20, maxQuantity: 49 },
-      { productId: soilProduct.id, variantId: soilVariant.id, priceListId: usB2BList.id, currencyId: usd.id, amount: new Prisma.Decimal("14.90"), minQuantity: 50, maxQuantity: 99 },
-      { productId: soilProduct.id, variantId: soilVariant.id, priceListId: usB2BList.id, currencyId: usd.id, amount: new Prisma.Decimal("13.50"), minQuantity: 100, maxQuantity: null },
-    ],
-  });
-
-  // UK B2C: £17.99
-  await prisma.productPrice.create({
-    data: {
-      productId: soilProduct.id,
-      variantId: soilVariant.id,
-      priceListId: gbB2CList.id,
-      currencyId: gbp.id,
-      amount: new Prisma.Decimal("17.99"),
-      minQuantity: 1,
-    },
-  });
-
-  // UK B2B: 20-49: £14.90, 50-99: £13.40, 100+: £12.20
-  await prisma.productPrice.createMany({
-    data: [
-      { productId: soilProduct.id, variantId: soilVariant.id, priceListId: gbB2BList.id, currencyId: gbp.id, amount: new Prisma.Decimal("14.90"), minQuantity: 20, maxQuantity: 49 },
-      { productId: soilProduct.id, variantId: soilVariant.id, priceListId: gbB2BList.id, currencyId: gbp.id, amount: new Prisma.Decimal("13.40"), minQuantity: 50, maxQuantity: 99 },
-      { productId: soilProduct.id, variantId: soilVariant.id, priceListId: gbB2BList.id, currencyId: gbp.id, amount: new Prisma.Decimal("12.20"), minQuantity: 100, maxQuantity: null },
-    ],
-  });
-
-  // Product 2: Premium Ceramic Pot
-  const potProduct = await prisma.product.upsert({
-    where: { slug: "premium-ceramic-pot" },
-    update: { isFeatured: true },
-    create: {
-      name: "Premium Ceramic Pot",
-      slug: "premium-ceramic-pot",
-      sku: "POT-CERAM-BASE",
-      brandId: vanomBrand.id,
-      status: "ACTIVE",
-      isFeatured: true,
-      description: "Glazed ceramic pot with drainage system.",
-      categories: { create: { categoryId: potCategory.id } },
-    },
-  });
-
-  const potVariant = await prisma.productVariant.upsert({
-    where: { sku: "POT-CERAM-12IN" },
-    update: {},
-    create: {
-      productId: potProduct.id,
-      sku: "POT-CERAM-12IN",
-      name: "12-Inch Glazed Ceramic Pot",
-      status: "ACTIVE",
-      weight: new Prisma.Decimal("4.50"),
-    },
-  });
-
-  await prisma.productPrice.createMany({
-    data: [
-      { productId: potProduct.id, variantId: potVariant.id, priceListId: inB2CList.id, currencyId: inr.id, amount: new Prisma.Decimal("899.00"), minQuantity: 1 },
-      { productId: potProduct.id, variantId: potVariant.id, priceListId: inB2BList.id, currencyId: inr.id, amount: new Prisma.Decimal("650.00"), minQuantity: 10 },
-      { productId: potProduct.id, variantId: potVariant.id, priceListId: usB2CList.id, currencyId: usd.id, amount: new Prisma.Decimal("29.99"), minQuantity: 1 },
-      { productId: potProduct.id, variantId: potVariant.id, priceListId: usB2BList.id, currencyId: usd.id, amount: new Prisma.Decimal("22.00"), minQuantity: 10 },
-    ],
-  });
-
-  // Product 3: Indoor Foliage Plant
-  const plantProduct = await prisma.product.upsert({
-    where: { slug: "indoor-foliage-plant" },
-    update: { isBestSeller: true },
-    create: {
-      name: "Indoor Foliage Plant",
-      slug: "indoor-foliage-plant",
-      sku: "PLANT-FOLIAGE-BASE",
-      brandId: vanomBrand.id,
-      status: "ACTIVE",
-      isBestSeller: true,
-      description: "Air-purifying indoor ornamental foliage plant.",
-      categories: { create: { categoryId: gardenCategory.id } },
-    },
-  });
-
-  const plantVariant = await prisma.productVariant.upsert({
-    where: { sku: "PLANT-MONSTERA-MED" },
-    update: {},
-    create: {
-      productId: plantProduct.id,
-      sku: "PLANT-MONSTERA-MED",
-      name: "Monstera Deliciosa - Medium",
-      status: "ACTIVE",
-      weight: new Prisma.Decimal("2.00"),
-    },
-  });
-
-  await prisma.productPrice.createMany({
-    data: [
-      { productId: plantProduct.id, variantId: plantVariant.id, priceListId: inB2CList.id, currencyId: inr.id, amount: new Prisma.Decimal("349.00"), minQuantity: 1 },
-      { productId: plantProduct.id, variantId: plantVariant.id, priceListId: inB2BList.id, currencyId: inr.id, amount: new Prisma.Decimal("240.00"), minQuantity: 15 },
-    ],
-  });
-
-  // 11. Demo Admin User
+  // 5. 3 Users (Role-wise)
   const passwordHash = await bcrypt.hash("Password123!", 10);
+
+  // User 1: Admin
   const adminUser = await prisma.user.upsert({
     where: { email: "admin@vanom.com" },
-    update: {
-      avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80",
-    },
+    update: {},
     create: {
       email: "admin@vanom.com",
       passwordHash,
@@ -600,20 +106,16 @@ async function main() {
       status: "ACTIVE",
       customerType: "B2B",
       roles: {
-        create: {
-          role: { connect: { name: "SUPER_ADMIN" } },
-        },
+        create: { roleId: roleSuperAdmin.id },
       },
       profile: { create: {} },
     },
   });
 
-  // 12. Demo Approved B2B Wholesale Company
+  // User 2: B2B Wholesale Buyer / Company Admin
   const b2bUser = await prisma.user.upsert({
     where: { email: "buyer@agrowholesale.in" },
-    update: {
-      avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&q=80",
-    },
+    update: {},
     create: {
       email: "buyer@agrowholesale.in",
       passwordHash,
@@ -623,15 +125,14 @@ async function main() {
       status: "ACTIVE",
       customerType: "B2B",
       roles: {
-        create: {
-          role: { connect: { name: "COMPANY_ADMIN" } },
-        },
+        create: { roleId: roleB2BAdmin.id },
       },
       profile: { create: {} },
     },
   });
 
-  const demoCompany = await prisma.company.upsert({
+  // Create Company for B2B user
+  await prisma.company.upsert({
     where: { id: "00000000-0000-0000-0000-000000000001" },
     update: {},
     create: {
@@ -644,8 +145,6 @@ async function main() {
       status: "APPROVED",
       approvedAt: new Date(),
       approvedById: adminUser.id,
-      paymentTermsDays: 30,
-      creditLimit: new Prisma.Decimal("500000.00"),
       members: {
         create: {
           userId: b2bUser.id,
@@ -654,30 +153,13 @@ async function main() {
           roles: { create: { roleName: "COMPANY_ADMIN" } },
         },
       },
-      verification: {
-        create: {
-          status: "APPROVED",
-          submittedAt: new Date(),
-          decidedAt: new Date(),
-          decisionReason: "Verified with Ministry of Corporate Affairs and GST portal.",
-          reviews: {
-            create: {
-              reviewerId: adminUser.id,
-              decision: "APPROVED",
-              notes: "All official compliance documents verified.",
-            },
-          },
-        },
-      },
     },
   });
 
-  // 13. Demo B2C Retail Customer
+  // User 3: Regular Customer
   const customerUser = await prisma.user.upsert({
     where: { email: "customer@vanom.com" },
-    update: {
-      avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=256&q=80",
-    },
+    update: {},
     create: {
       email: "customer@vanom.com",
       passwordHash,
@@ -687,74 +169,181 @@ async function main() {
       status: "ACTIVE",
       customerType: "B2C",
       roles: {
-        create: {
-          role: { connect: { name: "CUSTOMER" } },
-        },
+        create: { roleId: roleCustomer.id },
       },
-      profile: {
-        create: {
-          preferredCurrency: "USD",
-          marketingOptIn: true,
-        },
-      },
+      profile: { create: {} },
     },
   });
 
-  // 14. Promotional & Carousel Banners
-  const demoBanners = [
-    {
-      title: "Commercial Agricultural Supplies & Nutrients",
-      subtitle: "Enterprise Procurement 2026",
-      description: "Direct manufacturer pricing for certified fertilizers, seeds, and industrial soil conditioners with guaranteed delivery.",
-      type: "HERO_CAROUSEL",
-      imageUrl: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=1200&q=80",
-      buttonText: "Explore Wholesale",
-      buttonLink: "/products?category=gardening-supplies",
-      badgeText: "Verified Global Exporters",
-      bgGradient: "from-emerald-900 via-emerald-800 to-green-950",
-      sortOrder: 1,
-      active: true,
-    },
-    {
-      title: "Glazed Architectural Planters & Horticultural Ceramics",
-      subtitle: "Premium Design Series",
-      description: "Handcrafted frost-resistant planters engineered for commercial resorts, corporate offices, and botanical landscapers.",
-      type: "HERO_CAROUSEL",
-      imageUrl: "https://images.unsplash.com/photo-1485955900006-10f4d324d411?auto=format&fit=crop&w=1200&q=80",
-      buttonText: "Browse Collection",
-      buttonLink: "/products?category=pots-and-planters",
-      badgeText: "High Durability",
-      bgGradient: "from-stone-900 via-stone-800 to-amber-950",
-      sortOrder: 2,
-      active: true,
-    },
-    {
-      title: "Flash Deal: Extra 15% Off Bulk Pallet Freight",
-      subtitle: "Limited Time Offer",
-      description: "Take advantage of zero container demurrage and volume pricing on all domestic interstate bulk shipments.",
-      type: "PROMOTIONAL",
-      imageUrl: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80",
-      buttonText: "Claim Discount",
-      buttonLink: "/b2b/bulk-order",
-      badgeText: "Flash Deal",
-      bgGradient: "from-blue-900 via-indigo-900 to-slate-900",
-      sortOrder: 1,
-      active: true,
-    },
-  ];
+  // 6. 3 Categories
+  const brand = await prisma.brand.upsert({
+    where: { slug: "vanom-organics" },
+    update: {},
+    create: { name: "Vanom Organics", slug: "vanom-organics" },
+  });
 
-  for (const b of demoBanners) {
-    const existing = await prisma.banner.findFirst({ where: { title: b.title } });
-    if (!existing) {
-      await prisma.banner.create({ data: b });
-    }
-  }
+  const cat1 = await prisma.category.upsert({
+    where: { slug: "groceries" },
+    update: {},
+    create: {
+      name: "Groceries & Superfoods",
+      slug: "groceries",
+      description: "Organic staples, cold-pressed oils, Himalayan salt, and whole grains.",
+      imageUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80",
+    },
+  });
 
-  console.log("✅ Database successfully seeded with full enterprise B2C and B2B dataset & promotional banners!");
+  const cat2 = await prisma.category.upsert({
+    where: { slug: "value-combos" },
+    update: {},
+    create: {
+      name: "Value Combos & Bundles",
+      slug: "value-combos",
+      description: "Super-saver multi-packs and curated bundle savings.",
+      imageUrl: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=600&q=80",
+    },
+  });
+
+  const cat3 = await prisma.category.upsert({
+    where: { slug: "gardening-supplies" },
+    update: {},
+    create: {
+      name: "Gardening Supplies",
+      slug: "gardening-supplies",
+      description: "Organic nutrient-rich soils, fertilizers, and horticultural containers.",
+      imageUrl: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=600&q=80",
+    },
+  });
+
+  // 7. 3 Products
+
+  // Product 1: Pure Organic Kashmiri Saffron
+  const product1 = await prisma.product.upsert({
+    where: { slug: "pure-kashmiri-saffron" },
+    update: {},
+    create: {
+      name: "Pure Organic Kashmiri Saffron 1g",
+      slug: "pure-kashmiri-saffron",
+      sku: "GROC-SAFF-1G",
+      brandId: brand.id,
+      status: "ACTIVE",
+      isFeatured: true,
+      isBestSeller: true,
+      description: "Grade A1 Super Mongra natural aromatic saffron stigmas.",
+      categories: { create: { categoryId: cat1.id } },
+    },
+  });
+
+  const variant1 = await prisma.productVariant.upsert({
+    where: { sku: "GROC-SAFF-1G-PACK" },
+    update: {},
+    create: {
+      productId: product1.id,
+      sku: "GROC-SAFF-1G-PACK",
+      name: "1g Sealed Bottle",
+      status: "ACTIVE",
+      weight: new Prisma.Decimal("0.05"),
+    },
+  });
+
+  await prisma.productPrice.createMany({
+    data: [
+      { productId: product1.id, variantId: variant1.id, priceListId: inB2CList.id, currencyId: inr.id, amount: new Prisma.Decimal("499.00"), minQuantity: 1 },
+      { productId: product1.id, variantId: variant1.id, priceListId: inB2BList.id, currencyId: inr.id, amount: new Prisma.Decimal("380.00"), minQuantity: 10 },
+    ],
+  });
+
+  // Product 2: Immunity Booster Duo Pack (Combo)
+  const product2 = await prisma.product.upsert({
+    where: { slug: "immunity-booster-combo" },
+    update: {},
+    create: {
+      name: "Immunity Booster Duo Pack",
+      slug: "immunity-booster-combo",
+      sku: "CMB-IMMUNITY-01",
+      brandId: brand.id,
+      status: "ACTIVE",
+      isFeatured: true,
+      description: "Kadha Herbal Sips (30 Sachets) + 100% Raw Forest Honey (500g).",
+      categories: { create: { categoryId: cat2.id } },
+    },
+  });
+
+  const variant2 = await prisma.productVariant.upsert({
+    where: { sku: "CMB-IMMUNITY-01-BOX" },
+    update: {},
+    create: {
+      productId: product2.id,
+      sku: "CMB-IMMUNITY-01-BOX",
+      name: "Duo Pack Bundle",
+      status: "ACTIVE",
+      weight: new Prisma.Decimal("0.85"),
+    },
+  });
+
+  await prisma.productPrice.createMany({
+    data: [
+      { productId: product2.id, variantId: variant2.id, priceListId: inB2CList.id, currencyId: inr.id, amount: new Prisma.Decimal("699.00"), minQuantity: 1 },
+      { productId: product2.id, variantId: variant2.id, priceListId: inB2BList.id, currencyId: inr.id, amount: new Prisma.Decimal("520.00"), minQuantity: 10 },
+    ],
+  });
+
+  // Product 3: Premium Organic Garden Soil
+  const product3 = await prisma.product.upsert({
+    where: { slug: "premium-organic-garden-soil" },
+    update: {},
+    create: {
+      name: "Premium Organic Garden Soil (50 KG Sack)",
+      slug: "premium-organic-garden-soil",
+      sku: "SOIL-PREM-50KG",
+      brandId: brand.id,
+      status: "ACTIVE",
+      isBestSeller: true,
+      description: "Nutrient-rich potting mix with vermicompost, coco peat, and organic bio-fertilizers.",
+      categories: { create: { categoryId: cat3.id } },
+    },
+  });
+
+  const variant3 = await prisma.productVariant.upsert({
+    where: { sku: "SOIL-50KG-SACK" },
+    update: {},
+    create: {
+      productId: product3.id,
+      sku: "SOIL-50KG-SACK",
+      name: "50 KG Commercial Sack",
+      status: "ACTIVE",
+      weight: new Prisma.Decimal("50.00"),
+    },
+  });
+
+  await prisma.productPrice.createMany({
+    data: [
+      { productId: product3.id, variantId: variant3.id, priceListId: inB2CList.id, currencyId: inr.id, amount: new Prisma.Decimal("499.00"), minQuantity: 1 },
+      { productId: product3.id, variantId: variant3.id, priceListId: inB2BList.id, currencyId: inr.id, amount: new Prisma.Decimal("360.00"), minQuantity: 20 },
+    ],
+  });
+
+  console.log("✅ Seed completed successfully!");
+  console.log("------------------------------------------");
+  console.log("👥 3 USERS (Password: Password123!):");
+  console.log("  1. SUPER_ADMIN   : admin@vanom.com");
+  console.log("  2. COMPANY_ADMIN : buyer@agrowholesale.in");
+  console.log("  3. CUSTOMER      : customer@vanom.com");
+  console.log("------------------------------------------");
+  console.log("📂 3 CATEGORIES:");
+  console.log("  1. Groceries & Superfoods (slug: groceries)");
+  console.log("  2. Value Combos & Bundles (slug: value-combos)");
+  console.log("  3. Gardening Supplies (slug: gardening-supplies)");
+  console.log("------------------------------------------");
+  console.log("📦 3 PRODUCTS:");
+  console.log("  1. Pure Organic Kashmiri Saffron 1g (slug: pure-kashmiri-saffron)");
+  console.log("  2. Immunity Booster Duo Pack (slug: immunity-booster-combo)");
+  console.log("  3. Premium Organic Garden Soil (slug: premium-organic-garden-soil)");
+  console.log("------------------------------------------");
 }
 
 main()
-  .catch(e => {
+  .catch((e) => {
     console.error("❌ Seed failed:", e);
     process.exit(1);
   })

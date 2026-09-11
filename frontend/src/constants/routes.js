@@ -15,8 +15,11 @@ export const ROUTES = {
   ACCOUNT_ADDRESSES: "/account/addresses",
   LOGIN: "/login",
   REGISTER: "/register",
+  REGISTER_BUSINESS: "/register-business",
+  REGISTER_BUSINESS_SUCCESS: "/register-business/pending-approval",
   FORGOT_PASSWORD: "/forgot-password",
   CONTACT: "/contact",
+
 
   // B2B Wholesale Portal
   B2B: {
