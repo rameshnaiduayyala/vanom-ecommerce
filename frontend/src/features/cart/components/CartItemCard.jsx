@@ -21,9 +21,8 @@ export function CartItemCard({
 
   return (
     <div
-      className={`py-5 flex flex-col sm:flex-row gap-4 transition-colors ${
-        !isSelected ? "opacity-60 bg-gray-50/50 -mx-4 sm:-mx-6 px-4 sm:px-6" : ""
-      }`}
+      className={`py-5 flex flex-col sm:flex-row gap-4 transition-colors ${!isSelected ? "opacity-60 bg-gray-50/50 -mx-4 sm:-mx-6 px-4 sm:px-6" : ""
+        }`}
     >
       {/* Checkbox */}
       <div className="pt-1 flex items-start">
@@ -73,10 +72,10 @@ export function CartItemCard({
                 <span className="text-[#067d62] font-semibold">
                   {item.maxStock ? `In stock (${item.maxStock} available)` : "In stock"}
                 </span>
-                <span className="text-gray-300">|</span>
+                {/* <span className="text-gray-300">|</span>
                 <span className="inline-flex items-center gap-1 font-bold text-[#007185] bg-[#EBF7FD] px-2 py-0.5 rounded text-[11px]">
                   <Sparkles className="w-3 h-3 text-[#FF9900]" /> Express Shipping
-                </span>
+                </span> */}
               </>
             )}
           </div>
@@ -84,20 +83,6 @@ export function CartItemCard({
           {item.specs && (
             <p className="text-xs text-text-secondary mt-1 line-clamp-1">{item.specs}</p>
           )}
-
-          {/* Gift Option */}
-          <div className="mt-2 flex items-center gap-2">
-            <label className="flex items-center gap-1.5 text-xs text-text-secondary cursor-pointer hover:text-gray-900">
-              <input
-                type="checkbox"
-                checked={isGift}
-                onChange={() => onToggleGift(item.id)}
-                className="w-3.5 h-3.5 rounded border-gray-300 text-[#007185] focus:ring-[#007185] cursor-pointer"
-              />
-              <Gift className="w-3.5 h-3.5 text-[#C7511F]" />
-              <span>This is a gift <span className="text-[#007185] text-[11px] hover:underline">Learn more</span></span>
-            </label>
-          </div>
         </div>
 
         {/* Action Buttons */}
