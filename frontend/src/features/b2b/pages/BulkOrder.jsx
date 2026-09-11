@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { useCountryStore } from "../../../stores/country.store.js";
@@ -27,6 +27,9 @@ import { Button } from "../../../components/ui/Button.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";
 
 export function BulkOrder() {
+  const [searchParams] = useSearchParams();
+  const requestedProductId = searchParams.get("productId");
+
   const { country } = useCountryStore();
   const { user } = useAuthStore();
   const navigate = useNavigate();
@@ -50,7 +53,7 @@ export function BulkOrder() {
   const [searchTerm, setSearchTerm] = useState("");
   const [notes, setNotes] = useState("");
 
-  // Live Spreadsheet Table Rows
+  // Live Spreadsheet Table Rows (Starts empty by default for manual selection)
   const [rows, setRows] = useState([]);
 
   // Filtered bulk products for selector
@@ -65,33 +68,15 @@ export function BulkOrder() {
     return true;
   });
 
-  // Auto initialize rows with bulk products when loaded
+  // Only auto-add if a specific product was requested via URL query params (e.g. from Catalog)
   useEffect(() => {
-    if (bulkProducts.length > 0 && rows.length === 0) {
-      const initialRows = bulkProducts.slice(0, 3).map((p) => {
-        const moq = p.moq || 20;
-        const initialQty = moq * 2;
-        const matchedTier = resolveTier(p.wholesaleTiers, initialQty);
-        return {
-          id: p.id,
-          productId: p.id,
-          variantId: p.variants?.[0]?.id || p.id,
-          name: p.name,
-          sku: p.sku,
-          categoryName: p.categoryName || "General",
-          packaging: p.packaging?.type || "Cartons / Sacks",
-          unitsPerPackage: p.packaging?.unitsPerPackage || 1,
-          moq: moq,
-          quantity: initialQty,
-          unitPrice: matchedTier?.unitPriceUSD || p.price_usd || 30.0,
-          tierName: matchedTier?.name || "Tier 1",
-          discountPercent: matchedTier?.discountPercent || 0,
-          wholesaleTiers: p.wholesaleTiers || [],
-        };
-      });
-      setRows(initialRows);
+    if (requestedProductId && bulkProducts.length > 0) {
+      const exists = rows.some((r) => r.productId === requestedProductId);
+      if (!exists) {
+        handleAddProductToSheet(requestedProductId);
+      }
     }
-  }, [bulkProducts]);
+  }, [requestedProductId, bulkProducts]);
 
   // Resolve user company id
   useEffect(() => {
@@ -139,7 +124,7 @@ export function BulkOrder() {
     const newRow = {
       id: prod.id,
       productId: prod.id,
-      variantId: prod.variants?.[0]?.id || prod.id,
+      variantId: null,
       name: prod.name,
       sku: prod.sku,
       categoryName: prod.categoryName || "General",
@@ -233,18 +218,18 @@ export function BulkOrder() {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs text-slate-400 mb-1">
-            <span className="font-bold text-emerald-400 uppercase tracking-wider">Private B2B Wholesale Portal</span>
+          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
+            <span className="font-bold text-emerald-700 uppercase tracking-wider">Private B2B Wholesale Portal</span>
             <span>•</span>
-            <span className="text-slate-300">Dedicated Bulk Ordering Engine</span>
+            <span className="text-slate-600">Dedicated Bulk Ordering Engine</span>
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2.5">
-            <FileSpreadsheet className="w-6 h-6 text-gold-400" />
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
+            <FileSpreadsheet className="w-6 h-6 text-emerald-600" />
             Enterprise Bulk Order Matrix & Spreadsheet
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             High-volume wholesale pricing, pallet specifications, and tiered quantity discount calculator.
           </p>
         </div>
@@ -257,7 +242,7 @@ export function BulkOrder() {
               variant="outline"
               size="sm"
               icon={Upload}
-              className="border-slate-700 text-slate-300 hover:bg-slate-800 cursor-pointer"
+              className="border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
             >
               Import CSV
             </Button>
@@ -269,7 +254,7 @@ export function BulkOrder() {
             size="sm"
             icon={Download}
             onClick={handleExportCSV}
-            className="border-slate-700 text-slate-300 hover:bg-slate-800 cursor-pointer"
+            className="border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
           >
             Export Sheet
           </Button>
@@ -280,7 +265,7 @@ export function BulkOrder() {
             size="sm"
             icon={RefreshCw}
             onClick={() => refetch()}
-            className="border-slate-700 text-slate-300 hover:bg-slate-800 cursor-pointer"
+            className="border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
           >
             Refresh
           </Button>
@@ -288,14 +273,14 @@ export function BulkOrder() {
       </div>
 
       {/* Quick Add Product Bar with Category Filter */}
-      <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 shadow-sm">
+      <div className="p-4 rounded-2xl bg-white border border-slate-200/80 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gold-500/10 border border-gold-500/30 flex items-center justify-center text-gold-400 shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shrink-0">
             <Plus className="w-4 h-4" />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-white">Add Bulk SKU to Matrix</h4>
-            <p className="text-[11px] text-slate-400">Filter by category and select private wholesale products.</p>
+            <h4 className="text-xs font-bold text-slate-900">Add Bulk SKU to Matrix</h4>
+            <p className="text-[11px] text-slate-500">Filter by category and select private wholesale products.</p>
           </div>
         </div>
 
@@ -304,7 +289,7 @@ export function BulkOrder() {
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-slate-200 font-medium focus:outline-none focus:border-gold-500 cursor-pointer min-w-[160px]"
+            className="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 font-semibold focus:outline-none focus:border-[#006B3C] cursor-pointer min-w-[160px]"
           >
             <option value="ALL">All Categories ({categories.length})</option>
             {categories.map((cat) => (
@@ -322,7 +307,7 @@ export function BulkOrder() {
               setSelectedProductToAdd(val);
               if (val) handleAddProductToSheet(val);
             }}
-            className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white font-medium focus:outline-none focus:border-gold-500 cursor-pointer min-w-[280px]"
+            className="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 font-semibold focus:outline-none focus:border-[#006B3C] cursor-pointer min-w-[280px]"
           >
             <option value="">-- Choose Private Wholesale Product --</option>
             {availableBulkProducts.map((p) => (
@@ -335,10 +320,10 @@ export function BulkOrder() {
       </div>
 
       {/* Spreadsheet Table */}
-      <div className="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
+      <div className="rounded-2xl bg-white border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-200">
-            <thead className="bg-slate-800/90 text-slate-300 text-[11px] uppercase tracking-wider font-bold border-b border-slate-700">
+          <table className="w-full text-left text-xs text-slate-700">
+            <thead className="bg-slate-50 text-slate-600 text-[11px] uppercase tracking-wider font-bold border-b border-slate-200">
               <tr>
                 <th className="p-4">Bulk Product Line</th>
                 <th className="p-4">SKU</th>
@@ -350,12 +335,12 @@ export function BulkOrder() {
                 <th className="p-4 text-right">Remove</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800 bg-slate-950/60">
+            <tbody className="divide-y divide-slate-100 bg-white">
               {rows.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="p-10 text-center text-slate-400">
-                    <Boxes className="w-10 h-10 text-slate-600 mx-auto mb-2" />
-                    <p className="font-bold text-white text-sm">Spreadsheet is empty</p>
+                    <Boxes className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                    <p className="font-bold text-slate-800 text-sm">Spreadsheet is empty</p>
                     <p className="text-xs text-slate-500 mt-1">Select a product from the dropdown above to begin building your bulk purchase order.</p>
                   </td>
                 </tr>
@@ -365,19 +350,19 @@ export function BulkOrder() {
                   const lineTotal = row.unitPrice * row.quantity;
 
                   return (
-                    <tr key={row.id || idx} className="hover:bg-slate-800/40 transition-colors">
+                    <tr key={row.id || idx} className="hover:bg-slate-50/80 transition-colors">
                       {/* Product Title */}
-                      <td className="p-4 font-bold text-white max-w-xs">
+                      <td className="p-4 font-bold text-slate-900 max-w-xs">
                         <div className="leading-snug">{row.name}</div>
                         <span className="text-[10px] text-slate-400 font-normal">Verified B2B Direct Batch</span>
                       </td>
 
                       {/* SKU */}
-                      <td className="p-4 font-mono text-slate-300 font-bold">{row.sku}</td>
+                      <td className="p-4 font-mono text-slate-600 font-bold">{row.sku}</td>
 
                       {/* Packaging */}
-                      <td className="p-4 text-slate-300">
-                        <span className="px-2 py-0.5 rounded bg-slate-800 text-[11px] font-medium border border-slate-700">
+                      <td className="p-4 text-slate-600">
+                        <span className="px-2 py-0.5 rounded bg-slate-100 text-[11px] font-medium border border-slate-200 text-slate-700">
                           {row.packaging}
                         </span>
                       </td>
@@ -392,17 +377,17 @@ export function BulkOrder() {
                             onChange={(e) => handleQuantityChange(idx, e.target.value)}
                             className={`w-24 p-2 rounded-xl border text-sm font-bold text-center focus:outline-none transition-all ${
                               isMoqMet
-                                ? "bg-slate-900 border-slate-700 text-white focus:border-gold-500"
-                                : "bg-red-950/30 border-red-500/80 text-red-300"
+                                ? "bg-white border-slate-300 text-slate-900 focus:border-[#006B3C]"
+                                : "bg-red-50 border-red-300 text-red-700"
                             }`}
                           />
                           {!isMoqMet ? (
-                            <span className="text-[10px] text-red-400 font-bold flex items-center gap-1">
+                            <span className="text-[10px] text-red-600 font-bold flex items-center gap-1">
                               <AlertCircle className="w-3 h-3 shrink-0" />
                               Min MOQ: {row.moq}
                             </span>
                           ) : (
-                            <span className="text-[10px] text-emerald-400 font-semibold">
+                            <span className="text-[10px] text-emerald-700 font-semibold">
                               MOQ Met ({row.moq}+)
                             </span>
                           )}
@@ -412,24 +397,24 @@ export function BulkOrder() {
                       {/* Applied Tier */}
                       <td className="p-4">
                         <div className="flex flex-col">
-                          <span className="font-bold text-emerald-400 text-xs">{row.tierName}</span>
+                          <span className="font-bold text-emerald-700 text-xs">{row.tierName}</span>
                           {row.discountPercent > 0 ? (
-                            <span className="text-[10px] text-gold-400 font-semibold">
+                            <span className="text-[10px] text-amber-700 font-bold">
                               {row.discountPercent}% Volume Discount
                             </span>
                           ) : (
-                            <span className="text-[10px] text-slate-500">Standard Base Rate</span>
+                            <span className="text-[10px] text-slate-400">Standard Base Rate</span>
                           )}
                         </div>
                       </td>
 
                       {/* Wholesale Unit Price */}
-                      <td className="p-4 font-bold text-gold-400 text-sm">
+                      <td className="p-4 font-bold text-slate-900 text-sm">
                         {formatPrice(row.unitPrice, country.currency, country.symbol)}
                       </td>
 
                       {/* Line Subtotal */}
-                      <td className="p-4 font-black text-white text-base">
+                      <td className="p-4 font-black text-slate-900 text-base">
                         {formatPrice(lineTotal, country.currency, country.symbol)}
                       </td>
 
@@ -438,7 +423,7 @@ export function BulkOrder() {
                         <button
                           type="button"
                           onClick={() => handleRemoveRow(idx)}
-                          className="text-slate-400 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                          className="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
                           title="Remove row"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -453,14 +438,14 @@ export function BulkOrder() {
         </div>
 
         {/* Footer Summary & Instant Quote Dispatch */}
-        <div className="p-6 bg-slate-950/90 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="space-y-1 text-xs text-slate-400">
+        <div className="p-6 bg-slate-50 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="space-y-1 text-xs text-slate-600">
             <div>
-              <span>Active Product Lines: <strong className="text-white">{rows.length}</strong></span> •{" "}
-              <span>Total Volume: <strong className="text-emerald-400">{totalUnits.toLocaleString()} Units</strong></span>
+              <span>Active Product Lines: <strong className="text-slate-900">{rows.length}</strong></span> •{" "}
+              <span>Total Volume: <strong className="text-emerald-700">{totalUnits.toLocaleString()} Units</strong></span>
             </div>
             {hasMoqViolations && (
-              <div className="text-red-400 font-semibold flex items-center gap-1.5 text-[11px]">
+              <div className="text-red-600 font-semibold flex items-center gap-1.5 text-[11px]">
                 <AlertCircle className="w-3.5 h-3.5" />
                 <span>One or more products do not meet the Minimum Order Quantity (MOQ).</span>
               </div>
@@ -469,19 +454,19 @@ export function BulkOrder() {
 
           <div className="flex items-center gap-6">
             <div className="text-right">
-              <span className="text-[11px] text-slate-400 block uppercase font-semibold">Estimated Wholesale Total</span>
-              <span className="text-2xl font-black text-gold-400 tracking-tight">
+              <span className="text-[11px] text-slate-500 block uppercase font-semibold">Estimated Wholesale Total</span>
+              <span className="text-2xl font-black text-slate-900 tracking-tight">
                 {formatPrice(totalSubtotal, country.currency, country.symbol)}
               </span>
             </div>
 
             <Button
-              variant="gold"
+              variant="primary"
               size="lg"
               onClick={() => submitOrderMutation.mutate()}
               disabled={rows.length === 0 || hasMoqViolations || submitOrderMutation.isPending}
               isLoading={submitOrderMutation.isPending}
-              className="font-bold text-slate-950 shadow-md cursor-pointer px-6"
+              className="font-bold shadow-sm cursor-pointer px-6"
               icon={FileSpreadsheet}
             >
               Submit Bulk Purchase Quote

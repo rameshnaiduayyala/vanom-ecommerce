@@ -22,4 +22,9 @@ export default async function bulkOrderRoutes(fastify, options) {
     preHandler: [fastify.authenticate],
     handler: controller.submit,
   });
+
+  fastify.put("/bulk-orders/:id/status", {
+    preHandler: [fastify.authenticate],
+    handler: controller.updateStatus,
+  });
 }

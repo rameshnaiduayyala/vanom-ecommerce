@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
@@ -18,13 +18,14 @@ export function Quotes() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Commercial Quotations</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Commercial Quotations</h1>
+          <p className="text-xs text-slate-500 mt-1">Review active price negotiations and convert approved quotes to purchase orders.</p>
         </div>
 
         <Link to={ROUTES.B2B.BULK_ORDER}>
-          <Button variant="gold" size="sm" icon={Plus} className="font-bold text-slate-900">
+          <Button variant="primary" size="sm" icon={Plus} className="font-bold shadow-xs">
             Create New Quote Request
           </Button>
         </Link>
@@ -33,7 +34,7 @@ export function Quotes() {
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2].map((n) => (
-            <Skeleton key={n} className="h-28 w-full rounded-2xl bg-slate-800" />
+            <Skeleton key={n} className="h-28 w-full rounded-2xl bg-white border border-slate-200" />
           ))}
         </div>
       ) : quotes.length === 0 ? (
@@ -41,7 +42,7 @@ export function Quotes() {
           icon={FileSpreadsheet}
           title="No active quotes found"
           description="Create your first quote request from our wholesale catalog."
-          className="text-slate-300"
+          className="text-slate-600 bg-white border border-slate-200 rounded-2xl p-10"
         />
       ) : (
         <div className="space-y-4">
@@ -51,29 +52,29 @@ export function Quotes() {
             return (
               <div
                 key={quote.id}
-                className="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-gold-500/40 transition-colors"
+                className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-[#006B3C]/50 transition-colors"
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold text-white font-mono">{quote.quoteNumber}</span>
+                    <span className="text-sm font-bold text-slate-900 font-mono">{quote.quoteNumber}</span>
                     <Badge variant={statusConfig.color} size="sm">
                       {statusConfig.label} (v{quote.version})
                     </Badge>
                   </div>
-                  <p className="text-xs text-slate-400 flex items-center gap-1">
+                  <p className="text-xs text-slate-500 flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" />
                     Created {formatDate(quote.createdAt)} • Valid until {formatDate(quote.validUntil)}
                   </p>
-                  <p className="text-xs text-slate-300">
+                  <p className="text-xs text-slate-700">
                     {quote.items?.length || 1} product line(s) • Total:{" "}
-                    <span className="font-bold text-gold-400">
+                    <span className="font-bold text-slate-900">
                       {formatPrice(quote.totalAmount, quote.currency, quote.symbol)}
                     </span>
                   </p>
                 </div>
 
                 <Link to={`/b2b/quotes/${quote.id}`}>
-                  <Button variant="outline" size="sm" icon={ArrowRight} iconPosition="right" className="border-slate-700 text-slate-200 hover:bg-slate-800">
+                  <Button variant="outline" size="sm" icon={ArrowRight} iconPosition="right" className="border-slate-300 text-slate-700 hover:bg-slate-50">
                     Review Negotiation
                   </Button>
                 </Link>
@@ -88,33 +89,33 @@ export function Quotes() {
 
 export function QuoteDetails() {
   return (
-    <div className="space-y-8">
-      <Link to={ROUTES.B2B.QUOTES} className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors">
+    <div className="space-y-6">
+      <Link to={ROUTES.B2B.QUOTES} className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors">
         <Clock className="w-3.5 h-3.5" /> Back to Quotes List
       </Link>
 
-      <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-6 text-white">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-6 text-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold font-mono">QTE-20260228-1094</h1>
+              <h1 className="text-2xl font-black font-mono text-slate-900">QTE-20260228-1094</h1>
               <Badge variant="green" size="md">Quoted by Commercial Desk (v2)</Badge>
             </div>
-            <p className="text-xs text-slate-400 mt-1">Company: Apex Global Wholesale Traders Pvt Ltd • Valid until March 15, 2026</p>
+            <p className="text-xs text-slate-500 mt-1">Company: Apex Global Wholesale Traders Pvt Ltd • Valid until March 15, 2026</p>
           </div>
 
           <div className="text-right">
-            <span className="text-xs text-slate-400 block uppercase">Commercial Total</span>
-            <span className="text-2xl font-black text-gold-400">$2,18,490.00</span>
+            <span className="text-xs text-slate-500 block uppercase font-semibold">Commercial Total</span>
+            <span className="text-2xl font-black text-slate-900">$2,18,490.00</span>
           </div>
         </div>
 
         {/* Lines */}
         <div className="space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Negotiated Product Lines</h3>
-          <div className="border border-slate-800 rounded-xl overflow-hidden text-xs">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Negotiated Product Lines</h3>
+          <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
             <table className="w-full text-left">
-              <thead className="bg-slate-800 text-slate-400 text-[11px] uppercase font-semibold">
+              <thead className="bg-slate-50 text-slate-600 text-[11px] uppercase font-bold border-b border-slate-200">
                 <tr>
                   <th className="p-3">Product</th>
                   <th className="p-3">Quantity</th>
@@ -122,12 +123,12 @@ export function QuoteDetails() {
                   <th className="p-3">Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 bg-slate-950/40 text-slate-200">
+              <tbody className="divide-y divide-slate-100 bg-white text-slate-800">
                 <tr>
-                  <td className="p-3 font-semibold">Heavy-Duty Corrugated Shipping Boxes (Bundle of 50)</td>
-                  <td className="p-3 font-mono">200 Bundles (6.5 Pallets)</td>
-                  <td className="p-3 font-bold text-gold-400">$950.00</td>
-                  <td className="p-3 font-black">$1,90,000.00</td>
+                  <td className="p-3 font-bold text-slate-900">Heavy-Duty Corrugated Shipping Boxes (Bundle of 50)</td>
+                  <td className="p-3 font-mono text-slate-600">200 Bundles (6.5 Pallets)</td>
+                  <td className="p-3 font-bold text-slate-900">$950.00</td>
+                  <td className="p-3 font-black text-slate-900">$1,90,000.00</td>
                 </tr>
               </tbody>
             </table>
@@ -135,11 +136,11 @@ export function QuoteDetails() {
         </div>
 
         {/* Actions */}
-        <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
-          <Button variant="outline" size="md" className="border-slate-700 text-slate-300 hover:bg-slate-800">
+        <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+          <Button variant="outline" size="md" className="border-slate-300 text-slate-700 hover:bg-slate-50">
             Request Revision
           </Button>
-          <Button variant="gold" size="md" className="font-bold text-slate-900 shadow-sm">
+          <Button variant="primary" size="md" className="font-bold shadow-xs">
             Accept & Convert to Purchase Order
           </Button>
         </div>

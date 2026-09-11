@@ -41,9 +41,20 @@ export class BulkOrderService {
       const itemSubtotal = Money.multiply(unitPrice, item.quantity);
       subtotal = Money.add(subtotal, itemSubtotal);
 
+      let validVariantId = null;
+      if (item.variantId && !bulkProd) {
+        const variantExists = await prisma.productVariant.findUnique({
+          where: { id: item.variantId },
+          select: { id: true },
+        });
+        if (variantExists) {
+          validVariantId = variantExists.id;
+        }
+      }
+
       validatedItems.push({
-        bulkProductId: bulkProd ? bulkProd.id : item.productId,
-        variantId: item.variantId || null,
+        bulkProductId: bulkProd ? bulkProd.id : null,
+        variantId: validVariantId,
         quantity: parseInt(item.quantity, 10) || 1,
         unitPrice: unitPrice,
         subtotal: itemSubtotal,
@@ -116,9 +127,14 @@ export class BulkOrderService {
     });
   }
 
-  async listBulkOrders(user, { companyId, status, page = 1, limit = 20 } = {}) {
+  async listBulkOrders(user, { companyId, status, page = 1, limit = 50 } = {}) {
     const where = {};
-    if (companyId) where.companyId = companyId;
+    const isAdmin = user.roles?.includes("ADMIN") || user.roles?.includes("SUPER_ADMIN");
+    if (!isAdmin && companyId) {
+      where.companyId = companyId;
+    } else if (companyId) {
+      where.companyId = companyId;
+    }
     if (status) where.status = status;
 
     const [total, items] = await Promise.all([
@@ -126,9 +142,22 @@ export class BulkOrderService {
       prisma.bulkOrder.findMany({
         where,
         include: {
-          items: true,
+          items: {
+            include: {
+              bulkProduct: true,
+            },
+          },
           company: true,
           currency: true,
+          country: true,
+          requestedBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
         },
         skip: (Number(page) - 1) * Number(limit),
         take: Number(limit),
@@ -136,5 +165,19 @@ export class BulkOrderService {
       }),
     ]);
     return { total, items };
+  }
+
+  async updateStatus(id, status, user) {
+    const order = await prisma.bulkOrder.findUnique({ where: { id } });
+    if (!order) throw new NotFoundError("Bulk order not found");
+
+    return prisma.bulkOrder.update({
+      where: { id },
+      data: { status },
+      include: {
+        company: true,
+        currency: true,
+      },
+    });
   }
 }

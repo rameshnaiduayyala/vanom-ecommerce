@@ -6,7 +6,9 @@ import { BusinessApplications } from "../../features/admin/pages/BusinessApplica
 import { CompanyReviewPage } from "../../features/admin/pages/CompanyReviewPage.jsx";
 import { Products } from "../../features/admin/pages/Products.jsx";
 import { AddProductPage } from "../../features/admin/pages/AddProductPage.jsx";
-import { Orders } from "../../features/admin/pages/Inventory.jsx";
+import { AdminOrdersPage } from "../../features/admin/pages/orders/AdminOrdersPage.jsx";
+import { AdminRetailOrdersPage } from "../../features/admin/pages/orders/AdminRetailOrdersPage.jsx";
+import { AdminBulkOrdersPage } from "../../features/admin/pages/orders/AdminBulkOrdersPage.jsx";
 import {
   AdminQuotes,
   AdminPayments,
@@ -43,7 +45,9 @@ export const adminRoutes = {
     { path: "categories", element: <AdminCategoriesPage /> },
     { path: "inventory", element: <AdminInventoryPage /> },
     { path: "inventory/print", element: <AdminInventoryPrintPage /> },
-    { path: "orders", element: <Orders /> },
+    { path: "orders", element: <AdminOrdersPage /> },
+    { path: "retail-orders", element: <AdminRetailOrdersPage /> },
+    { path: "bulk-orders", element: <AdminBulkOrdersPage /> },
     { path: "quotes", element: <AdminQuotes /> },
     { path: "payments", element: <AdminPayments /> },
     { path: "reports", element: <AdminReports /> },

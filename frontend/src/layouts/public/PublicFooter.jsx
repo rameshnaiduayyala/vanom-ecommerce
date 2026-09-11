@@ -14,6 +14,7 @@ import {
   Sparkles,
   ArrowRight,
 } from "lucide-react";
+import { VANOM_COMPANY_DETAILS } from "../../constants/company.js";
 
 export function PublicFooter() {
   const currentYear = new Date().getFullYear();
@@ -269,7 +270,7 @@ export function PublicFooter() {
         <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Copyright */}
           <div>
-            © {currentYear} Vanom Ecommerce Inc. All rights reserved.
+            © {currentYear} {VANOM_COMPANY_DETAILS.legalName}. All rights reserved.
           </div>
 
           {/* Legal Links & Country Badge */}

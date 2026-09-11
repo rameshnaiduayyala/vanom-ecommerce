@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { cn } from "../../utils/cn.js";
 import {
   AlertCircle,
@@ -44,12 +44,21 @@ export function Alert({ title, children, variant = "info", className, onClose })
 }
 
 export function Spinner({ size = "md", className }) {
-  const sizes = {
-    sm: "w-4 h-4",
-    md: "w-6 h-6",
-    lg: "w-8 h-8",
-  };
-  return <Loader2 className={cn("animate-spin text-brand-500", sizes[size], className)} />;
+  return (
+    <div className={cn("inline-flex flex-col items-center justify-center p-3 rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/80 shadow-xs", className)}>
+      <div className="relative w-8 h-8 flex items-center justify-center">
+        <div className="absolute inset-0 rounded-xl bg-emerald-500/20 blur-xs animate-pulse" />
+        <img
+          src="/logo.png"
+          alt="Loading"
+          className="w-6 h-6 object-contain drop-shadow-xs animate-pulse"
+        />
+      </div>
+      <div className="w-12 bg-slate-200 rounded-full h-0.5 mt-2 overflow-hidden">
+        <div className="bg-gradient-to-r from-emerald-500 via-[#F9BC15] to-emerald-400 h-0.5 rounded-full w-2/3 animate-[shimmer_1.5s_infinite_linear]" />
+      </div>
+    </div>
+  );
 }
 
 export function Skeleton({ className }) {

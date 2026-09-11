@@ -1,6 +1,7 @@
 import axios from "axios";
 import { TokenStorage } from "../storage/token.storage.js";
 import { useCountryStore } from "../../stores/country.store.js";
+import { useUIStore } from "../../stores/ui.store.js";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000/api/v1";
 
@@ -12,9 +13,17 @@ export const apiClient = axios.create({
   timeout: 15000,
 });
 
-// Request interceptor: Attach Auth Token + Regional Context
+// Request interceptor: Attach Auth Token + Regional Context + Start Global Loader
 apiClient.interceptors.request.use(
   (config) => {
+    // Only show global loader if not explicitly silenced
+    if (!config.silent) {
+      const customMessage =
+        config.loadingText ||
+        (config.method === "get" ? "Retrieving live data..." : "Submitting changes...");
+      useUIStore.getState().incrementRequest(customMessage);
+    }
+
     const token = TokenStorage.getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -28,7 +37,10 @@ apiClient.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    useUIStore.getState().decrementRequest();
+    return Promise.reject(error);
+  }
 );
 
 // Response interceptor: Handle 401 Refresh Rotation
@@ -48,6 +60,9 @@ const processQueue = (error, token = null) => {
 
 apiClient.interceptors.response.use(
   (response) => {
+    if (!response.config?.silent) {
+      useUIStore.getState().decrementRequest();
+    }
     // Backend standard is ApiResponse.success(data) -> { success: true, data: { ... } }
     if (response.data && typeof response.data === "object" && "data" in response.data && "success" in response.data) {
       return response.data.data;
@@ -55,6 +70,9 @@ apiClient.interceptors.response.use(
     return response.data;
   },
   async (error) => {
+    if (!error.config?.silent) {
+      useUIStore.getState().decrementRequest();
+    }
     const originalRequest = error.config;
     const isAuthRoute =
       originalRequest?.url?.includes("/auth/login") ||

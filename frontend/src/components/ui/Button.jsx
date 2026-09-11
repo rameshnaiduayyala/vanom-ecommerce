@@ -50,7 +50,7 @@ export const Button = React.forwardRef(
         {...props}
       >
         {isLoading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <img src="/logo.png" alt="Loading" className="w-4 h-4 object-contain animate-pulse" />
         ) : (
           <>
             {Icon && iconPosition === "left" && <Icon className="w-4 h-4" />}

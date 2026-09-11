@@ -16,6 +16,7 @@ import {
   Globe,
   Shield,
 } from "lucide-react";
+import { VANOM_COMPANY_DETAILS } from "../../../constants/company.js";
 
 
 export function ContactPage() {
@@ -87,7 +88,7 @@ export function ContactPage() {
 
             {/* Email */}
             <a
-              href="mailto:ayyalarameshnaidu@gmail.com"
+              href={`mailto:${VANOM_COMPANY_DETAILS.contact.email}`}
               className="group flex items-center gap-4 py-7 md:py-9 md:pr-8 transition-colors"
             >
               <div className="w-11 h-11 rounded-xl bg-[#F0F7F1] flex items-center justify-center shrink-0 group-hover:bg-[#074428] transition-colors duration-300">
@@ -96,14 +97,14 @@ export function ContactPage() {
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold text-[#8B9E91] uppercase tracking-wider mb-0.5">Email</p>
                 <p className="text-sm font-bold text-[#0F2B1C] truncate group-hover:text-[#074428] transition-colors">
-                  ayyalarameshnaidu@gmail.com
+                  {VANOM_COMPANY_DETAILS.contact.email}
                 </p>
               </div>
             </a>
 
             {/* Phone */}
             <a
-              href="tel:+917989419864"
+              href={`tel:${VANOM_COMPANY_DETAILS.contact.phone}`}
               className="group flex items-center gap-4 py-7 md:py-9 md:px-8 transition-colors"
             >
               <div className="w-11 h-11 rounded-xl bg-[#F0F7F1] flex items-center justify-center shrink-0 group-hover:bg-[#074428] transition-colors duration-300">
@@ -112,9 +113,9 @@ export function ContactPage() {
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold text-[#8B9E91] uppercase tracking-wider mb-0.5">Phone</p>
                 <p className="text-sm font-bold text-[#0F2B1C] group-hover:text-[#074428] transition-colors">
-                  +91 7989419864
+                  {VANOM_COMPANY_DETAILS.contact.phone}
                 </p>
-                <p className="text-[11px] text-[#8B9E91]">Mon – Sat, 9 AM – 8 PM IST</p>
+                <p className="text-[11px] text-[#8B9E91]">{VANOM_COMPANY_DETAILS.contact.operatingHours}</p>
               </div>
             </a>
 
@@ -273,43 +274,35 @@ export function ContactPage() {
               {/* Office Locations */}
               <div>
                 <h3 className="text-xs font-bold text-[#8B9E91] uppercase tracking-[0.15em] mb-5">
-                  Our Offices
+                  Our Global Corporate Offices
                 </h3>
 
                 <div className="space-y-6">
-                  <div className="group">
-                    <div className="flex items-start gap-3.5">
-                      <div className="w-9 h-9 rounded-lg bg-[#F0F7F1] flex items-center justify-center shrink-0 mt-0.5">
-                        <MapPin className="w-4 h-4 text-[#074428]" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-[#0F2B1C] mb-1">United Kingdom</h4>
-                        <p className="text-[13px] text-[#5E7D67] leading-relaxed">
-                          Vanom Global Ltd<br />
-                          25 Cabot Square, Canary Wharf<br />
-                          London E14 4QA
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="w-full h-px bg-[#E8EDE9]" />
-
-                  <div className="group">
-                    <div className="flex items-start gap-3.5">
-                      <div className="w-9 h-9 rounded-lg bg-[#F0F7F1] flex items-center justify-center shrink-0 mt-0.5">
-                        <MapPin className="w-4 h-4 text-[#074428]" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-[#0F2B1C] mb-1">United States</h4>
-                        <p className="text-[13px] text-[#5E7D67] leading-relaxed">
-                          Vanom Logistics Inc<br />
-                          450 Lexington Avenue<br />
-                          New York, NY 10017
-                        </p>
+                  {VANOM_COMPANY_DETAILS.offices.map((off, idx) => (
+                    <div key={idx} className="space-y-4">
+                      {idx > 0 && <div className="w-full h-px bg-[#E8EDE9]" />}
+                      <div className="group">
+                        <div className="flex items-start gap-3.5">
+                          <div className="w-9 h-9 rounded-lg bg-[#F0F7F1] flex items-center justify-center shrink-0 mt-0.5">
+                            <MapPin className="w-4 h-4 text-[#074428]" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-sm font-bold text-[#0F2B1C] mb-0.5">{off.region}</h4>
+                              <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded">
+                                {off.countryCode}
+                              </span>
+                            </div>
+                            <p className="text-[12px] font-semibold text-slate-700">{off.entity}</p>
+                            <p className="text-[13px] text-[#5E7D67] leading-relaxed">
+                              {off.line1}<br />
+                              {off.city}, {off.state} {off.postalCode}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               </div>
 

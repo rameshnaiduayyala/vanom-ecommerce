@@ -90,7 +90,7 @@ export function EnterpriseSidebar({
             )}
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-300 font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Admin</span>
+              <span>{brand.badgeText || "Admin"}</span>
             </div>
           </Link>
         ) : (
@@ -98,7 +98,7 @@ export function EnterpriseSidebar({
             to={brand.logoPath || "/admin/dashboard"}
             className="mx-auto w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center font-black text-white hover:bg-white/15 transition-colors"
           >
-            V
+            {brand.title ? brand.title[0] : "V"}
           </Link>
         )}
       </div>

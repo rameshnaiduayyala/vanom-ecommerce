@@ -3,6 +3,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { QueryProvider } from "./QueryProvider.jsx";
 import { AuthProvider } from "./AuthProvider.jsx";
 import { ToastContainer } from "../../components/ui/Toast.jsx";
+import { PremiumGlobalLoader } from "../../components/common/PremiumGlobalLoader.jsx";
 
 export function AppProviders({ children }) {
   return (
@@ -11,6 +12,7 @@ export function AppProviders({ children }) {
         <AuthProvider>
           {children}
           <ToastContainer />
+          <PremiumGlobalLoader />
         </AuthProvider>
       </QueryProvider>
     </HelmetProvider>

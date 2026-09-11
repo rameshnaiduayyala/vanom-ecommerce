@@ -231,7 +231,10 @@ export function DataTable({
                   className="py-16 text-center text-slate-400"
                 >
                   <div className="flex flex-col items-center justify-center gap-2">
-                    <Loader2 className="w-7 h-7 animate-spin text-[#006B3C]" />
+                    <div className="relative w-8 h-8 flex items-center justify-center">
+                      <div className="absolute inset-0 rounded-xl bg-emerald-500/20 blur-xs animate-pulse" />
+                      <img src="/logo.png" alt="Loading" className="w-6 h-6 object-contain animate-pulse" />
+                    </div>
                     <span className="text-xs font-medium">Loading records...</span>
                   </div>
                 </td>

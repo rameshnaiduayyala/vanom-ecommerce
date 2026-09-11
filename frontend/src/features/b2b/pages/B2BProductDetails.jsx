@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
@@ -87,43 +87,43 @@ export function B2BProductDetails() {
   };
 
   return (
-    <div className="space-y-8">
-      <Link to={ROUTES.B2B.CATALOG} className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors">
+    <div className="space-y-6">
+      <Link to={ROUTES.B2B.CATALOG} className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors">
         <ArrowLeft className="w-3.5 h-3.5" /> Back to Wholesale Catalog
       </Link>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: Details & Tier Matrix */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+          <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
             <div className="flex items-center gap-2">
-              <span className="bg-slate-800 text-gold-400 border border-gold-500/30 text-xs font-bold px-2.5 py-1 rounded font-mono">
+              <span className="bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold px-2.5 py-1 rounded-lg font-mono">
                 Wholesale SKU: {product.sku}
               </span>
-              <Badge variant="gold" size="sm">
+              <Badge variant="green" size="sm">
                 MOQ: {moq} {product.packaging?.unitName}s
               </Badge>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
               {product.name}
             </h1>
-            <p className="text-xs text-slate-300 leading-relaxed">{product.description}</p>
+            <p className="text-xs text-slate-600 leading-relaxed">{product.description}</p>
           </div>
 
           {/* Wholesale Quantity Tier Matrix */}
-          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+          <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Layers className="w-4 h-4 text-gold-400" />
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <Layers className="w-4 h-4 text-emerald-600" />
                 Commercial Volume Pricing Tiers ({country.currency})
               </h3>
-              <span className="text-xs text-slate-400">Authoritative Engine</span>
+              <span className="text-xs text-slate-400">Authoritative Pricing</span>
             </div>
 
-            <div className="border border-slate-800 rounded-xl overflow-hidden text-xs">
+            <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
               <table className="w-full text-left">
-                <thead className="bg-slate-800 text-slate-300 text-[11px] uppercase tracking-wider font-semibold">
+                <thead className="bg-slate-50 text-slate-600 text-[11px] uppercase tracking-wider font-bold border-b border-slate-200">
                   <tr>
                     <th className="p-3">Tier Level</th>
                     <th className="p-3">Order Quantity Range</th>
@@ -131,7 +131,7 @@ export function B2BProductDetails() {
                     <th className="p-3">Savings</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800 bg-slate-950/40 text-slate-200">
+                <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
                   {tiers.map((t, idx) => {
                     const isCurrentTier =
                       quantity >= t.minQuantity && (!t.maxQuantity || quantity <= t.maxQuantity);
@@ -139,17 +139,17 @@ export function B2BProductDetails() {
                     return (
                       <tr
                         key={idx}
-                        className={isCurrentTier ? "bg-gold-500/10 font-semibold text-gold-300" : ""}
+                        className={isCurrentTier ? "bg-emerald-50/80 font-bold text-emerald-900" : ""}
                       >
                         <td className="p-3">Tier {idx + 1}</td>
                         <td className="p-3">
                           {t.maxQuantity ? `${t.minQuantity} - ${t.maxQuantity}` : `${t.minQuantity}+`}{" "}
                           {product.packaging?.unitName}s
                         </td>
-                        <td className="p-3 font-bold text-gold-400">
+                        <td className="p-3 font-bold text-slate-900">
                           {formatPrice(t.unitPrice, country.currency, country.symbol)}
                         </td>
-                        <td className="p-3 text-emerald-400">
+                        <td className="p-3 text-emerald-700 font-semibold">
                           {idx === 0 ? "Standard B2B" : idx === 1 ? "Save ~8%" : "Save ~18% (Best Tier)"}
                         </td>
                       </tr>
@@ -161,28 +161,28 @@ export function B2BProductDetails() {
           </div>
 
           {/* Pallet & Packaging Specifications */}
-          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <Boxes className="w-4 h-4 text-gold-400" />
+          <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+              <Boxes className="w-4 h-4 text-emerald-600" />
               Pallet & Logistics Specifications
             </h3>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800">
-                <span className="text-slate-400 text-[10px] block">Unit Packaging</span>
-                <span className="font-bold text-white">{product.packaging?.unitName}</span>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <span className="text-slate-500 text-[10px] block">Unit Packaging</span>
+                <span className="font-bold text-slate-900">{product.packaging?.unitName}</span>
               </div>
-              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800">
-                <span className="text-slate-400 text-[10px] block">Unit Weight</span>
-                <span className="font-bold text-white">{product.packaging?.weightKg} KG</span>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <span className="text-slate-500 text-[10px] block">Unit Weight</span>
+                <span className="font-bold text-slate-900">{product.packaging?.weightKg} KG</span>
               </div>
-              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800">
-                <span className="text-slate-400 text-[10px] block">Full Pallet Spec</span>
-                <span className="font-bold text-gold-400">{product.packaging?.palletQuantity} Units</span>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <span className="text-slate-500 text-[10px] block">Full Pallet Spec</span>
+                <span className="font-bold text-emerald-700">{product.packaging?.palletQuantity} Units</span>
               </div>
-              <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800">
-                <span className="text-slate-400 text-[10px] block">Pallet Weight</span>
-                <span className="font-bold text-white">{product.packaging?.palletWeightKg} KG</span>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <span className="text-slate-500 text-[10px] block">Pallet Weight</span>
+                <span className="font-bold text-slate-900">{product.packaging?.palletWeightKg} KG</span>
               </div>
             </div>
           </div>
@@ -190,16 +190,16 @@ export function B2BProductDetails() {
 
         {/* Right 1 Col: Interactive Bulk Configurator */}
         <div className="space-y-4">
-          <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 text-white space-y-5 sticky top-24 shadow-sm">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-gold-400">
+          <div className="p-6 rounded-2xl bg-white border border-slate-200 text-slate-800 space-y-5 sticky top-24 shadow-xs">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-800">
               Wholesale Order Configurator
             </h3>
 
             {/* Quantity Input */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300 flex justify-between">
+              <label className="text-xs font-semibold text-slate-700 flex justify-between">
                 <span>Select Order Quantity:</span>
-                <span className="text-gold-400 font-mono font-bold">{quantity} units</span>
+                <span className="text-emerald-700 font-mono font-bold">{quantity} units</span>
               </label>
               <input
                 type="number"
@@ -207,21 +207,21 @@ export function B2BProductDetails() {
                 step="5"
                 value={quantity}
                 onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-                className="w-full p-2.5 rounded-xl border border-slate-700 bg-slate-950 text-white font-bold text-base focus:border-gold-500 focus:outline-none"
+                className="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-bold text-base focus:border-[#006B3C] focus:outline-none"
               />
 
               {/* MOQ Alert */}
               {!isMoqMet ? (
-                <div className="p-3 rounded-lg bg-red-950/60 border border-red-800/80 text-red-200 text-xs flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-red-600" />
                   <span>
                     Minimum order requirement is <strong>{moq} {product.packaging?.unitName}s</strong>.
                   </span>
                 </div>
               ) : (
-                <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 text-xs flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> MOQ Requirement Met
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 font-semibold">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> MOQ Met
                   </span>
                   <span className="font-mono font-bold">~{palletsCount} Pallets</span>
                 </div>
@@ -229,20 +229,20 @@ export function B2BProductDetails() {
             </div>
 
             {/* Price Calculation Box */}
-            <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2 text-xs">
-              <div className="flex justify-between text-slate-400">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
+              <div className="flex justify-between text-slate-600">
                 <span>Effective Unit Price</span>
-                <span className="font-bold text-gold-400">
+                <span className="font-bold text-slate-900">
                   {formatPrice(unitPrice, country.currency, country.symbol)} / unit
                 </span>
               </div>
-              <div className="flex justify-between text-slate-400">
+              <div className="flex justify-between text-slate-600">
                 <span>Commercial Quantity</span>
-                <span className="font-semibold text-white">{quantity} units</span>
+                <span className="font-semibold text-slate-900">{quantity} units</span>
               </div>
-              <div className="border-t border-slate-800 pt-2 flex justify-between items-baseline text-sm font-bold text-white">
+              <div className="border-t border-slate-200 pt-2 flex justify-between items-baseline text-sm font-bold text-slate-900">
                 <span>Estimated Subtotal</span>
-                <span className="text-xl font-black text-gold-400">
+                <span className="text-xl font-black text-slate-900">
                   {formatPrice(totalAmount, country.currency, country.symbol)}
                 </span>
               </div>
@@ -251,17 +251,17 @@ export function B2BProductDetails() {
             {/* CTAs */}
             <div className="space-y-2.5">
               <Button
-                variant="gold"
+                variant="primary"
                 size="lg"
                 onClick={handleCreateQuote}
                 disabled={!isMoqMet}
-                className="w-full font-bold text-slate-900 shadow-sm"
+                className="w-full font-bold shadow-xs cursor-pointer"
                 icon={FileSpreadsheet}
               >
                 Submit Quote Request
               </Button>
               <Link to={ROUTES.B2B.BULK_ORDER} className="block">
-                <Button variant="outline" size="sm" className="w-full border-slate-700 text-slate-300 hover:bg-slate-800">
+                <Button variant="outline" size="sm" className="w-full border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer">
                   Add to Bulk Order Sheet
                 </Button>
               </Link>
@@ -272,3 +272,5 @@ export function B2BProductDetails() {
     </div>
   );
 }
+
+export default B2BProductDetails;

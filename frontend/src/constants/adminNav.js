@@ -39,18 +39,18 @@ export const ADMIN_NAV_CONFIG = [
     children: [
       {
         id: "all-orders",
-        label: "All Orders",
+        label: "Master Orders Hub",
         path: ROUTES.ADMIN.ORDERS,
       },
       {
         id: "orders-retail",
         label: "Retail Orders",
-        path: `${ROUTES.ADMIN.ORDERS}?type=B2C`,
+        path: ROUTES.ADMIN.RETAIL_ORDERS,
       },
       {
         id: "orders-wholesale",
-        label: "Wholesale Orders",
-        path: `${ROUTES.ADMIN.ORDERS}?type=B2B`,
+        label: "B2B Bulk Orders",
+        path: ROUTES.ADMIN.BULK_ORDERS,
       },
     ],
   },

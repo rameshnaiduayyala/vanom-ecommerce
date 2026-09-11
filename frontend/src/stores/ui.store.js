@@ -1,4 +1,4 @@
-﻿import { create } from "zustand";
+import { create } from "zustand";
 
 export const useUIStore = create((set, get) => ({
   toasts: [],
@@ -43,6 +43,39 @@ export const useUIStore = create((set, get) => ({
   },
 
   clearAllToasts: () => set({ toasts: [] }),
+
+  // Global Loader State & API Request Counter
+  activeRequests: 0,
+  isGlobalLoading: false,
+  globalLoadingText: "",
+
+  startGlobalLoading: (text = "Securing transaction...") =>
+    set({ isGlobalLoading: true, globalLoadingText: text }),
+
+  stopGlobalLoading: () =>
+    set({ isGlobalLoading: false, globalLoadingText: "", activeRequests: 0 }),
+
+  incrementRequest: (text = "Syncing with VANOM Cloud...") => {
+    set((state) => {
+      const nextCount = state.activeRequests + 1;
+      return {
+        activeRequests: nextCount,
+        isGlobalLoading: true,
+        globalLoadingText: state.globalLoadingText || text,
+      };
+    });
+  },
+
+  decrementRequest: () => {
+    set((state) => {
+      const nextCount = Math.max(0, state.activeRequests - 1);
+      return {
+        activeRequests: nextCount,
+        isGlobalLoading: nextCount > 0,
+        globalLoadingText: nextCount > 0 ? state.globalLoadingText : "",
+      };
+    });
+  },
 
   // Modal state
   modal: null,

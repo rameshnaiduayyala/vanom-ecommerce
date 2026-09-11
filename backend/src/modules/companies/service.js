@@ -57,6 +57,39 @@ export class CompanyService {
       }) || await prisma.country.findFirst();
     }
 
+    // ── STRICT COMPANY CONSTRAINT CHECKS ──
+    // 1. Check if registration number already exists in the same country jurisdiction
+    if (registrationNumber && country) {
+      const existingReg = await prisma.company.findFirst({
+        where: {
+          registrationNumber: { equals: registrationNumber.trim(), mode: "insensitive" },
+          countryId: country.id,
+        },
+      });
+      if (existingReg) {
+        throw new ConflictError(
+          `A registered enterprise with Registration Number '${registrationNumber}' already exists in ${country.name || "this jurisdiction"}.`,
+          ERROR_CODES.COMPANY_ALREADY_EXISTS || "COMPANY_ALREADY_EXISTS"
+        );
+      }
+    }
+
+    // 2. Check if Tax ID / GSTIN / EIN already registered in this country
+    if (taxId && country) {
+      const existingTax = await prisma.company.findFirst({
+        where: {
+          taxId: { equals: taxId.trim(), mode: "insensitive" },
+          countryId: country.id,
+        },
+      });
+      if (existingTax) {
+        throw new ConflictError(
+          `A company with Tax/GSTIN ID '${taxId}' is already registered in ${country.name || "this jurisdiction"}.`,
+          ERROR_CODES.COMPANY_ALREADY_EXISTS || "COMPANY_ALREADY_EXISTS"
+        );
+      }
+    }
+
     let memberUserId = userId;
     const userData = adminUserData || adminUser;
 
@@ -294,12 +327,50 @@ export class CompanyService {
       );
     }
 
-    // Whitelist editable fields
+    // Whitelist editable fields & check constraints
     const safeData = {};
+    const targetCountryId = data.countryCode
+      ? (await prisma.country.findUnique({ where: { code: data.countryCode.toUpperCase() } }))?.id || company.countryId
+      : company.countryId;
+
+    if (data.registrationNumber !== undefined && data.registrationNumber !== company.registrationNumber) {
+      if (data.registrationNumber) {
+        const existingReg = await prisma.company.findFirst({
+          where: {
+            id: { not: id },
+            registrationNumber: { equals: data.registrationNumber.trim(), mode: "insensitive" },
+            countryId: targetCountryId,
+          },
+        });
+        if (existingReg) {
+          throw new ConflictError(
+            `Registration Number '${data.registrationNumber}' is already assigned to another company in this jurisdiction.`
+          );
+        }
+      }
+      safeData.registrationNumber = data.registrationNumber;
+    }
+
+    if (data.taxId !== undefined && data.taxId !== company.taxId) {
+      if (data.taxId) {
+        const existingTax = await prisma.company.findFirst({
+          where: {
+            id: { not: id },
+            taxId: { equals: data.taxId.trim(), mode: "insensitive" },
+            countryId: targetCountryId,
+          },
+        });
+        if (existingTax) {
+          throw new ConflictError(
+            `Tax/GSTIN ID '${data.taxId}' is already registered by another enterprise.`
+          );
+        }
+      }
+      safeData.taxId = data.taxId;
+    }
+
     if (data.legalName !== undefined) safeData.legalName = data.legalName;
     if (data.tradingName !== undefined) safeData.tradingName = data.tradingName;
-    if (data.registrationNumber !== undefined) safeData.registrationNumber = data.registrationNumber;
-    if (data.taxId !== undefined) safeData.taxId = data.taxId;
 
     // Admin-only fields
     if (isAdmin) {

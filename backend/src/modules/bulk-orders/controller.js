@@ -24,4 +24,9 @@ export class BulkOrderController {
     const data = await this.service.submitBulkOrder(request.params.id, request.user);
     return reply.send({ success: true, data });
   };
+
+  updateStatus = async (request, reply) => {
+    const data = await this.service.updateStatus(request.params.id, request.body.status, request.user);
+    return reply.send({ success: true, data });
+  };
 }

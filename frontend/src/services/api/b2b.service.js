@@ -140,4 +140,8 @@ export const b2bService = {
   listBulkOrders: async (params = {}) => {
     return apiClient.get("/bulk-orders", { params });
   },
+
+  updateBulkOrderStatus: async (id, status) => {
+    return apiClient.put(`/bulk-orders/${id}/status`, { status });
+  },
 };
