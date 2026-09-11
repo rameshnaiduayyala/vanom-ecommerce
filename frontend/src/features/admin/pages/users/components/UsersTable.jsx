@@ -1,7 +1,7 @@
 import React from "react";
 import { User, Building2, Mail, Phone, Edit2, Trash2, CheckCircle2, Clock, Ban } from "lucide-react";
 
-export function UsersTable({ users, isLoading, onEdit, onDelete }) {
+export function UsersTable({ users, isLoading, onView, onEdit, onDelete }) {
   return (
     <div className="rounded-2xl bg-white border border-border overflow-hidden shadow-xs">
       <div className="overflow-x-auto">
@@ -46,14 +46,18 @@ export function UsersTable({ users, isLoading, onEdit, onDelete }) {
                     key={u.id}
                     className="hover:bg-surface-muted/40 transition-colors group"
                   >
-                    {/* Name & Avatar */}
+                    {/* Name & Avatar (Clickable to View) */}
                     <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-emerald-100 text-[#00875A] font-bold flex items-center justify-center shrink-0 border border-emerald-200">
+                      <div
+                        onClick={() => onView && onView(u)}
+                        className="flex items-center gap-3 cursor-pointer group/name select-none"
+                        title="Click to view user dossier"
+                      >
+                        <div className="w-9 h-9 rounded-full bg-emerald-100 text-[#00875A] font-bold flex items-center justify-center shrink-0 border border-emerald-200 group-hover/name:ring-2 group-hover/name:ring-[#00875A]/40 transition-all">
                           {(u.firstName?.[0] || u.email?.[0] || "U").toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-bold text-[#0F2B1C]">
+                          <div className="font-bold text-[#0F2B1C] group-hover/name:text-[#00875A] group-hover/name:underline transition-colors">
                             {u.firstName || u.lastName
                               ? `${u.firstName || ""} ${u.lastName || ""}`.trim()
                               : "Unnamed User"}

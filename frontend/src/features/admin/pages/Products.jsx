@@ -27,6 +27,7 @@ import { Badge } from "../../../components/ui/Badge.jsx";
 import { Input, Textarea, Select, Checkbox } from "../../../components/ui/Input.jsx";
 import { Modal } from "../../../components/ui/Modal.jsx";
 import { ConfirmDialog, EmptyState } from "../../../components/ui/Alert.jsx";
+import { ViewProductModal } from "./components/ViewProductModal.jsx";
 
 export function Products() {
   const queryClient = useQueryClient();
@@ -303,76 +304,34 @@ export function Products() {
 
   return (
     <div className="space-y-6">
-      {/* Header & Tabs */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">Master Catalog & Taxonomies</h1>
+          <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2.5">
+            <Package className="w-6 h-6 text-[#00875A]" />
+            Products Catalog
+          </h1>
+          <p className="text-xs text-text-muted mt-1">
+            Manage store catalog, stock quantities, cross-border pricing, and wholesale MOQ parameters.
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
-          {activeTab === "products" ? (
-            <Link to="/admin/products/new">
-              <Button
-                variant="primary"
-                size="sm"
-                icon={Plus}
-                className="font-bold shadow-xs cursor-pointer"
-              >
-                Add New Product
-              </Button>
-            </Link>
-          ) : (
+          <Link to="/admin/products/new">
             <Button
               variant="primary"
               size="sm"
               icon={Plus}
-              onClick={openAddCategory}
-              className="font-bold shadow-xs"
+              className="font-bold shadow-xs cursor-pointer"
             >
-              Add New Category
+              Add New Product
             </Button>
-          )}
+          </Link>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-3 border-b border-border">
-        <button
-          onClick={() => setActiveTab("products")}
-          className={`pb-3 px-1 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
-            activeTab === "products"
-              ? "border-brand-600 text-brand-700"
-              : "border-transparent text-text-secondary hover:text-text-primary"
-          }`}
-        >
-          <Package className="w-4 h-4" />
-          <span>Products Catalog</span>
-          <Badge variant={activeTab === "products" ? "brand" : "default"} size="sm">
-            {products.length}
-          </Badge>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("categories")}
-          className={`pb-3 px-1 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
-            activeTab === "categories"
-              ? "border-brand-600 text-brand-700"
-              : "border-transparent text-text-secondary hover:text-text-primary"
-          }`}
-        >
-          <FolderTree className="w-4 h-4" />
-          <span>Categories & Taxonomies</span>
-          <Badge variant={activeTab === "categories" ? "brand" : "default"} size="sm">
-            {categories.length}
-          </Badge>
-        </button>
-      </div>
-
-      {/* ============================================================
-          TAB 1: PRODUCTS MANAGEMENT
-      ============================================================ */}
-      {activeTab === "products" && (
-        <div className="space-y-4">
+      {/* Products Management */}
+      <div className="space-y-4">
           {/* Filter Bar */}
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
             <div className="relative flex-1 max-w-sm w-full">
@@ -490,122 +449,6 @@ export function Products() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* ============================================================
-          TAB 2: CATEGORIES MANAGEMENT
-      ============================================================ */}
-      {activeTab === "categories" && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="relative max-w-sm w-full">
-              <Search className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={categorySearch}
-                onChange={(e) => setCategorySearch(e.target.value)}
-                placeholder="Search categories by name, slug or description..."
-                className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-border bg-white focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500"
-              />
-            </div>
-            <div className="text-xs text-text-muted font-medium">
-              Showing <span className="font-bold text-text-primary">{filteredCategories.length}</span> of {categories.length} categories
-            </div>
-          </div>
-
-          {filteredCategories.length === 0 ? (
-            <div className="p-8 text-center bg-white rounded-2xl border border-border">
-              <FolderTree className="w-10 h-10 text-text-muted mx-auto mb-2 opacity-50" />
-              <p className="text-sm font-semibold text-text-primary">No categories found</p>
-              <p className="text-xs text-text-muted mt-1">
-                {categorySearch ? "Try adjusting your search query." : "Get started by adding your first category."}
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredCategories.map((cat) => (
-                <div
-                  key={cat.id}
-                  className="p-5 rounded-2xl bg-white border border-border hover:border-brand-300 transition-all flex flex-col justify-between gap-4 shadow-2xs group"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        {cat.imageUrl ? (
-                          <img
-                            src={cat.imageUrl}
-                            alt={cat.name}
-                            className="w-11 h-11 rounded-xl object-cover border border-border shrink-0 bg-surface-muted"
-                          />
-                        ) : (
-                          <div className="w-11 h-11 rounded-xl bg-brand-50 text-brand-700 flex items-center justify-center font-bold border border-brand-100 shrink-0">
-                            <FolderTree className="w-5 h-5" />
-                          </div>
-                        )}
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-text-primary text-sm leading-tight group-hover:text-brand-700 transition-colors">
-                              {cat.name}
-                            </h4>
-                            {cat.active === false && (
-                              <Badge variant="warning" size="sm">Inactive</Badge>
-                            )}
-                          </div>
-                          {cat.parentName && (
-                            <span className="text-[10px] text-text-muted flex items-center gap-1 mt-0.5">
-                              <span>Parent:</span>
-                              <span className="font-semibold text-text-secondary">{cat.parentName}</span>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <Badge variant="brand" size="sm" className="shrink-0 font-bold">
-                        {cat.count || 0} {cat.count === 1 ? "Product" : "Products"}
-                      </Badge>
-                    </div>
-
-                    <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">
-                      {cat.description || "Official product taxonomy classification."}
-                    </p>
-
-                    <div className="flex items-center gap-2 flex-wrap pt-1">
-                      <span className="text-[10px] font-mono text-text-muted bg-surface-muted px-2 py-0.5 rounded border border-border/50">
-                        /{cat.slug}
-                      </span>
-                      {cat.sortOrder !== undefined && cat.sortOrder > 0 && (
-                        <span className="text-[10px] font-mono text-text-muted bg-surface-muted px-2 py-0.5 rounded">
-                          Order: {cat.sortOrder}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      icon={Edit2}
-                      onClick={() => openEditCategory(cat)}
-                      className="text-xs font-semibold cursor-pointer"
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      icon={Trash2}
-                      onClick={() => setDeletingCategory(cat)}
-                      className="text-xs font-semibold cursor-pointer"
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ============================================================
           MODAL: ADD / EDIT PRODUCT
@@ -872,234 +715,13 @@ export function Products() {
       </Modal>
 
       {/* ============================================================
-          MODAL: VIEW PRODUCT DETAILS
+          MODAL: VIEW PRODUCT DETAILS (API-DRIVEN)
       ============================================================ */}
-      <Modal
-        isOpen={!!viewingProduct}
+      <ViewProductModal
+        productId={viewingProduct?.id || viewingProduct?.slug}
+        isOpen={Boolean(viewingProduct)}
         onClose={() => setViewingProduct(null)}
-        title="Product Inspection & Logistics Dossier"
-        maxWidth="max-w-2xl"
-      >
-        {viewingProduct && (
-          <div className="space-y-6 text-xs text-text-primary">
-            <div className="flex gap-4 items-start">
-              <img
-                src={viewingProduct.image}
-                alt={viewingProduct.name}
-                className="w-24 h-24 rounded-xl object-cover border border-border shrink-0"
-              />
-              <div className="space-y-1">
-                <Badge variant="brand" size="sm">
-                  {typeof viewingProduct.category === "object" ? viewingProduct.category?.name : (viewingProduct.category || "General")}
-                </Badge>
-                <h3 className="text-base font-bold text-text-primary">{viewingProduct.name}</h3>
-                <p className="text-text-muted font-mono">SKU: {viewingProduct.sku}</p>
-                <p className="text-text-secondary leading-relaxed pt-1">{viewingProduct.description}</p>
-              </div>
-            </div>
-
-            {/* Packaging & Logistics Box */}
-            <div className="p-4 rounded-xl bg-surface-muted border border-border space-y-2">
-              <h5 className="font-bold text-text-primary uppercase tracking-wider text-[11px]">
-                Logistics & Pallet Specifications
-              </h5>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div>
-                  <span className="text-text-muted block text-[10px]">Packaging</span>
-                  <span className="font-semibold">{viewingProduct.packaging?.unitName}</span>
-                </div>
-                <div>
-                  <span className="text-text-muted block text-[10px]">Unit Weight</span>
-                  <span className="font-semibold">{viewingProduct.packaging?.weightKg} KG</span>
-                </div>
-                <div>
-                  <span className="text-text-muted block text-[10px]">Units / Pallet</span>
-                  <span className="font-bold text-brand-700">{viewingProduct.packaging?.palletQuantity} Units</span>
-                </div>
-                <div>
-                  <span className="text-text-muted block text-[10px]">Stock Available</span>
-                  <span className="font-bold text-emerald-700">{viewingProduct.stock}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Wholesale Price Tiers */}
-            <div className="space-y-2">
-              <h5 className="font-bold text-text-primary uppercase tracking-wider text-[11px]">
-                Regional Wholesale Tier Pricing
-              </h5>
-              <div className="border border-border rounded-xl overflow-hidden text-xs">
-                <table className="w-full text-left">
-                  <thead className="bg-surface-muted text-[11px] uppercase font-semibold">
-                    <tr>
-                      <th className="p-3">Country</th>
-                      <th className="p-3">Retail Price</th>
-                      <th className="p-3">Wholesale MOQ</th>
-                      <th className="p-3">Tier 3 (Max Volume)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    <tr>
-                      <td className="p-3 font-semibold">India (USD)</td>
-                      <td className="p-3 font-bold text-text-primary">${viewingProduct.pricing?.IN?.retailPrice}</td>
-                      <td className="p-3 font-mono">{viewingProduct.pricing?.IN?.moq || 20}</td>
-                      <td className="p-3 font-bold text-gold-600">${viewingProduct.pricing?.IN?.wholesaleTiers?.[2]?.unitPrice || 1750}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-3 font-semibold">United States (USD)</td>
-                      <td className="p-3 font-bold text-text-primary">${viewingProduct.pricing?.US?.retailPrice}</td>
-                      <td className="p-3 font-mono">{viewingProduct.pricing?.US?.moq || 20}</td>
-                      <td className="p-3 font-bold text-gold-600">${viewingProduct.pricing?.US?.wholesaleTiers?.[2]?.unitPrice || 28.0}</td>
-                    </tr>
-                    <tr>
-                      <td className="p-3 font-semibold">United Kingdom (GBP)</td>
-                      <td className="p-3 font-bold text-text-primary">£{viewingProduct.pricing?.GB?.retailPrice}</td>
-                      <td className="p-3 font-mono">{viewingProduct.pricing?.GB?.moq || 20}</td>
-                      <td className="p-3 font-bold text-gold-600">£{viewingProduct.pricing?.GB?.wholesaleTiers?.[2]?.unitPrice || 22.5}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Custom Product Attributes & Specs */}
-            {viewingProduct.attributes && viewingProduct.attributes.length > 0 && (
-              <div className="p-4 rounded-xl bg-surface-muted border border-border space-y-2">
-                <h5 className="font-bold text-text-primary uppercase tracking-wider text-[11px]">
-                  Custom Product Attributes
-                </h5>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                  {viewingProduct.attributes.map((attr, idx) => (
-                    <div key={idx} className="bg-white p-2.5 rounded-lg border border-border">
-                      <span className="text-text-muted block text-[10px] uppercase font-semibold">
-                        {attr.attribute?.name || attr.name}
-                      </span>
-                      <span className="font-bold text-text-primary">
-                        {attr.customValue || attr.value?.value || attr.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
-
-      {/* ============================================================
-          MODAL: ADD / EDIT CATEGORY
-      ============================================================ */}
-      <Modal
-        isOpen={isCategoryModalOpen}
-        onClose={() => setIsCategoryModalOpen(false)}
-        title={editingCategory ? `Edit Category: ${editingCategory.name}` : "Add New Category Taxonomy"}
-        maxWidth="max-w-lg"
-      >
-        <form onSubmit={handleCategorySubmit} className="space-y-4">
-          <Input
-            label="Category Name"
-            value={categoryForm.name}
-            onChange={(e) => handleCategoryNameChange(e.target.value)}
-            placeholder="e.g. Industrial Automation & Machinery"
-            required
-          />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input
-              label="URL Slug"
-              value={categoryForm.slug}
-              onChange={(e) => setCategoryForm({ ...categoryForm, slug: e.target.value })}
-              placeholder="e.g. industrial-automation"
-              helperText="Auto-generated from name or custom"
-              required
-            />
-
-            <Select
-              label="Parent Category (Optional)"
-              value={categoryForm.parentId || ""}
-              onChange={(e) => setCategoryForm({ ...categoryForm, parentId: e.target.value })}
-              options={[
-                { label: "None (Root Category)", value: "" },
-                ...categories
-                  .filter((c) => !editingCategory || c.id !== editingCategory.id)
-                  .map((c) => ({ label: c.name, value: c.id })),
-              ]}
-            />
-          </div>
-
-          <div>
-            <Input
-              label="Category Image URL"
-              value={categoryForm.imageUrl}
-              onChange={(e) => setCategoryForm({ ...categoryForm, imageUrl: e.target.value })}
-              placeholder="https://images.unsplash.com/..."
-              helperText="Direct image URL for storefront display"
-            />
-            {categoryForm.imageUrl && (
-              <div className="mt-2 flex items-center gap-3 p-2 bg-surface-muted rounded-xl border border-border">
-                <img
-                  src={categoryForm.imageUrl}
-                  alt="Preview"
-                  className="w-12 h-12 rounded-lg object-cover border border-border shrink-0 bg-white"
-                  onError={(e) => {
-                    e.target.style.display = "none";
-                  }}
-                />
-                <div className="text-xs text-text-secondary truncate">
-                  <span className="font-semibold block text-text-primary">Image Preview</span>
-                  <span className="text-[10px] text-text-muted truncate block">{categoryForm.imageUrl}</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <Textarea
-            label="Description"
-            value={categoryForm.description}
-            onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-            placeholder="Commercial scope and product specifications for this category..."
-            rows={2}
-          />
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            <Input
-              label="Sort Order"
-              type="number"
-              value={categoryForm.sortOrder}
-              onChange={(e) => setCategoryForm({ ...categoryForm, sortOrder: parseInt(e.target.value) || 0 })}
-              placeholder="0"
-            />
-
-            <div className="flex items-center pt-6">
-              <Checkbox
-                label="Active & Visible in Storefront"
-                checked={categoryForm.active}
-                onChange={(e) => setCategoryForm({ ...categoryForm, active: e.target.checked })}
-              />
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-border flex items-center justify-end gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              size="md"
-              onClick={() => setIsCategoryModalOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              size="md"
-              isLoading={createCategoryMutation.isPending || updateCategoryMutation.isPending}
-              className="font-bold"
-            >
-              {editingCategory ? "Save Category Changes" : "Create Category"}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+      />
 
       {/* ============================================================
           CONFIRM DELETE DIALOGS
@@ -1114,104 +736,8 @@ export function Products() {
         variant="danger"
         isLoading={deleteProductMutation.isPending}
       />
-
-      <ConfirmDialog
-        isOpen={!!deletingCategory}
-        onClose={() => setDeletingCategory(null)}
-        onConfirm={() => deleteCategoryMutation.mutate(deletingCategory.id)}
-        title="Delete Category Taxonomy"
-        description={`Are you sure you want to delete category "${deletingCategory?.name}"?`}
-        confirmText="Confirm Deletion"
-        variant="danger"
-        isLoading={deleteCategoryMutation.isPending}
-      />
     </div>
   );
 }
 
-export function Pricing() {
-  return (
-    <div className="space-y-6">
-      <div className="pb-6 border-b border-border">
-        <h1 className="text-2xl font-bold text-text-primary">Regional Wholesale Pricing Engine</h1>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-6 rounded-xl bg-white border border-border space-y-4 shadow-2xs">
-          <div className="flex items-center justify-between border-b border-border pb-3">
-            <h3 className="text-sm font-bold text-text-primary">India (USD • $)</h3>
-            <Badge variant="brand" size="sm">Active Matrix</Badge>
-          </div>
-          <div className="space-y-2 text-xs text-text-secondary">
-            <div className="flex justify-between py-1 border-b border-border">
-              <span>Standard Retail Price</span>
-              <strong className="text-text-primary">$2,499 / unit</strong>
-            </div>
-            <div className="flex justify-between py-1 border-b border-border">
-              <span>Tier 1 (20 - 49 units)</span>
-              <strong className="text-gold-600 font-bold">$2,150 / unit</strong>
-            </div>
-            <div className="flex justify-between py-1 border-b border-border">
-              <span>Tier 2 (50 - 99 units)</span>
-              <strong className="text-gold-600 font-bold">$1,950 / unit</strong>
-            </div>
-            <div className="flex justify-between py-1">
-              <span>Tier 3 (100+ units)</span>
-              <strong className="text-gold-600 font-bold">$1,750 / unit</strong>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6 rounded-xl bg-white border border-border space-y-4 shadow-2xs">
-          <div className="flex items-center justify-between border-b border-border pb-3">
-            <h3 className="text-sm font-bold text-text-primary">United States (USD • $)</h3>
-            <Badge variant="brand" size="sm">Active Matrix</Badge>
-          </div>
-          <div className="space-y-2 text-xs text-text-secondary">
-            <div className="flex justify-between py-1 border-b border-border">
-              <span>Standard Retail Price</span>
-              <strong className="text-text-primary">$42.00 / unit</strong>
-            </div>
-            <div className="flex justify-between py-1 border-b border-border">
-              <span>Tier 1 (20 - 49 units)</span>
-              <strong className="text-gold-600 font-bold">$35.00 / unit</strong>
-            </div>
-            <div className="flex justify-between py-1 border-b border-border">
-              <span>Tier 2 (50 - 99 units)</span>
-              <strong className="text-gold-600 font-bold">$31.50 / unit</strong>
-            </div>
-            <div className="flex justify-between py-1">
-              <span>Tier 3 (100+ units)</span>
-              <strong className="text-gold-600 font-bold">$28.00 / unit</strong>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6 rounded-xl bg-white border border-border space-y-4 shadow-2xs">
-          <div className="flex items-center justify-between border-b border-border pb-3">
-            <h3 className="text-sm font-bold text-text-primary">United Kingdom (GBP • £)</h3>
-            <Badge variant="brand" size="sm">Active Matrix</Badge>
-          </div>
-          <div className="space-y-2 text-xs text-text-secondary">
-            <div className="flex justify-between py-1 border-b border-border">
-              <span>Standard Retail Price</span>
-              <strong className="text-text-primary">£34.00 / unit</strong>
-            </div>
-            <div className="flex justify-between py-1 border-b border-border">
-              <span>Tier 1 (20 - 49 units)</span>
-              <strong className="text-gold-600 font-bold">£28.50 / unit</strong>
-            </div>
-            <div className="flex justify-between py-1 border-b border-border">
-              <span>Tier 2 (50 - 99 units)</span>
-              <strong className="text-gold-600 font-bold">£25.50 / unit</strong>
-            </div>
-            <div className="flex justify-between py-1">
-              <span>Tier 3 (100+ units)</span>
-              <strong className="text-gold-600 font-bold">£22.50 / unit</strong>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}

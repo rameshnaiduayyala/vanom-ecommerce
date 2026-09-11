@@ -7,7 +7,7 @@ import {
   Users,
   Building2,
   FileCheck2,
-  Warehouse,
+  Boxes,
   FileText,
   BarChart3,
   CreditCard,
@@ -75,35 +75,19 @@ export const ADMIN_NAV_CONFIG = [
         icon: PlusCircle,
         path: ROUTES.ADMIN.PRODUCT_NEW,
       },
-      {
-        id: "categories",
-        label: "Categories",
-        icon: FolderTree,
-        path: `${ROUTES.ADMIN.PRODUCTS}?tab=categories`,
-      },
-      {
-        id: "pricing-tiers",
-        label: "Pricing & Tiers",
-        path: ROUTES.ADMIN.PRICING,
-      },
     ],
   },
   {
-    id: "inventory-group",
+    id: "categories",
+    label: "Categories",
+    icon: FolderTree,
+    path: ROUTES.ADMIN.CATEGORIES,
+  },
+  {
+    id: "inventory",
     label: "Inventory",
-    icon: Warehouse,
-    children: [
-      {
-        id: "stock-overview",
-        label: "Stock Overview",
-        path: ROUTES.ADMIN.INVENTORY,
-      },
-      {
-        id: "warehouses",
-        label: "Warehouses",
-        path: `${ROUTES.ADMIN.INVENTORY}?tab=warehouses`,
-      },
-    ],
+    icon: Boxes,
+    path: ROUTES.ADMIN.INVENTORY,
   },
 
   // ── ACCOUNTS & CORPORATE ──

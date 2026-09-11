@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
@@ -91,21 +91,39 @@ export function CompanyReviewPage() {
     }
   };
 
+  const countryName =
+    typeof company?.country === "object"
+      ? company?.country?.name || company?.country?.code
+      : company?.country || company?.countryCode || "Global";
+
+  const paymentTerms =
+    company?.paymentTerms ||
+    (company?.paymentTermsDays !== undefined ? `NET_${company.paymentTermsDays}` : "NET_30");
+
+  const primaryContactName =
+    company?.primaryContact ||
+    (company?.members?.[0]?.user
+      ? `${company.members[0].user.firstName || ""} ${company.members[0].user.lastName || ""}`.trim()
+      : "Not Provided");
+
+  const contactEmail =
+    company?.email || company?.members?.[0]?.user?.email || "Not Provided";
+
   return (
     <div className="space-y-6">
-      <Link to={ROUTES.ADMIN.BUSINESS_APPLICATIONS} className="inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary">
-        <ArrowLeft className="w-3.5 h-3.5" /> Back to Applications List
+      <Link to={ROUTES.ADMIN.COMPANIES} className="inline-flex items-center gap-1.5 text-xs text-text-muted hover:text-text-primary">
+        <ArrowLeft className="w-3.5 h-3.5" /> Back to Companies Directory
       </Link>
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-text-primary">{company.legalName}</h1>
+            <h1 className="text-2xl font-bold text-text-primary">{company.legalName || company.tradingName}</h1>
             <Badge variant={company.status === "APPROVED" ? "green" : "yellow"} size="md">
               {company.status}
             </Badge>
           </div>
-          <p className="text-xs text-text-muted mt-1">Dossier ID: {company.id} • Registered in {company.country}</p>
+          <p className="text-xs text-text-muted mt-1">Dossier ID: {company.id} • Registered in {countryName}</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -127,27 +145,27 @@ export function CompanyReviewPage() {
           <div className="grid grid-cols-2 gap-4 text-xs">
             <div>
               <span className="text-text-muted block">Trading Brand Name</span>
-              <span className="font-semibold text-text-primary">{company.tradingName}</span>
+              <span className="font-semibold text-text-primary">{company.tradingName || company.legalName}</span>
             </div>
             <div>
               <span className="text-text-muted block">Tax ID / EIN / GST</span>
-              <span className="font-mono font-bold text-text-primary">{company.taxId}</span>
+              <span className="font-mono font-bold text-text-primary">{company.taxId || "N/A"}</span>
             </div>
             <div>
               <span className="text-text-muted block">Registration Number</span>
-              <span className="font-mono text-text-secondary">{company.registrationNumber}</span>
+              <span className="font-mono text-text-secondary">{company.registrationNumber || "N/A"}</span>
             </div>
             <div>
-              <span className="text-text-muted block">Requested Terms</span>
-              <span className="font-bold text-brand-700">{company.paymentTerms}</span>
+              <span className="text-text-muted block">Payment Terms</span>
+              <span className="font-bold text-brand-700">{paymentTerms}</span>
             </div>
             <div>
               <span className="text-text-muted block">Primary Contact</span>
-              <span className="font-medium text-text-primary">{company.primaryContact}</span>
+              <span className="font-medium text-text-primary">{primaryContactName}</span>
             </div>
             <div>
               <span className="text-text-muted block">Contact Email</span>
-              <span className="font-medium text-text-primary">{company.email}</span>
+              <span className="font-medium text-text-primary">{contactEmail}</span>
             </div>
           </div>
         </div>

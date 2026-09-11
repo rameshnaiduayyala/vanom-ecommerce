@@ -83,6 +83,11 @@ export class AdminController {
     return reply.send({ success: true, data });
   };
 
+  adjustInventory = async (req, reply) => {
+    const data = await this.service.adjustStock(req.body);
+    return reply.send({ success: true, data });
+  };
+
   listQuotes = async (req, reply) => {
     const data = await this.service.listQuotes();
     return reply.send({ success: true, data });

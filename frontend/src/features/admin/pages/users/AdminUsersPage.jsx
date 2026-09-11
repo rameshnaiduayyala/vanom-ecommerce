@@ -6,6 +6,7 @@ import { useAdminUsers } from "./hooks/useAdminUsers.js";
 import { UsersTable } from "./components/UsersTable.jsx";
 import { UsersFilter } from "./components/UsersFilter.jsx";
 import { UserFormModal } from "./components/UserFormModal.jsx";
+import { ViewUserModal } from "./components/ViewUserModal.jsx";
 import { DeleteUserModal } from "./components/DeleteUserModal.jsx";
 
 export function AdminUsersPage() {
@@ -26,6 +27,7 @@ export function AdminUsersPage() {
   // Modal State
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [viewingUser, setViewingUser] = useState(null);
   const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
   const [formError, setFormError] = useState("");
 
@@ -48,6 +50,10 @@ export function AdminUsersPage() {
     setEditingUser(user);
     setFormError("");
     setFormModalOpen(true);
+  };
+
+  const handleOpenView = (user) => {
+    setViewingUser(user);
   };
 
   const handleFormSubmit = async (formData, b2bCompanyMode) => {
@@ -111,42 +117,32 @@ export function AdminUsersPage() {
       }
       setFormModalOpen(false);
     } catch (err) {
-      setFormError(err.message || "Failed to save user account.");
+      setFormError(err.message || "Failed to save user.");
     }
   };
 
-  const handleDeleteConfirm = async (userId) => {
+  const handleDeleteConfirm = async (id) => {
     try {
-      await deleteMutation.mutateAsync(userId);
+      await deleteMutation.mutateAsync(id);
       setDeleteConfirmUser(null);
-    } catch {
-      // Error handled by mutation toast
+    } catch (err) {
+      console.error(err);
     }
   };
 
   // Filtered Users
   const filteredUsers = users.filter((u) => {
-    const fullName = `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase();
-    const email = (u.email || "").toLowerCase();
-    const phone = (u.phone || "").toLowerCase();
-    const company = (u.company?.legalName || u.company?.tradingName || "").toLowerCase();
-    const matchesSearch =
-      !searchTerm ||
-      fullName.includes(searchTerm.toLowerCase()) ||
-      email.includes(searchTerm.toLowerCase()) ||
-      phone.includes(searchTerm.toLowerCase()) ||
-      company.includes(searchTerm.toLowerCase());
+    const nameMatch =
+      `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.company?.legalName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.company?.tradingName?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const roles = Array.isArray(u.roles) ? u.roles : [u.roles];
-    const matchesRole =
-      roleFilter === "ALL" ||
-      roles.some((r) => String(r).toUpperCase() === roleFilter.toUpperCase());
+    const roles = Array.isArray(u.roles) ? u.roles : [u.roles || "CUSTOMER"];
+    const roleMatch = roleFilter === "ALL" || roles.includes(roleFilter);
+    const statusMatch = statusFilter === "ALL" || u.status === statusFilter;
 
-    const matchesStatus =
-      statusFilter === "ALL" ||
-      String(u.status || "ACTIVE").toUpperCase() === statusFilter.toUpperCase();
-
-    return matchesSearch && matchesRole && matchesStatus;
+    return nameMatch && roleMatch && statusMatch;
   });
 
   return (
@@ -188,8 +184,17 @@ export function AdminUsersPage() {
       <UsersTable
         users={filteredUsers}
         isLoading={isLoading}
+        onView={handleOpenView}
         onEdit={handleOpenEdit}
         onDelete={setDeleteConfirmUser}
+      />
+
+      {/* ─── View User Modal ─── */}
+      <ViewUserModal
+        isOpen={Boolean(viewingUser)}
+        user={viewingUser}
+        onClose={() => setViewingUser(null)}
+        onEdit={handleOpenEdit}
       />
 
       {/* ─── Add / Edit Modal ─── */}

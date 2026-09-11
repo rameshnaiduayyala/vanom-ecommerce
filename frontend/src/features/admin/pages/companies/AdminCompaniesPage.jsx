@@ -6,6 +6,7 @@ import { useAdminCompanies } from "./hooks/useAdminCompanies.js";
 import { CompaniesTable } from "./components/CompaniesTable.jsx";
 import { CompaniesFilter } from "./components/CompaniesFilter.jsx";
 import { CompanyFormModal } from "./components/CompanyFormModal.jsx";
+import { ViewCompanyModal } from "./components/ViewCompanyModal.jsx";
 import { DeleteCompanyModal } from "./components/DeleteCompanyModal.jsx";
 
 export function AdminCompaniesPage() {
@@ -25,6 +26,7 @@ export function AdminCompaniesPage() {
   // Modal State
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState(null);
+  const [viewingCompany, setViewingCompany] = useState(null);
   const [deleteConfirmCompany, setDeleteConfirmCompany] = useState(null);
   const [formError, setFormError] = useState("");
 
@@ -47,6 +49,10 @@ export function AdminCompaniesPage() {
     setEditingCompany(company);
     setFormError("");
     setFormModalOpen(true);
+  };
+
+  const handleOpenView = (company) => {
+    setViewingCompany(company);
   };
 
   const handleFormSubmit = async (formData) => {
@@ -104,31 +110,20 @@ export function AdminCompaniesPage() {
       await deleteMutation.mutateAsync(companyId);
       setDeleteConfirmCompany(null);
     } catch {
-      // Error handled by mutation toast
+      // Handled in mutation
     }
   };
 
-  // Filtered Companies
   const filteredCompanies = companies.filter((c) => {
-    const legalName = (c.legalName || "").toLowerCase();
-    const tradingName = (c.tradingName || "").toLowerCase();
-    const taxId = (c.taxId || "").toLowerCase();
-    const regNo = (c.registrationNumber || "").toLowerCase();
-    const country = (c.country?.name || c.country?.code || "").toLowerCase();
+    const nameMatch =
+      (c.legalName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.tradingName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.taxId || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.registrationNumber || "").toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesSearch =
-      !searchTerm ||
-      legalName.includes(searchTerm.toLowerCase()) ||
-      tradingName.includes(searchTerm.toLowerCase()) ||
-      taxId.includes(searchTerm.toLowerCase()) ||
-      regNo.includes(searchTerm.toLowerCase()) ||
-      country.includes(searchTerm.toLowerCase());
+    const statusMatch = statusFilter === "ALL" || c.status === statusFilter;
 
-    const matchesStatus =
-      statusFilter === "ALL" ||
-      String(c.status || "PENDING").toUpperCase() === statusFilter.toUpperCase();
-
-    return matchesSearch && matchesStatus;
+    return nameMatch && statusMatch;
   });
 
   return (
@@ -168,8 +163,17 @@ export function AdminCompaniesPage() {
       <CompaniesTable
         companies={filteredCompanies}
         isLoading={isLoading}
+        onView={handleOpenView}
         onEdit={handleOpenEdit}
         onDelete={setDeleteConfirmCompany}
+      />
+
+      {/* ─── View Company Modal ─── */}
+      <ViewCompanyModal
+        isOpen={Boolean(viewingCompany)}
+        company={viewingCompany}
+        onClose={() => setViewingCompany(null)}
+        onEdit={handleOpenEdit}
       />
 
       {/* ─── Add / Edit Modal ─── */}

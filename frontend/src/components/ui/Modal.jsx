@@ -1,8 +1,17 @@
-﻿import React, { useEffect } from "react";
+import React, { useEffect } from "react";
 import { cn } from "../../utils/cn.js";
 import { X } from "lucide-react";
 
-export function Modal({ isOpen, onClose, title, description, children, size = "md", className }) {
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  description,
+  children,
+  size = "lg",
+  maxWidth,
+  className,
+}) {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape" && isOpen) onClose();
@@ -21,22 +30,26 @@ export function Modal({ isOpen, onClose, title, description, children, size = "m
 
   const sizes = {
     sm: "max-w-md",
-    md: "max-w-lg",
-    lg: "max-w-2xl",
-    xl: "max-w-4xl",
-    full: "max-w-6xl",
+    md: "max-w-xl",
+    lg: "max-w-3xl",
+    xl: "max-w-5xl",
+    "2xl": "max-w-6xl",
+    "3xl": "max-w-7xl",
+    full: "max-w-[95vw]",
   };
 
+  const widthClass = maxWidth ? maxWidth : sizes[size] || sizes.lg;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity" onClick={onClose} />
 
       {/* Modal Dialog */}
       <div
         className={cn(
-          "relative w-full bg-white rounded-xl shadow-xl border border-border overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150",
-          sizes[size],
+          "relative w-full bg-white rounded-2xl shadow-2xl border border-border overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150",
+          widthClass,
           className
         )}
       >

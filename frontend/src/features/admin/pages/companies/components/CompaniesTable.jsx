@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Building2, Globe, ShieldCheck, Clock, Ban, Edit2, Trash2, ExternalLink, CheckCircle2, User } from "lucide-react";
 import { formatPrice } from "@/utils/formatters.js";
 
-export function CompaniesTable({ companies, isLoading, onEdit, onDelete }) {
+export function CompaniesTable({ companies, isLoading, onView, onEdit, onDelete }) {
   return (
     <div className="rounded-2xl bg-white border border-border overflow-hidden shadow-xs">
       <div className="overflow-x-auto">
@@ -48,14 +48,18 @@ export function CompaniesTable({ companies, isLoading, onEdit, onDelete }) {
                     key={c.id}
                     className="hover:bg-surface-muted/40 transition-colors group"
                   >
-                    {/* Entity Details */}
+                    {/* Entity Details (Clickable to View) */}
                     <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-800 font-bold flex items-center justify-center shrink-0 border border-amber-200">
+                      <div
+                        onClick={() => onView && onView(c)}
+                        className="flex items-center gap-3 cursor-pointer group/name select-none"
+                        title="Click to view corporate dossier"
+                      >
+                        <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-800 font-bold flex items-center justify-center shrink-0 border border-amber-200 group-hover/name:ring-2 group-hover/name:ring-amber-500/40 transition-all">
                           <Building2 className="w-4 h-4" />
                         </div>
                         <div>
-                          <div className="font-bold text-[#0F2B1C]">
+                          <div className="font-bold text-[#0F2B1C] group-hover/name:text-[#00875A] group-hover/name:underline transition-colors">
                             {c.tradingName || c.legalName}
                           </div>
                           {c.legalName && c.legalName !== c.tradingName && (

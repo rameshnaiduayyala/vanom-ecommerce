@@ -88,6 +88,10 @@ export const adminService = {
     return apiClient.post("/products", productData);
   },
 
+  getProductById: async (id) => {
+    return apiClient.get(`/products/${id}`);
+  },
+
   updateProduct: async (id, productData) => {
     return apiClient.put(`/products/${id}`, productData);
   },
@@ -174,6 +178,10 @@ export const adminService = {
 
   getInventory: async () => {
     return apiClient.get("/admin/inventory");
+  },
+
+  adjustInventory: async (payload) => {
+    return apiClient.post("/admin/inventory/adjust", payload);
   },
 
   getAdminQuotes: async () => {
