@@ -1,352 +1,72 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import confetti from "canvas-confetti";
-import { useCartStore } from "../../../stores/cart.store.js";
-import { useCountryStore } from "../../../stores/country.store.js";
-import { useAuthStore } from "../../../stores/auth.store.js";
-import { useUIStore } from "../../../stores/ui.store.js";
-import { formatPrice } from "../../../utils/formatters.js";
-import { Api } from "@/services/api/api-client.js";
-import { ROUTES } from "../../../constants/routes.js";
+import React from "react";
+import { Lock } from "lucide-react";
 import { SEO } from "../../../components/common/SEO.jsx";
-import { ShieldCheck, Truck, CreditCard, Lock, CheckCircle2 } from "lucide-react";
-
-import { Button } from "../../../components/ui/Button.jsx";
-import { Input } from "../../../components/ui/Input.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";
 import { AuthModal } from "../../../components/auth/AuthModal.jsx";
+import { useCheckout } from "../hooks/useCheckout.js";
+import { CheckoutAddressForm } from "../components/CheckoutAddressForm.jsx";
+import { CheckoutPaymentSelector } from "../components/CheckoutPaymentSelector.jsx";
+import { CheckoutOrderSummary } from "../components/CheckoutOrderSummary.jsx";
 
 export function CheckoutPage() {
-  const navigate = useNavigate();
-  const { cart, clearLocalCart } = useCartStore();
-  const { country } = useCountryStore();
-  const { isAuthenticated, user } = useAuthStore();
-  const { addToast } = useUIStore();
-
-  const [loading, setLoading] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [formData, setFormData] = useState({
-    fullName: user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() : "Ramesh Sharma",
-    email: user?.email || "ramesh.sharma@example.com",
-    phone: user?.phone || "+91 98765 43210",
-    addressLine1: "Flat 402, Lotus Heights",
-    city: "Bengaluru",
-    state: "Karnataka",
-    postalCode: "560001",
-    paymentMethod: "CARD",
-  });
-
-  const [taxData, setTaxData] = useState(null);
-  const [isCalculatingTax, setIsCalculatingTax] = useState(false);
-
-  // Update formData when user logs in
-  useEffect(() => {
-    if (user) {
-      setFormData((prev) => ({
-        ...prev,
-        fullName: `${user.firstName || ""} ${user.lastName || ""}`.trim() || prev.fullName,
-        email: user.email || prev.email,
-        phone: user.phone || prev.phone,
-      }));
-    }
-  }, [user]);
-
-  const subtotal = cart.subtotal || 998;
-
-  // Real-time Dynamic Tax Calculation in Checkout
-  useEffect(() => {
-    let isMounted = true;
-    const calculateTax = async () => {
-      setIsCalculatingTax(true);
-      try {
-        const payload = {
-          countryCode: country?.code || "US",
-          regionCode: formData.state || undefined,
-          postalCode: formData.postalCode || undefined,
-          items: (cart.items.length > 0 ? cart.items : [{ id: "p1", unitPrice: 499, quantity: 2, subtotal: 998 }]).map((item) => {
-            const unitPrice = Number(item.price || item.unitPrice || 499);
-            return {
-              productId: item.productId || item.id,
-              variantId: item.variantId || null,
-              unitPrice,
-              quantity: item.quantity,
-              subtotal: unitPrice * item.quantity,
-            };
-          }),
-        };
-        const res = await Api.tax.calculateTax(payload);
-        if (isMounted && res.data) {
-          setTaxData(res.data);
-        }
-      } catch (err) {
-        console.warn("Checkout tax error:", err);
-      } finally {
-        if (isMounted) setIsCalculatingTax(false);
-      }
-    };
-
-    const timer = setTimeout(calculateTax, 300);
-    return () => {
-      isMounted = false;
-      clearTimeout(timer);
-    };
-  }, [country?.code, formData.state, formData.postalCode, cart.items, subtotal]);
-
-  const taxAmount = taxData?.totalTax ? Number(taxData.totalTax) : Number((subtotal * 0.18).toFixed(2));
-  const shippingCost = country.code === "US" ? 4.99 : country.code === "CA" ? 6.99 : 50;
-  const grandTotal = subtotal + taxAmount + shippingCost;
-
-  const executeOrderPlacement = async (currentFormData = formData) => {
-    setLoading(true);
-
-    try {
-      const order = await Api.cart.placeOrder({
-        items: cart.items.length > 0 ? cart.items : [{ id: "prod-1", name: "Premium Organic Garden Soil (50 KG Sack)", quantity: 2, price: 499 }],
-        shippingAddress: {
-          name: currentFormData.fullName,
-          line1: currentFormData.addressLine1,
-          city: currentFormData.city,
-          state: currentFormData.state,
-          postalCode: currentFormData.postalCode,
-          country: country.name,
-        },
-        paymentMethod: currentFormData.paymentMethod,
-        currency: country.currency,
-      });
-
-      clearLocalCart();
-      
-      // Celebratory Confetti Cannon
-      try {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ["#008522", "#D9A000", "#5DBB68", "#FFD34D"],
-        });
-      } catch (e) {}
-
-      addToast({
-        title: "Order Placed Successfully!",
-        message: `Order #${order.orderNumber || "ORD-20260228-8921"} has been confirmed.`,
-        type: "success",
-      });
-
-      navigate(`${ROUTES.ORDERS}/${order.id || "ord-101"}`);
-    } catch (err) {
-      addToast({
-        title: "Checkout Error",
-        message: err.message || "Failed to place order. Please try again.",
-        type: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePlaceOrder = async (e) => {
-    e.preventDefault();
-
-    // If customer is not logged in, trigger the login modal pop-up seamlessly
-    if (!isAuthenticated) {
-      setShowAuthModal(true);
-      return;
-    }
-
-    await executeOrderPlacement(formData);
-  };
-
-  const handleAuthSuccess = (loggedInUser) => {
-    const updatedForm = {
-      ...formData,
-      fullName: `${loggedInUser.firstName || ""} ${loggedInUser.lastName || ""}`.trim() || formData.fullName,
-      email: loggedInUser.email || formData.email,
-      phone: loggedInUser.phone || formData.phone,
-    };
-    setFormData(updatedForm);
-    // Continue same order process directly upon successful authentication
-    executeOrderPlacement(updatedForm);
-  };
+  const checkout = useCheckout();
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       <SEO
-        title="Secure Checkout | Vanom Store"
+        title="Secure Checkout | Vanom"
         description="Complete your order securely with 256-bit encrypted checkout."
         noindex={true}
       />
-      <div className="flex items-center justify-between pb-4 border-b border-border">
 
+      {/* ── Page header ───────────────────────────────────────────── */}
+      <div className="flex items-center justify-between pb-4 border-b border-border">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">Secure Checkout</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Secure Checkout</h1>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {checkout.country.flag} Shipping to {checkout.country.name}
+          </p>
         </div>
         <Badge variant="brand" size="md" className="flex items-center gap-1">
           <Lock className="w-3.5 h-3.5" /> 256-bit Encrypted
         </Badge>
       </div>
 
-      <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Shipping & Payment Details */}
+      {/* ── Two-column layout ─────────────────────────────────────── */}
+      <form onSubmit={checkout.handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {/* Left: Address + Payment */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Shipping Address */}
-          <div className="p-6 rounded-xl bg-white border border-border space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-border">
-              <Truck className="w-5 h-5 text-brand-600" />
-              <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">
-                1. Delivery Address ({country.name})
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="Full Name"
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                required
-              />
-              <Input
-                label="Email Address"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-              />
-              <Input
-                label="Phone Number"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                required
-              />
-              <Input
-                label="Street Address / Building"
-                value={formData.addressLine1}
-                onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
-                required
-              />
-              <Input
-                label="City"
-                value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                required
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  label="State"
-                  value={formData.state}
-                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                  required
-                />
-                <Input
-                  label="Postal Code"
-                  value={formData.postalCode}
-                  onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Payment Method */}
-          <div className="p-6 rounded-xl bg-white border border-border space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-border">
-              <CreditCard className="w-5 h-5 text-brand-600" />
-              <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">
-                2. Payment Method
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {[
-                { id: "CARD", title: "Credit / Debit Card", sub: "Visa, Mastercard, RuPay" },
-                { id: "UPI", title: "UPI / Instant Pay", sub: "GPay, PhonePe, Razorpay" },
-                { id: "NETBANKING", title: "Net Banking", sub: "All Major Banks" },
-              ].map((pm) => (
-                <label
-                  key={pm.id}
-                  className={`p-3 rounded-lg border cursor-pointer transition-all flex flex-col justify-between ${
-                    formData.paymentMethod === pm.id
-                      ? "border-brand-500 bg-brand-50/50 shadow-xs"
-                      : "border-border hover:bg-surface-muted"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-bold text-text-primary">{pm.title}</span>
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      checked={formData.paymentMethod === pm.id}
-                      onChange={() => setFormData({ ...formData, paymentMethod: pm.id })}
-                      className="text-brand-600"
-                    />
-                  </div>
-                  <span className="text-[10px] text-text-muted">{pm.sub}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+          <CheckoutAddressForm
+            formData={checkout.formData}
+            setField={checkout.setField}
+            country={checkout.country}
+          />
+          <CheckoutPaymentSelector
+            paymentMethod={checkout.formData.paymentMethod}
+            onSelect={(pm) => checkout.setField("paymentMethod", pm)}
+          />
         </div>
 
-        {/* Right Column: Authoritative Calculation */}
-        <div className="space-y-4">
-          <div className="p-6 rounded-xl bg-white border border-border space-y-4 shadow-xs">
-            <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider">
-              Order Total Summary
-            </h3>
-
-            <div className="space-y-2.5 text-xs text-text-secondary border-b border-border pb-4">
-              <div className="flex justify-between">
-                <span>Items Subtotal</span>
-                <span className="font-semibold text-text-primary">
-                  {formatPrice(subtotal, country.currency, country.symbol)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>
-                  {taxData?.jurisdiction
-                    ? `${taxData.jurisdiction} Tax ${taxData.effectiveRate ? `(${(taxData.effectiveRate * 100).toFixed(2)}%)` : ""}`
-                    : "Estimated Tax"}
-                </span>
-                <span className="font-semibold text-text-primary">
-                  {isCalculatingTax ? "Calculating..." : formatPrice(taxAmount, country.currency, country.symbol)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Fulfillment Shipping</span>
-                <span className="font-semibold text-text-primary">
-                  {shippingCost === 0 ? "FREE" : formatPrice(shippingCost, country.currency, country.symbol)}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-baseline pt-1">
-              <span className="text-sm font-bold text-text-primary">Payable Amount</span>
-              <span className="text-2xl font-black text-brand-700">
-                {formatPrice(grandTotal, country.currency, country.symbol)}
-              </span>
-            </div>
-
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full font-bold shadow-sm"
-              isLoading={loading}
-            >
-              Place Order & Pay
-            </Button>
-
-            <p className="text-[10px] text-text-muted text-center leading-relaxed">
-              By placing your order, you agree to Vanom terms and authoritative backend price validation.
-            </p>
-          </div>
-        </div>
+        {/* Right: Order summary + CTA */}
+        <CheckoutOrderSummary
+          cart={checkout.cart}
+          subtotal={checkout.subtotal}
+          taxAmount={checkout.taxAmount}
+          taxData={checkout.taxData}
+          isCalculatingTax={checkout.isCalculatingTax}
+          shipping={checkout.shipping}
+          grandTotal={checkout.grandTotal}
+          country={checkout.country}
+          loading={checkout.loading}
+        />
       </form>
 
-      {/* Auth Modal Popup for Unauthenticated Users */}
+      {/* Auth modal for guest checkout */}
       <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onSuccess={handleAuthSuccess}
+        isOpen={checkout.showAuthModal}
+        onClose={() => checkout.setShowAuthModal(false)}
+        onSuccess={checkout.handleAuthSuccess}
         initialRole="B2C"
       />
     </div>
