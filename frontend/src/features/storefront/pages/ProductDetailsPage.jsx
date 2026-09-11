@@ -7,6 +7,8 @@ import { useCartStore } from "../../../stores/cart.store.js";
 import { useUIStore } from "../../../stores/ui.store.js";
 import { formatPrice } from "../../../utils/formatters.js";
 import { ProductCard } from "../components/ProductCard.jsx";
+import { SEO } from "../../../components/common/SEO.jsx";
+
 import {
   Star,
   ChevronRight,
@@ -238,7 +240,41 @@ export function ProductDetailsPage() {
 
   return (
     <div className="bg-white min-h-screen pb-16 font-sans">
+      <SEO
+        title={`${title} - Buy Online at Best Price`}
+        description={product?.description || subtitle}
+        keywords={`${title}, ${brand}, ${product?.category || "groceries"}, buy online, best price`}
+        ogType="product"
+        ogImage={currentImage}
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "Product",
+          "name": title,
+          "image": gallery,
+          "description": product?.description || subtitle,
+          "sku": product?.sku || product?.id,
+          "brand": {
+            "@type": "Brand",
+            "name": brand,
+          },
+          "offers": {
+            "@type": "Offer",
+            "priceCurrency": country.currency || "INR",
+            "price": price,
+            "priceValidUntil": "2027-12-31",
+            "itemCondition": "https://schema.org/NewCondition",
+            "availability": "https://schema.org/InStock",
+            "url": typeof window !== "undefined" ? window.location.href : "",
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": rating,
+            "reviewCount": reviewsCount,
+          },
+        }}
+      />
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 space-y-8">
+
         
         {/* ─── 1. Breadcrumbs matching reference ─── */}
         <nav className="flex items-center gap-1.5 text-xs text-gray-500">

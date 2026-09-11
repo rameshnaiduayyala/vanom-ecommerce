@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "../../../components/ui/Toast.jsx";
 import { ROUTES } from "../../../constants/routes.js";
+import { SEO } from "../../../components/common/SEO.jsx";
 import {
   Mail,
   Phone,
@@ -15,6 +16,7 @@ import {
   Globe,
   Shield,
 } from "lucide-react";
+
 
 export function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -50,9 +52,14 @@ export function ContactPage() {
 
   return (
     <div className="min-h-screen bg-[#E8EDE9]">
-
+      <SEO
+        title="Contact Us | 24/7 Customer Care & Support | Vanom"
+        description="Get in touch with the Vanom customer support team for order inquiries, wholesale b2b partnerships, and delivery support."
+        keywords="contact vanom, customer support, ecommerce help, b2b inquiries"
+      />
       {/* ─── Minimal Hero ─── */}
       <section className="relative bg-[#042A19] overflow-hidden">
+
         {/* Ambient glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#0a5634]/40 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-[#84CC16]/8 rounded-full blur-[80px] pointer-events-none" />

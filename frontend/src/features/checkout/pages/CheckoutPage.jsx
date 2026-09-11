@@ -1,4 +1,4 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import confetti from "canvas-confetti";
 import { useCartStore } from "../../../stores/cart.store.js";
@@ -7,7 +7,9 @@ import { useUIStore } from "../../../stores/ui.store.js";
 import { formatPrice } from "../../../utils/formatters.js";
 import { Api } from "@/services/api/api-client.js";
 import { ROUTES } from "../../../constants/routes.js";
+import { SEO } from "../../../components/common/SEO.jsx";
 import { ShieldCheck, Truck, CreditCard, Lock, CheckCircle2 } from "lucide-react";
+
 import { Button } from "../../../components/ui/Button.jsx";
 import { Input } from "../../../components/ui/Input.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";
@@ -86,7 +88,13 @@ export function CheckoutPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <SEO
+        title="Secure Checkout | Vanom Store"
+        description="Complete your order securely with 256-bit encrypted checkout."
+        noindex={true}
+      />
       <div className="flex items-center justify-between pb-4 border-b border-border">
+
         <div>
           <h1 className="text-2xl font-bold text-text-primary">Secure Checkout</h1>
         </div>

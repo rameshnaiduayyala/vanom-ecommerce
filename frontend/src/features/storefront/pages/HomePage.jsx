@@ -21,6 +21,7 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { useCountryStore } from "../../../stores/country.store.js";
+import { SEO } from "../../../components/common/SEO.jsx";
 
 // ── Home Section Components (Separation of Concerns) ──────────────
 import { HeroBanner } from "../components/home/HeroBanner.jsx";
@@ -35,6 +36,7 @@ import { SustainabilityBanner } from "../components/home/SustainabilityBanner.js
 import { WhyVanomSection } from "../components/home/WhyVanomSection.jsx";
 import { TestimonialsSection } from "../components/home/TestimonialsSection.jsx";
 import { NewsletterAppBanner } from "../components/home/NewsletterAppBanner.jsx";
+
 
 export function HomePage() {
   const { country } = useCountryStore();
@@ -84,8 +86,25 @@ export function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#FFFDF7] flex flex-col">
+      <SEO
+        title="Vanom E-Commerce | Global Organic Essentials, Value Combos & Superstore"
+        description="Discover 100% certified organic groceries, health staples, value combo packs, and wholesale deals. Fast worldwide delivery and 100% purchase guarantee."
+        keywords="organic groceries, value combos, cold pressed oils, himalayan pink salt, herbs, wellness, ecommerce vanom"
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Vanom",
+          "url": typeof window !== "undefined" ? window.location.origin : "https://vanom.com",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": `${typeof window !== "undefined" ? window.location.origin : "https://vanom.com"}/products?search={search_term_string}`,
+            "query-input": "required name=search_term_string",
+          },
+        }}
+      />
       {/* ── 1. Hero Banner Slider (Primary promotional marketing) ── */}
       <section className="bg-transparent">
+
         <HeroBanner banners={heroBanners} />
       </section>
 

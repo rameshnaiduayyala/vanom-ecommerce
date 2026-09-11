@@ -34,9 +34,6 @@ export function PublicFooter() {
                 <span className="text-xs text-white/70">•</span>
                 <span className="text-xs font-semibold text-white/90">Pure • Sustainable • Global</span>
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight mb-2">
-                Empowering mindful living through authentic organic essentials.
-              </h3>
               <p className="text-xs text-white/85 leading-relaxed">
                 Founded with a mission to bring conscious wellness and natural living directly to your doorstep. We partner exclusively with certified ethical makers and artisanal cultivators across India to deliver non-toxic, eco-friendly lifestyle products worldwide.
               </p>
@@ -289,17 +286,15 @@ export function PublicFooter() {
               Cookie Policy
             </Link>
             <span className="text-white/20">|</span>
-            <div className="inline-flex items-center gap-1 text-white/90">
-              <span className="text-[9px] xs:text-[10px] sm:text-[10px] font-medium text-white/80">Developed by</span>
-              <a
-                href="https://www.linkedin.com/in/ramesh-ayyala/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[9px] xs:text-[10px] sm:text-[11px] font-bold text-white hover:text-[#F9BC15] underline decoration-white/40 hover:decoration-[#F9BC15] transition-colors"
-              >
-                Ramesh Ayyala
-              </a>
-            </div>
+            designed &amp; developed by
+            <a
+              href="https://raphaedgeai.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-white hover:text-[#F9BC15] transition-colors"
+            >
+              RaphaEdge AI
+            </a>
           </div>
         </div>
       </div>

@@ -5,6 +5,8 @@ import { Api } from "@/services/api/api-client.js";
 import { useCountryStore } from "../../../stores/country.store.js";
 import { ProductCard } from "../components/ProductCard.jsx";
 import { ROUTES } from "../../../constants/routes.js";
+import { SEO } from "../../../components/common/SEO.jsx";
+
 import {
   Search,
   Filter,
@@ -81,9 +83,24 @@ export function ProductsPage() {
     return list;
   }, [rawProducts, inStockOnly, sortBy, country.code]);
 
+  const pageTitle = currentSearch
+    ? `Search results for "${currentSearch}" | Vanom`
+    : activeCategoryObj
+    ? `${activeCategoryObj.name} Products | Vanom Store`
+    : "Explore Products & Combos | Vanom Store";
+
+  const pageDesc = activeCategoryObj?.description ||
+    `Browse ${filteredProducts.length} certified organic products, value combo packs, and wholesale groceries on Vanom.`;
+
   return (
     <div className="bg-[#E8EDE9] min-h-screen py-6 sm:py-8">
+      <SEO
+        title={pageTitle}
+        description={pageDesc}
+        keywords="organic products, value combos, spices, groceries, wholesale ecommerce"
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+
 
         {/* ─── Clean Header & Filter Control Bar ─── */}
         <div className="bg-white rounded-2xl p-5 border border-[#DCE8DF] shadow-xs flex flex-wrap items-center justify-between gap-4">
