@@ -96,27 +96,53 @@ export class BulkOrderService {
   }
 
   async getBulkOrderById(id, user) {
-    const order = await prisma.bulkOrder.findUnique({
-      where: { id },
+    const order = await prisma.bulkOrder.findFirst({
+      where: {
+        OR: [{ id }, { orderNumber: id }],
+      },
       include: {
-        items: { include: { variant: { include: { product: true, packaging: true } } } },
-        company: { include: { members: true } },
+        items: {
+          include: {
+            bulkProduct: true,
+            variant: { include: { product: true, packaging: true } },
+          },
+        },
+        company: { include: { members: true, addresses: true } },
         country: true,
         currency: true,
+        requestedBy: {
+          select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+        },
         quotes: true,
       },
     });
 
     if (!order) throw new NotFoundError("Bulk order inquiry not found");
 
-    const isMember = order.company?.members?.some((m) => m.userId === user.id);
+    const isMember = order.company?.members?.some((m) => m.userId === user.id) || order.requestedById === user.id;
     const isAdmin = user.roles?.includes("ADMIN") || user.roles?.includes("SUPER_ADMIN");
 
     if (!isMember && !isAdmin) {
       throw new ForbiddenError("Access denied to this bulk order");
     }
 
-    return order;
+    return {
+      ...order,
+      subtotal: Number(order.subtotal || 0),
+      totalAmount: Number(order.totalAmount || 0),
+      taxAmount: Number(order.taxAmount || 0),
+      shippingAmount: Number(order.shippingAmount || 0),
+      items: (order.items || []).map((it) => ({
+        id: it.id,
+        name: it.bulkProduct?.name || it.variant?.product?.name || "Bulk Product",
+        sku: it.bulkProduct?.sku || it.variant?.sku || "SKU-BULK",
+        quantity: it.quantity,
+        unitPrice: Number(it.unitPrice || 0),
+        subtotal: Number(it.subtotal || 0),
+        unitOfMeasure: it.bulkProduct?.unitOfMeasure || "Metric Ton",
+        packagingSnapshot: it.packagingSnapshot,
+      })),
+    };
   }
 
   async submitBulkOrder(id, user) {

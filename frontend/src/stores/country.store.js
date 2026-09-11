@@ -1,13 +1,21 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { SUPPORTED_COUNTRIES } from "../constants/countries.js";
 
 const DEFAULT_COUNTRY = SUPPORTED_COUNTRIES[0]; // IN (INR / ₹)
 
-export const useCountryStore = create((set) => ({
-  country: DEFAULT_COUNTRY,
-  setCountryByCode: (code) => {
-    const matched = SUPPORTED_COUNTRIES.find((c) => c.code === code) || DEFAULT_COUNTRY;
-    set({ country: matched });
-  },
-  setCountry: (country) => set({ country }),
-}));
+export const useCountryStore = create(
+  persist(
+    (set) => ({
+      country: DEFAULT_COUNTRY,
+      setCountryByCode: (code) => {
+        const matched = SUPPORTED_COUNTRIES.find((c) => c.code === code) || DEFAULT_COUNTRY;
+        set({ country: matched });
+      },
+      setCountry: (country) => set({ country }),
+    }),
+    {
+      name: "vanom_country_store",
+    }
+  )
+);
