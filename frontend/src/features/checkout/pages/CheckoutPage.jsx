@@ -45,6 +45,7 @@ export function CheckoutPage() {
           <CheckoutPaymentSelector
             paymentMethod={checkout.formData.paymentMethod}
             onSelect={(pm) => checkout.setField("paymentMethod", pm)}
+            countryCode={checkout.country.code}
           />
         </div>
 
