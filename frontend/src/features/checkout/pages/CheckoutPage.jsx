@@ -36,6 +36,9 @@ export function CheckoutPage() {
     paymentMethod: "CARD",
   });
 
+  const [taxData, setTaxData] = useState(null);
+  const [isCalculatingTax, setIsCalculatingTax] = useState(false);
+
   // Update formData when user logs in
   useEffect(() => {
     if (user) {
@@ -49,8 +52,48 @@ export function CheckoutPage() {
   }, [user]);
 
   const subtotal = cart.subtotal || 998;
-  const taxAmount = Number((subtotal * 0.18).toFixed(2));
-  const shippingCost = 50;
+
+  // Real-time Dynamic Tax Calculation in Checkout
+  useEffect(() => {
+    let isMounted = true;
+    const calculateTax = async () => {
+      setIsCalculatingTax(true);
+      try {
+        const payload = {
+          countryCode: country?.code || "US",
+          regionCode: formData.state || undefined,
+          postalCode: formData.postalCode || undefined,
+          items: (cart.items.length > 0 ? cart.items : [{ id: "p1", unitPrice: 499, quantity: 2, subtotal: 998 }]).map((item) => {
+            const unitPrice = Number(item.price || item.unitPrice || 499);
+            return {
+              productId: item.productId || item.id,
+              variantId: item.variantId || null,
+              unitPrice,
+              quantity: item.quantity,
+              subtotal: unitPrice * item.quantity,
+            };
+          }),
+        };
+        const res = await Api.tax.calculateTax(payload);
+        if (isMounted && res.data) {
+          setTaxData(res.data);
+        }
+      } catch (err) {
+        console.warn("Checkout tax error:", err);
+      } finally {
+        if (isMounted) setIsCalculatingTax(false);
+      }
+    };
+
+    const timer = setTimeout(calculateTax, 300);
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [country?.code, formData.state, formData.postalCode, cart.items, subtotal]);
+
+  const taxAmount = taxData?.totalTax ? Number(taxData.totalTax) : Number((subtotal * 0.18).toFixed(2));
+  const shippingCost = country.code === "US" ? 4.99 : country.code === "CA" ? 6.99 : 50;
   const grandTotal = subtotal + taxAmount + shippingCost;
 
   const executeOrderPlacement = async (currentFormData = formData) => {
@@ -258,15 +301,19 @@ export function CheckoutPage() {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>Estimated Tax (18% GST / VAT)</span>
+                <span>
+                  {taxData?.jurisdiction
+                    ? `${taxData.jurisdiction} Tax ${taxData.effectiveRate ? `(${(taxData.effectiveRate * 100).toFixed(2)}%)` : ""}`
+                    : "Estimated Tax"}
+                </span>
                 <span className="font-semibold text-text-primary">
-                  {formatPrice(taxAmount, country.currency, country.symbol)}
+                  {isCalculatingTax ? "Calculating..." : formatPrice(taxAmount, country.currency, country.symbol)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Fulfillment Shipping</span>
                 <span className="font-semibold text-text-primary">
-                  {formatPrice(shippingCost, country.currency, country.symbol)}
+                  {shippingCost === 0 ? "FREE" : formatPrice(shippingCost, country.currency, country.symbol)}
                 </span>
               </div>
             </div>

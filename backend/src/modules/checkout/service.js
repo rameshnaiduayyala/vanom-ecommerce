@@ -146,7 +146,9 @@ export class CheckoutService {
 
     const taxResult = await this.taxService.calculateTax({
       countryCode,
-      regionCode: shippingAddress?.state || null,
+      regionCode: shippingAddress?.state || shippingAddress?.region || null,
+      postalCode: shippingAddress?.postalCode || shippingAddress?.zip || null,
+      address: shippingAddress,
       items: validatedItems,
       customerType: user.customerType || "B2C",
       isB2BApproved: Boolean(companyId),

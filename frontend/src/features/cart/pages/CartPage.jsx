@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCartStore } from "../../../stores/cart.store.js";
 import { useCountryStore } from "../../../stores/country.store.js";
 import { useUIStore } from "../../../stores/ui.store.js";
@@ -7,32 +7,28 @@ import { formatPrice } from "../../../utils/formatters.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { getLiveProducts } from "../../../services/api/mock-data.js";
 import { SEO } from "../../../components/common/SEO.jsx";
+import { Api } from "../../../services/api/api-client.js";
 import {
-  ShoppingBag,
-  Trash2,
-  Plus,
-  Minus,
-  CheckCircle2,
-  ShieldCheck,
-  Truck,
-  RotateCcw,
-  Gift,
-  Tag,
-  Star,
-  Sparkles,
-  Share2,
-  Lock,
-} from "lucide-react";
+  CartItemCard,
+  CartSummary,
+  SavedForLaterList,
+  CartRecommendations,
+  EmptyCartView,
+} from "../components/index.js";
 
 export function CartPage() {
   const navigate = useNavigate();
-  const { cart, setCart, updateItemQuantity, removeItem, fetchCart, clearLocalCart } = useCartStore();
+  const { cart, setCart, updateItemQuantity, removeItem, fetchCart, clearLocalCart, isLoading } = useCartStore();
   const { country } = useCountryStore();
   const { addToast } = useUIStore();
 
-  React.useEffect(() => {
-    fetchCart();
-  }, [fetchCart]);
+  useEffect(() => {
+    // Only fetch if cart is empty (not yet loaded by AuthProvider on refresh)
+    // This prevents double-fetching which briefly resets isLoading and flashes empty cart
+    if (!cart.items || cart.items.length === 0) {
+      fetchCart();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Selected item IDs for checkout (defaults to all cart items selected)
   const [selectedIds, setSelectedIds] = useState(() =>
@@ -50,8 +46,30 @@ export function CartPage() {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState("");
 
+  // Destination Address & Dynamic Tax State
+  const [destination, setDestination] = useState({
+    countryCode: country?.code || "US",
+    regionCode: country?.code === "CA" ? "ON" : "CA",
+    postalCode: country?.code === "CA" ? "M5V 2T6" : "90210",
+  });
+  const [taxData, setTaxData] = useState(null);
+  const [isCalculatingTax, setIsCalculatingTax] = useState(false);
+
+  // Keep destination country in sync if global country selector switches
+  useEffect(() => {
+    if (country?.code && country.code !== destination.countryCode) {
+      const defaultRegion = country.code === "CA" ? "ON" : country.code === "US" ? "CA" : "";
+      const defaultPostal = country.code === "CA" ? "M5V 2T6" : country.code === "US" ? "90210" : "";
+      setDestination({
+        countryCode: country.code,
+        regionCode: defaultRegion,
+        postalCode: defaultPostal,
+      });
+    }
+  }, [country?.code]);
+
   // Sync selectedIds if cart items change and new items were added
-  React.useEffect(() => {
+  useEffect(() => {
     if (!cart.items) return;
     setSelectedIds((prev) => {
       const validCartIds = new Set(cart.items.map((i) => i.id));
@@ -99,7 +117,77 @@ export function CartPage() {
     return appliedCoupon.value;
   }, [appliedCoupon, selectedSubtotal]);
 
-  const finalTotal = Math.max(0, selectedSubtotal - couponDiscount);
+  // Real-time Dynamic Tax Calculation Engine
+  useEffect(() => {
+    if (selectedCartItems.length === 0 || selectedSubtotal <= 0) {
+      setTaxData(null);
+      return;
+    }
+
+    let isMounted = true;
+    const calculateLiveTax = async () => {
+      setIsCalculatingTax(true);
+      try {
+        const payload = {
+          countryCode: destination.countryCode || "US",
+          regionCode: destination.regionCode || undefined,
+          postalCode: destination.postalCode || undefined,
+          items: selectedCartItems.map((item) => {
+            const unitPrice = Number(item.price || item.unitPrice || 499);
+            return {
+              productId: item.productId || item.id,
+              variantId: item.variantId || null,
+              unitPrice: unitPrice,
+              quantity: item.quantity,
+              subtotal: unitPrice * item.quantity,
+            };
+          }),
+        };
+
+        const res = await Api.tax.calculateTax(payload);
+        const data = res?.data || res;
+        if (isMounted && data && (data.totalTax !== undefined || data.effectiveRate !== undefined)) {
+          setTaxData(data);
+        }
+      } catch (err) {
+        console.warn("Tax calculation fallback calculation:", err);
+        if (isMounted) {
+          const isUS = destination.countryCode === "US";
+          const isCA = destination.countryCode === "CA";
+          const rate = isUS ? 0.0882 : isCA ? 0.13 : 0.18;
+          const totalTax = Number((selectedSubtotal * rate).toFixed(2));
+          setTaxData({
+            provider: "FALLBACK_ENGINE",
+            jurisdiction: isUS ? (destination.regionCode || "US Standard") : isCA ? (destination.regionCode || "ON") : destination.countryCode,
+            taxType: isUS ? "SALES_TAX" : isCA ? "HST/GST" : "GST",
+            effectiveRate: rate,
+            totalTax: totalTax,
+          });
+        }
+      } finally {
+        if (isMounted) setIsCalculatingTax(false);
+      }
+    };
+
+    const timer = setTimeout(calculateLiveTax, 200);
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [destination.countryCode, destination.regionCode, destination.postalCode, selectedCartItems, selectedSubtotal]);
+
+  // Tax and Shipping Calculation
+  const estimatedTax = useMemo(() => {
+    if (!taxData?.totalTax) return 0;
+    return Number(taxData.totalTax) || 0;
+  }, [taxData]);
+
+  const estimatedShipping = useMemo(() => {
+    if (selectedSubtotal >= 500 || selectedCount === 0) return 0;
+    return destination.countryCode === "US" ? 4.99 : destination.countryCode === "CA" ? 6.99 : 40;
+  }, [selectedSubtotal, selectedCount, destination.countryCode]);
+
+  const finalTotal = Math.max(0, selectedSubtotal - couponDiscount + estimatedTax + estimatedShipping);
 
   // Recommended products
   const recommendedProducts = useMemo(() => {
@@ -108,7 +196,7 @@ export function CartPage() {
     return live.filter((p) => !cartIds.has(p.id)).slice(0, 4);
   }, [cart.items]);
 
-  // Handle select all toggle
+  // Selection handlers
   const allSelected = cart.items && cart.items.length > 0 && selectedIds.length === cart.items.length;
   const toggleSelectAll = () => {
     if (allSelected) {
@@ -266,10 +354,6 @@ export function CartPage() {
     }
   };
 
-  const outOfStockItems = useMemo(() => {
-    return (cart.items || []).filter((item) => item.maxStock !== undefined && item.maxStock <= 0);
-  }, [cart.items]);
-
   const hasSelectedOutOfStock = useMemo(() => {
     return selectedCartItems.some((item) => item.maxStock !== undefined && item.maxStock <= 0);
   }, [selectedCartItems]);
@@ -296,97 +380,54 @@ export function CartPage() {
     navigate(ROUTES.CHECKOUT);
   };
 
-  // If cart is totally empty and no saved items
-  if ((!cart.items || cart.items.length === 0) && savedItems.length === 0) {
+  // Loading skeleton while fetching cart from backend
+  if (isLoading && (!cart.items || cart.items.length === 0)) {
     return (
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <SEO
-          title="Shopping Cart | Vanom Store"
-          description="View your shopping cart items, manage quantities, and proceed to secure checkout on Vanom."
-          noindex={true}
-        />
-        <div className="bg-white rounded-2xl border border-border p-8 md:p-12 shadow-sm text-center">
-
-          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-[#FAF3DF] flex items-center justify-center border border-[#e6d8b5]">
-            <ShoppingBag className="w-12 h-12 text-[#185e3e]" />
-          </div>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-text-primary mb-2">
-            Your Cart is empty
-          </h2>
-          <p className="text-sm text-text-secondary max-w-md mx-auto mb-6">
-            Shop today's epic deals, explore top organic picks, value combo packs, or continue where you left off.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Link to={ROUTES.PRODUCTS}>
-              <button className="px-6 py-3 rounded-full bg-[#FFD814] hover:bg-[#F7CA00] text-gray-900 font-bold text-sm shadow-sm transition-all border border-[#FCD200] cursor-pointer">
-                Explore All Products
-              </button>
-            </Link>
-            <Link to={ROUTES.HOME}>
-              <button className="px-6 py-3 rounded-full bg-white hover:bg-gray-50 text-gray-800 font-bold text-sm border border-gray-300 shadow-2xs transition-all cursor-pointer">
-                Return to Store Home
-              </button>
-            </Link>
-          </div>
-        </div>
-
-        {/* Recommended Products for Empty State */}
-        {recommendedProducts.length > 0 && (
-          <div className="mt-10 bg-white rounded-2xl border border-border p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-[#FF9900]" />
-              Customers usually buy these top-rated items
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              {recommendedProducts.map((p) => (
-                <div
-                  key={p.id}
-                  className="p-4 rounded-xl border border-border hover:border-gray-400 bg-white transition-all flex flex-col justify-between group"
-                >
-                  <Link to={`/products/${p.slug || p.id}`} className="block">
-                    <div className="w-full h-36 rounded-lg bg-surface-muted overflow-hidden mb-3 border border-border/50">
-                      <img
-                        src={p.image}
-                        alt={p.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <h4 className="text-xs font-semibold text-text-primary line-clamp-2 hover:text-[#007185] leading-snug mb-1">
-                      {p.name}
-                    </h4>
-                  </Link>
-                  <div>
-                    <div className="flex items-center gap-1 mb-1.5">
-                      <div className="flex text-[#FFA41C]">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="w-3 h-3 fill-current" />
-                        ))}
-                      </div>
-                      <span className="text-[11px] text-[#007185] font-medium">{p.rating || 4.9}</span>
-                    </div>
-                    <div className="flex items-baseline gap-1.5 mb-3">
-                      <span className="text-sm font-bold text-gray-900">
-                        {formatPrice(p.price, country.currency, country.symbol)}
-                      </span>
-                      {p.mrp && (
-                        <span className="text-xs text-text-muted line-through">
-                          {formatPrice(p.mrp, country.currency, country.symbol)}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleAddRecommended(p)}
-                      className="w-full py-1.5 px-3 rounded-full bg-[#FFD814] hover:bg-[#F7CA00] text-gray-900 text-xs font-bold transition-all shadow-2xs border border-[#FCD200] cursor-pointer"
-                    >
-                      Add to Cart
-                    </button>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-8 space-y-4">
+            <div className="bg-white rounded-2xl border border-border p-6 shadow-xs animate-pulse">
+              <div className="h-7 bg-gray-200 rounded w-48 mb-6" />
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex gap-4 py-5 border-b border-border last:border-0">
+                  <div className="w-24 h-24 bg-gray-200 rounded-xl flex-shrink-0" />
+                  <div className="flex-1 space-y-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                    <div className="h-3 bg-gray-200 rounded w-1/3" />
+                    <div className="h-3 bg-gray-200 rounded w-1/4" />
+                  </div>
+                  <div className="w-24">
+                    <div className="h-6 bg-gray-200 rounded" />
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        )}
+          <div className="lg:col-span-4">
+            <div className="bg-white rounded-2xl border border-border p-6 shadow-xs animate-pulse space-y-4">
+              <div className="h-6 bg-gray-200 rounded w-36" />
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex justify-between">
+                  <div className="h-4 bg-gray-200 rounded w-24" />
+                  <div className="h-4 bg-gray-200 rounded w-16" />
+                </div>
+              ))}
+              <div className="h-12 bg-gray-300 rounded-xl mt-4" />
+            </div>
+          </div>
+        </div>
       </div>
+    );
+  }
+
+  // Empty Cart State (only after loading is complete)
+  if ((!cart.items || cart.items.length === 0) && savedItems.length === 0) {
+    return (
+      <EmptyCartView
+        recommendedProducts={recommendedProducts}
+        country={country}
+        onAddToCart={handleAddRecommended}
+      />
     );
   }
 
@@ -398,7 +439,6 @@ export function CartPage() {
         noindex={true}
       />
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
         {/* Left Column: Cart Items List + Saved For Later (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
           {/* Main Shopping Cart Box */}
@@ -433,171 +473,21 @@ export function CartPage() {
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {cart.items.map((item) => {
-                  const isSelected = selectedIds.includes(item.id);
-                  const isGift = Boolean(giftOptions[item.id]);
-                  const unitPrice = Number(item.price || item.unitPrice || 499);
-                  const mrp = Number(item.mrp || Math.round(unitPrice * 1.35));
-                  const itemDiscount = mrp > unitPrice ? Math.round(((mrp - unitPrice) / mrp) * 100) : 15;
-
-                  return (
-                    <div
-                      key={item.id}
-                      className={`py-5 flex flex-col sm:flex-row gap-4 transition-colors ${!isSelected ? "opacity-60 bg-gray-50/50 -mx-4 sm:-mx-6 px-4 sm:px-6" : ""
-                        }`}
-                    >
-                      {/* Checkbox */}
-                      <div className="pt-1 flex items-start">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleSelectItem(item.id)}
-                          className="w-4 h-4 rounded border-gray-300 text-[#007185] focus:ring-[#007185] cursor-pointer"
-                          aria-label={`Select ${item.name}`}
-                        />
-                      </div>
-
-                      {/* Product Thumbnail */}
-                      <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl bg-surface-muted border border-border overflow-hidden shrink-0 relative group">
-                        <img
-                          src={item.image || "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=400&q=80"}
-                          alt={item.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-
-                      {/* Product Details & Amazon Action Bar */}
-                      <div className="flex-1 min-w-0 flex flex-col justify-between">
-                        <div>
-                          {/* Title & Price on Mobile */}
-                          <div className="flex items-start justify-between gap-2">
-                            <h3 className="text-sm sm:text-base font-medium text-gray-900 hover:text-[#007185] leading-snug line-clamp-2">
-                              <Link to={`/products/${item.slug || item.id}`}>
-                                {item.name || item.productName}
-                              </Link>
-                            </h3>
-                            <div className="text-right sm:hidden shrink-0">
-                              <div className="text-base font-bold text-gray-900">
-                                {formatPrice(unitPrice, country.currency, country.symbol)}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* In Stock / Out of Stock Badge */}
-                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                            {item.maxStock !== undefined && item.maxStock <= 0 ? (
-                              <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-                                Out of Stock / Sold Out
-                              </span>
-                            ) : (
-                              <>
-                                <span className="text-[#067d62] font-semibold">
-                                  {item.maxStock ? `In stock (${item.maxStock} available)` : "In stock"}
-                                </span>
-                                <span className="text-gray-300">|</span>
-                                <span className="inline-flex items-center gap-1 font-bold text-[#007185] bg-[#EBF7FD] px-2 py-0.5 rounded text-[11px]">
-                                  <Sparkles className="w-3 h-3 text-[#FF9900]" /> Express Shipping
-                                </span>
-                              </>
-                            )}
-                          </div>
-
-                          {/* Specs / Brand note */}
-                          {item.specs && (
-                            <p className="text-xs text-text-secondary mt-1 line-clamp-1">{item.specs}</p>
-                          )}
-
-                          {/* Gift Option Checkbox */}
-                          <div className="mt-2 flex items-center gap-2">
-                            <label className="flex items-center gap-1.5 text-xs text-text-secondary cursor-pointer hover:text-gray-900">
-                              <input
-                                type="checkbox"
-                                checked={isGift}
-                                onChange={() => toggleGift(item.id)}
-                                className="w-3.5 h-3.5 rounded border-gray-300 text-[#007185] focus:ring-[#007185] cursor-pointer"
-                              />
-                              <Gift className="w-3.5 h-3.5 text-[#C7511F]" />
-                              <span>This is a gift <span className="text-[#007185] text-[11px] hover:underline">Learn more</span></span>
-                            </label>
-                          </div>
-                        </div>
-
-                        {/* Amazon Controls Row (Qty Dropdown / Stepper, Delete, Save for later, Share) */}
-                        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs pt-2 border-t border-gray-100">
-                          {/* Stepper / Dropdown */}
-                          <div className="flex items-center border border-gray-300 rounded-lg bg-gray-50 shadow-2xs overflow-hidden">
-                            <button
-                              type="button"
-                              onClick={() => handleQuantity(item.id, item.quantity - 1)}
-                              className="p-1.5 px-2 hover:bg-gray-200 text-gray-700 transition-colors cursor-pointer"
-                              title="Decrease"
-                            >
-                              <Minus className="w-3 h-3" />
-                            </button>
-                            <span className="w-8 text-center font-bold text-gray-900 select-none text-xs">
-                              {item.quantity}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleQuantity(item.id, item.quantity + 1)}
-                              className="p-1.5 px-2 hover:bg-gray-200 text-gray-700 transition-colors cursor-pointer"
-                              title="Increase"
-                            >
-                              <Plus className="w-3 h-3" />
-                            </button>
-                          </div>
-
-                          <span className="text-gray-300">|</span>
-
-                          <button
-                            type="button"
-                            onClick={() => handleRemove(item.id)}
-                            className="text-[#007185] hover:text-[#C7511F] hover:underline font-medium cursor-pointer"
-                          >
-                            Delete
-                          </button>
-
-                          <span className="text-gray-300">|</span>
-
-                          <button
-                            type="button"
-                            onClick={() => handleSaveForLater(item.id)}
-                            className="text-[#007185] hover:text-[#C7511F] hover:underline font-medium cursor-pointer"
-                          >
-                            Save for later
-                          </button>
-
-                          <span className="text-gray-300">|</span>
-
-                          <button
-                            type="button"
-                            onClick={() => handleShare(item)}
-                            className="text-[#007185] hover:text-[#C7511F] hover:underline font-medium cursor-pointer flex items-center gap-1"
-                          >
-                            <Share2 className="w-3 h-3" /> Share
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Desktop Price Column */}
-                      <div className="hidden sm:block text-right shrink-0">
-                        <div className="text-lg font-bold text-gray-900">
-                          {formatPrice(unitPrice, country.currency, country.symbol)}
-                        </div>
-                        {mrp > unitPrice && (
-                          <div className="space-y-0.5">
-                            <div className="text-xs text-text-muted line-through">
-                              M.R.P.: {formatPrice(mrp, country.currency, country.symbol)}
-                            </div>
-                            <span className="inline-block text-[11px] font-bold text-[#B12704] bg-red-50 px-1.5 py-0.5 rounded">
-                              {itemDiscount}% off
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                {cart.items.map((item) => (
+                  <CartItemCard
+                    key={item.id}
+                    item={item}
+                    isSelected={selectedIds.includes(item.id)}
+                    isGift={Boolean(giftOptions[item.id])}
+                    country={country}
+                    onToggleSelect={toggleSelectItem}
+                    onToggleGift={toggleGift}
+                    onQuantityChange={handleQuantity}
+                    onRemove={handleRemove}
+                    onSaveForLater={handleSaveForLater}
+                    onShare={handleShare}
+                  />
+                ))}
               </div>
             )}
 
@@ -614,245 +504,45 @@ export function CartPage() {
             )}
           </div>
 
-          {/* Amazon Saved For Later Section */}
-          <div className="bg-white rounded-2xl border border-border p-4 sm:p-6 shadow-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Saved for later</h2>
-                <p className="text-xs text-text-secondary mt-0.5">
-                  {savedItems.length} {savedItems.length === 1 ? "item" : "items"}
-                </p>
-              </div>
-            </div>
+          {/* Saved For Later Section */}
+          <SavedForLaterList
+            savedItems={savedItems}
+            country={country}
+            onMoveToCart={handleMoveToCart}
+            onRemoveSaved={handleRemoveSaved}
+          />
 
-            {savedItems.length === 0 ? (
-              <div className="py-8 text-center text-xs text-text-muted">
-                You have no items saved for later. Click "Save for later" on any cart item to park it here.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-4">
-                {savedItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-4 rounded-xl border border-border bg-white flex flex-col justify-between shadow-2xs hover:border-gray-400 transition-all"
-                  >
-                    <div>
-                      <div className="w-full h-36 rounded-lg bg-surface-muted overflow-hidden mb-3 border border-border/50">
-                        <img
-                          src={item.image || "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=400&q=80"}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <h4 className="text-xs font-semibold text-gray-900 line-clamp-2 hover:text-[#007185] mb-1">
-                        <Link to={`/products/${item.slug || item.id}`}>{item.name}</Link>
-                      </h4>
-                      <p className="text-xs text-[#067d62] font-semibold mb-1">In stock</p>
-                      <div className="text-sm font-bold text-gray-900 mb-3">
-                        {formatPrice(item.price || item.unitPrice || 499, country.currency, country.symbol)}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 pt-2 border-t border-gray-100">
-                      <button
-                        type="button"
-                        onClick={() => handleMoveToCart(item)}
-                        className="w-full py-1.5 px-3 rounded-full bg-[#FFD814] hover:bg-[#F7CA00] text-gray-900 text-xs font-bold transition-all shadow-2xs border border-[#FCD200] cursor-pointer"
-                      >
-                        Move to Cart
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSaved(item.id)}
-                        className="w-full py-1 px-3 text-xs text-[#007185] hover:text-[#C7511F] hover:underline text-center cursor-pointer"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Recommended Carousel ("Customers Who Bought Items in Your Cart Also Bought") */}
-          {recommendedProducts.length > 0 && (
-            <div className="bg-white rounded-2xl border border-border p-4 sm:p-6 shadow-xs">
-              <h3 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#FF9900]" />
-                Customers who bought items in your cart also bought
-              </h3>
-              <p className="text-xs text-text-secondary mb-4">Frequently paired organic bestsellers and combo packs</p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                {recommendedProducts.map((p) => (
-                  <div
-                    key={p.id}
-                    className="p-3.5 rounded-xl border border-border hover:border-gray-400 bg-white transition-all flex flex-col justify-between group"
-                  >
-                    <Link to={`/products/${p.slug || p.id}`} className="block">
-                      <div className="w-full h-32 rounded-lg bg-surface-muted overflow-hidden mb-2.5 border border-border/50">
-                        <img
-                          src={p.image}
-                          alt={p.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                      <h4 className="text-xs font-semibold text-gray-900 line-clamp-2 hover:text-[#007185] leading-snug mb-1">
-                        {p.name}
-                      </h4>
-                    </Link>
-                    <div>
-                      <div className="flex items-center gap-1 mb-1">
-                        <div className="flex text-[#FFA41C]">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="w-2.5 h-2.5 fill-current" />
-                          ))}
-                        </div>
-                        <span className="text-[10px] text-[#007185] font-medium">{p.rating || 4.8}</span>
-                      </div>
-                      <div className="flex items-baseline gap-1 mb-2.5">
-                        <span className="text-xs font-bold text-gray-900">
-                          {formatPrice(p.price, country.currency, country.symbol)}
-                        </span>
-                        {p.mrp && (
-                          <span className="text-[10px] text-text-muted line-through">
-                            {formatPrice(p.mrp, country.currency, country.symbol)}
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => handleAddRecommended(p)}
-                        className="w-full py-1 px-2 rounded-full bg-[#FFD814] hover:bg-[#F7CA00] text-gray-900 text-[11px] font-bold transition-all shadow-2xs border border-[#FCD200] cursor-pointer"
-                      >
-                        Add to Cart
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Recommended Carousel */}
+          <CartRecommendations
+            products={recommendedProducts}
+            country={country}
+            onAddToCart={handleAddRecommended}
+          />
         </div>
 
-        {/* Right Column: Amazon Buy Box / Order Summary (4 cols) */}
-        <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-24">
-          {/* Main Checkout Card */}
-          <div className="bg-white rounded-2xl border border-border p-5 shadow-sm space-y-4">
-            {/* Subtotal Display */}
-            <div>
-              <div className="flex items-baseline justify-between text-base font-normal text-gray-900">
-                <span>Subtotal ({selectedCount} items):</span>
-                <span className="text-2xl font-black text-gray-900">
-                  {formatPrice(finalTotal, country.currency, country.symbol)}
-                </span>
-              </div>
-              {appliedCoupon && (
-                <div className="flex justify-between text-xs text-[#067d62] font-bold mt-1">
-                  <span>Coupon ({appliedCoupon.code})</span>
-                  <span>- {formatPrice(couponDiscount, country.currency, country.symbol)}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Primary Amazon Proceed to Buy Button */}
-            <button
-              type="button"
-              onClick={handleProceedToCheckout}
-              disabled={selectedCount === 0 || hasSelectedOutOfStock}
-              className={`w-full py-3 px-4 rounded-full font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer ${
-                selectedCount > 0 && !hasSelectedOutOfStock
-                  ? "bg-[#FFD814] hover:bg-[#F7CA00] text-gray-900 border border-[#FCD200] active:scale-[0.99]"
-                  : "bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed"
-              }`}
-            >
-              <Lock className="w-4 h-4 text-gray-800" />
-              <span>
-                {hasSelectedOutOfStock
-                  ? "Cannot Proceed (Items Out of Stock)"
-                  : `Proceed to Checkout (${selectedCount} items)`}
-              </span>
-            </button>
-
-            {/* Price Details Breakdown */}
-            <div className="border-t border-border pt-4 space-y-2 text-xs text-text-secondary">
-              <div className="flex justify-between">
-                <span>Items Subtotal</span>
-                <span className="font-semibold text-gray-900">
-                  {formatPrice(selectedSubtotal, country.currency, country.symbol)}
-                </span>
-              </div>
-              {totalSavings > 0 && (
-                <div className="flex justify-between text-[#067d62] font-bold pt-1 border-t border-dashed border-gray-200">
-                  <span>Total Savings on MRP</span>
-                  <span>{formatPrice(totalSavings + couponDiscount, country.currency, country.symbol)}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Promo Code / Coupon Accordion */}
-            <div className="border-t border-border pt-3">
-              <form onSubmit={handleApplyCoupon} className="space-y-2">
-                <label className="block text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                  <Tag className="w-3.5 h-3.5 text-[#007185]" /> Apply Promo Code or Voucher
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={couponCode}
-                    onChange={(e) => {
-                      setCouponCode(e.target.value);
-                      setCouponError("");
-                    }}
-                    placeholder="e.g. VANOM10"
-                    className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-gray-300 focus:outline-none focus:border-[#007185] uppercase"
-                  />
-                  <button
-                    type="submit"
-                    className="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs border border-gray-300 transition-colors cursor-pointer"
-                  >
-                    Apply
-                  </button>
-                </div>
-                {couponError && <p className="text-[11px] text-red-600">{couponError}</p>}
-                {appliedCoupon && (
-                  <p className="text-[11px] text-[#067d62] font-medium flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" /> {appliedCoupon.label} applied!
-                  </p>
-                )}
-              </form>
-            </div>
-          </div>
-
-          {/* Trust Guarantees Widget */}
-          <div className="bg-white rounded-2xl border border-border p-4 shadow-2xs space-y-3">
-            <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Vanom Buyer Assurance</h4>
-            <div className="space-y-2.5 text-xs text-text-secondary">
-              <div className="flex items-center gap-2.5">
-                <ShieldCheck className="w-4 h-4 text-[#067d62] shrink-0" />
-                <span>100% Genuine Organic Certified Products</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Lock className="w-4 h-4 text-[#007185] shrink-0" />
-                <span>256-Bit Bank-Grade Encrypted Checkout</span>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Truck className="w-4 h-4 text-[#FF9900] shrink-0" />
-                <span>Express Dispatched with Live Tracking</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Clear Local Cart Link */}
-          <div className="text-center">
-            <button
-              onClick={clearLocalCart}
-              className="text-xs text-red-600 hover:text-red-700 hover:underline cursor-pointer font-medium"
-            >
-              Empty Entire Cart
-            </button>
-          </div>
-        </div>
+        {/* Right Column: Order Summary Buy Box (4 cols) */}
+        <CartSummary
+          selectedCount={selectedCount}
+          selectedSubtotal={selectedSubtotal}
+          totalSavings={totalSavings}
+          appliedCoupon={appliedCoupon}
+          couponDiscount={couponDiscount}
+          couponCode={couponCode}
+          couponError={couponError}
+          setCouponCode={setCouponCode}
+          onApplyCoupon={handleApplyCoupon}
+          estimatedShipping={estimatedShipping}
+          estimatedTax={estimatedTax}
+          taxData={taxData}
+          isCalculatingTax={isCalculatingTax}
+          finalTotal={finalTotal}
+          hasSelectedOutOfStock={hasSelectedOutOfStock}
+          country={country}
+          destination={destination}
+          setDestination={setDestination}
+          onProceedToCheckout={handleProceedToCheckout}
+          onClearCart={clearLocalCart}
+        />
       </div>
     </div>
   );
