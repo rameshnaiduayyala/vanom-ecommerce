@@ -13,6 +13,7 @@ import { cartRoutes } from "../modules/cart/index.js";
 import { checkoutRoutes } from "../modules/checkout/index.js";
 import { orderRoutes } from "../modules/orders/index.js";
 import { bulkOrderRoutes } from "../modules/bulk-orders/index.js";
+import { bulkProductsRoutes } from "../modules/bulk-products/index.js";
 import { quoteRoutes } from "../modules/quotes/index.js";
 import { paymentRoutes } from "../modules/payments/index.js";
 import { taxRoutes } from "../modules/tax/index.js";
@@ -42,6 +43,7 @@ export default async function registerRoutes(fastify, options) {
   await fastify.register(checkoutRoutes);
   await fastify.register(orderRoutes);
   await fastify.register(bulkOrderRoutes);
+  await fastify.register(bulkProductsRoutes);
   await fastify.register(quoteRoutes);
   await fastify.register(paymentRoutes);
   await fastify.register(taxRoutes);

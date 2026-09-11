@@ -30,32 +30,30 @@ export class BulkOrderService {
     let subtotal = Money.toDecimal(0);
 
     for (const item of items) {
-      const variant = await prisma.productVariant.findUnique({
-        where: { id: item.variantId },
-        include: { product: true, packaging: true },
+      // Direct lookup from dedicated BulkProduct table first
+      const bulkProd = await prisma.bulkProduct.findFirst({
+        where: {
+          OR: [{ id: item.productId || item.bulkProductId || item.id }, { sku: item.sku || "" }],
+        },
       });
 
-      if (!variant) throw new NotFoundError(`Variant ${item.variantId} not found`);
-
-      const priceResult = await PriceResolver.resolvePrice({
-        productId: variant.productId,
-        variantId: variant.id,
-        quantity: item.quantity,
-        countryCode,
-        currencyCode,
-        user,
-        companyId,
-      });
-
-      const itemSubtotal = Money.multiply(priceResult.unitPrice, item.quantity);
+      const unitPrice = item.unitPrice ? Money.toDecimal(item.unitPrice) : Money.toDecimal(30.0);
+      const itemSubtotal = Money.multiply(unitPrice, item.quantity);
       subtotal = Money.add(subtotal, itemSubtotal);
 
       validatedItems.push({
-        variantId: variant.id,
-        quantity: item.quantity,
-        unitPrice: priceResult.unitPrice,
+        bulkProductId: bulkProd ? bulkProd.id : item.productId,
+        variantId: item.variantId || null,
+        quantity: parseInt(item.quantity, 10) || 1,
+        unitPrice: unitPrice,
         subtotal: itemSubtotal,
-        packagingSnapshot: variant.packaging || [],
+        packagingSnapshot: bulkProd
+          ? {
+              packagingType: bulkProd.packagingType,
+              unitsPerPackage: bulkProd.unitsPerPackage,
+              packagesPerPallet: bulkProd.packagesPerPallet,
+            }
+          : { packagingType: "Master Carton / Sacks" },
         requestedDeliveryDate: item.requestedDeliveryDate ? new Date(item.requestedDeliveryDate) : null,
       });
     }
@@ -71,12 +69,14 @@ export class BulkOrderService {
         currencyId: currency.id,
         status: "DRAFT",
         notes,
+        subtotal,
+        totalAmount: subtotal,
         items: {
           create: validatedItems,
         },
       },
       include: {
-        items: { include: { variant: { include: { product: true } } } },
+        items: { include: { bulkProduct: true, variant: { include: { product: true } } } },
         company: true,
         country: true,
         currency: true,

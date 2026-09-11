@@ -66,8 +66,14 @@ export const ADMIN_NAV_CONFIG = [
     children: [
       {
         id: "all-products",
-        label: "All Products",
+        label: "Retail Products",
         path: ROUTES.ADMIN.PRODUCTS,
+      },
+      {
+        id: "bulk-products",
+        label: "B2B Bulk Products",
+        icon: Boxes,
+        path: ROUTES.ADMIN.BULK_PRODUCTS,
       },
       {
         id: "add-product",

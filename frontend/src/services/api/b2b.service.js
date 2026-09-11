@@ -109,4 +109,35 @@ export const b2bService = {
     }
     return apiClient.post(`/quotes/${id}/accept`);
   },
+
+  // ── Dedicated Enterprise B2B Bulk Products API (Private Wholesale) ──
+  getBulkProducts: async (params = {}) => {
+    const res = await apiClient.get("/bulk-products", { params });
+    return Array.isArray(res) ? res : res?.items || [];
+  },
+
+  getBulkProductById: async (id) => {
+    return apiClient.get(`/bulk-products/${id}`);
+  },
+
+  createBulkProduct: async (payload) => {
+    return apiClient.post("/bulk-products", payload);
+  },
+
+  updateBulkProduct: async (id, payload) => {
+    return apiClient.put(`/bulk-products/${id}`, payload);
+  },
+
+  deleteBulkProduct: async (id) => {
+    return apiClient.delete(`/bulk-products/${id}`);
+  },
+
+  // ── B2B Bulk Order & Spreadsheet Quote Dispatch ──
+  createBulkOrder: async (payload) => {
+    return apiClient.post("/bulk-orders", payload);
+  },
+
+  listBulkOrders: async (params = {}) => {
+    return apiClient.get("/bulk-orders", { params });
+  },
 };

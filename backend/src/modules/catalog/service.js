@@ -99,6 +99,62 @@ export class CatalogService {
       ? variants.reduce((sum, v) => sum + (v.stock_quantity || 0), 0)
       : (p.inventoryItems?.reduce((sum, it) => sum + (it.onHand || 0), 0) || variants[0]?.stock_quantity || 100);
 
+    const isB2BOnly = Boolean(
+      attrMap["is_b2b_only"] === "true" ||
+      attrMap["is_b2b_only"] === true ||
+      p.isB2BOnly === true
+    );
+
+    const moq = parseInt(attrMap["moq"] || "1", 10) || 1;
+    const unitsPerPackage = parseInt(attrMap["units_per_package"] || "1", 10) || 1;
+    const packagesPerPallet = parseInt(attrMap["packages_per_pallet"] || "20", 10) || 20;
+
+    // Resolve Tiered B2B Wholesale Pricing
+    let wholesaleTiers = [];
+    if (attrMap["wholesale_tiers"]) {
+      try {
+        wholesaleTiers = typeof attrMap["wholesale_tiers"] === "string"
+          ? JSON.parse(attrMap["wholesale_tiers"])
+          : attrMap["wholesale_tiers"];
+      } catch (e) {
+        wholesaleTiers = [];
+      }
+    }
+
+    if (!wholesaleTiers || wholesaleTiers.length === 0) {
+      // Default standard 3-tier bulk volume discount structure
+      const baseU = priceUsd || 35.0;
+      wholesaleTiers = [
+        {
+          tierName: "Tier 1 (Base MOQ)",
+          minQty: moq,
+          maxQty: moq * 5,
+          discountPercent: 0,
+          priceUSD: baseU,
+          priceCAD: priceCad || (baseU * 1.35),
+          priceINR: inrPriceObj ? Number(inrPriceObj.amount) : 1499,
+        },
+        {
+          tierName: "Tier 2 (Case / Volume)",
+          minQty: moq * 5 + 1,
+          maxQty: moq * 20,
+          discountPercent: 12,
+          priceUSD: Number((baseU * 0.88).toFixed(2)),
+          priceCAD: Number(((priceCad || (baseU * 1.35)) * 0.88).toFixed(2)),
+          priceINR: inrPriceObj ? Math.round(Number(inrPriceObj.amount) * 0.88) : 1319,
+        },
+        {
+          tierName: "Tier 3 (Pallet / Container)",
+          minQty: moq * 20 + 1,
+          maxQty: null,
+          discountPercent: 25,
+          priceUSD: Number((baseU * 0.75).toFixed(2)),
+          priceCAD: Number(((priceCad || (baseU * 1.35)) * 0.75).toFixed(2)),
+          priceINR: inrPriceObj ? Math.round(Number(inrPriceObj.amount) * 0.75) : 1124,
+        },
+      ];
+    }
+
     return {
       id: p.id,
       name: p.name,
@@ -113,6 +169,17 @@ export class CatalogService {
       is_featured: Boolean(p.isFeatured),
       is_new: Boolean(attrMap["is_new"] === "true" || attrMap["is_new"] === true),
       is_best_seller: Boolean(p.isBestSeller),
+      is_b2b_only: isB2BOnly,
+      isB2BOnly: isB2BOnly,
+      moq: moq,
+      packaging: {
+        unitsPerPackage,
+        packagesPerPallet,
+        palletQuantity: unitsPerPackage * packagesPerPallet,
+        unitName: attrMap["packaging_type"] || "Cases / Cartons",
+      },
+      wholesale_tiers: wholesaleTiers,
+      wholesaleTiers: wholesaleTiers,
       images: images.length > 0 ? images : ["https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80"],
       image: images[0] || "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80",
       price_usd: priceUsd,
@@ -129,14 +196,14 @@ export class CatalogService {
       variants: variants,
       varients: variants, // Aliased for flexible compatibility
       pricing: {
-        US: { currency: "USD", symbol: "$", retailPrice: priceUsd || 35.0, oldPrice: oldPriceUsd },
-        CA: { currency: "CAD", symbol: "CA$", retailPrice: priceCad || (priceUsd ? priceUsd * 1.35 : 45.0), oldPrice: oldPriceCad },
-        IN: { currency: "INR", symbol: "₹", retailPrice: inrPriceObj ? Number(inrPriceObj.amount) : 1499 },
+        US: { currency: "USD", symbol: "$", retailPrice: priceUsd || 35.0, oldPrice: oldPriceUsd, moq },
+        CA: { currency: "CAD", symbol: "CA$", retailPrice: priceCad || (priceUsd ? priceUsd * 1.35 : 45.0), oldPrice: oldPriceCad, moq },
+        IN: { currency: "INR", symbol: "₹", retailPrice: inrPriceObj ? Number(inrPriceObj.amount) : 1499, moq },
       },
     };
   }
 
-  async listProducts({ search, categoryId, category_id, brandId, brand_id, isFeatured, is_featured, isBestSeller, is_best_seller, status = "ACTIVE", page = 1, limit = 50 } = {}) {
+  async listProducts({ search, categoryId, category_id, brandId, brand_id, isFeatured, is_featured, isBestSeller, is_best_seller, isB2BOnly, is_b2b_only, user = null, status = "ACTIVE", page = 1, limit = 50 } = {}) {
     const where = {};
     if (status) where.status = status;
     const effBrandId = brandId || brand_id;
@@ -191,8 +258,16 @@ export class CatalogService {
       }),
     ]);
 
-    const formattedItems = rawItems.map((p) => this._formatProduct(p));
-    return { total, items: formattedItems };
+    let formattedItems = rawItems.map((p) => this._formatProduct(p));
+
+    // Privacy Guard: If query is explicitly filtering for public B2C vs B2B, or if public visitor
+    const targetB2BOnly = isB2BOnly !== undefined ? isB2BOnly : is_b2b_only;
+    if (targetB2BOnly !== undefined) {
+      const wantB2B = targetB2BOnly === true || targetB2BOnly === "true";
+      formattedItems = formattedItems.filter((p) => p.is_b2b_only === wantB2B);
+    }
+
+    return { total: formattedItems.length, items: formattedItems };
   }
 
   async getFeaturedProducts({ limit = 10 } = {}) {
