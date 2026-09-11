@@ -56,7 +56,7 @@ function getHighlightIcon(label = "") {
 export function ProductDetailsPage() {
   const { slug } = useParams();
   const { country } = useCountryStore();
-  const { cart, setCart, openCart } = useCartStore();
+  const { cart, setCart, addItem, openCart } = useCartStore();
   const { addToast } = useUIStore();
 
   const [selectedImage, setSelectedImage] = useState(0);
@@ -189,34 +189,54 @@ export function ProductDetailsPage() {
     return filtered.slice(0, 5);
   }, [allProducts, slug, product]);
 
+  const availableStock = selectedVariantObj
+    ? (selectedVariantObj.stock_quantity ?? selectedVariantObj.stock ?? 100)
+    : (product?.stock ?? product?.totalStock ?? 100);
+
+  const isOutOfStock = availableStock <= 0;
+
   const handleAddToCart = () => {
-    setAddingToCart(true);
-    const existing = cart.items.find((i) => i.id === (product?.id || slug));
-    let newItems = [];
-    if (existing) {
-      newItems = cart.items.map((i) =>
-        i.id === (product?.id || slug) ? { ...i, quantity: i.quantity + 1 } : i
-      );
-    } else {
-      newItems = [
-        ...cart.items,
-        {
-          id: product?.id || slug,
-          name: title,
-          price,
-          quantity: 1,
-          image: currentImage,
-        },
-      ];
+    if (isOutOfStock) {
+      addToast({
+        title: "Out of Stock",
+        message: `${title} is currently sold out.`,
+        type: "warning",
+      });
+      return;
     }
-    const subtotal = newItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    setCart({ items: newItems, itemCount: newItems.length, subtotal });
+
+    setAddingToCart(true);
+    const cartItemId = selectedVariantObj?.id || product?.id || slug;
+    const existing = cart.items.find((i) => i.id === cartItemId || i.variantId === selectedVariantObj?.id);
+    
+    if (existing && existing.quantity >= availableStock) {
+      addToast({
+        title: "Stock Limit Reached",
+        message: `Only ${availableStock} units available in stock.`,
+        type: "warning",
+      });
+      setAddingToCart(false);
+      return;
+    }
+
+    addItem({
+      id: cartItemId,
+      productId: product?.id,
+      variantId: selectedVariantObj?.id,
+      name: selectedVariantObj?.variant_name ? `${title} (${selectedVariantObj.variant_name})` : title,
+      price,
+      quantity: 1,
+      maxStock: availableStock,
+      image: currentImage,
+      sku: selectedVariantObj?.sku,
+    });
+
     addToast({
       title: "Added to Cart",
-      message: `${title} added to cart.`,
+      message: `${title} added to cart. (${availableStock} in stock)`,
       type: "success",
     });
-    setTimeout(() => setAddingToCart(false), 800);
+    setTimeout(() => setAddingToCart(false), 500);
     openCart();
   };
 
@@ -477,9 +497,16 @@ export function ProductDetailsPage() {
             <div className="grid grid-cols-2 gap-4 pt-2">
               <button
                 onClick={handleAddToCart}
-                className="py-3 px-6 rounded-xl border-2 border-[rgb(60,170,130)] text-[rgb(60,170,130)] hover:bg-[rgb(60,170,130)]/10 font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+                disabled={isOutOfStock}
+                className={`py-3 px-6 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  isOutOfStock
+                    ? "border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed"
+                    : "border-[rgb(60,170,130)] text-[rgb(60,170,130)] hover:bg-[rgb(60,170,130)]/10 active:scale-95"
+                }`}
               >
-                {addingToCart ? (
+                {isOutOfStock ? (
+                  <span>Sold Out</span>
+                ) : addingToCart ? (
                   <>
                     <Check className="w-4 h-4" />
                     <span>Added</span>
@@ -494,10 +521,15 @@ export function ProductDetailsPage() {
 
               <button
                 onClick={handleAddToCart}
-                className="py-3 px-6 rounded-xl bg-[rgb(60,170,130)] hover:brightness-95 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md"
+                disabled={isOutOfStock}
+                className={`py-3 px-6 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md ${
+                  isOutOfStock
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none"
+                    : "bg-[rgb(60,170,130)] hover:brightness-95 text-white active:scale-95 cursor-pointer"
+                }`}
               >
                 <Zap className="w-4 h-4 fill-white" />
-                <span>Buy Now</span>
+                <span>{isOutOfStock ? "Out of Stock" : "Buy Now"}</span>
               </button>
             </div>
 

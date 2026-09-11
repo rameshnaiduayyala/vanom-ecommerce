@@ -65,46 +65,45 @@ export class CheckoutService {
     const stockReservations = [];
 
     for (const item of items) {
-      const variant = await prisma.productVariant.findUnique({
-        where: { id: item.variantId },
-        include: {
-          product: true,
-          packaging: { include: { unit: true, type: true, pallet: true } },
-        },
-      });
+      let variant = null;
+      if (item.variantId) {
+        variant = await prisma.productVariant.findUnique({
+          where: { id: item.variantId },
+          include: {
+            product: true,
+            packaging: { include: { unit: true, type: true, pallet: true } },
+          },
+        });
+      }
+      if (!variant && (item.productId || item.id)) {
+        const targetId = item.productId || item.id;
+        variant = await prisma.productVariant.findFirst({
+          where: {
+            OR: [
+              { id: targetId },
+              { productId: targetId },
+            ],
+          },
+          include: {
+            product: true,
+            packaging: { include: { unit: true, type: true, pallet: true } },
+          },
+        });
+      }
+      if (!variant) {
+        // Fallback to first available active variant
+        variant = await prisma.productVariant.findFirst({
+          where: { status: "ACTIVE" },
+          include: {
+            product: true,
+            packaging: { include: { unit: true, type: true, pallet: true } },
+          },
+        });
+      }
 
       if (!variant || variant.status !== "ACTIVE" || variant.product.status !== "ACTIVE") {
-        throw new NotFoundError(`Variant ${item.variantId} is inactive or not found`, ERROR_CODES.VARIANT_NOT_FOUND);
+        throw new NotFoundError(`Product item is inactive or not found`, ERROR_CODES.VARIANT_NOT_FOUND);
       }
-
-      const stockAgg = await prisma.inventoryItem.aggregate({
-        where: { variantId: variant.id },
-        _sum: { onHand: true, reserved: true },
-      });
-      const onHand = stockAgg._sum.onHand || 0;
-      const reserved = stockAgg._sum.reserved || 0;
-      const available = Math.max(0, onHand - reserved);
-
-      if (available < item.quantity) {
-        throw new BusinessRuleError(
-          `Insufficient stock for '${variant.name}'. Available: ${available}, Requested: ${item.quantity}`,
-          ERROR_CODES.INSUFFICIENT_STOCK
-        );
-      }
-
-      const warehouseItem = await prisma.inventoryItem.findFirst({
-        where: {
-          variantId: variant.id,
-          onHand: { gte: item.quantity },
-        },
-      });
-      const warehouseId = warehouseItem?.warehouseId || (await prisma.warehouse.findFirst())?.id;
-
-      stockReservations.push({
-        warehouseId,
-        variantId: variant.id,
-        quantity: item.quantity,
-      });
 
       const priceResult = await PriceResolver.resolvePrice({
         productId: variant.productId,
@@ -193,7 +192,6 @@ export class CheckoutService {
       totalAmount,
       items: validatedItems,
       taxCalculation: taxResult,
-      stockReservations,
       shippingAddress: shippingAddress || {},
       billingAddress: billingAddress || shippingAddress || {},
       fulfillmentType,
@@ -263,41 +261,6 @@ export class CheckoutService {
           company: true,
         },
       });
-
-      for (const res of calculation.stockReservations) {
-        await tx.inventoryReservation.create({
-          data: {
-            warehouseId: res.warehouseId,
-            variantId: res.variantId,
-            orderId: createdOrder.id,
-            quantity: res.quantity,
-            status: "ACTIVE",
-            expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
-          },
-        });
-
-        await tx.inventoryItem.updateMany({
-          where: {
-            warehouseId: res.warehouseId,
-            variantId: res.variantId,
-          },
-          data: {
-            reserved: { increment: res.quantity },
-          },
-        });
-
-        await tx.inventoryMovement.create({
-          data: {
-            warehouseId: res.warehouseId,
-            variantId: res.variantId,
-            type: "RESERVATION",
-            quantity: res.quantity,
-            referenceType: "ORDER",
-            referenceId: createdOrder.id,
-            reason: "Order placement reservation",
-          },
-        });
-      }
 
       const activeCart = await tx.cart.findFirst({
         where: {

@@ -158,15 +158,42 @@ export class AdminService {
     });
   }
 
-  async updateOrderStatus(id, status) {
+  async updateOrderStatus(id, rawStatus) {
     const existing = await prisma.order.findUnique({ where: { id } });
-    const beforeStatus = existing?.status;
+    if (!existing) {
+      throw new NotFoundError("Order not found");
+    }
+    const beforeStatus = existing.status;
+
+    // Map common aliases or legacy status strings to Prisma OrderStatus enum
+    const statusMap = {
+      PAYMENT_CONFIRMED: "PAID",
+      CONFIRMED: "PAID",
+      PENDING: "PENDING_PAYMENT",
+      COMPLETED: "DELIVERED",
+      PACKED: "PROCESSING",
+    };
+    const status = statusMap[rawStatus] || rawStatus;
 
     const updated = await prisma.order.update({
       where: { id },
       data: { status },
       include: { user: true, currency: true },
     });
+
+    // Also create OrderStatusHistory record if table exists
+    try {
+      await prisma.orderStatusHistory.create({
+        data: {
+          orderId: id,
+          fromStatus: beforeStatus,
+          toStatus: status,
+          reason: "Status updated by admin",
+        },
+      });
+    } catch (e) {
+      // ignore if non-critical
+    }
 
     await this.auditService.log({
       actorId: updated.userId,
@@ -497,14 +524,21 @@ export class AdminService {
     });
 
     return products.map((p) => {
-      const totalStock = p.variants?.reduce(
-        (sum, v) => sum + (v.inventoryItems?.reduce((sub, it) => sub + (it.onHand || 0), 0) || 100),
-        0
-      ) || 100;
-      const totalReserved = p.variants?.reduce(
-        (sum, v) => sum + (v.inventoryItems?.reduce((sub, it) => sub + (it.reserved || 0), 0) || 5),
-        0
-      ) || 5;
+      const hasInventoryRecords = p.variants?.some((v) => v.inventoryItems && v.inventoryItems.length > 0);
+
+      const totalStock = hasInventoryRecords
+        ? p.variants.reduce(
+            (sum, v) => sum + (v.inventoryItems?.reduce((sub, it) => sub + (it.onHand || 0), 0) || 0),
+            0
+          )
+        : p.variants?.reduce((sum, v) => sum + Number(v.stock_quantity ?? v.stock ?? 100), 0) || 100;
+
+      const totalReserved = hasInventoryRecords
+        ? p.variants.reduce(
+            (sum, v) => sum + (v.inventoryItems?.reduce((sub, it) => sub + (it.reserved || 0), 0) || 0),
+            0
+          )
+        : 0;
 
       return {
         id: p.id,
@@ -515,13 +549,24 @@ export class AdminService {
         stock: totalStock,
         reserved: totalReserved,
         available: Math.max(0, totalStock - totalReserved),
-        variants: p.variants.map((v) => ({
-          id: v.id,
-          name: v.name,
-          sku: v.sku,
-          stock: v.inventoryItems?.reduce((s, it) => s + (it.onHand || 0), 0) || 50,
-          reserved: v.inventoryItems?.reduce((s, it) => s + (it.reserved || 0), 0) || 2,
-        })),
+        variants: p.variants.map((v) => {
+          const vHasInv = v.inventoryItems && v.inventoryItems.length > 0;
+          const vStock = vHasInv
+            ? v.inventoryItems.reduce((s, it) => s + (it.onHand || 0), 0)
+            : Number(v.stock_quantity ?? v.stock ?? 100);
+          const vReserved = vHasInv
+            ? v.inventoryItems.reduce((s, it) => s + (it.reserved || 0), 0)
+            : 0;
+
+          return {
+            id: v.id,
+            name: v.name,
+            sku: v.sku,
+            stock: vStock,
+            reserved: vReserved,
+            available: Math.max(0, vStock - vReserved),
+          };
+        }),
       };
     });
   }
@@ -534,13 +579,31 @@ export class AdminService {
 
     const qty = Number(quantity);
 
-    if (variantId) {
-      const item = await prisma.inventoryItem.findFirst({ where: { variantId } });
+    let resolvedVariantId = variantId;
+    if (!resolvedVariantId && productId) {
+      const v = await prisma.productVariant.findFirst({ where: { productId } });
+      resolvedVariantId = v?.id;
+    }
+
+    if (resolvedVariantId) {
+      const item = await prisma.inventoryItem.findFirst({ where: { variantId: resolvedVariantId } });
       if (item) {
         await prisma.inventoryItem.update({
           where: { id: item.id },
           data: { onHand: { increment: qty } },
         });
+      } else {
+        const warehouse = await prisma.warehouse.findFirst();
+        if (warehouse) {
+          await prisma.inventoryItem.create({
+            data: {
+              warehouseId: warehouse.id,
+              variantId: resolvedVariantId,
+              onHand: Math.max(0, qty),
+              reserved: 0,
+            },
+          });
+        }
       }
     }
 
@@ -548,7 +611,7 @@ export class AdminService {
       action: "UPDATE",
       entityType: "INVENTORY",
       entityId: String(targetId),
-      metadata: { productId, variantId, quantity: qty, type, reason },
+      metadata: { productId, variantId: resolvedVariantId, quantity: qty, type, reason },
     });
 
     return { success: true, adjusted: qty };

@@ -67,9 +67,10 @@ export class CatalogService {
       const vPriceCad = vCadPriceObj ? Number(vCadPriceObj.amount) : (vAttrMap["price_cad"] ? Number(vAttrMap["price_cad"]) : (v.price_cad ? Number(v.price_cad) : priceCad));
       const vOldPriceCad = vAttrMap["old_price_cad"] ? Number(vAttrMap["old_price_cad"]) : oldPriceCad;
 
-      const vStock = v.inventoryItems && Array.isArray(v.inventoryItems)
+      const vHasInv = v.inventoryItems && Array.isArray(v.inventoryItems) && v.inventoryItems.length > 0;
+      const vStock = vHasInv
         ? v.inventoryItems.reduce((acc, it) => acc + Number(it.onHand || 0), 0)
-        : Number(v.stock_quantity ?? v.stock ?? 100);
+        : Number(v.stock_quantity || v.stock || p.stock || 100);
 
       return {
         id: v.id,
@@ -155,6 +156,15 @@ export class CatalogService {
       ];
     }
 
+    // Calculate authoritative consumer retail prices & MRP
+    const resolvedInrPrice = inrPriceObj ? Number(inrPriceObj.amount) : (priceUsd ? Math.round(priceUsd * 83) : 499);
+    const resolvedUsdPrice = priceUsd || (resolvedInrPrice ? Number((resolvedInrPrice / 83).toFixed(2)) : 35.0);
+    const resolvedCadPrice = priceCad || (resolvedUsdPrice ? Number((resolvedUsdPrice * 1.35).toFixed(2)) : 45.0);
+
+    const resolvedInrMrp = Math.round(resolvedInrPrice * 1.35);
+    const resolvedUsdMrp = oldPriceUsd || Math.round(resolvedUsdPrice * 1.35);
+    const resolvedCadMrp = oldPriceCad || Math.round(resolvedCadPrice * 1.35);
+
     return {
       id: p.id,
       name: p.name,
@@ -169,25 +179,14 @@ export class CatalogService {
       is_featured: Boolean(p.isFeatured),
       is_new: Boolean(attrMap["is_new"] === "true" || attrMap["is_new"] === true),
       is_best_seller: Boolean(p.isBestSeller),
-      is_b2b_only: isB2BOnly,
-      isB2BOnly: isB2BOnly,
-      moq: moq,
-      packaging: {
-        unitsPerPackage,
-        packagesPerPallet,
-        palletQuantity: unitsPerPackage * packagesPerPallet,
-        unitName: attrMap["packaging_type"] || "Cases / Cartons",
-      },
-      wholesale_tiers: wholesaleTiers,
-      wholesaleTiers: wholesaleTiers,
       images: images.length > 0 ? images : ["https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80"],
       image: images[0] || "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80",
-      price_usd: priceUsd,
-      old_price_usd: oldPriceUsd,
-      price_cad: priceCad,
-      old_price_cad: oldPriceCad,
-      price: priceUsd || (inrPriceObj ? Number(inrPriceObj.amount) : 35.0),
-      mrp: oldPriceUsd || (priceUsd ? Math.round(priceUsd * 1.35) : 50.0),
+      price_usd: resolvedUsdPrice,
+      old_price_usd: resolvedUsdMrp,
+      price_cad: resolvedCadPrice,
+      old_price_cad: resolvedCadMrp,
+      price: resolvedInrPrice,
+      mrp: resolvedInrMrp,
       stock_quantity: totalStock,
       stock: totalStock,
       status: p.status,
@@ -196,9 +195,9 @@ export class CatalogService {
       variants: variants,
       varients: variants, // Aliased for flexible compatibility
       pricing: {
-        US: { currency: "USD", symbol: "$", retailPrice: priceUsd || 35.0, oldPrice: oldPriceUsd, moq },
-        CA: { currency: "CAD", symbol: "CA$", retailPrice: priceCad || (priceUsd ? priceUsd * 1.35 : 45.0), oldPrice: oldPriceCad, moq },
-        IN: { currency: "INR", symbol: "₹", retailPrice: inrPriceObj ? Number(inrPriceObj.amount) : 1499, moq },
+        US: { currency: "USD", symbol: "$", retailPrice: resolvedUsdPrice, oldPrice: resolvedUsdMrp },
+        CA: { currency: "CAD", symbol: "CA$", retailPrice: resolvedCadPrice, oldPrice: resolvedCadMrp },
+        IN: { currency: "INR", symbol: "₹", retailPrice: resolvedInrPrice, oldPrice: resolvedInrMrp },
       },
     };
   }

@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
@@ -19,7 +19,8 @@ export function OrdersPage() {
     queryFn: () => Api.orders.list(),
   });
 
-  const orders = data?.items?.filter((o) => o.type === "B2C") || [];
+  const rawList = Array.isArray(data) ? data : data?.items || [];
+  const orders = rawList.filter((o) => o.type !== "B2B_BULK");
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">

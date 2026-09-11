@@ -71,6 +71,63 @@ async function main() {
     },
   });
 
+  const usB2CList = await prisma.priceList.upsert({
+    where: { code: "US-B2C-RETAIL" },
+    update: {},
+    create: {
+      code: "US-B2C-RETAIL",
+      name: "US Retail B2C",
+      countryId: usCountry.id,
+      currencyId: usd.id,
+      customerGroupId: b2cGroup.id,
+      priority: 1,
+    },
+  });
+
+  const usB2BList = await prisma.priceList.upsert({
+    where: { code: "US-B2B-WHOLESALE" },
+    update: {},
+    create: {
+      code: "US-B2B-WHOLESALE",
+      name: "US Wholesale B2B",
+      countryId: usCountry.id,
+      currencyId: usd.id,
+      customerGroupId: b2bGroup.id,
+      priority: 10,
+    },
+  });
+
+  // 3.1 Warehouses
+  const primaryWarehouse = await prisma.warehouse.upsert({
+    where: { code: "WH-MUM-01" },
+    update: {},
+    create: {
+      code: "WH-MUM-01",
+      name: "Mumbai Central Fulfillment Center",
+      countryId: inCountry.id,
+      addressLine1: "Plot 42, Logistics Park, Bhiwandi",
+      city: "Mumbai",
+      state: "Maharashtra",
+      postalCode: "421302",
+      active: true,
+    },
+  });
+
+  const usWarehouse = await prisma.warehouse.upsert({
+    where: { code: "WH-NJ-01" },
+    update: {},
+    create: {
+      code: "WH-NJ-01",
+      name: "East Coast Logistics Hub",
+      countryId: usCountry.id,
+      addressLine1: "100 Industrial Parkway",
+      city: "Carteret",
+      state: "NJ",
+      postalCode: "07008",
+      active: true,
+    },
+  });
+
   // 4. Roles (3 Roles: SUPER_ADMIN, COMPANY_ADMIN, CUSTOMER)
   const roleSuperAdmin = await prisma.role.upsert({
     where: { name: "SUPER_ADMIN" },
@@ -220,7 +277,7 @@ async function main() {
   // Product 1: Pure Organic Kashmiri Saffron
   const product1 = await prisma.product.upsert({
     where: { slug: "pure-kashmiri-saffron" },
-    update: {},
+    update: { status: "ACTIVE" },
     create: {
       name: "Pure Organic Kashmiri Saffron 1g",
       slug: "pure-kashmiri-saffron",
@@ -236,7 +293,7 @@ async function main() {
 
   const variant1 = await prisma.productVariant.upsert({
     where: { sku: "GROC-SAFF-1G-PACK" },
-    update: {},
+    update: { status: "ACTIVE" },
     create: {
       productId: product1.id,
       sku: "GROC-SAFF-1G-PACK",
@@ -250,13 +307,15 @@ async function main() {
     data: [
       { productId: product1.id, variantId: variant1.id, priceListId: inB2CList.id, currencyId: inr.id, amount: new Prisma.Decimal("499.00"), minQuantity: 1 },
       { productId: product1.id, variantId: variant1.id, priceListId: inB2BList.id, currencyId: inr.id, amount: new Prisma.Decimal("380.00"), minQuantity: 10 },
+      { productId: product1.id, variantId: variant1.id, priceListId: usB2CList.id, currencyId: usd.id, amount: new Prisma.Decimal("12.99"), minQuantity: 1 },
+      { productId: product1.id, variantId: variant1.id, priceListId: usB2BList.id, currencyId: usd.id, amount: new Prisma.Decimal("9.50"), minQuantity: 10 },
     ],
   });
 
   // Product 2: Immunity Booster Duo Pack (Combo)
   const product2 = await prisma.product.upsert({
     where: { slug: "immunity-booster-combo" },
-    update: {},
+    update: { status: "ACTIVE" },
     create: {
       name: "Immunity Booster Duo Pack",
       slug: "immunity-booster-combo",
@@ -271,7 +330,7 @@ async function main() {
 
   const variant2 = await prisma.productVariant.upsert({
     where: { sku: "CMB-IMMUNITY-01-BOX" },
-    update: {},
+    update: { status: "ACTIVE" },
     create: {
       productId: product2.id,
       sku: "CMB-IMMUNITY-01-BOX",
@@ -285,13 +344,15 @@ async function main() {
     data: [
       { productId: product2.id, variantId: variant2.id, priceListId: inB2CList.id, currencyId: inr.id, amount: new Prisma.Decimal("699.00"), minQuantity: 1 },
       { productId: product2.id, variantId: variant2.id, priceListId: inB2BList.id, currencyId: inr.id, amount: new Prisma.Decimal("520.00"), minQuantity: 10 },
+      { productId: product2.id, variantId: variant2.id, priceListId: usB2CList.id, currencyId: usd.id, amount: new Prisma.Decimal("18.99"), minQuantity: 1 },
+      { productId: product2.id, variantId: variant2.id, priceListId: usB2BList.id, currencyId: usd.id, amount: new Prisma.Decimal("14.00"), minQuantity: 10 },
     ],
   });
 
   // Product 3: Premium Organic Garden Soil
   const product3 = await prisma.product.upsert({
     where: { slug: "premium-organic-garden-soil" },
-    update: {},
+    update: { status: "ACTIVE" },
     create: {
       name: "Premium Organic Garden Soil (50 KG Sack)",
       slug: "premium-organic-garden-soil",
@@ -306,7 +367,7 @@ async function main() {
 
   const variant3 = await prisma.productVariant.upsert({
     where: { sku: "SOIL-50KG-SACK" },
-    update: {},
+    update: { status: "ACTIVE" },
     create: {
       productId: product3.id,
       sku: "SOIL-50KG-SACK",
@@ -320,10 +381,210 @@ async function main() {
     data: [
       { productId: product3.id, variantId: variant3.id, priceListId: inB2CList.id, currencyId: inr.id, amount: new Prisma.Decimal("499.00"), minQuantity: 1 },
       { productId: product3.id, variantId: variant3.id, priceListId: inB2BList.id, currencyId: inr.id, amount: new Prisma.Decimal("360.00"), minQuantity: 20 },
+      { productId: product3.id, variantId: variant3.id, priceListId: usB2CList.id, currencyId: usd.id, amount: new Prisma.Decimal("24.99"), minQuantity: 1 },
+      { productId: product3.id, variantId: variant3.id, priceListId: usB2BList.id, currencyId: usd.id, amount: new Prisma.Decimal("18.00"), minQuantity: 20 },
     ],
   });
 
-  console.log("✅ Seed completed successfully!");
+  // 8. Real Product Images
+  await prisma.productImage.deleteMany();
+  await prisma.fileAsset.deleteMany({ where: { type: "PRODUCT_IMAGE" } });
+
+  const file1 = await prisma.fileAsset.create({
+    data: {
+      type: "PRODUCT_IMAGE",
+      storageKey: "prod_saffron_01.jpg",
+      originalName: "saffron-mongra.jpg",
+      mimeType: "image/jpeg",
+      sizeBytes: BigInt(245000),
+    },
+  });
+  await prisma.productImage.create({
+    data: {
+      productId: product1.id,
+      variantId: variant1.id,
+      fileAssetId: file1.id,
+      altText: "Pure Organic Kashmiri Saffron 1g",
+    },
+  });
+
+  const file2 = await prisma.fileAsset.create({
+    data: {
+      type: "PRODUCT_IMAGE",
+      storageKey: "prod_immunity_01.jpg",
+      originalName: "immunity-booster.jpg",
+      mimeType: "image/jpeg",
+      sizeBytes: BigInt(310000),
+    },
+  });
+  await prisma.productImage.create({
+    data: {
+      productId: product2.id,
+      variantId: variant2.id,
+      fileAssetId: file2.id,
+      altText: "Immunity Booster Duo Pack",
+    },
+  });
+
+  const file3 = await prisma.fileAsset.create({
+    data: {
+      type: "PRODUCT_IMAGE",
+      storageKey: "prod_soil_01.jpg",
+      originalName: "garden-soil.jpg",
+      mimeType: "image/jpeg",
+      sizeBytes: BigInt(450000),
+    },
+  });
+  await prisma.productImage.create({
+    data: {
+      productId: product3.id,
+      variantId: variant3.id,
+      fileAssetId: file3.id,
+      altText: "Premium Organic Garden Soil 50KG",
+    },
+  });
+
+  // 9. Real Inventory Records
+  await prisma.inventoryItem.deleteMany();
+
+  await prisma.inventoryItem.createMany({
+    data: [
+      { warehouseId: primaryWarehouse.id, productId: product1.id, variantId: variant1.id, onHand: 150, reserved: 15 },
+      { warehouseId: usWarehouse.id, productId: product1.id, variantId: variant1.id, onHand: 80, reserved: 5 },
+      { warehouseId: primaryWarehouse.id, productId: product2.id, variantId: variant2.id, onHand: 95, reserved: 10 },
+      { warehouseId: usWarehouse.id, productId: product2.id, variantId: variant2.id, onHand: 45, reserved: 0 },
+      { warehouseId: primaryWarehouse.id, productId: product3.id, variantId: variant3.id, onHand: 240, reserved: 30 },
+      { warehouseId: usWarehouse.id, productId: product3.id, variantId: variant3.id, onHand: 110, reserved: 10 },
+    ],
+  });
+
+  // 10. Sample Customer Orders
+  const sampleOrder1 = await prisma.order.upsert({
+    where: { orderNumber: "ORD-2026-8801" },
+    update: {},
+    create: {
+      orderNumber: "ORD-2026-8801",
+      userId: customerUser.id,
+      customerType: "B2C",
+      source: "WEB",
+      status: "PROCESSING",
+      countryId: inCountry.id,
+      currencyId: inr.id,
+      subtotal: new Prisma.Decimal("1198.00"),
+      discountAmount: new Prisma.Decimal("0.00"),
+      shippingAmount: new Prisma.Decimal("50.00"),
+      taxAmount: new Prisma.Decimal("215.64"),
+      totalAmount: new Prisma.Decimal("1463.64"),
+      billingAddress: {
+        name: "Ramesh Ayyala",
+        line1: "45 Lotus Garden, Jubilee Hills",
+        city: "Hyderabad",
+        state: "Telangana",
+        postalCode: "500033",
+        country: "India",
+      },
+      shippingAddress: {
+        name: "Ramesh Ayyala",
+        line1: "45 Lotus Garden, Jubilee Hills",
+        city: "Hyderabad",
+        state: "Telangana",
+        postalCode: "500033",
+        country: "India",
+      },
+      customerSnapshot: {
+        id: customerUser.id,
+        email: customerUser.email,
+        firstName: customerUser.firstName,
+        lastName: customerUser.lastName,
+      },
+      placedAt: new Date(Date.now() - 86400000 * 2),
+      items: {
+        create: [
+          {
+            productId: product1.id,
+            variantId: variant1.id,
+            productNameSnapshot: "Pure Organic Kashmiri Saffron 1g",
+            skuSnapshot: "GROC-SAFF-1G-PACK",
+            quantity: 1,
+            unitPrice: new Prisma.Decimal("499.00"),
+            subtotal: new Prisma.Decimal("499.00"),
+            totalAmount: new Prisma.Decimal("499.00"),
+            currencyId: inr.id,
+          },
+          {
+            productId: product2.id,
+            variantId: variant2.id,
+            productNameSnapshot: "Immunity Booster Duo Pack",
+            skuSnapshot: "CMB-IMMUNITY-01-BOX",
+            quantity: 1,
+            unitPrice: new Prisma.Decimal("699.00"),
+            subtotal: new Prisma.Decimal("699.00"),
+            totalAmount: new Prisma.Decimal("699.00"),
+            currencyId: inr.id,
+          },
+        ],
+      },
+    },
+  });
+
+  const sampleOrder2 = await prisma.order.upsert({
+    where: { orderNumber: "ORD-2026-8802" },
+    update: {},
+    create: {
+      orderNumber: "ORD-2026-8802",
+      userId: customerUser.id,
+      customerType: "B2C",
+      source: "WEB",
+      status: "DELIVERED",
+      countryId: usCountry.id,
+      currencyId: usd.id,
+      subtotal: new Prisma.Decimal("25.98"),
+      discountAmount: new Prisma.Decimal("0.00"),
+      shippingAmount: new Prisma.Decimal("0.00"),
+      taxAmount: new Prisma.Decimal("2.34"),
+      totalAmount: new Prisma.Decimal("28.32"),
+      billingAddress: {
+        name: "Ramesh Ayyala",
+        line1: "124 Grand Avenue",
+        city: "Austin",
+        state: "TX",
+        postalCode: "78701",
+        country: "United States",
+      },
+      shippingAddress: {
+        name: "Ramesh Ayyala",
+        line1: "124 Grand Avenue",
+        city: "Austin",
+        state: "TX",
+        postalCode: "78701",
+        country: "United States",
+      },
+      customerSnapshot: {
+        id: customerUser.id,
+        email: customerUser.email,
+        firstName: customerUser.firstName,
+        lastName: customerUser.lastName,
+      },
+      placedAt: new Date(Date.now() - 86400000 * 5),
+      items: {
+        create: [
+          {
+            productId: product1.id,
+            variantId: variant1.id,
+            productNameSnapshot: "Pure Organic Kashmiri Saffron 1g",
+            skuSnapshot: "GROC-SAFF-1G-PACK",
+            quantity: 2,
+            unitPrice: new Prisma.Decimal("12.99"),
+            subtotal: new Prisma.Decimal("25.98"),
+            totalAmount: new Prisma.Decimal("25.98"),
+            currencyId: usd.id,
+          },
+        ],
+      },
+    },
+  });
+
+  console.log("✅ Seed completed successfully with Real Orders, Warehouses, and Inventory!");
   console.log("------------------------------------------");
   console.log("👥 3 USERS (Password: Password123!):");
   console.log("  1. SUPER_ADMIN   : admin@vanom.com");

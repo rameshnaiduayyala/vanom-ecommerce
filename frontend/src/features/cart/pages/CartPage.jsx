@@ -26,10 +26,13 @@ import {
 
 export function CartPage() {
   const navigate = useNavigate();
-  const { cart, setCart, clearLocalCart } = useCartStore();
+  const { cart, setCart, updateItemQuantity, removeItem, fetchCart, clearLocalCart } = useCartStore();
   const { country } = useCountryStore();
   const { addToast } = useUIStore();
 
+  React.useEffect(() => {
+    fetchCart();
+  }, [fetchCart]);
 
   // Selected item IDs for checkout (defaults to all cart items selected)
   const [selectedIds, setSelectedIds] = useState(() =>
@@ -127,25 +130,23 @@ export function CartPage() {
       handleRemove(id);
       return;
     }
-    const newItems = cart.items.map((item) =>
-      item.id === id ? { ...item, quantity: newQty } : item
-    );
-    const subtotal = newItems.reduce(
-      (sum, item) => sum + (item.price || item.unitPrice || 499) * item.quantity,
-      0
-    );
-    setCart({ items: newItems, itemCount: newItems.length, subtotal });
+    const targetItem = cart.items.find((item) => item.id === id);
+    if (targetItem && targetItem.maxStock && newQty > targetItem.maxStock) {
+      addToast({
+        title: "Stock Limit Reached",
+        message: `Only ${targetItem.maxStock} units available for ${targetItem.name || "this item"}.`,
+        type: "warning",
+      });
+      return;
+    }
+
+    updateItemQuantity(id, newQty);
   };
 
   // Remove item
   const handleRemove = (id) => {
     const itemToRemove = cart.items.find((i) => i.id === id);
-    const newItems = cart.items.filter((item) => item.id !== id);
-    const subtotal = newItems.reduce(
-      (sum, item) => sum + (item.price || item.unitPrice || 499) * item.quantity,
-      0
-    );
-    setCart({ items: newItems, itemCount: newItems.length, subtotal });
+    removeItem(id);
     setSelectedIds((prev) => prev.filter((i) => i !== id));
     if (itemToRemove) {
       addToast({
@@ -265,6 +266,14 @@ export function CartPage() {
     }
   };
 
+  const outOfStockItems = useMemo(() => {
+    return (cart.items || []).filter((item) => item.maxStock !== undefined && item.maxStock <= 0);
+  }, [cart.items]);
+
+  const hasSelectedOutOfStock = useMemo(() => {
+    return selectedCartItems.some((item) => item.maxStock !== undefined && item.maxStock <= 0);
+  }, [selectedCartItems]);
+
   const handleProceedToCheckout = () => {
     if (selectedCount === 0) {
       addToast({
@@ -274,6 +283,16 @@ export function CartPage() {
       });
       return;
     }
+
+    if (hasSelectedOutOfStock) {
+      addToast({
+        title: "Item Out of Stock",
+        description: "One or more selected items are currently out of stock. Please remove or save them for later before checkout.",
+        type: "error",
+      });
+      return;
+    }
+
     navigate(ROUTES.CHECKOUT);
   };
 
@@ -464,13 +483,23 @@ export function CartPage() {
                             </div>
                           </div>
 
-                          {/* In Stock & Badge */}
+                          {/* In Stock / Out of Stock Badge */}
                           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                            <span className="text-[#067d62] font-semibold">In stock</span>
-                            <span className="text-gray-300">|</span>
-                            <span className="inline-flex items-center gap-1 font-bold text-[#007185] bg-[#EBF7FD] px-2 py-0.5 rounded text-[11px]">
-                              <Sparkles className="w-3 h-3 text-[#FF9900]" /> Express Shipping
-                            </span>
+                            {item.maxStock !== undefined && item.maxStock <= 0 ? (
+                              <span className="text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                                Out of Stock / Sold Out
+                              </span>
+                            ) : (
+                              <>
+                                <span className="text-[#067d62] font-semibold">
+                                  {item.maxStock ? `In stock (${item.maxStock} available)` : "In stock"}
+                                </span>
+                                <span className="text-gray-300">|</span>
+                                <span className="inline-flex items-center gap-1 font-bold text-[#007185] bg-[#EBF7FD] px-2 py-0.5 rounded text-[11px]">
+                                  <Sparkles className="w-3 h-3 text-[#FF9900]" /> Express Shipping
+                                </span>
+                              </>
+                            )}
                           </div>
 
                           {/* Specs / Brand note */}
@@ -730,14 +759,19 @@ export function CartPage() {
             <button
               type="button"
               onClick={handleProceedToCheckout}
-              disabled={selectedCount === 0}
-              className={`w-full py-3 px-4 rounded-full font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer ${selectedCount > 0
-                ? "bg-[#FFD814] hover:bg-[#F7CA00] text-gray-900 border border-[#FCD200] active:scale-[0.99]"
-                : "bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed"
-                }`}
+              disabled={selectedCount === 0 || hasSelectedOutOfStock}
+              className={`w-full py-3 px-4 rounded-full font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer ${
+                selectedCount > 0 && !hasSelectedOutOfStock
+                  ? "bg-[#FFD814] hover:bg-[#F7CA00] text-gray-900 border border-[#FCD200] active:scale-[0.99]"
+                  : "bg-gray-200 text-gray-400 border-gray-200 cursor-not-allowed"
+              }`}
             >
               <Lock className="w-4 h-4 text-gray-800" />
-              <span>Proceed to Checkout ({selectedCount} items)</span>
+              <span>
+                {hasSelectedOutOfStock
+                  ? "Cannot Proceed (Items Out of Stock)"
+                  : `Proceed to Checkout (${selectedCount} items)`}
+              </span>
             </button>
 
             {/* Price Details Breakdown */}

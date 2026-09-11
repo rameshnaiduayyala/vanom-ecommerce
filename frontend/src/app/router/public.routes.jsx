@@ -9,6 +9,7 @@ import { OrdersPage } from "../../features/orders/pages/OrdersPage.jsx";
 import { OrderDetailsPage } from "../../features/orders/pages/OrderDetailsPage.jsx";
 import { WishlistPage } from "../../features/wishlist/pages/WishlistPage.jsx";
 import { ContactPage } from "../../features/storefront/pages/ContactPage.jsx";
+import { ConsumerAccountPage } from "../../features/account/pages/ConsumerAccountPage.jsx";
 import { LoginPage } from "../../features/auth/pages/LoginPage.jsx";
 import { RegisterPage, ForgotPasswordPage } from "../../features/auth/pages/RegisterPage.jsx";
 import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
@@ -28,9 +29,9 @@ export const publicRoutes = {
     { path: "/orders", element: <OrdersPage /> },
     { path: "/orders/:id", element: <OrderDetailsPage /> },
     { path: "/wishlist", element: <WishlistPage /> },
-    { path: "/account", element: <OrdersPage /> },
-    { path: "/account/profile", element: <OrdersPage /> },
-    { path: "/account/addresses", element: <OrdersPage /> },
+    { path: "/account", element: <ConsumerAccountPage /> },
+    { path: "/account/profile", element: <ConsumerAccountPage /> },
+    { path: "/account/addresses", element: <ConsumerAccountPage /> },
     { path: "/login", element: <LoginPage /> },
     { path: "/register", element: <RegisterPage /> },
     { path: "/forgot-password", element: <ForgotPasswordPage /> },

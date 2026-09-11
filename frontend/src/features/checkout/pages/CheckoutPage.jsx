@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import confetti from "canvas-confetti";
 import { useCartStore } from "../../../stores/cart.store.js";
 import { useCountryStore } from "../../../stores/country.store.js";
+import { useAuthStore } from "../../../stores/auth.store.js";
 import { useUIStore } from "../../../stores/ui.store.js";
 import { formatPrice } from "../../../utils/formatters.js";
 import { Api } from "@/services/api/api-client.js";
@@ -13,18 +14,21 @@ import { ShieldCheck, Truck, CreditCard, Lock, CheckCircle2 } from "lucide-react
 import { Button } from "../../../components/ui/Button.jsx";
 import { Input } from "../../../components/ui/Input.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";
+import { AuthModal } from "../../../components/auth/AuthModal.jsx";
 
 export function CheckoutPage() {
   const navigate = useNavigate();
   const { cart, clearLocalCart } = useCartStore();
   const { country } = useCountryStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { addToast } = useUIStore();
 
   const [loading, setLoading] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: "Ramesh Sharma",
-    email: "ramesh.sharma@example.com",
-    phone: "+91 98765 43210",
+    fullName: user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() : "Ramesh Sharma",
+    email: user?.email || "ramesh.sharma@example.com",
+    phone: user?.phone || "+91 98765 43210",
     addressLine1: "Flat 402, Lotus Heights",
     city: "Bengaluru",
     state: "Karnataka",
@@ -32,27 +36,38 @@ export function CheckoutPage() {
     paymentMethod: "CARD",
   });
 
+  // Update formData when user logs in
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: `${user.firstName || ""} ${user.lastName || ""}`.trim() || prev.fullName,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
+      }));
+    }
+  }, [user]);
+
   const subtotal = cart.subtotal || 998;
   const taxAmount = Number((subtotal * 0.18).toFixed(2));
   const shippingCost = 50;
   const grandTotal = subtotal + taxAmount + shippingCost;
 
-  const handlePlaceOrder = async (e) => {
-    e.preventDefault();
+  const executeOrderPlacement = async (currentFormData = formData) => {
     setLoading(true);
 
     try {
       const order = await Api.cart.placeOrder({
         items: cart.items.length > 0 ? cart.items : [{ id: "prod-1", name: "Premium Organic Garden Soil (50 KG Sack)", quantity: 2, price: 499 }],
         shippingAddress: {
-          name: formData.fullName,
-          line1: formData.addressLine1,
-          city: formData.city,
-          state: formData.state,
-          postalCode: formData.postalCode,
+          name: currentFormData.fullName,
+          line1: currentFormData.addressLine1,
+          city: currentFormData.city,
+          state: currentFormData.state,
+          postalCode: currentFormData.postalCode,
           country: country.name,
         },
-        paymentMethod: formData.paymentMethod,
+        paymentMethod: currentFormData.paymentMethod,
         currency: country.currency,
       });
 
@@ -84,6 +99,30 @@ export function CheckoutPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePlaceOrder = async (e) => {
+    e.preventDefault();
+
+    // If customer is not logged in, trigger the login modal pop-up seamlessly
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    await executeOrderPlacement(formData);
+  };
+
+  const handleAuthSuccess = (loggedInUser) => {
+    const updatedForm = {
+      ...formData,
+      fullName: `${loggedInUser.firstName || ""} ${loggedInUser.lastName || ""}`.trim() || formData.fullName,
+      email: loggedInUser.email || formData.email,
+      phone: loggedInUser.phone || formData.phone,
+    };
+    setFormData(updatedForm);
+    // Continue same order process directly upon successful authentication
+    executeOrderPlacement(updatedForm);
   };
 
   return (
@@ -255,6 +294,14 @@ export function CheckoutPage() {
           </div>
         </div>
       </form>
+
+      {/* Auth Modal Popup for Unauthenticated Users */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+        initialRole="B2C"
+      />
     </div>
   );
 }

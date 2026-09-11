@@ -99,6 +99,22 @@ export class PriceResolver {
     });
     candidatePriceLists.push(...b2cLists);
 
+    // Fallback: If no price list found for this exact country/currency, fallback to any active B2C price list
+    if (candidatePriceLists.length === 0) {
+      const fallbackLists = await prisma.priceList.findMany({
+        where: {
+          status: "ACTIVE",
+          customerGroup: { code: "B2C" },
+        },
+        include: {
+          prices: { where: { status: "ACTIVE" } },
+        },
+        orderBy: { priority: "desc" },
+        take: 2,
+      });
+      candidatePriceLists.push(...fallbackLists);
+    }
+
     if (candidatePriceLists.length === 0) {
       throw new NotFoundError(
         `No active price list found for ${countryCode} in ${currencyCode}`,
@@ -107,7 +123,7 @@ export class PriceResolver {
     }
 
     const priceListIds = candidatePriceLists.map((pl) => pl.id);
-    const availablePrices = await prisma.productPrice.findMany({
+    let availablePrices = await prisma.productPrice.findMany({
       where: {
         priceListId: { in: priceListIds },
         status: "ACTIVE",
@@ -118,6 +134,20 @@ export class PriceResolver {
       },
       orderBy: { minQuantity: "desc" },
     });
+
+    // Fallback: If no price entry found in candidate lists, search any active price entry for this product/variant
+    if (!availablePrices || availablePrices.length === 0) {
+      availablePrices = await prisma.productPrice.findMany({
+        where: {
+          status: "ACTIVE",
+          OR: [
+            { variantId: variantId || undefined },
+            { productId, variantId: null },
+          ],
+        },
+        orderBy: { minQuantity: "desc" },
+      });
+    }
 
     if (!availablePrices || availablePrices.length === 0) {
       throw new NotFoundError(
@@ -165,11 +195,12 @@ export class PriceResolver {
     }
 
     if (!matchedPrice) {
-      const retailList = b2cLists[0];
+      const retailList = b2cLists[0] || candidatePriceLists[0];
       const retailPrices = availablePrices.filter((p) => p.priceListId === retailList?.id);
       const defaultTier =
         retailPrices.find((p) => quantity >= p.minQuantity && (p.maxQuantity === null || quantity <= p.maxQuantity)) ||
-        retailPrices[0];
+        retailPrices[0] ||
+        availablePrices[0];
 
       if (!defaultTier) {
         throw new NotFoundError(
@@ -180,7 +211,7 @@ export class PriceResolver {
 
       matchedPrice = {
         price: defaultTier,
-        priceList: retailList,
+        priceList: retailList || { id: defaultTier.priceListId, name: "Standard Price List" },
         isB2B: false,
       };
     }

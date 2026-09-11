@@ -173,8 +173,8 @@ export function AdminRetailOrdersPage() {
             className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 font-semibold focus:outline-none focus:border-[#006B3C]"
           >
             <option value="ALL">All Statuses</option>
-            <option value="PENDING">PENDING</option>
-            <option value="PAYMENT_CONFIRMED">PAYMENT CONFIRMED</option>
+            <option value="PENDING_PAYMENT">PENDING PAYMENT</option>
+            <option value="PAID">PAID / CONFIRMED</option>
             <option value="PROCESSING">PROCESSING</option>
             <option value="SHIPPED">SHIPPED</option>
             <option value="DELIVERED">DELIVERED</option>
@@ -249,22 +249,24 @@ export function AdminRetailOrdersPage() {
                             ? "blue"
                             : o.status === "CANCELLED"
                             ? "red"
+                            : o.status === "PAID"
+                            ? "emerald"
                             : "amber"
                         }
                         size="sm"
                       >
-                        {o.status || "PENDING"}
+                        {o.status || "PENDING_PAYMENT"}
                       </Badge>
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <select
-                          value={o.status || "PENDING"}
+                          value={o.status || "PENDING_PAYMENT"}
                           onChange={(e) => handleStatusChange(o.id, e.target.value)}
                           className="bg-white border border-slate-200 rounded-md px-2 py-1 text-[11px] font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-2xs"
                         >
-                          <option value="PENDING">PENDING</option>
-                          <option value="PAYMENT_CONFIRMED">CONFIRMED</option>
+                          <option value="PENDING_PAYMENT">PENDING PAYMENT</option>
+                          <option value="PAID">PAID</option>
                           <option value="PROCESSING">PROCESSING</option>
                           <option value="SHIPPED">SHIPPED</option>
                           <option value="DELIVERED">DELIVERED</option>

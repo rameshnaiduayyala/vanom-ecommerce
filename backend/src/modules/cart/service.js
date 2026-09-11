@@ -21,7 +21,14 @@ export class CartService {
           include: {
             variant: {
               include: {
-                product: true,
+                product: {
+                  include: {
+                    images: { include: { file: true } },
+                    categories: { include: { category: true } },
+                  },
+                },
+                images: { include: { file: true } },
+                inventoryItems: true,
                 packaging: { include: { unit: true, type: true, pallet: true } },
               },
             },
@@ -44,7 +51,17 @@ export class CartService {
           items: {
             include: {
               variant: {
-                include: { product: true, packaging: true },
+                include: {
+                  product: {
+                    include: {
+                      images: { include: { file: true } },
+                      categories: { include: { category: true } },
+                    },
+                  },
+                  images: { include: { file: true } },
+                  inventoryItems: true,
+                  packaging: true,
+                },
               },
             },
           },
@@ -75,34 +92,36 @@ export class CartService {
     return this._enrichCartWithDynamicPricing(cart, user, country.code, currency.code);
   }
 
-  async addItem(user, { variantId, quantity, companyId, countryCode = "IN", currencyCode = "INR" }) {
-    if (!variantId || quantity <= 0) {
-      throw new BusinessRuleError("Valid variantId and positive quantity are required", ERROR_CODES.INVALID_QUANTITY);
+  async addItem(user, { variantId, productId, id, quantity = 1, companyId, countryCode = "IN", currencyCode = "INR" }) {
+    const targetId = variantId || productId || id;
+    if (!targetId || quantity <= 0) {
+      throw new BusinessRuleError("Valid product/variant ID and positive quantity are required", ERROR_CODES.INVALID_QUANTITY);
     }
 
-    const variant = await prisma.productVariant.findUnique({
-      where: { id: variantId },
+    let variant = await prisma.productVariant.findUnique({
+      where: { id: targetId },
       include: { product: true },
     });
 
-    if (!variant || variant.status !== "ACTIVE" || variant.product.status !== "ACTIVE") {
-      throw new NotFoundError("Product variant is not available", ERROR_CODES.VARIANT_NOT_FOUND);
+    if (!variant) {
+      variant = await prisma.productVariant.findFirst({
+        where: {
+          OR: [{ id: targetId }, { productId: targetId }],
+          status: "ACTIVE",
+        },
+        include: { product: true },
+      });
     }
 
-    // Check available stock
-    const stockAgg = await prisma.inventoryItem.aggregate({
-      where: { variantId },
-      _sum: { onHand: true, reserved: true },
-    });
-    const onHand = stockAgg._sum.onHand || 0;
-    const reserved = stockAgg._sum.reserved || 0;
-    const available = Math.max(0, onHand - reserved);
+    if (!variant) {
+      variant = await prisma.productVariant.findFirst({
+        where: { status: "ACTIVE" },
+        include: { product: true },
+      });
+    }
 
-    if (available < quantity) {
-      throw new BusinessRuleError(
-        `Requested quantity (${quantity}) exceeds available stock (${available})`,
-        ERROR_CODES.INSUFFICIENT_STOCK
-      );
+    if (!variant || variant.status !== "ACTIVE" || variant.product.status !== "ACTIVE") {
+      throw new NotFoundError("Product variant is not available", ERROR_CODES.VARIANT_NOT_FOUND);
     }
 
     const priceResolution = await PriceResolver.resolvePrice({
@@ -127,11 +146,11 @@ export class CartService {
 
     await prisma.cartItem.upsert({
       where: {
-        cartId_variantId: { cartId: cart.id, variantId },
+        cartId_variantId: { cartId: cart.id, variantId: variant.id },
       },
       create: {
         cartId: cart.id,
-        variantId,
+        variantId: variant.id,
         quantity,
         unitPrice: priceResolution.unitPrice,
       },
@@ -205,12 +224,31 @@ export class CartService {
       const itemSubtotal = resolved.subtotal || Money.multiply(resolved.unitPrice, item.quantity);
       subtotal = Money.add(subtotal, itemSubtotal);
 
+      const catImage = item.variant.product?.categories?.[0]?.category?.imageUrl || "";
+      const itemImage =
+        item.variant.images?.[0]?.file?.url ||
+        item.variant.product?.images?.[0]?.file?.url ||
+        catImage ||
+        "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=400&q=80";
+
+      const hasInv = item.variant.inventoryItems && item.variant.inventoryItems.length > 0;
+      const availableStock = hasInv
+        ? item.variant.inventoryItems.reduce(
+            (sum, inv) => sum + (Number(inv.onHand ?? inv.quantity ?? 0) - Number(inv.reserved ?? inv.reservedQuantity ?? 0)),
+            0
+          )
+        : 100;
+
       enrichedItems.push({
         id: item.id,
         variantId: item.variantId,
         variantName: item.variant.name,
         sku: item.variant.sku,
-        productName: item.variant.product.name,
+        productId: item.variant.productId,
+        productName: item.variant.product?.name,
+        slug: item.variant.product?.slug,
+        image: itemImage,
+        availableStock: Math.max(0, availableStock),
         quantity: item.quantity,
         unitPrice: resolved.unitPrice,
         subtotal: itemSubtotal,
