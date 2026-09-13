@@ -54,24 +54,28 @@ describe("Payment & Webhook Processing Integration Tests", () => {
 
   let createdPaymentId;
 
-  it("should create a payment intent via provider abstraction", async () => {
-    const res = await app.inject({
-      method: "POST",
-      url: "/api/v1/payments/create",
-      headers: { authorization: `Bearer ${userToken}` },
-      payload: {
-        orderId: testOrder.id,
-        provider: "RAZORPAY",
-      },
-    });
+  const PROVIDERS = ["STRIPE", "RAZORPAY", "PAYPAL"];
 
-    expect(res.statusCode).toBe(201);
-    const body = JSON.parse(res.payload);
-    expect(body.success).toBe(true);
-    expect(body.data.paymentId).toBeDefined();
-    expect(body.data.providerPaymentId).toBeDefined();
-    createdPaymentId = body.data.paymentId;
-  });
+  for (const provider of PROVIDERS) {
+    it(`should create a payment intent via ${provider}`, async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/v1/payments/create",
+        headers: { authorization: `Bearer ${userToken}` },
+        payload: {
+          orderId: testOrder.id,
+          provider,
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = JSON.parse(res.payload);
+      expect(body.success).toBe(true);
+      expect(body.data.paymentId).toBeDefined();
+      expect(body.data.providerPaymentId).toBeDefined();
+      createdPaymentId = body.data.paymentId;
+    });
+  }
 
   it("should capture payment and update order status to PAID", async () => {
     const res = await app.inject({

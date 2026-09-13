@@ -5,6 +5,7 @@ import { ProductsPage } from "../../features/storefront/pages/ProductsPage.jsx";
 import { ProductDetailsPage } from "../../features/storefront/pages/ProductDetailsPage.jsx";
 import { CartPage } from "../../features/cart/pages/CartPage.jsx";
 import { CheckoutPage } from "../../features/checkout/pages/CheckoutPage.jsx";
+import { PaymentProcessingPage, PaymentSuccessPage, PaymentCancelledPage } from "../../features/checkout/pages/PaymentPages.jsx";
 import { OrdersPage } from "../../features/orders/pages/OrdersPage.jsx";
 import { OrderDetailsPage } from "../../features/orders/pages/OrderDetailsPage.jsx";
 import { WishlistPage } from "../../features/wishlist/pages/WishlistPage.jsx";
@@ -26,6 +27,9 @@ export const publicRoutes = {
     { path: "/contact", element: <ContactPage /> },
     { path: "/cart", element: <CartPage /> },
     { path: "/checkout", element: <CheckoutPage /> },
+    { path: "/checkout/payment-processing", element: <PaymentProcessingPage /> },
+    { path: "/checkout/payment-success", element: <PaymentSuccessPage /> },
+    { path: "/checkout/payment-cancelled", element: <PaymentCancelledPage /> },
     { path: "/orders", element: <OrdersPage /> },
     { path: "/orders/:id", element: <OrderDetailsPage /> },
     { path: "/wishlist", element: <WishlistPage /> },

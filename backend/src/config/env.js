@@ -21,4 +21,13 @@ export const env = {
   AWS_S3_FORCE_PATH_STYLE: process.env.AWS_S3_FORCE_PATH_STYLE === "true",
   DEFAULT_COUNTRY: process.env.DEFAULT_COUNTRY || "IN",
   DEFAULT_CURRENCY: process.env.DEFAULT_CURRENCY || "INR",
+
+  // Payment Providers
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
+  STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY || "",
+  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || "",
+  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || "",
+  PAYPAL_CLIENT_ID: process.env.PAYPAL_CLIENT_ID || "",
+  PAYPAL_CLIENT_SECRET: process.env.PAYPAL_CLIENT_SECRET || "",
+  PAYPAL_MODE: process.env.PAYPAL_MODE || "sandbox",
 };

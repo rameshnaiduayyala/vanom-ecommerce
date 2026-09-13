@@ -17,62 +17,84 @@
  */
 
 export const PAYMENT_PROVIDERS = [
-  // ── Card ─────────────────────────────────────────────────────────
+  // ── Card ─────────────────────────────────────────────────
   {
-    id:          "CARD",
-    label:       "Credit / Debit Card",
-    sub:         "Visa · Mastercard · Amex · Discover",
-    icon:        "💳",
-    countries:   ["*"],
+    id: "CARD",
+    label: "Credit / Debit Card",
+    sub: "Visa · Mastercard · Amex · Discover",
+    icon: "💳",
+    countries: ["*"],
     recommended: true,
-    group:       "Card",
+    group: "Card",
+    redirect: false,
+    provider: "STRIPE",
   },
 
-  // ── Digital Wallets ───────────────────────────────────────────────
+  // ── Digital Wallets ───────────────────────────────────────────
   {
-    id:        "PAYPAL",
-    label:     "PayPal",
-    sub:       "Fast, secure PayPal checkout",
-    icon:      "🅿️",
-    countries: ["US", "CA"],
-    group:     "Wallet",
+    id: "PAYPAL",
+    label: "PayPal",
+    sub: "Fast, secure PayPal checkout",
+    icon: "🅿️",
+    countries: ["US", "CA", "IN"],
+    group: "Wallet",
+    redirect: true,
+    provider: "PAYPAL",
   },
   {
-    id:        "APPLE_PAY",
-    label:     "Apple Pay",
-    sub:       "Touch ID / Face ID",
-    icon:      "🍎",
-    countries: ["US", "CA"],
-    group:     "Wallet",
+    id: "RAZORPAY",
+    label: "Razorpay",
+    sub: "Cards, UPI, Netbanking, Wallets",
+    icon: "🅧",
+    countries: ["IN", "US"],
+    group: "Wallet",
+    redirect: false,
+    provider: "RAZORPAY",
   },
   {
-    id:        "GOOGLE_PAY",
-    label:     "Google Pay",
-    sub:       "Pay with your Google account",
-    icon:      "🇬",
+    id: "APPLE_PAY",
+    label: "Apple Pay",
+    sub: "Touch ID / Face ID",
+    icon: "🍎",
     countries: ["US", "CA"],
-    group:     "Wallet",
+    group: "Wallet",
+    redirect: false,
+    provider: "STRIPE",
+  },
+  {
+    id: "GOOGLE_PAY",
+    label: "Google Pay",
+    sub: "Pay with your Google account",
+    icon: "🇬",
+    countries: ["US", "CA"],
+    group: "Wallet",
+    redirect: false,
+    provider: "STRIPE",
   },
 
-  // ── Buy Now Pay Later ─────────────────────────────────────────────
+  // ── Buy Now Pay Later ─────────────────────────────────────
   {
-    id:          "AFTERPAY",
-    label:       "Afterpay",
-    sub:         "4 interest-free installments",
-    icon:        "🟩",
-    countries:   ["US", "CA"],
-    group:       "BNPL",
-    comingSoon:  false,
+    id: "AFTERPAY",
+    label: "Afterpay",
+    sub: "4 interest-free installments",
+    icon: "🟩",
+    countries: ["US", "CA"],
+    group: "BNPL",
+    comingSoon: false,
+    redirect: false,
+    provider: "RAZORPAY",
   },
   {
-    id:          "KLARNA",
-    label:       "Klarna",
-    sub:         "Pay in 3 or pay later",
-    icon:        "🩷",
-    countries:   ["US"],
-    group:       "BNPL",
-    comingSoon:  true,
-    disabled:    true,
+    id: "KLARNA",
+    label: "Klarna",
+    sub: "Pay in 3 or pay later",
+    icon: "🩷",
+    countries: ["US"],
+    group: "BNPL",
+    comingSoon: true,
+    disabled: true,
+    redirect: false,
+    provider: "RAZORPAY",
   },
 ];
 
@@ -85,6 +107,23 @@ export function getProvidersForCountry(countryCode) {
   return PAYMENT_PROVIDERS.filter(
     (p) => p.countries.includes("*") || p.countries.includes(countryCode)
   );
+}
+
+/**
+ * Returns the active backend payment provider ID for a given checkout provider.
+ * e.g. "PAYPAL" → "PAYPAL", "CARD" → "STRIPE", "AFTERPAY" → "RAZORPAY", "RAZORPAY" → "RAZORPAY"
+ */
+export function getBackendProvider(checkoutProviderId) {
+  const p = PAYMENT_PROVIDERS.find((x) => x.id === checkoutProviderId);
+  return p ? p.provider : "STRIPE";
+}
+
+/**
+ * Returns true if the checkout provider requires a browser redirect.
+ */
+export function isRedirectProvider(checkoutProviderId) {
+  const p = PAYMENT_PROVIDERS.find((x) => x.id === checkoutProviderId);
+  return p ? !!p.redirect : false;
 }
 
 /**

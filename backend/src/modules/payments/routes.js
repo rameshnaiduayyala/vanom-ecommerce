@@ -18,6 +18,10 @@ export default async function paymentRoutes(fastify, options) {
     handler: controller.refund,
   });
 
+  fastify.post("/payments/verify-razorpay", {
+    handler: controller.verifyRazorpay,
+  });
+
   fastify.post("/payments/webhook", {
     handler: controller.webhook,
   });

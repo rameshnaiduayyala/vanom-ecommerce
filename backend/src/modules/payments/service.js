@@ -1,4 +1,4 @@
-import { StripeProvider, RazorpayProvider } from "./providers/index.js";
+import { StripeProvider, RazorpayProvider, PayPalProvider } from "./providers/index.js";
 import { OutboxService } from "../../infrastructure/outbox/outbox.service.js";
 import { prisma } from "../../infrastructure/database/prisma.js";
 import { Money } from "../../common/utils/money.js";
@@ -14,6 +14,7 @@ export class PaymentService {
     this.providers = {
       STRIPE: new StripeProvider(),
       RAZORPAY: new RazorpayProvider(),
+      PAYPAL: new PayPalProvider(),
     };
   }
 
@@ -33,12 +34,23 @@ export class PaymentService {
     if (!order) throw new NotFoundError("Order not found", ERROR_CODES.ORDER_NOT_FOUND);
 
     const paymentProvider = this._getProvider(provider);
-    const intent = await paymentProvider.createIntent({
-      amount: order.totalAmount,
-      currency: order.currency.code,
-      orderId: order.id,
-      metadata: { orderNumber: order.orderNumber, userId: user.id },
-    });
+    
+    let intent;
+    try {
+      intent = await paymentProvider.createIntent({
+        amount: order.totalAmount,
+        currency: order.currency.code,
+        orderId: order.id,
+        metadata: { orderNumber: order.orderNumber, userId: user.id },
+      });
+    } catch (err) {
+      console.error(`Payment intent creation failed for ${provider}:`, err);
+      throw new BusinessRuleError(`Failed to create payment intent with ${provider}: ${err.message}`);
+    }
+
+    if (!intent || !intent.providerPaymentId) {
+      throw new BusinessRuleError("Payment provider returned invalid response");
+    }
 
     const payment = await prisma.payment.create({
       data: {
@@ -85,7 +97,17 @@ export class PaymentService {
     const captureAmount = amount ? Money.toDecimal(amount) : payment.amount;
     const paymentProvider = this._getProvider(payment.provider);
 
-    const result = await paymentProvider.capturePayment(payment.providerPaymentId, captureAmount);
+    let result;
+    try {
+      result = await paymentProvider.capturePayment(payment.providerPaymentId, captureAmount);
+    } catch (err) {
+      console.error(`Payment capture failed for ${payment.provider}:`, err);
+      throw new BusinessRuleError(`Failed to capture payment: ${err.message}`);
+    }
+
+    if (!result || !result.providerPaymentId) {
+      throw new BusinessRuleError("Payment provider returned invalid response for capture");
+    }
 
     return prisma.$transaction(async (tx) => {
       await tx.payment.update({
@@ -148,7 +170,17 @@ export class PaymentService {
     const refundAmount = amount ? Money.toDecimal(amount) : payment.amount;
     const paymentProvider = this._getProvider(payment.provider);
 
-    const result = await paymentProvider.refundPayment(payment.providerPaymentId, refundAmount, reason);
+    let result;
+    try {
+      result = await paymentProvider.refundPayment(payment.providerPaymentId, refundAmount, reason);
+    } catch (err) {
+      console.error(`Payment refund failed for ${payment.provider}:`, err);
+      throw new BusinessRuleError(`Failed to refund payment: ${err.message}`);
+    }
+
+    if (!result || !result.providerRefundId) {
+      throw new BusinessRuleError("Payment provider returned invalid response for refund");
+    }
 
     return prisma.$transaction(async (tx) => {
       const refund = await tx.refund.create({

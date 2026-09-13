@@ -22,6 +22,11 @@ export class PaymentController {
     return reply.send(ApiResponse.success(data));
   };
 
+  verifyRazorpay = async (request, reply) => {
+    const data = await this.service.verifyRazorpayPayment(request.body);
+    return reply.send(ApiResponse.success(data));
+  };
+
   webhook = async (request, reply) => {
     const { provider, externalEventId, eventType, payload } = request.body || {};
     const result = await this.service.processWebhook({
