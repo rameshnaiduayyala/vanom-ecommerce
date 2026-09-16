@@ -23,19 +23,12 @@ async function authPlugin(fastify, options) {
         include: {
           roles: {
             include: {
-              role: {
-                include: {
-                  permissions: {
-                    include: { permission: true },
-                  },
-                },
-              },
+              role: true,
             },
           },
-          companyMembers: {
+          businessMemberships: {
             include: {
-              company: true,
-              roles: true,
+              business: true,
             },
           },
         },
@@ -47,7 +40,7 @@ async function authPlugin(fastify, options) {
 
       if (user.status !== "ACTIVE") {
         if (user.status === "PENDING") {
-          const companyName = user.companyMembers?.[0]?.company?.tradingName || user.companyMembers?.[0]?.company?.legalName;
+          const companyName = user.businessMemberships?.[0]?.business?.legalName || user.businessMemberships?.[0]?.business?.tradeName;
           const msg = companyName
             ? `Your business account for '${companyName}' is currently pending administrator verification and approval.`
             : "Your account is currently pending administrator verification.";
@@ -64,18 +57,20 @@ async function authPlugin(fastify, options) {
 
       // Flatten permissions for high-performance RBAC evaluations
       const roleNames = user.roles.map(ur => ur.role.name);
-      const isSuperAdmin = roleNames.includes("SUPER_ADMIN");
+      const isSuperAdmin = roleNames.includes("SUPER_ADMIN") || roleNames.includes("ADMIN");
 
       const permissions = new Set();
       if (isSuperAdmin) {
         const { PERMISSIONS } = await import("../common/constants/permissions.js");
         Object.values(PERMISSIONS).forEach(p => permissions.add(p));
       } else {
-        user.roles.forEach(ur => {
-          ur.role.permissions.forEach(rp => {
-            permissions.add(rp.permission.code);
+        const { DEFAULT_ROLE_PERMISSIONS } = await import("../common/constants/permissions.js").catch(() => ({ DEFAULT_ROLE_PERMISSIONS: {} }));
+        if (DEFAULT_ROLE_PERMISSIONS) {
+          roleNames.forEach(r => {
+            const rolePerms = DEFAULT_ROLE_PERMISSIONS[r] || [];
+            rolePerms.forEach(p => permissions.add(p));
           });
-        });
+        }
       }
 
       request.user = {
@@ -85,7 +80,8 @@ async function authPlugin(fastify, options) {
         status: user.status,
         roles: roleNames,
         permissions: Array.from(permissions),
-        companyMembers: user.companyMembers,
+        companyMembers: user.businessMemberships,
+        businessMemberships: user.businessMemberships,
         rawUser: user,
       };
     } catch (err) {

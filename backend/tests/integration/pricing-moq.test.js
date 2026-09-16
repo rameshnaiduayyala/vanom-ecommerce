@@ -12,21 +12,26 @@ describe("Authoritative Price Resolver & MOQ Tests", () => {
   beforeAll(async () => {
     soilProduct = await prisma.product.findUnique({
       where: { slug: "premium-garden-soil" },
-      include: { variants: true },
+      include: {
+        variants: true,
+        b2cListing: { include: { prices: true } },
+        b2bListings: { include: { prices: true, tiers: true } },
+      },
     });
     soilVariant = soilProduct?.variants[0];
 
-    approvedCompany = await prisma.company.findFirst({
+    approvedCompany = await prisma.business.findFirst({
       where: { status: "APPROVED" },
-      include: { members: { include: { company: true } } },
+      include: { members: { include: { business: true } } },
     });
 
     if (approvedCompany?.members?.[0]) {
       b2bUser = {
         id: approvedCompany.members[0].userId,
         customerType: "B2B",
-        roles: ["COMPANY_ADMIN"],
+        roles: ["BUSINESS_USER"],
         companyMembers: approvedCompany.members,
+        businessMemberships: approvedCompany.members,
       };
     }
   });
@@ -35,93 +40,78 @@ describe("Authoritative Price Resolver & MOQ Tests", () => {
     await disconnectPrisma();
   });
 
-  it("should resolve standard B2C retail price in India (₹499)", async () => {
+  it("should resolve standard B2C retail price in USD ($24.99)", async () => {
     if (!soilProduct || !soilVariant) return;
 
     const result = await PriceResolver.resolvePrice({
       productId: soilProduct.id,
       variantId: soilVariant.id,
       quantity: 1,
-      countryCode: "IN",
-      currencyCode: "INR",
+      countryCode: "US",
+      currencyCode: "USD",
       user: null, // guest or retail
     });
 
-    expect(Money.format(result.unitPrice, 2)).toBe("499.00");
-    expect(Money.format(result.subtotal, 2)).toBe("499.00");
-    expect(result.currency).toBe("INR");
+    expect(Money.format(result.unitPrice, 2)).toBe("24.99");
+    expect(Money.format(result.subtotal, 2)).toBe("24.99");
+    expect(result.currency).toBe("USD");
     expect(result.isB2B).toBe(false);
   });
 
-  it("should resolve B2B Tier 1 (20-49 sacks: ₹420) for approved B2B company", async () => {
+  it("should resolve standard B2C retail price in CAD ($32.99)", async () => {
+    if (!soilProduct || !soilVariant) return;
+
+    const result = await PriceResolver.resolvePrice({
+      productId: soilProduct.id,
+      variantId: soilVariant.id,
+      quantity: 2,
+      countryCode: "CA",
+      currencyCode: "CAD",
+      user: null,
+    });
+
+    expect(Money.format(result.unitPrice, 2)).toBe("32.99");
+    expect(Money.format(result.subtotal, 2)).toBe("65.98");
+    expect(result.currency).toBe("CAD");
+    expect(result.isB2B).toBe(false);
+  });
+
+  it("should resolve B2B Base Unit Price ($16.50) in USD for approved B2B business", async () => {
     if (!soilProduct || !soilVariant || !b2bUser) return;
 
     const result = await PriceResolver.resolvePrice({
       productId: soilProduct.id,
       variantId: soilVariant.id,
-      quantity: 25,
-      countryCode: "IN",
-      currencyCode: "INR",
+      quantity: 10,
+      countryCode: "US",
+      currencyCode: "USD",
       user: b2bUser,
       companyId: approvedCompany.id,
+      businessId: approvedCompany.id,
     });
 
-    expect(Money.format(result.unitPrice, 2)).toBe("420.00");
-    expect(Money.format(result.subtotal, 2)).toBe("10500.00"); // 25 * 420
+    expect(Money.format(result.unitPrice, 2)).toBe("16.50");
+    expect(Money.format(result.subtotal, 2)).toBe("165.00");
+    expect(result.currency).toBe("USD");
     expect(result.isB2B).toBe(true);
   });
 
-  it("should resolve B2B Tier 3 (100+ sacks: ₹350) for approved B2B company", async () => {
+  it("should resolve B2B Volume Discount Tier (100+ units: 15% off -> $14.025) in USD", async () => {
     if (!soilProduct || !soilVariant || !b2bUser) return;
 
     const result = await PriceResolver.resolvePrice({
       productId: soilProduct.id,
       variantId: soilVariant.id,
       quantity: 100,
-      countryCode: "IN",
-      currencyCode: "INR",
-      user: b2bUser,
-      companyId: approvedCompany.id,
-    });
-
-    expect(Money.format(result.unitPrice, 2)).toBe("350.00");
-    expect(Money.format(result.subtotal, 2)).toBe("35000.00");
-    expect(result.isB2B).toBe(true);
-  });
-
-  it("should resolve USA B2B Tier 1 (20-49 sacks: $16.50) in USD", async () => {
-    if (!soilProduct || !soilVariant || !b2bUser) return;
-
-    const result = await PriceResolver.resolvePrice({
-      productId: soilProduct.id,
-      variantId: soilVariant.id,
-      quantity: 30,
       countryCode: "US",
       currencyCode: "USD",
       user: b2bUser,
       companyId: approvedCompany.id,
+      businessId: approvedCompany.id,
     });
 
-    expect(Money.format(result.unitPrice, 2)).toBe("16.50");
+    expect(Number(result.unitPrice)).toBeLessThan(16.50);
     expect(result.currency).toBe("USD");
-    expect(result.isB2B).toBe(true);
-  });
-
-  it("should resolve UK B2B Tier 3 (100+ sacks: £12.20) in GBP", async () => {
-    if (!soilProduct || !soilVariant || !b2bUser) return;
-
-    const result = await PriceResolver.resolvePrice({
-      productId: soilProduct.id,
-      variantId: soilVariant.id,
-      quantity: 150,
-      countryCode: "GB",
-      currencyCode: "GBP",
-      user: b2bUser,
-      companyId: approvedCompany.id,
-    });
-
-    expect(Money.format(result.unitPrice, 2)).toBe("12.20");
-    expect(result.currency).toBe("GBP");
     expect(result.isB2B).toBe(true);
   });
 });

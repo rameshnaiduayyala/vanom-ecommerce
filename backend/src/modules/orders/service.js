@@ -30,25 +30,21 @@ export class OrderService {
             variant: {
               include: { images: { include: { file: true } } },
             },
-            currency: true,
           },
         },
         country: true,
-        currency: true,
-        company: true,
+        business: true,
         user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true } },
         payments: {
           include: { transactions: true, refunds: true },
         },
         shipments: {
-          include: { items: true, events: true, carrier: true },
+          include: { items: true },
         },
         statusHistory: {
           orderBy: { createdAt: "desc" },
         },
-        taxCalculation: {
-          include: { lines: true },
-        },
+        taxCalculation: true,
       },
     });
 
@@ -58,9 +54,9 @@ export class OrderService {
 
     const isAdmin = user.roles?.includes("ADMIN") || user.roles?.includes("SUPER_ADMIN");
     const isOwner = order.userId === user.id;
-    const isCompanyMember = order.companyId && user.companyMembers?.some((m) => m.companyId === order.companyId);
+    const isBusinessMember = order.businessId && user.businessMemberships?.some((m) => m.businessId === order.businessId);
 
-    if (!isAdmin && !isOwner && !isCompanyMember) {
+    if (!isAdmin && !isOwner && !isBusinessMember) {
       throw new ForbiddenError("You do not have permission to view this order");
     }
 
@@ -94,22 +90,24 @@ export class OrderService {
       orderNumber: order.orderNumber,
       status: order.status,
       customerType: order.customerType,
-      type: order.customerType || (order.companyId ? "B2B" : "B2C"),
+      channel: order.channel,
+      type: order.customerType || (order.businessId ? "B2B" : "B2C"),
       subtotal: Number(order.subtotal || 0),
       discountAmount: Number(order.discountAmount || 0),
       taxAmount: Number(order.taxAmount || 0),
       shippingAmount: Number(order.shippingAmount || 0),
       shippingCost: Number(order.shippingAmount || 0),
       totalAmount: Number(order.totalAmount || 0),
-      currency: order.currency?.code || "INR",
-      symbol: order.currency?.symbol || "₹",
-      currencyCode: order.currency?.code || "INR",
+      currency: order.currency || "USD",
+      symbol: order.currency === "CAD" ? "CA$" : "$",
+      currencyCode: order.currency || "USD",
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
       shippingAddress: order.shippingAddress,
       billingAddress: order.billingAddress,
       user: order.user,
-      company: order.company,
+      business: order.business,
+      company: order.business,
       payments: order.payments,
       shipments: order.shipments,
       timeline,
@@ -126,21 +124,10 @@ export class OrderService {
           subtotal: Number(it.subtotal || 0),
           discountAmount: Number(it.discountAmount || 0),
           taxAmount: Number(it.taxAmount || 0),
-          total: Number(it.total || it.subtotal || 0),
+          total: Number(it.totalAmount || it.subtotal || 0),
           image: imageUrl,
         };
       }),
-      invoice: {
-        invoiceNumber: `INV-${order.orderNumber}`,
-        invoiceDate: order.createdAt,
-        seller: {
-          name: "VANOM ORGANICS & ENTERPRISE",
-          taxId: "GSTIN27AABCV1234F1Z9",
-          address: "Vanom Logistics Park, Sector 18, Gurugram, Haryana - 122015, India",
-          supportEmail: "support@vanom.com",
-          phone: "+91 1800-123-VANOM",
-        },
-      },
     };
 
     return formattedOrder;
@@ -163,9 +150,8 @@ export class OrderService {
               },
             },
           },
-          currency: true,
           country: true,
-          company: true,
+          business: true,
         },
         skip: (Number(page) - 1) * Number(limit),
         take: Number(limit),
@@ -178,13 +164,13 @@ export class OrderService {
       orderNumber: o.orderNumber,
       status: o.status,
       customerType: o.customerType,
-      type: o.customerType || (o.companyId ? "B2B" : "B2C"),
+      type: o.customerType || (o.businessId ? "B2B" : "B2C"),
       subtotal: Number(o.subtotal),
       taxAmount: Number(o.taxAmount),
       shippingAmount: Number(o.shippingAmount),
       totalAmount: Number(o.totalAmount),
-      currency: o.currency?.code || "INR",
-      symbol: o.currency?.symbol || "₹",
+      currency: o.currency || "USD",
+      symbol: o.currency === "CAD" ? "CA$" : "$",
       createdAt: o.createdAt,
       items: (o.items || []).map((it) => ({
         id: it.id,
@@ -204,15 +190,15 @@ export class OrderService {
     return { total, items };
   }
 
-  async listCompanyOrders(companyId, user, { page = 1, limit = 20 } = {}) {
-    const isMember = user.companyMembers?.some((m) => m.companyId === companyId);
+  async listCompanyOrders(businessId, user, { page = 1, limit = 20 } = {}) {
+    const isMember = user.businessMemberships?.some((m) => m.businessId === businessId);
     const isAdmin = user.roles?.includes("ADMIN") || user.roles?.includes("SUPER_ADMIN");
 
     if (!isMember && !isAdmin) {
-      throw new ForbiddenError("You do not have access to this company's orders");
+      throw new ForbiddenError("You do not have access to this business's orders");
     }
 
-    const where = { companyId };
+    const where = { businessId };
     const [total, rawItems] = await Promise.all([
       prisma.order.count({ where }),
       prisma.order.findMany({
@@ -228,7 +214,6 @@ export class OrderService {
               },
             },
           },
-          currency: true,
           country: true,
           user: { select: { id: true, email: true, firstName: true, lastName: true } },
         },
@@ -248,8 +233,8 @@ export class OrderService {
       taxAmount: Number(o.taxAmount),
       shippingAmount: Number(o.shippingAmount),
       totalAmount: Number(o.totalAmount),
-      currency: o.currency?.code || "INR",
-      symbol: o.currency?.symbol || "₹",
+      currency: o.currency || "USD",
+      symbol: o.currency === "CAD" ? "CA$" : "$",
       createdAt: o.createdAt,
       items: (o.items || []).map((it) => ({
         id: it.id,
@@ -290,11 +275,14 @@ export class OrderService {
         if (res.status === "ACTIVE") {
           await tx.inventoryItem.updateMany({
             where: { warehouseId: res.warehouseId, variantId: res.variantId },
-            data: { reserved: { decrement: res.quantity } },
+            data: {
+              reserved: { decrement: res.quantity },
+              available: { increment: res.quantity },
+            },
           });
           await tx.inventoryReservation.update({
             where: { id: res.id },
-            data: { status: "RELEASED", releasedAt: new Date() },
+            data: { status: "RELEASED" },
           });
         }
       }
@@ -311,15 +299,6 @@ export class OrderService {
               reason: reason || "Cancelled by user",
             },
           },
-        },
-      });
-
-      await tx.outboxEvent.create({
-        data: {
-          aggregateType: "ORDER",
-          aggregateId: order.id,
-          eventType: "ORDER_CANCELLED",
-          payload: { orderId: order.id, reason },
         },
       });
 

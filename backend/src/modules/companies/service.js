@@ -15,18 +15,13 @@ import { ERROR_CODES } from "../../common/constants/index.js";
  * Direct Prisma company registration, multi-country tax entity setup, member management, and document uploads
  */
 export class CompanyService {
-  /**
-   * Register a company with an admin user, legal name, business/trading name, and address
-   * If userId is provided or authenticated, links to that user.
-   * If adminUser object { email, password, firstName, lastName, phone } is provided, creates the admin user automatically.
-   */
   async registerCompany(userId, {
     legalName,
     businessName,
     tradingName,
     registrationNumber,
     taxId,
-    countryCode = "USA",
+    countryCode = "US",
     address,
     user: adminUserData,
     adminUser,
@@ -37,7 +32,6 @@ export class CompanyService {
       throw new BadRequestError("Legal name is required");
     }
 
-    // Resolve Country dynamically by code or id, or fallback to first available country
     let country = null;
     if (countryCode) {
       country = await prisma.country.findFirst({
@@ -57,10 +51,8 @@ export class CompanyService {
       }) || await prisma.country.findFirst();
     }
 
-    // ── STRICT COMPANY CONSTRAINT CHECKS ──
-    // 1. Check if registration number already exists in the same country jurisdiction
     if (registrationNumber && country) {
-      const existingReg = await prisma.company.findFirst({
+      const existingReg = await prisma.business.findFirst({
         where: {
           registrationNumber: { equals: registrationNumber.trim(), mode: "insensitive" },
           countryId: country.id,
@@ -74,9 +66,8 @@ export class CompanyService {
       }
     }
 
-    // 2. Check if Tax ID / GSTIN / EIN already registered in this country
     if (taxId && country) {
-      const existingTax = await prisma.company.findFirst({
+      const existingTax = await prisma.business.findFirst({
         where: {
           taxId: { equals: taxId.trim(), mode: "insensitive" },
           countryId: country.id,
@@ -84,7 +75,7 @@ export class CompanyService {
       });
       if (existingTax) {
         throw new ConflictError(
-          `A company with Tax/GSTIN ID '${taxId}' is already registered in ${country.name || "this jurisdiction"}.`,
+          `A business with Tax ID '${taxId}' is already registered in ${country.name || "this jurisdiction"}.`,
           ERROR_CODES.COMPANY_ALREADY_EXISTS || "COMPANY_ALREADY_EXISTS"
         );
       }
@@ -93,7 +84,6 @@ export class CompanyService {
     let memberUserId = userId;
     const userData = adminUserData || adminUser;
 
-    // If an admin user payload was passed (e.g. public business registration)
     if (!memberUserId && userData?.email) {
       const formattedEmail = userData.email.toLowerCase().trim();
       const existingUser = await prisma.user.findUnique({ where: { email: formattedEmail } });
@@ -105,10 +95,10 @@ export class CompanyService {
         throw new BadRequestError("Password is required to create company admin user");
       }
 
-      const roleCompanyAdmin = await prisma.role.upsert({
-        where: { name: "COMPANY_ADMIN" },
+      const roleBusinessUser = await prisma.role.upsert({
+        where: { name: "BUSINESS_USER" },
         update: {},
-        create: { name: "COMPANY_ADMIN", description: "B2B wholesale company administrator" },
+        create: { name: "BUSINESS_USER", description: "B2B wholesale company administrator" },
       });
 
       const passwordHash = await HashUtil.hashPassword(userData.password, authConfig.saltRounds);
@@ -121,10 +111,9 @@ export class CompanyService {
           phone: userData.phone || address?.phone || null,
           customerType: "B2B",
           status: "PENDING",
-          profile: { create: {} },
           roles: {
             create: {
-              roleId: roleCompanyAdmin.id,
+              roleId: roleBusinessUser.id,
             },
           },
         },
@@ -133,36 +122,34 @@ export class CompanyService {
     }
 
     if (!memberUserId) {
-      throw new BadRequestError("Authenticated user or admin user details (email and password) are required to register a company");
+      throw new BadRequestError("Authenticated user or admin user details (email and password) are required to register a business");
     }
 
-    // Ensure member has COMPANY_ADMIN role attached
-    const roleCompanyAdmin = await prisma.role.upsert({
-      where: { name: "COMPANY_ADMIN" },
+    const roleBusinessUser = await prisma.role.upsert({
+      where: { name: "BUSINESS_USER" },
       update: {},
-      create: { name: "COMPANY_ADMIN", description: "B2B wholesale company administrator" },
+      create: { name: "BUSINESS_USER", description: "B2B wholesale company administrator" },
     });
 
-    const existingUserRole = await prisma.userRole.findUnique({
+    const existingUserRole = await prisma.userRoleAssignment.findUnique({
       where: {
         userId_roleId: {
           userId: memberUserId,
-          roleId: roleCompanyAdmin.id,
+          roleId: roleBusinessUser.id,
         },
       },
     });
 
     if (!existingUserRole) {
-      await prisma.userRole.create({
+      await prisma.userRoleAssignment.create({
         data: {
           userId: memberUserId,
-          roleId: roleCompanyAdmin.id,
+          roleId: roleBusinessUser.id,
         },
       });
     }
 
-    // Create Company with optional address and verification application
-    return prisma.company.create({
+    return prisma.business.create({
       data: {
         legalName,
         tradingName: finalTradingName,
@@ -173,11 +160,9 @@ export class CompanyService {
         members: {
           create: {
             userId: memberUserId,
-            title: "Company Administrator",
+            title: "Business Owner",
+            role: "OWNER",
             isPrimary: true,
-            roles: {
-              create: { roleName: "COMPANY_ADMIN" },
-            },
           },
         },
         addresses: address
@@ -188,7 +173,7 @@ export class CompanyService {
               line1: address.line1 || address.addressLine1 || "Address Line 1",
               line2: address.line2 || address.addressLine2 || null,
               city: address.city || "City",
-              state: address.state || null,
+              stateCode: address.stateCode || address.state || "NA",
               postalCode: address.postalCode || address.zip || "000000",
               countryId: country.id,
               phone: address.phone || null,
@@ -196,72 +181,52 @@ export class CompanyService {
             },
           }
           : undefined,
-        verification: {
-          create: {
-            status: "PENDING",
-          },
-        },
       },
       include: {
         country: true,
         members: {
           include: {
             user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true } },
-            roles: true,
           },
         },
         addresses: true,
         documents: true,
-        verification: true,
       },
     });
   }
 
-
   async getCompanyById(id, user) {
-    const company = await prisma.company.findUnique({
+    const business = await prisma.business.findUnique({
       where: { id },
       include: {
         country: true,
         members: {
           include: {
             user: { select: { id: true, email: true, firstName: true, lastName: true } },
-            roles: true,
           },
         },
         addresses: true,
         documents: {
           include: { file: true },
         },
-        verification: {
-          include: {
-            reviews: {
-              include: { reviewer: { select: { id: true, email: true, firstName: true, lastName: true } } },
-            },
-          },
-        },
-        priceLists: {
-          include: { priceList: true },
-        },
-        creditAccount: true,
       },
     });
 
-    if (!company) {
-      throw new NotFoundError("Company not found");
+    if (!business) {
+      throw new NotFoundError("Business not found");
     }
 
-    const isMember = company.members.some((m) => m.userId === user.id);
+    const isMember = business.members.some((m) => m.userId === user.id);
     const userRoles = Array.isArray(user?.roles)
       ? user.roles.map((r) => (typeof r === "string" ? r : r.name || r.role?.name))
       : [];
     const isAdmin = userRoles.includes("ADMIN") || userRoles.includes("SUPER_ADMIN");
 
     if (!isMember && !isAdmin) {
-      throw new ForbiddenError("You do not have permission to view this company profile");
+      throw new ForbiddenError("You do not have permission to view this business profile");
     }
 
-    return company;
+    return business;
   }
 
   async listCompanies(user, { page = 1, limit = 20, status, search } = {}) {
@@ -272,7 +237,6 @@ export class CompanyService {
 
     const where = {};
     if (!isAdmin) {
-      // Non-admin can only see companies they belong to
       where.members = { some: { userId: user.id } };
     }
     if (status) {
@@ -288,18 +252,16 @@ export class CompanyService {
     }
 
     const [total, items] = await Promise.all([
-      prisma.company.count({ where }),
-      prisma.company.findMany({
+      prisma.business.count({ where }),
+      prisma.business.findMany({
         where,
         include: {
           country: true,
           members: {
             include: {
               user: { select: { id: true, email: true, firstName: true, lastName: true } },
-              roles: true,
             },
           },
-          verification: true,
           documents: { include: { file: true } },
         },
         skip: (Number(page) - 1) * Number(limit),
@@ -312,30 +274,28 @@ export class CompanyService {
   }
 
   async updateCompany(id, user, data) {
-    const company = await this.getCompanyById(id, user);
+    const business = await this.getCompanyById(id, user);
 
     const userRoles = Array.isArray(user?.roles)
       ? user.roles.map((r) => (typeof r === "string" ? r : r.name || r.role?.name))
       : [];
     const isAdmin = userRoles.includes("ADMIN") || userRoles.includes("SUPER_ADMIN");
 
-    // Once approved, company details are locked against self-edits (only Admin can modify)
-    if (company.status === "APPROVED" && !isAdmin) {
+    if (business.status === "APPROVED" && !isAdmin) {
       throw new ForbiddenError(
-        "Company details are locked after admin verification. Please contact support or an administrator to request changes.",
+        "Business details are locked after admin verification. Please contact support or an administrator to request changes.",
         ERROR_CODES.FORBIDDEN
       );
     }
 
-    // Whitelist editable fields & check constraints
     const safeData = {};
     const targetCountryId = data.countryCode
-      ? (await prisma.country.findUnique({ where: { code: data.countryCode.toUpperCase() } }))?.id || company.countryId
-      : company.countryId;
+      ? (await prisma.country.findUnique({ where: { code: data.countryCode.toUpperCase() } }))?.id || business.countryId
+      : business.countryId;
 
-    if (data.registrationNumber !== undefined && data.registrationNumber !== company.registrationNumber) {
+    if (data.registrationNumber !== undefined && data.registrationNumber !== business.registrationNumber) {
       if (data.registrationNumber) {
-        const existingReg = await prisma.company.findFirst({
+        const existingReg = await prisma.business.findFirst({
           where: {
             id: { not: id },
             registrationNumber: { equals: data.registrationNumber.trim(), mode: "insensitive" },
@@ -344,16 +304,16 @@ export class CompanyService {
         });
         if (existingReg) {
           throw new ConflictError(
-            `Registration Number '${data.registrationNumber}' is already assigned to another company in this jurisdiction.`
+            `Registration Number '${data.registrationNumber}' is already assigned to another business in this jurisdiction.`
           );
         }
       }
       safeData.registrationNumber = data.registrationNumber;
     }
 
-    if (data.taxId !== undefined && data.taxId !== company.taxId) {
+    if (data.taxId !== undefined && data.taxId !== business.taxId) {
       if (data.taxId) {
-        const existingTax = await prisma.company.findFirst({
+        const existingTax = await prisma.business.findFirst({
           where: {
             id: { not: id },
             taxId: { equals: data.taxId.trim(), mode: "insensitive" },
@@ -362,7 +322,7 @@ export class CompanyService {
         });
         if (existingTax) {
           throw new ConflictError(
-            `Tax/GSTIN ID '${data.taxId}' is already registered by another enterprise.`
+            `Tax ID '${data.taxId}' is already registered by another enterprise.`
           );
         }
       }
@@ -372,7 +332,6 @@ export class CompanyService {
     if (data.legalName !== undefined) safeData.legalName = data.legalName;
     if (data.tradingName !== undefined) safeData.tradingName = data.tradingName;
 
-    // Admin-only fields
     if (isAdmin) {
       if (data.status !== undefined) safeData.status = data.status;
       if (data.paymentTermsDays !== undefined) safeData.paymentTermsDays = Number(data.paymentTermsDays);
@@ -389,7 +348,7 @@ export class CompanyService {
       safeData.countryId = country.id;
     }
 
-    return prisma.company.update({
+    return prisma.business.update({
       where: { id },
       data: safeData,
       include: {
@@ -399,25 +358,25 @@ export class CompanyService {
             user: { select: { id: true, email: true, firstName: true, lastName: true } },
           },
         },
-        verification: true,
+        documents: true,
       },
     });
   }
 
   async deleteCompany(id, user) {
-    const company = await this.getCompanyById(id, user);
+    const business = await this.getCompanyById(id, user);
 
     const userRoles = Array.isArray(user?.roles)
       ? user.roles.map((r) => (typeof r === "string" ? r : r.name || r.role?.name))
       : [];
     const isAdmin = userRoles.includes("ADMIN") || userRoles.includes("SUPER_ADMIN");
-    const isPrimaryOwner = company.members.some((m) => m.userId === user.id && m.isPrimary);
+    const isPrimaryOwner = business.members.some((m) => m.userId === user.id && m.isPrimary);
 
     if (!isAdmin && !isPrimaryOwner) {
-      throw new ForbiddenError("Only company primary owner or administrator can delete this company");
+      throw new ForbiddenError("Only business primary owner or administrator can delete this business");
     }
 
-    await prisma.company.delete({
+    await prisma.business.delete({
       where: { id },
     });
 
@@ -433,7 +392,7 @@ export class CompanyService {
 
     return prisma.businessDocument.create({
       data: {
-        companyId: id,
+        businessId: id,
         fileAssetId,
         documentType,
         documentNumber,
@@ -447,14 +406,14 @@ export class CompanyService {
   async listDocuments(id, user) {
     await this.getCompanyById(id, user);
     return prisma.businessDocument.findMany({
-      where: { companyId: id },
+      where: { businessId: id },
       include: { file: true },
       orderBy: { uploadedAt: "desc" },
     });
   }
 
   async submitVerification(id, user) {
-    const company = await this.getCompanyById(id, user);
+    const business = await this.getCompanyById(id, user);
     const docs = await this.listDocuments(id, user);
 
     if (!docs || docs.length === 0) {
@@ -464,22 +423,9 @@ export class CompanyService {
       );
     }
 
-    await prisma.company.update({
+    return prisma.business.update({
       where: { id },
       data: { status: "UNDER_REVIEW" },
-    });
-
-    return prisma.verificationApplication.upsert({
-      where: { companyId: id },
-      create: {
-        companyId: id,
-        status: "UNDER_REVIEW",
-        submittedAt: new Date(),
-      },
-      update: {
-        status: "UNDER_REVIEW",
-        submittedAt: new Date(),
-      },
     });
   }
 }

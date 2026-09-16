@@ -5,6 +5,7 @@ import corsPlugin from "./plugins/cors.plugin.js";
 import authPlugin from "./plugins/auth.plugin.js";
 import idempotencyPlugin from "./plugins/idempotency.plugin.js";
 import errorHandlerPlugin from "./plugins/error.plugin.js";
+import swaggerPlugin from "./plugins/swagger.plugin.js";
 import healthRoutes from "./modules/health/routes.js";
 import registerRoutes from "./routes/index.js";
 
@@ -50,6 +51,7 @@ export async function buildApp(opts = {}) {
   await app.register(authPlugin);
   await app.register(idempotencyPlugin);
   await app.register(errorHandlerPlugin);
+  await app.register(swaggerPlugin);
 
   // Health check routes
   await app.register(healthRoutes);

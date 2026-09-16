@@ -27,7 +27,7 @@ describe("Banner & Promotional Carousel Integration Tests", () => {
   });
 
   afterAll(async () => {
-    if (createdBannerId) {
+    if (createdBannerId && prisma.banner) {
       await prisma.banner.deleteMany({ where: { id: createdBannerId } });
     }
     await app.close();

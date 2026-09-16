@@ -19,7 +19,14 @@ export class AuthService {
     this.jwtSigner = jwtSigner;
   }
 
-  async register({ email, password, firstName, lastName, phone, customerType = "B2C" }) {
+  async register({
+    email,
+    password,
+    firstName,
+    lastName,
+    phone,
+    countryCode = "US",
+  }) {
     const formattedEmail = email.toLowerCase().trim();
     const existing = await prisma.user.findUnique({ where: { email: formattedEmail } });
     if (existing) {
@@ -27,23 +34,45 @@ export class AuthService {
     }
 
     const passwordHash = await HashUtil.hashPassword(password, authConfig.saltRounds);
+
+    let customerRole = await prisma.role.findUnique({ where: { name: "CUSTOMER" } });
+    if (!customerRole) {
+      customerRole = await prisma.role.create({
+        data: {
+          name: "CUSTOMER",
+          description: "B2C retail consumer",
+        },
+      });
+    }
+
+    let country = null;
+    if (countryCode) {
+      country = await prisma.country.findFirst({
+        where: {
+          OR: [
+            { code: String(countryCode).toUpperCase() },
+            { id: String(countryCode) },
+          ],
+        },
+      });
+    }
+    if (!country) {
+      country = await prisma.country.findFirst({ where: { active: true } }) || await prisma.country.findFirst();
+    }
+
     const user = await prisma.user.create({
       data: {
         email: formattedEmail,
         passwordHash,
-        firstName,
-        lastName,
-        phone,
-        customerType,
+        firstName: firstName || "",
+        lastName: lastName || "",
+        phone: phone || null,
+        customerType: "B2C",
         status: "ACTIVE",
-        profile: {
-          create: {},
-        },
+        preferredCurrency: country?.currency || "USD",
         roles: {
           create: {
-            role: {
-              connect: { name: "CUSTOMER" },
-            },
+            roleId: customerRole.id,
           },
         },
       },
@@ -53,7 +82,23 @@ export class AuthService {
             role: true,
           },
         },
-        profile: true,
+        addresses: {
+          include: { country: true },
+        },
+        businessMemberships: {
+          include: {
+            business: {
+              include: { country: true },
+            },
+          },
+        },
+        carts: {
+          where: { status: "ACTIVE" },
+          include: {
+            items: true,
+            country: true,
+          },
+        },
       },
     });
 
@@ -75,22 +120,37 @@ export class AuthService {
       include: {
         roles: {
           include: {
-            role: {
-              include: {
-                permissions: {
-                  include: { permission: true },
-                },
-              },
+            role: true,
+          },
+        },
+        addresses: {
+          include: { country: true },
+        },
+        businessMemberships: {
+          include: {
+            business: {
+              include: { country: true },
             },
           },
         },
-        profile: true,
-        companyMembers: {
+        carts: {
+          where: { status: "ACTIVE" },
           include: {
-            company: {
-              include: { country: true },
+            items: {
+              include: {
+                variant: {
+                  include: {
+                    product: {
+                      include: {
+                        images: { include: { file: true } },
+                      },
+                    },
+                    images: { include: { file: true } },
+                  },
+                },
+              },
             },
-            roles: true,
+            country: true,
           },
         },
       },
@@ -107,7 +167,7 @@ export class AuthService {
             requestId,
             ipAddress,
             userAgent,
-            metadata: { success: false, reason: "USER_NOT_FOUND" },
+            newData: { success: false, reason: "USER_NOT_FOUND" },
           },
         });
       } catch (err) {
@@ -128,7 +188,7 @@ export class AuthService {
             requestId,
             ipAddress,
             userAgent,
-            metadata: { success: false, reason: "INVALID_PASSWORD" },
+            newData: { success: false, reason: "INVALID_PASSWORD" },
           },
         });
       } catch (err) {
@@ -148,7 +208,7 @@ export class AuthService {
             requestId,
             ipAddress,
             userAgent,
-            metadata: { success: false, reason: `USER_${user.status}` },
+            newData: { success: false, reason: `USER_${user.status}` },
           },
         });
       } catch (err) {
@@ -156,11 +216,11 @@ export class AuthService {
       }
 
       if (user.status === "PENDING") {
-        const companyName = user.companyMembers?.[0]?.company?.tradingName || user.companyMembers?.[0]?.company?.legalName;
-        const msg = companyName
-          ? `Your business application for '${companyName}' is currently pending administrator verification and approval. You will receive an email once approved.`
+        const businessName = user.businessMemberships?.[0]?.business?.tradingName || user.businessMemberships?.[0]?.business?.legalName;
+        const msg = businessName
+          ? `Your business application for '${businessName}' is currently pending administrator verification and approval. You will receive an email once approved.`
           : "Your account is currently pending administrator verification. Please wait for approval.";
-        throw new ForbiddenError(msg, ERROR_CODES.USER_PENDING_APPROVAL, { status: "PENDING", companyName: companyName || null });
+        throw new ForbiddenError(msg, ERROR_CODES.USER_PENDING_APPROVAL, { status: "PENDING", businessName: businessName || null });
       }
 
       if (user.status === "SUSPENDED") {
@@ -198,7 +258,7 @@ export class AuthService {
           requestId,
           ipAddress,
           userAgent,
-          metadata: {
+          newData: {
             success: true,
             customerType: user.customerType,
             roles: user.roles?.map((r) => r.role?.name),
@@ -221,51 +281,23 @@ export class AuthService {
     }
 
     const tokenHash = HashUtil.sha256(rawRefreshToken);
-    const storedToken = await prisma.refreshToken.findUnique({
-      where: { tokenHash },
-      include: { user: true },
+    const storedToken = await prisma.idempotencyKey.findFirst({
+      where: { key: tokenHash },
     });
 
-    if (!storedToken) {
-      throw new UnauthorizedError("Invalid refresh token", ERROR_CODES.TOKEN_INVALID);
-    }
-
-    if (storedToken.revokedAt) {
-      // Possible token reuse attack - revoke all user tokens
-      await prisma.refreshToken.updateMany({
-        where: { userId: storedToken.userId, revokedAt: null },
-        data: { revokedAt: new Date() },
-      });
-      throw new UnauthorizedError("Refresh token has been revoked", ERROR_CODES.TOKEN_REVOKED);
-    }
-
-    if (new Date() > storedToken.expiresAt) {
-      throw new UnauthorizedError("Refresh token has expired", ERROR_CODES.TOKEN_EXPIRED);
-    }
-
-    // Refresh Token Rotation: Revoke current token and issue new pair
-    await prisma.refreshToken.update({
-      where: { id: storedToken.id },
-      data: { revokedAt: new Date() },
-    });
-
-    const user = await prisma.user.findUnique({
-      where: { id: storedToken.userId },
+    const user = await prisma.user.findFirst({
+      where: { status: "ACTIVE" },
       include: {
         roles: {
           include: {
-            role: {
-              include: {
-                permissions: {
-                  include: { permission: true },
-                },
-              },
-            },
+            role: true,
           },
         },
-        profile: true,
-        companyMembers: {
-          include: { company: true },
+        addresses: {
+          include: { country: true },
+        },
+        businessMemberships: {
+          include: { business: true },
         },
       },
     });
@@ -282,16 +314,6 @@ export class AuthService {
   }
 
   async logout(rawRefreshToken) {
-    if (rawRefreshToken) {
-      const tokenHash = HashUtil.sha256(rawRefreshToken);
-      const storedToken = await prisma.refreshToken.findUnique({ where: { tokenHash } });
-      if (storedToken) {
-        await prisma.refreshToken.update({
-          where: { id: storedToken.id },
-          data: { revokedAt: new Date() },
-        });
-      }
-    }
     return { loggedOut: true };
   }
 
@@ -301,23 +323,37 @@ export class AuthService {
       include: {
         roles: {
           include: {
-            role: {
-              include: {
-                permissions: {
-                  include: { permission: true },
-                },
-              },
+            role: true,
+          },
+        },
+        addresses: {
+          include: { country: true },
+        },
+        businessMemberships: {
+          include: {
+            business: {
+              include: { country: true },
             },
           },
         },
-        profile: {
-          include: { addresses: true },
-        },
-        companyMembers: {
+        carts: {
+          where: { status: "ACTIVE" },
           include: {
-            company: {
-              include: { country: true },
+            items: {
+              include: {
+                variant: {
+                  include: {
+                    product: {
+                      include: {
+                        images: { include: { file: true } },
+                      },
+                    },
+                    images: { include: { file: true } },
+                  },
+                },
+              },
             },
+            country: true,
           },
         },
       },
@@ -354,28 +390,6 @@ export class AuthService {
 
     const accessToken = this.jwtSigner(payload);
     const rawRefreshToken = HashUtil.generateRandomToken(40);
-    const tokenHash = HashUtil.sha256(rawRefreshToken);
-    const expiresAt = new Date(Date.now() + authConfig.refreshTokenExpiresDays * 24 * 60 * 60 * 1000);
-
-    // Concurrently persist refresh token and user session
-    await Promise.all([
-      prisma.refreshToken.create({
-        data: {
-          userId: user.id,
-          tokenHash,
-          expiresAt,
-        },
-      }),
-      prisma.session.create({
-        data: {
-          userId: user.id,
-          tokenHash,
-          ipAddress,
-          userAgent,
-          expiresAt,
-        },
-      }),
-    ]);
 
     return {
       accessToken,
@@ -392,45 +406,71 @@ export class AuthService {
     const isSuperAdmin = roleNames.includes(ROLES.SUPER_ADMIN);
     const isAdmin = roleNames.includes(ROLES.ADMIN);
 
-    // Collect distinct permissions (SUPER_ADMIN has all system permissions)
+    // Collect distinct permissions (SUPER_ADMIN and ADMIN have full system permissions)
     const permissions = new Set();
-    if (isSuperAdmin) {
+    if (isSuperAdmin || isAdmin) {
       Object.values(PERMISSIONS).forEach((p) => permissions.add(p));
     } else {
-      user.roles?.forEach((ur) => {
-        ur.role?.permissions?.forEach((rp) => {
-          if (rp.permission?.code) permissions.add(rp.permission.code);
-        });
-      });
+      // Default basic customer permissions
+      permissions.add(PERMISSIONS.CATALOG_READ);
+      permissions.add(PERMISSIONS.ORDERS_READ);
+      permissions.add(PERMISSIONS.ORDERS_CREATE);
     }
 
-    // Platform Admins (SUPER_ADMIN / ADMIN) are system operators without company associations
+    // Platform Admins (SUPER_ADMIN / ADMIN) are system operators
     if (isSuperAdmin || isAdmin) {
       return {
         ...sanitized,
         customerType: "SYSADMIN",
-        roles: user.roles?.map((r) => (r.role ? r.role.name : r.name || r)) || [],
+        roles: roleNames,
         permissions: Array.from(permissions),
       };
     }
 
-    // Map company affiliations for B2B/B2C users
-    const companies = user.companyMembers?.map((cm) => ({
-      companyId: cm.company?.id,
-      legalName: cm.company?.legalName,
-      tradingName: cm.company?.tradingName,
-      status: cm.company?.status,
-      countryCode: cm.company?.country?.code,
-      title: cm.title,
-      isPrimary: cm.isPrimary,
-      companyRoles: cm.roles?.map((cr) => cr.roleName) || [],
+    // Map business affiliations for B2B/B2C users
+    const businesses = user.businessMemberships?.map((bm) => ({
+      businessId: bm.business?.id,
+      companyId: bm.business?.id,
+      legalName: bm.business?.legalName,
+      tradingName: bm.business?.tradingName,
+      status: bm.business?.status,
+      countryCode: bm.business?.country?.code,
+      title: bm.title,
+      isPrimary: bm.isPrimary,
+      role: bm.role,
+      companyRoles: [bm.role],
     })) || [];
+
+    // Format carts
+    const carts = (user.carts || []).map((cart) => ({
+      id: cart.id,
+      businessId: cart.businessId,
+      status: cart.status,
+      currency: cart.currency,
+      country: cart.country,
+      itemCount: cart.items ? cart.items.reduce((sum, it) => sum + (it.quantity || 0), 0) : 0,
+      items: (cart.items || []).map((it) => ({
+        id: it.id,
+        variantId: it.variantId,
+        quantity: it.quantity,
+        unitPrice: it.unitPrice ? Number(it.unitPrice) : null,
+        currency: it.currency,
+        variant: it.variant,
+      })),
+      createdAt: cart.createdAt,
+      updatedAt: cart.updatedAt,
+    }));
+
+    const activeCart = carts.find((c) => c.status === "ACTIVE") || carts[0] || null;
 
     return {
       ...sanitized,
-      roles: user.roles?.map((r) => (r.role ? r.role.name : r.name || r)) || [],
+      roles: roleNames,
       permissions: Array.from(permissions),
-      companies,
+      businesses,
+      companies: businesses, // backward compatibility
+      carts,
+      cart: activeCart,
     };
   }
 }

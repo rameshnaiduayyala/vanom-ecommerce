@@ -19,84 +19,81 @@ export class BusinessVerificationService {
   }
 
   async listApplications({ status, page = 1, limit = 20 } = {}) {
-    const where = status ? { status } : {};
+    const where = status ? { status } : { status: { in: ["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED"] } };
     const [total, items] = await Promise.all([
-      prisma.verificationApplication.count({ where }),
-      prisma.verificationApplication.findMany({
+      prisma.business.count({ where }),
+      prisma.business.findMany({
         where,
         include: {
-          company: {
-            include: {
-              country: true,
-              documents: { include: { file: true } },
-              members: { include: { user: true } },
-            },
-          },
-          reviews: {
-            include: { reviewer: true },
-          },
+          country: true,
+          documents: { include: { file: true } },
+          members: { include: { user: true } },
         },
         skip: (Number(page) - 1) * Number(limit),
         take: Number(limit),
-        orderBy: { submittedAt: "desc" },
+        orderBy: { createdAt: "desc" },
       }),
     ]);
-    return { total, items };
+    const formatted = items.map(b => ({
+      id: b.id,
+      companyId: b.id,
+      legalName: b.legalName,
+      tradingName: b.tradingName,
+      status: b.status,
+      createdAt: b.createdAt,
+      submittedAt: b.createdAt,
+      country: b.country,
+      documents: b.documents,
+      members: b.members,
+      company: b,
+    }));
+    return { total, items: formatted };
   }
 
   async getApplicationById(id) {
-    const app = await prisma.verificationApplication.findUnique({
+    const business = await prisma.business.findUnique({
       where: { id },
       include: {
-        company: {
-          include: {
-            country: true,
-            documents: { include: { file: true } },
-            members: { include: { user: true } },
-          },
-        },
-        reviews: {
-          include: { reviewer: true },
-          orderBy: { createdAt: "desc" },
-        },
+        country: true,
+        documents: { include: { file: true } },
+        members: { include: { user: true } },
       },
     });
 
-    if (!app) {
-      throw new NotFoundError("Business verification application not found");
+    if (!business) {
+      throw new NotFoundError("Business application not found");
     }
-    return app;
+    return {
+      id: business.id,
+      companyId: business.id,
+      company: business,
+      business,
+      status: business.status,
+      documents: business.documents,
+      members: business.members,
+    };
   }
 
   async approveApplication(applicationId, reviewer, { notes } = {}) {
     const app = await this.getApplicationById(applicationId);
-    const company = app.company;
+    const business = app.business || app.company;
 
-    if (!company) {
-      throw new NotFoundError("Associated company not found");
+    if (!business) {
+      throw new NotFoundError("Associated business not found");
     }
 
-    if (!company.documents || company.documents.length === 0) {
+    if (!business.documents || business.documents.length === 0) {
       throw new BusinessRuleError(
-        "Cannot approve company without verified documents",
+        "Cannot approve business without verified documents",
         ERROR_CODES.DOCUMENT_REQUIRED
       );
     }
 
-    const beforeData = { status: company.status };
+    const beforeData = { status: business.status };
 
-    const result = await prisma.$transaction(async (tx) => {
-      const application = await tx.verificationApplication.update({
-        where: { id: applicationId },
-        data: {
-          status: "APPROVED",
-          decidedAt: new Date(),
-          decisionReason: notes || "Approved by Administrator",
-        },
-      });
-
-      await tx.company.update({
-        where: { id: company.id },
+    const updated = await prisma.$transaction(async (tx) => {
+      const b = await tx.business.update({
+        where: { id: business.id },
         data: {
           status: "APPROVED",
           approvedAt: new Date(),
@@ -105,136 +102,76 @@ export class BusinessVerificationService {
       });
 
       await tx.businessDocument.updateMany({
-        where: { companyId: company.id },
+        where: { businessId: business.id },
         data: {
           status: "VERIFIED",
           verifiedAt: new Date(),
         },
       });
 
-      const review = await tx.verificationReview.create({
-        data: {
-          applicationId,
-          reviewerId: reviewer.id,
-          decision: "APPROVED",
-          notes,
-        },
-      });
-
-      await OutboxService.recordEvent(
-        {
-          aggregateType: "COMPANY",
-          aggregateId: company.id,
-          eventType: "COMPANY_APPROVED",
-          payload: {
-            companyId: company.id,
-            legalName: company.legalName,
-            countryId: company.countryId,
-            approvedById: reviewer.id,
-          },
-        },
-        tx
-      );
-
-      return { application, review };
+      return b;
     });
 
     await this.auditService.log({
       actorId: reviewer.id,
       action: "APPROVE",
-      entityType: "COMPANY",
-      entityId: company.id,
+      entityType: "BUSINESS",
+      entityId: business.id,
       beforeData,
       afterData: { status: "APPROVED", approvedById: reviewer.id },
       metadata: { applicationId, notes },
     });
 
-    const primaryMember = company.members.find((m) => m.isPrimary) || company.members[0];
+    const primaryMember = business.members?.find((m) => m.isPrimary) || business.members?.[0];
     if (primaryMember?.user) {
       await this.notificationService.sendNotification({
         userId: primaryMember.userId,
         channel: "EMAIL",
         title: "B2B Company Account Approved!",
-        body: `Congratulations! ${company.legalName} has been approved for wholesale B2B pricing and bulk ordering.`,
-        data: { companyId: company.id },
+        body: `Congratulations! ${business.legalName} has been approved for wholesale B2B pricing and bulk ordering.`,
+        data: { businessId: business.id },
       });
     }
 
-    return result;
+    return { success: true, business: updated };
   }
 
   async rejectApplication(applicationId, reviewer, { reason }) {
     const app = await this.getApplicationById(applicationId);
-    const company = app.company;
+    const business = app.business || app.company;
 
-    if (!company) {
-      throw new NotFoundError("Associated company not found");
+    if (!business) {
+      throw new NotFoundError("Associated business not found");
     }
 
-    const beforeData = { status: company.status };
+    const beforeData = { status: business.status };
 
-    const result = await prisma.$transaction(async (tx) => {
-      const application = await tx.verificationApplication.update({
-        where: { id: applicationId },
-        data: {
-          status: "REJECTED",
-          decidedAt: new Date(),
-          decisionReason: reason,
-        },
-      });
-
-      await tx.company.update({
-        where: { id: company.id },
-        data: { status: "REJECTED" },
-      });
-
-      const review = await tx.verificationReview.create({
-        data: {
-          applicationId,
-          reviewerId: reviewer.id,
-          decision: "REJECTED",
-          notes: reason,
-        },
-      });
-
-      await OutboxService.recordEvent(
-        {
-          aggregateType: "COMPANY",
-          aggregateId: company.id,
-          eventType: "COMPANY_REJECTED",
-          payload: {
-            companyId: company.id,
-            reason,
-            rejectedById: reviewer.id,
-          },
-        },
-        tx
-      );
-
-      return { application, review };
+    const updated = await prisma.business.update({
+      where: { id: business.id },
+      data: { status: "REJECTED" },
     });
 
     await this.auditService.log({
       actorId: reviewer.id,
       action: "REJECT",
-      entityType: "COMPANY",
-      entityId: company.id,
+      entityType: "BUSINESS",
+      entityId: business.id,
       beforeData,
       afterData: { status: "REJECTED" },
       metadata: { applicationId, reason },
     });
 
-    const primaryMember = company.members.find((m) => m.isPrimary) || company.members[0];
+    const primaryMember = business.members?.find((m) => m.isPrimary) || business.members?.[0];
     if (primaryMember?.user) {
       await this.notificationService.sendNotification({
         userId: primaryMember.userId,
         channel: "EMAIL",
         title: "B2B Company Verification Update",
-        body: `Your verification application for ${company.legalName} was not approved. Reason: ${reason}`,
-        data: { companyId: company.id, reason },
+        body: `Your verification application for ${business.legalName} was not approved. Reason: ${reason}`,
+        data: { businessId: business.id, reason },
       });
     }
 
-    return result;
+    return { success: true, business: updated };
   }
 }

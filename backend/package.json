@@ -20,6 +20,8 @@
     "@fastify/jwt": "^9.0.0",
     "@fastify/multipart": "^10.1.1",
     "@fastify/rate-limit": "^10.0.0",
+    "@fastify/swagger": "^9.8.1",
+    "@fastify/swagger-ui": "^6.1.1",
     "@paypal/checkout-server-sdk": "^1.0.3",
     "@prisma/client": "^6.0.0",
     "bcrypt": "^5.1.1",

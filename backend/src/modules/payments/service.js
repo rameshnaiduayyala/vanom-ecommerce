@@ -29,7 +29,6 @@ export class PaymentService {
   async createPaymentIntent(user, { orderId, provider = "RAZORPAY" }) {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      include: { currency: true },
     });
     if (!order) throw new NotFoundError("Order not found", ERROR_CODES.ORDER_NOT_FOUND);
 
@@ -39,7 +38,7 @@ export class PaymentService {
     try {
       intent = await paymentProvider.createIntent({
         amount: order.totalAmount,
-        currency: order.currency.code,
+        currency: order.currency,
         orderId: order.id,
         metadata: { orderNumber: order.orderNumber, userId: user.id },
       });
@@ -55,7 +54,7 @@ export class PaymentService {
     const payment = await prisma.payment.create({
       data: {
         orderId: order.id,
-        currencyId: order.currencyId,
+        currency: order.currency,
         provider: provider.toUpperCase(),
         providerPaymentId: intent.providerPaymentId,
         amount: order.totalAmount,
@@ -78,7 +77,7 @@ export class PaymentService {
       providerPaymentId: intent.providerPaymentId,
       clientSecret: intent.clientSecret,
       amount: order.totalAmount,
-      currency: order.currency.code,
+      currency: order.currency,
     };
   }
 
@@ -89,7 +88,6 @@ export class PaymentService {
         order: true,
         transactions: true,
         refunds: true,
-        currency: true,
       },
     });
     if (!payment) throw new NotFoundError("Payment not found");
@@ -134,22 +132,6 @@ export class PaymentService {
         where: { id: payment.orderId },
         data: { status: "PAID" },
       });
-
-      // Create Outbox Event
-      await OutboxService.recordEvent(
-        {
-          aggregateType: "PAYMENT",
-          aggregateId: payment.id,
-          eventType: "PAYMENT_CAPTURED",
-          payload: {
-            paymentId: payment.id,
-            orderId: payment.orderId,
-            amount: captureAmount,
-            currency: payment.currency.code,
-          },
-        },
-        tx
-      );
 
       return { status: "CAPTURED", capturedAmount: captureAmount };
     });

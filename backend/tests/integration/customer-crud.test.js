@@ -54,8 +54,8 @@ describe("B2C Customer Profile & Addresses CRUD Integration Tests", () => {
       headers: { authorization: `Bearer ${b2cToken}` },
       payload: {
         firstName: "Aarav Kumar",
-        preferredLocale: "en-IN",
-        preferredCurrency: "INR",
+        preferredLocale: "en-CA",
+        preferredCurrency: "CAD",
         marketingOptIn: true,
       },
     });
@@ -64,7 +64,7 @@ describe("B2C Customer Profile & Addresses CRUD Integration Tests", () => {
     const updateBody = JSON.parse(updateRes.payload);
     expect(updateBody.success).toBe(true);
     expect(updateBody.data.user.firstName).toBe("Aarav Kumar");
-    expect(updateBody.data.preferredCurrency).toBe("INR");
+    expect(updateBody.data.preferredCurrency).toBe("CAD");
     expect(updateBody.data.marketingOptIn).toBe(true);
   });
 

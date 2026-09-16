@@ -25,19 +25,19 @@ describe("Payment & Webhook Processing Integration Tests", () => {
     const regBody = JSON.parse(regRes.payload);
     userToken = regBody.data.tokens.accessToken;
 
-    const inCountry = await prisma.country.findUnique({ where: { code: "IN" } });
-    const inr = await prisma.currency.findUnique({ where: { code: "INR" } });
+    const usCountry = await prisma.country.findUnique({ where: { code: "US" } });
 
     // Create test order
     testOrder = await prisma.order.create({
       data: {
         orderNumber: `ORD-${Date.now()}-TESTPAY`,
         userId: regBody.data.user.id,
+        channel: "B2C",
         customerType: "B2C",
         source: "WEB",
         status: "PENDING_PAYMENT",
-        countryId: inCountry.id,
-        currencyId: inr.id,
+        countryId: usCountry ? usCountry.id : null,
+        currency: "USD",
         subtotal: 500,
         totalAmount: 590,
         billingAddress: {},

@@ -9,12 +9,13 @@ import { ERROR_CODES } from "../../common/constants/index.js";
  * Handles Cart and CartItem operations directly via Prisma with dynamic pricing & multi-country logic
  */
 export class CartService {
-  async _getOrCreateCart({ userId, companyId = null, countryId, currencyId }) {
+  async _getOrCreateCart({ userId, businessId = null, companyId = null, countryId, currency = "USD" }) {
+    const finalBusinessId = businessId || companyId;
     let cart = await prisma.cart.findFirst({
       where: {
         userId,
-        companyId: companyId || null,
-        active: true,
+        businessId: finalBusinessId || null,
+        status: "ACTIVE",
       },
       include: {
         items: {
@@ -29,13 +30,12 @@ export class CartService {
                 },
                 images: { include: { file: true } },
                 inventoryItems: true,
-                packaging: { include: { unit: true, type: true, pallet: true } },
+                packaging: true,
               },
             },
           },
         },
         country: true,
-        currency: true,
       },
     });
 
@@ -43,9 +43,10 @@ export class CartService {
       cart = await prisma.cart.create({
         data: {
           userId,
-          companyId,
+          businessId: finalBusinessId,
           countryId,
-          currencyId,
+          currency,
+          status: "ACTIVE",
         },
         include: {
           items: {
@@ -66,7 +67,6 @@ export class CartService {
             },
           },
           country: true,
-          currency: true,
         },
       });
     }
@@ -74,25 +74,27 @@ export class CartService {
     return cart;
   }
 
-  async getCart(user, companyId = null, countryCode = "IN", currencyCode = "INR") {
-    const country = await prisma.country.findUnique({ where: { code: countryCode } });
-    const currency = await prisma.currency.findUnique({ where: { code: currencyCode } });
-
-    if (!country || !currency) {
-      throw new NotFoundError("Country or currency not supported");
+  async getCart(user, businessId = null, countryCode = "US", currencyCode = "USD") {
+    let country = await prisma.country.findUnique({ where: { code: countryCode.toUpperCase() } });
+    if (!country) {
+      country = await prisma.country.findFirst({ where: { active: true } }) || await prisma.country.findFirst();
     }
+
+    const normCurrency = ["CAD", "USD"].includes(currencyCode?.toUpperCase())
+      ? currencyCode.toUpperCase()
+      : (country?.currency || "USD");
 
     const cart = await this._getOrCreateCart({
       userId: user.id,
-      companyId,
+      businessId,
       countryId: country.id,
-      currencyId: currency.id,
+      currency: normCurrency,
     });
 
-    return this._enrichCartWithDynamicPricing(cart, user, country.code, currency.code);
+    return this._enrichCartWithDynamicPricing(cart, user, country.code, normCurrency);
   }
 
-  async addItem(user, { variantId, productId, id, quantity = 1, companyId, countryCode = "IN", currencyCode = "INR" }) {
+  async addItem(user, { variantId, productId, id, quantity = 1, businessId, companyId, countryCode = "US", currencyCode = "USD" }) {
     const targetId = variantId || productId || id;
     if (!targetId || quantity <= 0) {
       throw new BusinessRuleError("Valid product/variant ID and positive quantity are required", ERROR_CODES.INVALID_QUANTITY);
@@ -120,10 +122,11 @@ export class CartService {
       });
     }
 
-    if (!variant || variant.status !== "ACTIVE" || variant.product.status !== "ACTIVE") {
+    if (!variant || variant.status !== "ACTIVE" || variant.product?.status !== "ACTIVE") {
       throw new NotFoundError("Product variant is not available", ERROR_CODES.VARIANT_NOT_FOUND);
     }
 
+    const finalBusinessId = businessId || companyId;
     const priceResolution = await PriceResolver.resolvePrice({
       productId: variant.productId,
       variantId: variant.id,
@@ -131,17 +134,19 @@ export class CartService {
       countryCode,
       currencyCode,
       user,
-      companyId,
+      businessId: finalBusinessId,
     });
 
-    const country = await prisma.country.findUnique({ where: { code: countryCode } });
-    const currency = await prisma.currency.findUnique({ where: { code: currencyCode } });
+    let country = await prisma.country.findUnique({ where: { code: countryCode.toUpperCase() } });
+    if (!country) country = await prisma.country.findFirst();
+
+    const normCurrency = ["CAD", "USD"].includes(currencyCode?.toUpperCase()) ? currencyCode.toUpperCase() : "USD";
 
     const cart = await this._getOrCreateCart({
       userId: user.id,
-      companyId,
+      businessId: finalBusinessId,
       countryId: country.id,
-      currencyId: currency.id,
+      currency: normCurrency,
     });
 
     await prisma.cartItem.upsert({
@@ -153,17 +158,19 @@ export class CartService {
         variantId: variant.id,
         quantity,
         unitPrice: priceResolution.unitPrice,
+        currency: normCurrency,
       },
       update: {
         quantity: { increment: quantity },
         unitPrice: priceResolution.unitPrice,
+        currency: normCurrency,
       },
     });
 
-    return this.getCart(user, companyId, countryCode, currencyCode);
+    return this.getCart(user, finalBusinessId, countryCode, normCurrency);
   }
 
-  async updateItemQuantity(user, itemId, quantity, countryCode = "IN", currencyCode = "INR") {
+  async updateItemQuantity(user, itemId, quantity, countryCode = "US", currencyCode = "USD") {
     if (quantity < 0) {
       throw new BusinessRuleError("Quantity cannot be negative", ERROR_CODES.INVALID_QUANTITY);
     }
@@ -178,17 +185,17 @@ export class CartService {
     return this.getCart(user, null, countryCode, currencyCode);
   }
 
-  async removeItem(user, itemId, countryCode = "IN", currencyCode = "INR") {
+  async removeItem(user, itemId, countryCode = "US", currencyCode = "USD") {
     await prisma.cartItem.delete({ where: { id: itemId } });
     return this.getCart(user, null, countryCode, currencyCode);
   }
 
-  async clearCart(user, companyId = null) {
+  async clearCart(user, businessId = null) {
     const cart = await prisma.cart.findFirst({
       where: {
         userId: user.id,
-        companyId: companyId || null,
-        active: true,
+        businessId: businessId || null,
+        status: "ACTIVE",
       },
     });
     if (cart) {
@@ -211,7 +218,7 @@ export class CartService {
           countryCode,
           currencyCode,
           user,
-          companyId: cart.companyId,
+          businessId: cart.businessId,
         });
       } catch (err) {
         resolved = {
@@ -234,7 +241,7 @@ export class CartService {
       const hasInv = item.variant.inventoryItems && item.variant.inventoryItems.length > 0;
       const availableStock = hasInv
         ? item.variant.inventoryItems.reduce(
-            (sum, inv) => sum + (Number(inv.onHand ?? inv.quantity ?? 0) - Number(inv.reserved ?? inv.reservedQuantity ?? 0)),
+            (sum, inv) => sum + (Number(inv.onHand ?? 0) - Number(inv.reserved ?? 0)),
             0
           )
         : 100;
@@ -260,9 +267,10 @@ export class CartService {
     return {
       id: cart.id,
       userId: cart.userId,
-      companyId: cart.companyId,
+      businessId: cart.businessId,
+      companyId: cart.businessId,
       country: cart.country.code,
-      currency: cart.currency.code,
+      currency: cart.currency,
       items: enrichedItems,
       itemCount: enrichedItems.length,
       subtotal: Money.round(subtotal, 2),

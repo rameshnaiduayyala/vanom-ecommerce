@@ -23,8 +23,8 @@ export class AdminService {
       categories,
     ] = await Promise.all([
       prisma.user.count(),
-      prisma.company.count(),
-      prisma.company.count({ where: { status: { in: ["PENDING", "UNDER_REVIEW"] } } }),
+      prisma.business.count(),
+      prisma.business.count({ where: { status: { in: ["PENDING", "UNDER_REVIEW"] } } }),
       prisma.order.count(),
       prisma.product.count({ where: { status: "ACTIVE" } }),
       prisma.order.aggregate({ _sum: { totalAmount: true } }),
@@ -32,7 +32,6 @@ export class AdminService {
         take: 8,
         orderBy: { createdAt: "desc" },
         include: {
-          currency: true,
           user: { select: { email: true, firstName: true, lastName: true, avatarUrl: true } },
           items: { take: 2, include: { product: { select: { name: true } } } },
         },
@@ -71,7 +70,7 @@ export class AdminService {
     }));
 
     // Pending business applications
-    const pendingApps = await prisma.company.findMany({
+    const pendingApps = await prisma.business.findMany({
       where: { status: { in: ["PENDING", "UNDER_REVIEW"] } },
       include: { country: true, members: { include: { user: true } } },
       take: 5,
@@ -94,14 +93,15 @@ export class AdminService {
         amount: `$${Number(o.totalAmount || 0).toLocaleString()}`,
         status: o.status || "PROCESSING",
         date: new Date(o.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-        type: o.customerGroupCode === "B2B" ? "B2B" : "B2C",
+        type: o.channel === "B2B" ? "B2B" : "B2C",
       })),
       pendingApplicationsList: pendingApps.map((a) => ({
         id: a.id,
-        companyName: a.legalName || a.tradeName || "Commercial Enterprise",
+        companyId: a.id,
+        companyName: a.legalName || a.tradingName || "Commercial Enterprise",
         country: a.country?.name || "Global",
         submittedAt: new Date(a.createdAt).toLocaleDateString(),
-        taxId: a.taxId || a.gstin || "Pending",
+        taxId: a.taxId || "Pending",
         status: a.status,
       })),
       revenueSeries,
@@ -125,11 +125,14 @@ export class AdminService {
         attributes: { include: { attribute: true, value: true } },
         variants: {
           include: {
-            packaging: { include: { unit: true } },
+            packaging: true,
             inventoryItems: true,
+            b2cPrices: true,
+            b2bPrices: true,
           },
         },
-        prices: { include: { currency: true, priceList: true } },
+        b2cListing: { include: { prices: true } },
+        b2bListings: { include: { prices: true, tiers: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -151,7 +154,6 @@ export class AdminService {
     return prisma.order.findMany({
       include: {
         user: { select: { id: true, email: true, firstName: true, lastName: true } },
-        currency: true,
         items: { include: { product: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -178,7 +180,7 @@ export class AdminService {
     const updated = await prisma.order.update({
       where: { id },
       data: { status },
-      include: { user: true, currency: true },
+      include: { user: true },
     });
 
     // Also create OrderStatusHistory record if table exists
@@ -209,29 +211,39 @@ export class AdminService {
   }
 
   async listCompanies() {
-    return prisma.company.findMany({
+    return prisma.business.findMany({
       include: { country: true, members: { include: { user: true } } },
       orderBy: { createdAt: "desc" },
     });
   }
 
   async listBusinessApplications() {
-    return prisma.company.findMany({
+    const applications = await prisma.business.findMany({
       where: { status: { in: ["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED"] } },
       include: { country: true, members: { include: { user: true } } },
       orderBy: { createdAt: "desc" },
     });
+    return applications.map(a => ({
+      id: a.id,
+      companyId: a.id,
+      legalName: a.legalName,
+      tradingName: a.tradingName,
+      status: a.status,
+      createdAt: a.createdAt,
+      country: a.country,
+      members: a.members,
+    }));
   }
 
   async approveBusinessApplication(id, notes) {
-    return prisma.company.update({
+    return prisma.business.update({
       where: { id },
       data: { status: "APPROVED" },
     });
   }
 
   async rejectBusinessApplication(id, reason) {
-    return prisma.company.update({
+    return prisma.business.update({
       where: { id },
       data: { status: "REJECTED" },
     });
@@ -241,12 +253,11 @@ export class AdminService {
     const users = await prisma.user.findMany({
       include: {
         roles: { include: { role: true } },
-        companyMembers: {
+        businessMemberships: {
           include: {
-            company: true,
+            business: true,
           },
         },
-        profile: true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -256,7 +267,7 @@ export class AdminService {
       return {
         ...sanitized,
         roles: u.roles.map((r) => r.role?.name || r.name),
-        company: u.companyMembers?.[0]?.company || null,
+        company: u.businessMemberships?.[0]?.business || null,
       };
     });
   }
@@ -302,7 +313,6 @@ export class AdminService {
         phone: phone || null,
         customerType: customerType || "B2C",
         status: status || "ACTIVE",
-        profile: { create: {} },
         roles: {
           create: roleRecords.map((r) => ({
             roleId: r.id,
@@ -311,11 +321,10 @@ export class AdminService {
       },
       include: {
         roles: { include: { role: true } },
-        profile: true,
       },
     });
 
-    // Handle B2B company linking or new company registration
+    // Handle B2B business linking or new business registration
     if (customerType === "B2B") {
       let targetCompanyId = companyId;
 
@@ -336,7 +345,7 @@ export class AdminService {
           country = await prisma.country.findFirst({ where: { active: true } }) || await prisma.country.findFirst();
         }
 
-        const createdCompany = await prisma.company.create({
+        const createdCompany = await prisma.business.create({
           data: {
             legalName: newCompany.legalName,
             tradingName: newCompany.businessName || newCompany.tradingName || newCompany.legalName,
@@ -351,7 +360,7 @@ export class AdminService {
                     name: newCompany.legalName,
                     line1: newCompany.addressLine1,
                     city: newCompany.city || "City",
-                    state: newCompany.state || null,
+                    stateCode: newCompany.state || "NA",
                     postalCode: newCompany.postalCode || "000000",
                     countryId: country.id,
                     isDefault: true,
@@ -364,25 +373,23 @@ export class AdminService {
       }
 
       if (targetCompanyId) {
-        await prisma.companyMember.upsert({
+        await prisma.businessMember.upsert({
           where: {
-            companyId_userId: {
-              companyId: targetCompanyId,
+            businessId_userId: {
+              businessId: targetCompanyId,
               userId: user.id,
             },
           },
           update: {
             isPrimary: true,
-            title: "Company Administrator",
+            title: "Business Administrator",
           },
           create: {
-            companyId: targetCompanyId,
+            businessId: targetCompanyId,
             userId: user.id,
-            title: "Company Administrator",
+            title: "Business Administrator",
             isPrimary: true,
-            roles: {
-              create: { roleName: "COMPANY_ADMIN" },
-            },
+            role: "OWNER",
           },
         });
       }
@@ -392,8 +399,7 @@ export class AdminService {
       where: { id: user.id },
       include: {
         roles: { include: { role: true } },
-        companyMembers: { include: { company: true } },
-        profile: true,
+        businessMemberships: { include: { business: true } },
       },
     });
 
@@ -405,13 +411,13 @@ export class AdminService {
       entityType: "USER",
       entityId: user.id,
       afterData: { email: user.email, customerType: user.customerType, status: user.status },
-      metadata: { roles, companyId: sanitized.company?.id },
+      metadata: { roles, companyId: sanitized.businessMemberships?.[0]?.business?.id },
     });
 
     return {
       ...sanitized,
       roles: (reloaded || user).roles.map((r) => r.role?.name || r.name),
-      company: reloaded?.companyMembers?.[0]?.company || null,
+      company: reloaded?.businessMemberships?.[0]?.business || null,
     };
   }
 
@@ -447,14 +453,14 @@ export class AdminService {
 
     if (data.roles && Array.isArray(data.roles)) {
       // Re-assign roles
-      await prisma.userRole.deleteMany({ where: { userId: id } });
+      await prisma.userRoleAssignment.deleteMany({ where: { userId: id } });
       for (const roleName of data.roles) {
         const role = await prisma.role.upsert({
           where: { name: roleName },
           update: {},
           create: { name: roleName, description: `${roleName} role` },
         });
-        await prisma.userRole.create({
+        await prisma.userRoleAssignment.create({
           data: { userId: id, roleId: role.id },
         });
       }
@@ -465,8 +471,7 @@ export class AdminService {
       data: updateData,
       include: {
         roles: { include: { role: true } },
-        companyMembers: { include: { company: true } },
-        profile: true,
+        businessMemberships: { include: { business: true } },
       },
     });
 
@@ -485,7 +490,7 @@ export class AdminService {
     return {
       ...sanitized,
       roles: updated.roles.map((r) => r.role?.name || r.name),
-      company: updated.companyMembers?.[0]?.company || null,
+      company: updated.businessMemberships?.[0]?.business || null,
     };
   }
 
@@ -620,9 +625,9 @@ export class AdminService {
   async listQuotes() {
     return prisma.quote.findMany({
       include: {
-        company: true,
-        user: true,
-        currency: true,
+        business: true,
+        requestedBy: true,
+        country: true,
         items: { include: { product: true, variant: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -632,8 +637,8 @@ export class AdminService {
   async listPayments() {
     return prisma.payment.findMany({
       include: {
-        currency: true,
         order: true,
+        transactions: true,
       },
       orderBy: { createdAt: "desc" },
     });

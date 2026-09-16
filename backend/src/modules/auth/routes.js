@@ -5,22 +5,7 @@ export default async function authRoutes(fastify, options) {
   const authService = new AuthService(fastify.jwt.sign.bind(fastify.jwt));
   const controller = new AuthController(authService);
   fastify.post("/register", {
-    schema: {
-      body: {
-        type: "object",
-        required: ["email", "password"],
-        additionalProperties: true,
-        properties: {
-          email: { type: "string", format: "email" },
-          password: { type: "string", minLength: 6 },
-          firstName: { type: "string" },
-          lastName: { type: "string" },
-          phone: { type: "string" },
-          customerType: { type: "string" },
-          countryCode: { type: "string" },
-        },
-      },
-    },
+
     handler: controller.register,
   });
 

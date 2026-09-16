@@ -52,16 +52,18 @@ describe("B2B Company Onboarding & Verification Tests", () => {
   let createdCompanyId;
   let fileAssetId;
 
+  const uniqueSuffix = Date.now().toString().slice(-6);
+
   it("should allow a customer to register a new B2B company", async () => {
     const response = await app.inject({
       method: "POST",
       url: "/api/v1/companies",
       headers: { authorization: `Bearer ${companyUserToken}` },
       payload: {
-        legalName: "Sharma Agro Supplies LLP",
+        legalName: `Sharma Agro Supplies LLP ${uniqueSuffix}`,
         tradingName: "Sharma Agro",
-        registrationNumber: "LLPIN-123456",
-        taxId: "27AAAAA0000A1Z5",
+        registrationNumber: `LLPIN-${uniqueSuffix}`,
+        taxId: `27AAAAA${uniqueSuffix}Z5`,
         countryCode: "IN",
       },
     });
@@ -80,7 +82,7 @@ describe("B2B Company Onboarding & Verification Tests", () => {
       headers: { authorization: `Bearer ${companyUserToken}` },
       payload: {
         tradingName: "Sharma Agro Global",
-        taxId: "27BBBBB1111B2Z6",
+        taxId: `27BBBBB${uniqueSuffix}Z6`,
       },
     });
 
@@ -88,7 +90,7 @@ describe("B2B Company Onboarding & Verification Tests", () => {
     const body = JSON.parse(updateRes.payload);
     expect(body.success).toBe(true);
     expect(body.data.tradingName).toBe("Sharma Agro Global");
-    expect(body.data.taxId).toBe("27BBBBB1111B2Z6");
+    expect(body.data.taxId).toBe(`27BBBBB${uniqueSuffix}Z6`);
   });
 
   it("should upload a business document", async () => {
@@ -166,7 +168,7 @@ describe("B2B Company Onboarding & Verification Tests", () => {
     expect(approveBody.success).toBe(true);
 
     // Verify company status in database
-    const company = await prisma.company.findUnique({ where: { id: createdCompanyId } });
+    const company = await prisma.business.findUnique({ where: { id: createdCompanyId } });
     expect(company.status).toBe("APPROVED");
     expect(company.approvedById).toBe(adminUser.id);
   });
@@ -204,7 +206,7 @@ describe("B2B Company Onboarding & Verification Tests", () => {
     const body = JSON.parse(adminEditRes.payload);
     expect(body.success).toBe(true);
 
-    const updated = await prisma.company.findUnique({ where: { id: createdCompanyId } });
+    const updated = await prisma.business.findUnique({ where: { id: createdCompanyId } });
     expect(updated.paymentTermsDays).toBe(45);
     expect(Number(updated.creditLimit)).toBe(500000);
   });
@@ -235,15 +237,16 @@ describe("B2B Company Onboarding & Verification Tests", () => {
   });
 
   it("should register a company with business name, legal name, address, and admin user in a single request", async () => {
+    const uniqueSuffix2 = Date.now().toString().slice(-6);
     const adminEmail = `newadmin_${Date.now()}@organicfoods.com`;
     const res = await app.inject({
       method: "POST",
       url: "/api/v1/companies/register",
       payload: {
-        legalName: "Pure Organic Foods Private Limited",
+        legalName: `Pure Organic Foods Private Limited ${uniqueSuffix2}`,
         businessName: "Pure Organics",
-        registrationNumber: "U01111DL2024PTC123456",
-        taxId: "07AAACP9999P1Z1",
+        registrationNumber: `U01111DL2024PTC${uniqueSuffix2}`,
+        taxId: `07AAACP${uniqueSuffix2}Z1`,
         countryCode: "IN",
         address: {
           line1: "Plot 88, Okhla Industrial Area Phase 3",
@@ -266,7 +269,7 @@ describe("B2B Company Onboarding & Verification Tests", () => {
     expect(res.statusCode).toBe(201);
     const body = JSON.parse(res.payload);
     expect(body.success).toBe(true);
-    expect(body.data.legalName).toBe("Pure Organic Foods Private Limited");
+    expect(body.data.legalName).toBe(`Pure Organic Foods Private Limited ${uniqueSuffix2}`);
     expect(body.data.tradingName).toBe("Pure Organics");
     expect(body.data.addresses.length).toBeGreaterThan(0);
     expect(body.data.addresses[0].city).toBe("New Delhi");

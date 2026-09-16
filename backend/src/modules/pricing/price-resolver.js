@@ -8,232 +8,193 @@ export class PriceResolver {
     productId,
     variantId = null,
     quantity = 1,
-    countryCode = "IN",
-    currencyCode = "INR",
+    countryCode = "US",
+    currencyCode = "USD",
     user = null,
+    businessId = null,
     companyId = null,
   }) {
     if (quantity <= 0) {
       throw new BusinessRuleError("Quantity must be greater than zero", ERROR_CODES.INVALID_QUANTITY);
     }
 
-    const country = await prisma.country.findUnique({
-      where: { code: countryCode.toUpperCase() },
-      include: { currency: true, regions: true, defaultTax: true },
-    });
-    if (!country) {
-      throw new NotFoundError(`Country '${countryCode}' not found`);
-    }
+    const normCurrency = ["CAD", "USD"].includes(currencyCode?.toUpperCase())
+      ? currencyCode.toUpperCase()
+      : (countryCode?.toUpperCase() === "CA" ? "CAD" : "USD");
 
-    const currency = await prisma.currency.findUnique({
-      where: { code: currencyCode.toUpperCase() },
-    });
-    if (!currency) {
-      throw new NotFoundError(`Currency '${currencyCode}' not found`);
-    }
-
+    let targetBusinessId = businessId || companyId;
     let isApprovedB2B = false;
-    let targetCompanyId = companyId;
 
-    if (!targetCompanyId && user?.companyMembers?.length > 0) {
-      const approvedMember = user.companyMembers.find((m) => m.company?.status === "APPROVED");
+    if (!targetBusinessId && user?.businessMemberships?.length > 0) {
+      const approvedMember = user.businessMemberships.find((m) => m.business?.status === "APPROVED");
       if (approvedMember) {
-        targetCompanyId = approvedMember.companyId;
+        targetBusinessId = approvedMember.businessId;
         isApprovedB2B = true;
       }
-    } else if (targetCompanyId) {
-      const userCompany = user?.companyMembers?.find((m) => m.companyId === targetCompanyId);
-      if (userCompany && userCompany.company?.status === "APPROVED") {
+    } else if (targetBusinessId) {
+      const userBiz = user?.businessMemberships?.find((m) => m.businessId === targetBusinessId);
+      if (userBiz && userBiz.business?.status === "APPROVED") {
         isApprovedB2B = true;
       }
     }
 
-    let candidatePriceLists = [];
+    // 1. Resolve variant ID if not explicitly provided
+    let targetVariantId = variantId;
+    let targetProductId = productId;
 
-    if (isApprovedB2B && targetCompanyId) {
-      const companyLists = await prisma.priceList.findMany({
-        where: {
-          countryId: country.id,
-          currencyId: currency.id,
-          status: "ACTIVE",
-          companies: {
-            some: {
-              companyId: targetCompanyId,
-            },
-          },
-        },
-        include: {
-          companies: { where: { companyId: targetCompanyId } },
-          prices: { where: { status: "ACTIVE" } },
-        },
-        orderBy: { priority: "desc" },
+    if (!targetVariantId && targetProductId) {
+      const variant = await prisma.productVariant.findFirst({
+        where: { productId: targetProductId, status: "ACTIVE" },
       });
-      candidatePriceLists.push(...companyLists);
-
-      const b2bLists = await prisma.priceList.findMany({
-        where: {
-          countryId: country.id,
-          currencyId: currency.id,
-          status: "ACTIVE",
-          customerGroup: { code: "B2B" },
-        },
-        include: {
-          prices: { where: { status: "ACTIVE" } },
-        },
-        orderBy: { priority: "desc" },
+      targetVariantId = variant?.id;
+    } else if (targetVariantId && !targetProductId) {
+      const variant = await prisma.productVariant.findUnique({
+        where: { id: targetVariantId },
       });
-      candidatePriceLists.push(...b2bLists);
+      targetProductId = variant?.productId;
     }
 
-    const b2cLists = await prisma.priceList.findMany({
-      where: {
-        countryId: country.id,
-        currencyId: currency.id,
-        status: "ACTIVE",
-        customerGroup: { code: "B2C" },
-      },
-      include: {
-        prices: { where: { status: "ACTIVE" } },
-      },
-      orderBy: { priority: "desc" },
-    });
-    candidatePriceLists.push(...b2cLists);
-
-    // Fallback: If no price list found for this exact country/currency, fallback to any active B2C price list
-    if (candidatePriceLists.length === 0) {
-      const fallbackLists = await prisma.priceList.findMany({
-        where: {
-          status: "ACTIVE",
-          customerGroup: { code: "B2C" },
-        },
-        include: {
-          prices: { where: { status: "ACTIVE" } },
-        },
-        orderBy: { priority: "desc" },
-        take: 2,
+    if (!targetVariantId) {
+      const firstVariant = await prisma.productVariant.findFirst({
+        where: { status: "ACTIVE" },
       });
-      candidatePriceLists.push(...fallbackLists);
+      targetVariantId = firstVariant?.id;
+      targetProductId = firstVariant?.productId;
     }
 
-    if (candidatePriceLists.length === 0) {
-      throw new NotFoundError(
-        `No active price list found for ${countryCode} in ${currencyCode}`,
-        ERROR_CODES.PRICE_NOT_FOUND
-      );
-    }
-
-    const priceListIds = candidatePriceLists.map((pl) => pl.id);
-    let availablePrices = await prisma.productPrice.findMany({
-      where: {
-        priceListId: { in: priceListIds },
-        status: "ACTIVE",
-        OR: [
-          { variantId: variantId || undefined },
-          { productId, variantId: null },
-        ],
-      },
-      orderBy: { minQuantity: "desc" },
-    });
-
-    // Fallback: If no price entry found in candidate lists, search any active price entry for this product/variant
-    if (!availablePrices || availablePrices.length === 0) {
-      availablePrices = await prisma.productPrice.findMany({
+    // 2. Check for Agreed B2B Customer Price
+    if (isApprovedB2B && targetBusinessId && targetVariantId) {
+      const customPrice = await prisma.b2BCustomerPrice.findFirst({
         where: {
-          status: "ACTIVE",
-          OR: [
-            { variantId: variantId || undefined },
-            { productId, variantId: null },
-          ],
+          businessId: targetBusinessId,
+          variantId: targetVariantId,
+          currency: normCurrency,
+          active: true,
         },
-        orderBy: { minQuantity: "desc" },
       });
-    }
 
-    if (!availablePrices || availablePrices.length === 0) {
-      throw new NotFoundError(
-        `No pricing configured for product ${productId} in ${countryCode}/${currencyCode}`,
-        ERROR_CODES.PRICE_NOT_FOUND
-      );
-    }
-
-    let matchedPrice = null;
-    let lowestMoq = Infinity;
-    let isB2BTierAvailable = false;
-
-    for (const pl of candidatePriceLists) {
-      const isB2BList = pl.customerGroupId !== b2cLists[0]?.customerGroupId;
-      const listPrices = availablePrices.filter((p) => p.priceListId === pl.id);
-
-      if (listPrices.length === 0) continue;
-
-      if (isB2BList) {
-        isB2BTierAvailable = true;
-        const minTier = listPrices.reduce((min, p) => (p.minQuantity < min ? p.minQuantity : min), Infinity);
-        if (minTier < lowestMoq) lowestMoq = minTier;
-      }
-
-      const matchingTier = listPrices.find(
-        (p) => quantity >= p.minQuantity && (p.maxQuantity === null || quantity <= p.maxQuantity)
-      );
-
-      if (matchingTier) {
-        matchedPrice = {
-          price: matchingTier,
-          priceList: pl,
-          isB2B: isB2BList,
+      if (customPrice) {
+        const unitPrice = Money.toDecimal(customPrice.unitPrice);
+        const subtotal = Money.multiply(unitPrice, quantity);
+        return {
+          productId: targetProductId,
+          variantId: targetVariantId,
+          quantity,
+          unitPrice,
+          subtotal,
+          currency: normCurrency,
+          isB2B: true,
+          pricingType: "B2B_CUSTOM",
         };
-        break;
       }
     }
 
-    if (isApprovedB2B && isB2BTierAvailable && !matchedPrice && lowestMoq !== Infinity && quantity < lowestMoq) {
-      throw new BusinessRuleError(
-        `Minimum order quantity (MOQ) of ${lowestMoq} not met for wholesale pricing. Requested: ${quantity}`,
-        ERROR_CODES.MOQ_NOT_MET,
-        { requiredMoq: lowestMoq, requestedQuantity: quantity }
-      );
+    // 3. Check for B2B Listing & Tiers
+    if (isApprovedB2B && targetProductId && targetVariantId) {
+      const b2bListing = await prisma.b2BProductListing.findFirst({
+        where: {
+          productId: targetProductId,
+          OR: [{ businessId: targetBusinessId }, { businessId: null }],
+          status: "ACTIVE",
+        },
+        include: {
+          prices: { where: { variantId: targetVariantId, currency: normCurrency, status: "ACTIVE" } },
+          tiers: { orderBy: { minQuantity: "desc" } },
+        },
+      });
+
+      if (b2bListing && b2bListing.prices?.length > 0) {
+        const baseB2BPrice = b2bListing.prices[0];
+        let unitPrice = Money.toDecimal(baseB2BPrice.unitPrice);
+
+        // Check MOQ
+        if (b2bListing.moq && quantity < b2bListing.moq) {
+          throw new BusinessRuleError(
+            `Minimum order quantity (MOQ) of ${b2bListing.moq} not met for wholesale pricing. Requested: ${quantity}`,
+            ERROR_CODES.MOQ_NOT_MET,
+            { requiredMoq: b2bListing.moq, requestedQuantity: quantity }
+          );
+        }
+
+        // Apply matching tiered volume discount
+        if (b2bListing.tiers && b2bListing.tiers.length > 0) {
+          const matchedTier = b2bListing.tiers.find(
+            (t) => quantity >= t.minQuantity && (!t.maxQuantity || quantity <= t.maxQuantity)
+          );
+
+          if (matchedTier) {
+            if (matchedTier.discountType === "PERCENTAGE") {
+              const discountMultiplier = 1 - Number(matchedTier.discountValue);
+              unitPrice = Money.multiply(unitPrice, discountMultiplier);
+            } else if (matchedTier.discountType === "FIXED") {
+              unitPrice = Money.subtract(unitPrice, matchedTier.discountValue);
+            }
+          }
+        }
+
+        const subtotal = Money.multiply(unitPrice, quantity);
+        return {
+          productId: targetProductId,
+          variantId: targetVariantId,
+          quantity,
+          unitPrice,
+          subtotal,
+          currency: normCurrency,
+          isB2B: true,
+          moq: b2bListing.moq,
+          pricingType: "B2B_TIERED",
+        };
+      }
     }
 
-    if (!matchedPrice) {
-      const retailList = b2cLists[0] || candidatePriceLists[0];
-      const retailPrices = availablePrices.filter((p) => p.priceListId === retailList?.id);
-      const defaultTier =
-        retailPrices.find((p) => quantity >= p.minQuantity && (p.maxQuantity === null || quantity <= p.maxQuantity)) ||
-        retailPrices[0] ||
-        availablePrices[0];
+    // 4. Standard B2C Retail Price
+    const b2cPrice = await prisma.b2CPrice.findFirst({
+      where: {
+        variantId: targetVariantId,
+        currency: normCurrency,
+        status: "ACTIVE",
+      },
+    });
 
-      if (!defaultTier) {
-        throw new NotFoundError(
-          `Unable to resolve unit price for product ${productId}`,
-          ERROR_CODES.PRICE_NOT_FOUND
-        );
-      }
-
-      matchedPrice = {
-        price: defaultTier,
-        priceList: retailList || { id: defaultTier.priceListId, name: "Standard Price List" },
+    if (b2cPrice) {
+      const unitPrice = Money.toDecimal(b2cPrice.price);
+      const subtotal = Money.multiply(unitPrice, quantity);
+      return {
+        productId: targetProductId,
+        variantId: targetVariantId,
+        quantity,
+        unitPrice,
+        subtotal,
+        compareAt: b2cPrice.compareAt ? Money.toDecimal(b2cPrice.compareAt) : null,
+        currency: normCurrency,
         isB2B: false,
+        pricingType: "B2C_RETAIL",
       };
     }
 
-    const unitPrice = Money.toDecimal(matchedPrice.price.amount);
-    const subtotal = Money.multiply(unitPrice, quantity);
+    // Fallback: search any active B2C price
+    const fallbackB2C = await prisma.b2CPrice.findFirst({
+      where: { variantId: targetVariantId, status: "ACTIVE" },
+    });
 
-    return {
-      productId,
-      variantId,
-      quantity,
-      unitPrice,
-      subtotal,
-      currency: currency.code,
-      currencyId: currency.id,
-      country: country.code,
-      countryId: country.id,
-      priceListId: matchedPrice.priceList.id,
-      priceListName: matchedPrice.priceList.name,
-      isB2B: matchedPrice.isB2B,
-      minQuantity: matchedPrice.price.minQuantity,
-      maxQuantity: matchedPrice.price.maxQuantity,
-    };
+    if (fallbackB2C) {
+      const unitPrice = Money.toDecimal(fallbackB2C.price);
+      const subtotal = Money.multiply(unitPrice, quantity);
+      return {
+        productId: targetProductId,
+        variantId: targetVariantId,
+        quantity,
+        unitPrice,
+        subtotal,
+        currency: fallbackB2C.currency,
+        isB2B: false,
+        pricingType: "B2C_FALLBACK",
+      };
+    }
+
+    throw new NotFoundError(
+      `No pricing configured for product ${targetProductId} in ${normCurrency}`,
+      ERROR_CODES.PRICE_NOT_FOUND
+    );
   }
 }

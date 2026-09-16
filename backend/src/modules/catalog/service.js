@@ -36,15 +36,18 @@ export class CatalogService {
       }
     }
 
-    // Resolve product-level prices from product or price lists
-    const usdPriceObj = p.prices?.find((pr) => pr.currency?.code === "USD");
-    const cadPriceObj = p.prices?.find((pr) => pr.currency?.code === "CAD");
-    const inrPriceObj = p.prices?.find((pr) => pr.currency?.code === "INR");
+    // Resolve product-level prices from b2cListing or first variant prices
+    const b2cPrices = p.b2cListing?.prices || [];
+    const firstVarB2c = p.variants?.[0]?.b2cPrices || [];
+    const allB2cPrices = b2cPrices.length > 0 ? b2cPrices : firstVarB2c;
 
-    const priceUsd = usdPriceObj ? Number(usdPriceObj.amount) : (p.price_usd ? Number(p.price_usd) : (p.priceUS ? Number(p.priceUS) : null));
-    const oldPriceUsd = attrMap["old_price_usd"] || attrMap["old_price"] ? Number(attrMap["old_price_usd"] || attrMap["old_price"]) : null;
-    const priceCad = cadPriceObj ? Number(cadPriceObj.amount) : (p.price_cad ? Number(p.price_cad) : (p.priceCA ? Number(p.priceCA) : null));
-    const oldPriceCad = attrMap["old_price_cad"] ? Number(attrMap["old_price_cad"]) : null;
+    const usdPriceObj = allB2cPrices.find((pr) => pr.currency === "USD");
+    const cadPriceObj = allB2cPrices.find((pr) => pr.currency === "CAD");
+
+    const priceUsd = usdPriceObj ? Number(usdPriceObj.price) : (p.price_usd ? Number(p.price_usd) : (p.priceUS ? Number(p.priceUS) : null));
+    const oldPriceUsd = (usdPriceObj?.compareAt ? Number(usdPriceObj.compareAt) : null) || (attrMap["old_price_usd"] || attrMap["old_price"] ? Number(attrMap["old_price_usd"] || attrMap["old_price"]) : null);
+    const priceCad = cadPriceObj ? Number(cadPriceObj.price) : (p.price_cad ? Number(p.price_cad) : (p.priceCA ? Number(p.priceCA) : null));
+    const oldPriceCad = (cadPriceObj?.compareAt ? Number(cadPriceObj.compareAt) : null) || (attrMap["old_price_cad"] ? Number(attrMap["old_price_cad"]) : null);
 
     // Resolve formatted variants
     const variants = (p.variants || []).map((v) => {
@@ -59,18 +62,33 @@ export class CatalogService {
         }
       }
 
-      const vUsdPriceObj = v.prices?.find((pr) => pr.currency?.code === "USD");
-      const vCadPriceObj = v.prices?.find((pr) => pr.currency?.code === "CAD");
+      const vUsdPriceObj = (v.b2cPrices || []).find((pr) => pr.currency === "USD");
+      const vCadPriceObj = (v.b2cPrices || []).find((pr) => pr.currency === "CAD");
 
-      const vPriceUsd = vUsdPriceObj ? Number(vUsdPriceObj.amount) : (vAttrMap["price_usd"] ? Number(vAttrMap["price_usd"]) : (v.price_usd ? Number(v.price_usd) : priceUsd));
-      const vOldPriceUsd = vAttrMap["old_price_usd"] || vAttrMap["old_price"] ? Number(vAttrMap["old_price_usd"] || vAttrMap["old_price"]) : oldPriceUsd;
-      const vPriceCad = vCadPriceObj ? Number(vCadPriceObj.amount) : (vAttrMap["price_cad"] ? Number(vAttrMap["price_cad"]) : (v.price_cad ? Number(v.price_cad) : priceCad));
-      const vOldPriceCad = vAttrMap["old_price_cad"] ? Number(vAttrMap["old_price_cad"]) : oldPriceCad;
+      const vPriceUsd = vUsdPriceObj ? Number(vUsdPriceObj.price) : (vAttrMap["price_usd"] ? Number(vAttrMap["price_usd"]) : (v.price_usd ? Number(v.price_usd) : priceUsd));
+      const vOldPriceUsd = (vUsdPriceObj?.compareAt ? Number(vUsdPriceObj.compareAt) : null) || (vAttrMap["old_price_usd"] || vAttrMap["old_price"] ? Number(vAttrMap["old_price_usd"] || vAttrMap["old_price"]) : oldPriceUsd);
+      const vPriceCad = vCadPriceObj ? Number(vCadPriceObj.price) : (vAttrMap["price_cad"] ? Number(vAttrMap["price_cad"]) : (v.price_cad ? Number(v.price_cad) : priceCad));
+      const vOldPriceCad = (vCadPriceObj?.compareAt ? Number(vCadPriceObj.compareAt) : null) || (vAttrMap["old_price_cad"] ? Number(vAttrMap["old_price_cad"]) : oldPriceCad);
 
-      const vHasInv = v.inventoryItems && Array.isArray(v.inventoryItems) && v.inventoryItems.length > 0;
-      const vStock = vHasInv
-        ? v.inventoryItems.reduce((acc, it) => acc + Number(it.onHand || 0), 0)
-        : Number(v.stock_quantity || v.stock || p.stock || 100);
+      // Country-wise variant stock calculation
+      const vStockByCountry = {};
+      let vTotalStock = 0;
+      if (v.inventoryItems && Array.isArray(v.inventoryItems)) {
+        for (const item of v.inventoryItems) {
+          const cCode = item.warehouse?.country?.code || (item.warehouseId?.includes("ca") ? "CA" : "US");
+          vStockByCountry[cCode] = (vStockByCountry[cCode] || 0) + Number(item.onHand || 0);
+          vTotalStock += Number(item.onHand || 0);
+        }
+      }
+      if (vTotalStock === 0) {
+        vTotalStock = Number(v.stock_quantity || v.stock || 100);
+        vStockByCountry["US"] = vTotalStock;
+      }
+
+      // Check variant country availability based on pricing / inventory
+      const availableCountries = [];
+      if (vPriceUsd !== null && (vStockByCountry["US"] === undefined || vStockByCountry["US"] > 0)) availableCountries.push("US");
+      if (vPriceCad !== null && (vStockByCountry["CA"] === undefined || vStockByCountry["CA"] > 0)) availableCountries.push("CA");
 
       return {
         id: v.id,
@@ -85,7 +103,17 @@ export class CatalogService {
         old_price_usd: vOldPriceUsd,
         price_cad: vPriceCad,
         old_price_cad: vOldPriceCad,
-        stock_quantity: vStock,
+        price: vPriceUsd,
+        old_price: vOldPriceUsd,
+        mrp: vOldPriceUsd,
+        stock_quantity: vTotalStock,
+        stock: vTotalStock,
+        stock_by_country: vStockByCountry,
+        available_countries: availableCountries,
+        pricing: {
+          US: { currency: "USD", symbol: "$", price: vPriceUsd, old_price: vOldPriceUsd, stock: vStockByCountry["US"] || 0, isAvailable: availableCountries.includes("US") },
+          CA: { currency: "CAD", symbol: "CA$", price: vPriceCad, old_price: vOldPriceCad, stock: vStockByCountry["CA"] || 0, isAvailable: availableCountries.includes("CA") },
+        },
         status: v.status,
         created_at: v.createdAt,
         updated_at: v.updatedAt,
@@ -95,10 +123,19 @@ export class CatalogService {
     const isVariableProduct = attrMap["product_type"] === "variable" || (variants.length > 1);
     const productType = attrMap["product_type"] || (isVariableProduct ? "variable" : "simple");
 
-    // Total stock calculation: If variable product, sum up variant stocks; if simple, use simple stock quantity
+    // Total stock and country-wise stock aggregation across product/variants
+    const productStockByCountry = { US: 0, CA: 0 };
+    variants.forEach((v) => {
+      if (v.stock_by_country) {
+        Object.entries(v.stock_by_country).forEach(([c, q]) => {
+          productStockByCountry[c] = (productStockByCountry[c] || 0) + Number(q || 0);
+        });
+      }
+    });
+
     const totalStock = isVariableProduct && variants.length > 0
       ? variants.reduce((sum, v) => sum + (v.stock_quantity || 0), 0)
-      : (p.inventoryItems?.reduce((sum, it) => sum + (it.onHand || 0), 0) || variants[0]?.stock_quantity || 100);
+      : (productStockByCountry.US + productStockByCountry.CA || 100);
 
     const isB2BOnly = Boolean(
       attrMap["is_b2b_only"] === "true" ||
@@ -107,69 +144,23 @@ export class CatalogService {
     );
 
     const moq = parseInt(attrMap["moq"] || "1", 10) || 1;
-    const unitsPerPackage = parseInt(attrMap["units_per_package"] || "1", 10) || 1;
-    const packagesPerPallet = parseInt(attrMap["packages_per_pallet"] || "20", 10) || 20;
-
-    // Resolve Tiered B2B Wholesale Pricing
-    let wholesaleTiers = [];
-    if (attrMap["wholesale_tiers"]) {
-      try {
-        wholesaleTiers = typeof attrMap["wholesale_tiers"] === "string"
-          ? JSON.parse(attrMap["wholesale_tiers"])
-          : attrMap["wholesale_tiers"];
-      } catch (e) {
-        wholesaleTiers = [];
-      }
-    }
-
-    if (!wholesaleTiers || wholesaleTiers.length === 0) {
-      // Default standard 3-tier bulk volume discount structure
-      const baseU = priceUsd || 35.0;
-      wholesaleTiers = [
-        {
-          tierName: "Tier 1 (Base MOQ)",
-          minQty: moq,
-          maxQty: moq * 5,
-          discountPercent: 0,
-          priceUSD: baseU,
-          priceCAD: priceCad || (baseU * 1.35),
-          priceINR: inrPriceObj ? Number(inrPriceObj.amount) : 1499,
-        },
-        {
-          tierName: "Tier 2 (Case / Volume)",
-          minQty: moq * 5 + 1,
-          maxQty: moq * 20,
-          discountPercent: 12,
-          priceUSD: Number((baseU * 0.88).toFixed(2)),
-          priceCAD: Number(((priceCad || (baseU * 1.35)) * 0.88).toFixed(2)),
-          priceINR: inrPriceObj ? Math.round(Number(inrPriceObj.amount) * 0.88) : 1319,
-        },
-        {
-          tierName: "Tier 3 (Pallet / Container)",
-          minQty: moq * 20 + 1,
-          maxQty: null,
-          discountPercent: 25,
-          priceUSD: Number((baseU * 0.75).toFixed(2)),
-          priceCAD: Number(((priceCad || (baseU * 1.35)) * 0.75).toFixed(2)),
-          priceINR: inrPriceObj ? Math.round(Number(inrPriceObj.amount) * 0.75) : 1124,
-        },
-      ];
-    }
 
     // Calculate authoritative consumer retail prices & MRP
-    const resolvedInrPrice = inrPriceObj ? Number(inrPriceObj.amount) : (priceUsd ? Math.round(priceUsd * 83) : 499);
-    const resolvedUsdPrice = priceUsd || (resolvedInrPrice ? Number((resolvedInrPrice / 83).toFixed(2)) : 35.0);
-    const resolvedCadPrice = priceCad || (resolvedUsdPrice ? Number((resolvedUsdPrice * 1.35).toFixed(2)) : 45.0);
+    const resolvedUsdPrice = priceUsd || 35.0;
+    const resolvedCadPrice = priceCad || Number((resolvedUsdPrice * 1.35).toFixed(2));
 
-    const resolvedInrMrp = Math.round(resolvedInrPrice * 1.35);
     const resolvedUsdMrp = oldPriceUsd || Math.round(resolvedUsdPrice * 1.35);
     const resolvedCadMrp = oldPriceCad || Math.round(resolvedCadPrice * 1.35);
+
+    const productAvailableCountries = [];
+    if (productStockByCountry.US > 0 || (variants.length > 0 && variants.some((v) => v.available_countries?.includes("US")))) productAvailableCountries.push("US");
+    if (productStockByCountry.CA > 0 || (variants.length > 0 && variants.some((v) => v.available_countries?.includes("CA")))) productAvailableCountries.push("CA");
 
     return {
       id: p.id,
       name: p.name,
       slug: p.slug,
-      sku: p.sku,
+      sku: p.variants?.[0]?.sku || p.slug,
       description: p.description || "",
       category_id: catId,
       category: catName,
@@ -185,19 +176,21 @@ export class CatalogService {
       old_price_usd: resolvedUsdMrp,
       price_cad: resolvedCadPrice,
       old_price_cad: resolvedCadMrp,
-      price: resolvedInrPrice,
-      mrp: resolvedInrMrp,
+      price: resolvedUsdPrice,
+      old_price: resolvedUsdMrp,
+      mrp: resolvedUsdMrp,
       stock_quantity: totalStock,
       stock: totalStock,
+      stock_by_country: productStockByCountry,
+      available_countries: productAvailableCountries.length > 0 ? productAvailableCountries : ["US", "CA"],
       status: p.status,
       created_at: p.createdAt,
       updated_at: p.updatedAt,
       variants: variants,
-      varients: variants, // Aliased for flexible compatibility
+      varients: variants,
       pricing: {
-        US: { currency: "USD", symbol: "$", retailPrice: resolvedUsdPrice, oldPrice: resolvedUsdMrp },
-        CA: { currency: "CAD", symbol: "CA$", retailPrice: resolvedCadPrice, oldPrice: resolvedCadMrp },
-        IN: { currency: "INR", symbol: "₹", retailPrice: resolvedInrPrice, oldPrice: resolvedInrMrp },
+        US: { currency: "USD", symbol: "$", retailPrice: resolvedUsdPrice, oldPrice: resolvedUsdMrp, stock: productStockByCountry.US, isAvailable: productAvailableCountries.includes("US") },
+        CA: { currency: "CAD", symbol: "CA$", retailPrice: resolvedCadPrice, oldPrice: resolvedCadMrp, stock: productStockByCountry.CA, isAvailable: productAvailableCountries.includes("CA") },
       },
     };
   }
@@ -227,7 +220,7 @@ export class CatalogService {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { description: { contains: search, mode: "insensitive" } },
-        { sku: { contains: search, mode: "insensitive" } },
+        { slug: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -240,14 +233,22 @@ export class CatalogService {
           categories: { include: { category: true } },
           images: { include: { file: true } },
           attributes: { include: { attribute: true, value: true } },
-          prices: { include: { currency: true, priceList: true } },
+          b2cListing: { include: { prices: true } },
+          b2bListings: { include: { prices: true, tiers: true } },
           variants: {
             where: { status: { not: "ARCHIVED" } },
             include: {
               images: { include: { file: true } },
               attributes: { include: { attribute: true, value: true } },
-              prices: { include: { currency: true, priceList: true } },
-              inventoryItems: true,
+              b2cPrices: true,
+              b2bPrices: true,
+              inventoryItems: {
+                include: {
+                  warehouse: {
+                    include: { country: true },
+                  },
+                },
+              },
             },
           },
         },
@@ -259,7 +260,6 @@ export class CatalogService {
 
     let formattedItems = rawItems.map((p) => this._formatProduct(p));
 
-    // Privacy Guard: If query is explicitly filtering for public B2C vs B2B, or if public visitor
     const targetB2BOnly = isB2BOnly !== undefined ? isB2BOnly : is_b2b_only;
     if (targetB2BOnly !== undefined) {
       const wantB2B = targetB2BOnly === true || targetB2BOnly === "true";
@@ -277,13 +277,15 @@ export class CatalogService {
         categories: { include: { category: true } },
         images: { include: { file: true } },
         attributes: { include: { attribute: true, value: true } },
-        prices: { include: { currency: true, priceList: true } },
+        b2cListing: { include: { prices: true } },
+        b2bListings: { include: { prices: true, tiers: true } },
         variants: {
           where: { status: "ACTIVE" },
           include: {
             images: { include: { file: true } },
             attributes: { include: { attribute: true, value: true } },
-            prices: { include: { currency: true, priceList: true } },
+            b2cPrices: true,
+            b2bPrices: true,
             inventoryItems: true,
           },
         },
@@ -302,13 +304,42 @@ export class CatalogService {
         categories: { include: { category: true } },
         images: { include: { file: true } },
         attributes: { include: { attribute: true, value: true } },
-        prices: { include: { currency: true, priceList: true } },
+        b2cListing: { include: { prices: true } },
+        b2bListings: { include: { prices: true, tiers: true } },
         variants: {
           where: { status: "ACTIVE" },
           include: {
             images: { include: { file: true } },
             attributes: { include: { attribute: true, value: true } },
-            prices: { include: { currency: true, priceList: true } },
+            b2cPrices: true,
+            b2bPrices: true,
+            inventoryItems: true,
+          },
+        },
+      },
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    });
+    return products.map((p) => this._formatProduct(p));
+  }
+
+  async getNewArrivals({ limit = 10 } = {}) {
+    const products = await prisma.product.findMany({
+      where: { status: "ACTIVE" },
+      include: {
+        brand: true,
+        categories: { include: { category: true } },
+        images: { include: { file: true } },
+        attributes: { include: { attribute: true, value: true } },
+        b2cListing: { include: { prices: true } },
+        b2bListings: { include: { prices: true, tiers: true } },
+        variants: {
+          where: { status: "ACTIVE" },
+          include: {
+            images: { include: { file: true } },
+            attributes: { include: { attribute: true, value: true } },
+            b2cPrices: true,
+            b2bPrices: true,
             inventoryItems: true,
           },
         },
@@ -330,18 +361,23 @@ export class CatalogService {
         categories: { include: { category: true } },
         images: { include: { file: true } },
         attributes: { include: { attribute: true, value: true } },
-        bundles: { include: { component: true } },
-        prices: { include: { currency: true, priceList: true } },
+        b2cListing: { include: { prices: true } },
+        b2bListings: { include: { prices: true, tiers: true } },
         variants: {
           where: { status: { not: "ARCHIVED" } },
           include: {
             images: { include: { file: true } },
             attributes: { include: { attribute: true, value: true } },
-            prices: { include: { currency: true, priceList: true } },
-            inventoryItems: true,
-            packaging: {
-              include: { unit: true, type: true, pallet: true },
+            b2cPrices: true,
+            b2bPrices: true,
+            inventoryItems: {
+              include: {
+                warehouse: {
+                  include: { country: true },
+                },
+              },
             },
+            packaging: true,
           },
         },
         reviews: {
@@ -444,7 +480,6 @@ export class CatalogService {
       data: {
         name,
         slug: generatedSlug,
-        sku: generatedSku,
         description: description || "",
         status: status || "ACTIVE",
         isFeatured: Boolean(isFeatured),
@@ -461,39 +496,19 @@ export class CatalogService {
       },
     });
 
-    // Currencies Setup
-    let usdCurrency = await db.currency.findUnique({ where: { code: "USD" } });
-    if (!usdCurrency) {
-      usdCurrency = await db.currency.create({ data: { code: "USD", name: "US Dollar", symbol: "$", decimals: 2 } });
-    }
-    let usPriceList = await db.priceList.findFirst({ where: { currencyId: usdCurrency.id } });
-    if (!usPriceList) {
-      const country = await db.country.findFirst();
-      const grp = await db.customerGroup.findFirst();
-      if (country && grp) {
-        usPriceList = await db.priceList.create({
-          data: { code: "PL-USD-RETAIL", name: "USD Retail Price List", countryId: country.id, currencyId: usdCurrency.id, customerGroupId: grp.id },
-        });
-      }
-    }
-
-    let cadCurrency = await db.currency.findUnique({ where: { code: "CAD" } });
-    if (!cadCurrency) {
-      cadCurrency = await db.currency.create({ data: { code: "CAD", name: "Canadian Dollar", symbol: "CA$", decimals: 2 } });
-    }
-    let caPriceList = await db.priceList.findFirst({ where: { currencyId: cadCurrency.id } });
-    if (!caPriceList) {
-      const country = await db.country.findFirst();
-      const grp = await db.customerGroup.findFirst();
-      if (country && grp) {
-        caPriceList = await db.priceList.create({
-          data: { code: "PL-CAD-RETAIL", name: "CAD Retail Price List", countryId: country.id, currencyId: cadCurrency.id, customerGroupId: grp.id },
-        });
-      }
-    }
-
     // 4. Attach inventory items & individual prices for each created variant
     const defaultWarehouse = await db.warehouse.findFirst();
+    const effectiveUsd = priceUS || price_usd || (inputVariants[0]?.price_usd) || data.price || 35.0;
+    const effectiveCad = priceCA || price_cad || (inputVariants[0]?.price_cad) || (Number(effectiveUsd) * 1.35);
+
+    // Create B2CProductListing
+    const b2cListing = await (db.b2CProductListing || db.b2cProductListing).create({
+      data: {
+        productId: created.id,
+        status: "ACTIVE",
+      },
+    });
+
     if (created.variants) {
       for (let i = 0; i < created.variants.length; i++) {
         const vRecord = created.variants[i];
@@ -506,7 +521,6 @@ export class CatalogService {
             await db.inventoryItem.create({
               data: {
                 warehouseId: defaultWarehouse.id,
-                productId: created.id,
                 variantId: vRecord.id,
                 onHand: vStock,
               },
@@ -514,72 +528,35 @@ export class CatalogService {
           } catch (e) {}
         }
 
-        // Variant USD & CAD Prices
-        const vUsd = vInput.price_usd ? parseFloat(vInput.price_usd) : (price_usd || priceUS ? parseFloat(price_usd || priceUS) : null);
-        if (vUsd && usdCurrency && usPriceList) {
-          try {
-            await db.productPrice.create({
-              data: {
-                productId: created.id,
-                variantId: vRecord.id,
-                currencyId: usdCurrency.id,
-                priceListId: usPriceList.id,
-                amount: vUsd,
-              },
-            });
-          } catch (e) {}
-        }
+        // Variant USD & CAD Prices in B2CPrice
+        const vUsd = vInput.price_usd ? parseFloat(vInput.price_usd) : (parseFloat(effectiveUsd) || 35.0);
+        const vCad = vInput.price_cad ? parseFloat(vInput.price_cad) : (parseFloat(effectiveCad) || (vUsd * 1.35));
 
-        const vCad = vInput.price_cad ? parseFloat(vInput.price_cad) : (price_cad || priceCA ? parseFloat(price_cad || priceCA) : null);
-        if (vCad && cadCurrency && caPriceList) {
-          try {
-            await db.productPrice.create({
-              data: {
-                productId: created.id,
-                variantId: vRecord.id,
-                currencyId: cadCurrency.id,
-                priceListId: caPriceList.id,
-                amount: vCad,
-              },
-            });
-          } catch (e) {}
-        }
+        try {
+          const b2cPriceModel = db.b2CPrice || db.b2cPrice;
+          await b2cPriceModel.create({
+            data: {
+              listingId: b2cListing.id,
+              variantId: vRecord.id,
+              currency: "USD",
+              price: vUsd,
+              compareAt: vInput.old_price_usd ? parseFloat(vInput.old_price_usd) : (oldPrice || old_price_usd ? parseFloat(oldPrice || old_price_usd) : null),
+              status: "ACTIVE",
+            },
+          });
 
-        // Variant Old Prices as Attributes
-        if (vInput.old_price_usd) {
-          try {
-            const attr = await db.attribute.upsert({
-              where: { code: "old_price_usd" },
-              update: {},
-              create: { name: "Old Price USD", code: "old_price_usd", dataType: "STRING" },
-            });
-            await db.productAttribute.create({
-              data: {
-                productId: created.id,
-                variantId: vRecord.id,
-                attributeId: attr.id,
-                customValue: String(vInput.old_price_usd),
-              },
-            });
-          } catch (e) {}
-        }
-
-        if (vInput.old_price_cad) {
-          try {
-            const attr = await db.attribute.upsert({
-              where: { code: "old_price_cad" },
-              update: {},
-              create: { name: "Old Price CAD", code: "old_price_cad", dataType: "STRING" },
-            });
-            await db.productAttribute.create({
-              data: {
-                productId: created.id,
-                variantId: vRecord.id,
-                attributeId: attr.id,
-                customValue: String(vInput.old_price_cad),
-              },
-            });
-          } catch (e) {}
+          await b2cPriceModel.create({
+            data: {
+              listingId: b2cListing.id,
+              variantId: vRecord.id,
+              currency: "CAD",
+              price: vCad,
+              compareAt: vInput.old_price_cad ? parseFloat(vInput.old_price_cad) : (old_price_cad ? parseFloat(old_price_cad) : null),
+              status: "ACTIVE",
+            },
+          });
+        } catch (e) {
+          console.error("B2CPrice create error:", e);
         }
       }
     }
@@ -599,10 +576,11 @@ export class CatalogService {
       try {
         const fileAsset = await db.fileAsset.create({
           data: {
-            originalName: `${name}-img-${idx + 1}.jpg`,
-            storageKey: imageList[idx],
+            fileName: `${name}-img-${idx + 1}.jpg`,
+            storageKey: `products/${created.id}-${idx + 1}.jpg`,
             mimeType: "image/jpeg",
-            sizeBytes: 1024,
+            type: "PRODUCT_IMAGE",
+            sizeBytes: BigInt(1024),
             url: imageList[idx],
           },
         });
@@ -636,35 +614,6 @@ export class CatalogService {
             productId: created.id,
             attributeId: attr.id,
             customValue: String(attrItem.value),
-          },
-        });
-      } catch (e) {}
-    }
-
-    // 7. Product-Level Base Prices (USA USD & Canada CAD)
-    const effectiveUsd = priceUS || price_usd || (inputVariants[0]?.price_usd) || data.price;
-    if (effectiveUsd && usdCurrency && usPriceList) {
-      try {
-        await db.productPrice.create({
-          data: {
-            productId: created.id,
-            currencyId: usdCurrency.id,
-            priceListId: usPriceList.id,
-            amount: parseFloat(effectiveUsd) || 0,
-          },
-        });
-      } catch (e) {}
-    }
-
-    const effectiveCad = priceCA || price_cad || (inputVariants[0]?.price_cad);
-    if (effectiveCad && cadCurrency && caPriceList) {
-      try {
-        await db.productPrice.create({
-          data: {
-            productId: created.id,
-            currencyId: cadCurrency.id,
-            priceListId: caPriceList.id,
-            amount: parseFloat(effectiveCad) || 0,
           },
         });
       } catch (e) {}
@@ -807,42 +756,26 @@ export class CatalogService {
       } catch (e) {}
     }
 
-    // Currencies Setup
-    const usdCurrency = await db.currency.findUnique({ where: { code: "USD" } });
-    const usPriceList = usdCurrency ? await db.priceList.findFirst({ where: { currencyId: usdCurrency.id } }) : null;
-    const cadCurrency = await db.currency.findUnique({ where: { code: "CAD" } });
-    const caPriceList = cadCurrency ? await db.priceList.findFirst({ where: { currencyId: cadCurrency.id } }) : null;
+    // Update B2C Listing
+    const b2cListingModel = db.b2CProductListing || db.b2cProductListing;
+    const b2cPriceModel = db.b2CPrice || db.b2cPrice;
 
-    // Update Product-Level Base Prices
-    if (priceUS !== undefined || price_usd !== undefined) {
-      const pVal = parseFloat(priceUS ?? price_usd) || 0;
-      if (usdCurrency && usPriceList) {
-        await db.productPrice.deleteMany({ where: { productId: id, variantId: null, currencyId: usdCurrency.id } });
-        await db.productPrice.create({
-          data: { productId: id, currencyId: usdCurrency.id, priceListId: usPriceList.id, amount: pVal },
-        });
-      }
-    }
-
-    if (priceCA !== undefined || price_cad !== undefined) {
-      const pVal = parseFloat(priceCA ?? price_cad) || 0;
-      if (cadCurrency && caPriceList) {
-        await db.productPrice.deleteMany({ where: { productId: id, variantId: null, currencyId: cadCurrency.id } });
-        await db.productPrice.create({
-          data: { productId: id, currencyId: cadCurrency.id, priceListId: caPriceList.id, amount: pVal },
-        });
-      }
+    let b2cListing = await b2cListingModel.findUnique({ where: { productId: id } });
+    if (!b2cListing) {
+      b2cListing = await b2cListingModel.create({ data: { productId: id, status: "ACTIVE" } });
     }
 
     // Update Variants and their specific prices/stock
     if (variants !== undefined && Array.isArray(variants)) {
-      // Clean up dependent child records of variants before deleting
       const existingVariants = await db.productVariant.findMany({ where: { productId: id }, select: { id: true } });
       const variantIds = existingVariants.map((v) => v.id);
 
       if (variantIds.length > 0) {
         await db.inventoryItem.deleteMany({ where: { variantId: { in: variantIds } } });
-        await db.productPrice.deleteMany({ where: { variantId: { in: variantIds } } });
+        await b2cPriceModel.deleteMany({ where: { variantId: { in: variantIds } } });
+        if (db.b2BPrice || db.b2bPrice) {
+          await (db.b2BPrice || db.b2bPrice).deleteMany({ where: { variantId: { in: variantIds } } });
+        }
         await db.productAttribute.deleteMany({ where: { variantId: { in: variantIds } } });
         await db.productImage.deleteMany({ where: { variantId: { in: variantIds } } });
         await db.productPackaging.deleteMany({ where: { variantId: { in: variantIds } } });
@@ -857,7 +790,7 @@ export class CatalogService {
         : [
             {
               variant_name: `${name || existing.name} Standard`,
-              sku: `${existing.sku || "SKU"}-VAR`,
+              sku: `${existing.slug || "SKU"}-VAR`,
               weight: 1.0,
               price_usd: priceUS || price_usd,
               old_price_usd: oldPrice || old_price_usd,
@@ -874,7 +807,7 @@ export class CatalogService {
           data: {
             productId: id,
             name: v.variant_name || v.name || `Variant ${i + 1}`,
-            sku: v.sku || `${existing.sku || "SKU"}-V${i + 1}`,
+            sku: v.sku || `${existing.slug || "SKU"}-V${i + 1}`,
             status: v.status || "ACTIVE",
             weight: parseFloat(v.weight) || 1.0,
           },
@@ -886,7 +819,6 @@ export class CatalogService {
           await db.inventoryItem.create({
             data: {
               warehouseId: defaultWarehouse.id,
-              productId: id,
               variantId: createdV.id,
               onHand: vStock,
             },
@@ -894,31 +826,32 @@ export class CatalogService {
         }
 
         // Variant USD & CAD Prices
-        const vUsd = v.price_usd ? parseFloat(v.price_usd) : (price_usd || priceUS ? parseFloat(price_usd || priceUS) : null);
-        if (vUsd && usdCurrency && usPriceList) {
-          await db.productPrice.create({
-            data: {
-              productId: id,
-              variantId: createdV.id,
-              currencyId: usdCurrency.id,
-              priceListId: usPriceList.id,
-              amount: vUsd,
-            },
-          });
-        }
+        const vUsd = v.price_usd ? parseFloat(v.price_usd) : (price_usd || priceUS ? parseFloat(price_usd || priceUS) : 35.0);
+        const vCad = v.price_cad ? parseFloat(v.price_cad) : (price_cad || priceCA ? parseFloat(price_cad || priceCA) : (vUsd * 1.35));
 
-        const vCad = v.price_cad ? parseFloat(v.price_cad) : (price_cad || priceCA ? parseFloat(price_cad || priceCA) : null);
-        if (vCad && cadCurrency && caPriceList) {
-          await db.productPrice.create({
+        try {
+          await b2cPriceModel.create({
             data: {
-              productId: id,
+              listingId: b2cListing.id,
               variantId: createdV.id,
-              currencyId: cadCurrency.id,
-              priceListId: caPriceList.id,
-              amount: vCad,
+              currency: "USD",
+              price: vUsd,
+              compareAt: v.old_price_usd ? parseFloat(v.old_price_usd) : (oldPrice || old_price_usd ? parseFloat(oldPrice || old_price_usd) : null),
+              status: "ACTIVE",
             },
           });
-        }
+
+          await b2cPriceModel.create({
+            data: {
+              listingId: b2cListing.id,
+              variantId: createdV.id,
+              currency: "CAD",
+              price: vCad,
+              compareAt: v.old_price_cad ? parseFloat(v.old_price_cad) : (old_price_cad ? parseFloat(old_price_cad) : null),
+              status: "ACTIVE",
+            },
+          });
+        } catch (e) {}
       }
     }
 

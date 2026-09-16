@@ -2,6 +2,7 @@ import { prisma } from "../../infrastructure/database/prisma.js";
 import { PriceResolver } from "../pricing/price-resolver.js";
 import { TaxService } from "../tax/service.js";
 import { NotificationService } from "../notifications/service.js";
+import { InventoryService } from "../inventory/service.js";
 import { Money } from "../../common/utils/money.js";
 import { IdGenerator } from "../../common/utils/id-generator.js";
 import { saveIdempotentResponse } from "../../plugins/idempotency.plugin.js";
@@ -19,28 +20,32 @@ import { ERROR_CODES } from "../../common/constants/index.js";
 export class CheckoutService {
   constructor(
     taxService = new TaxService(),
-    notificationService = new NotificationService()
+    notificationService = new NotificationService(),
+    inventoryService = new InventoryService()
   ) {
     this.taxService = taxService;
     this.notificationService = notificationService;
+    this.inventoryService = inventoryService;
   }
 
   async validateCheckout(user, {
     items = [],
+    businessId = null,
     companyId = null,
-    countryCode = "IN",
-    currencyCode = "INR",
+    countryCode = "US",
+    currencyCode = "USD",
     shippingAddress,
     billingAddress,
     couponCode = null,
     fulfillmentType = "STANDARD",
   }) {
+    const finalBusinessId = businessId || companyId;
     if (!items || items.length === 0) {
       const cart = await prisma.cart.findFirst({
         where: {
           userId: user.id,
-          companyId: companyId || null,
-          active: true,
+          businessId: finalBusinessId || null,
+          status: "ACTIVE",
         },
         include: { items: true },
       });
@@ -53,16 +58,15 @@ export class CheckoutService {
       }));
     }
 
-    const country = await prisma.country.findUnique({ where: { code: countryCode.toUpperCase() } });
-    const currency = await prisma.currency.findUnique({ where: { code: currencyCode.toUpperCase() } });
+    let country = await prisma.country.findUnique({ where: { code: countryCode.toUpperCase() } });
+    if (!country) country = await prisma.country.findFirst({ where: { active: true } }) || await prisma.country.findFirst();
 
-    if (!country || !currency) {
-      throw new NotFoundError("Country or currency not supported");
-    }
+    const normCurrency = ["CAD", "USD"].includes(currencyCode?.toUpperCase())
+      ? currencyCode.toUpperCase()
+      : (country?.currency || "USD");
 
     let subtotal = Money.toDecimal(0);
     const validatedItems = [];
-    const stockReservations = [];
 
     for (const item of items) {
       let variant = null;
@@ -71,7 +75,7 @@ export class CheckoutService {
           where: { id: item.variantId },
           include: {
             product: true,
-            packaging: { include: { unit: true, type: true, pallet: true } },
+            packaging: true,
           },
         });
       }
@@ -86,22 +90,21 @@ export class CheckoutService {
           },
           include: {
             product: true,
-            packaging: { include: { unit: true, type: true, pallet: true } },
+            packaging: true,
           },
         });
       }
       if (!variant) {
-        // Fallback to first available active variant
         variant = await prisma.productVariant.findFirst({
           where: { status: "ACTIVE" },
           include: {
             product: true,
-            packaging: { include: { unit: true, type: true, pallet: true } },
+            packaging: true,
           },
         });
       }
 
-      if (!variant || variant.status !== "ACTIVE" || variant.product.status !== "ACTIVE") {
+      if (!variant || variant.status !== "ACTIVE" || variant.product?.status !== "ACTIVE") {
         throw new NotFoundError(`Product item is inactive or not found`, ERROR_CODES.VARIANT_NOT_FOUND);
       }
 
@@ -109,10 +112,10 @@ export class CheckoutService {
         productId: variant.productId,
         variantId: variant.id,
         quantity: item.quantity,
-        countryCode,
-        currencyCode,
+        countryCode: country.code,
+        currencyCode: normCurrency,
         user,
-        companyId,
+        businessId: finalBusinessId,
       });
 
       const itemSubtotal = Money.round(Money.multiply(priceResult.unitPrice, item.quantity), 2);
@@ -129,7 +132,7 @@ export class CheckoutService {
         discountAmount: Money.toDecimal(0),
         taxAmount: Money.toDecimal(0),
         totalAmount: itemSubtotal,
-        currencyId: currency.id,
+        currency: normCurrency,
         packagingSnapshot: variant.packaging || [],
         isB2B: priceResult.isB2B,
       });
@@ -137,26 +140,26 @@ export class CheckoutService {
 
     let shippingAmount = Money.toDecimal(0);
     if (fulfillmentType === "EXPRESS") {
-      shippingAmount = countryCode === "IN" ? Money.toDecimal(150) : Money.toDecimal(25);
+      shippingAmount = Money.toDecimal(25);
     } else if (fulfillmentType === "FREIGHT" || fulfillmentType === "PALLET" || fulfillmentType === "TRUCKLOAD") {
-      shippingAmount = countryCode === "IN" ? Money.toDecimal(1500) : Money.toDecimal(200);
-    } else if (Money.isLessThan(subtotal, countryCode === "IN" ? 1000 : 50)) {
-      shippingAmount = countryCode === "IN" ? Money.toDecimal(70) : Money.toDecimal(10);
+      shippingAmount = Money.toDecimal(200);
+    } else if (Money.isLessThan(subtotal, 50)) {
+      shippingAmount = Money.toDecimal(10);
     }
 
     const taxResult = await this.taxService.calculateTax({
-      countryCode,
-      regionCode: shippingAddress?.state || shippingAddress?.region || null,
+      countryCode: country.code,
+      regionCode: shippingAddress?.state || shippingAddress?.stateCode || null,
       postalCode: shippingAddress?.postalCode || shippingAddress?.zip || null,
       address: shippingAddress,
       items: validatedItems,
       customerType: user.customerType || "B2C",
-      isB2BApproved: Boolean(companyId),
+      isB2BApproved: Boolean(finalBusinessId),
     });
 
-    const taxAmount = Money.toDecimal(taxResult.totalTax);
+    const taxAmount = Money.toDecimal(taxResult.totalTax || 0);
 
-    taxResult.taxLines.forEach((line, index) => {
+    taxResult.taxLines?.forEach((line, index) => {
       if (validatedItems[index]) {
         validatedItems[index].taxAmount = line.taxAmount;
         validatedItems[index].taxRateSnapshot = line.rate;
@@ -168,13 +171,15 @@ export class CheckoutService {
     if (couponCode) {
       const coupon = await prisma.coupon.findUnique({
         where: { code: couponCode },
-        include: { promotion: true },
       });
-      if (coupon && coupon.active && coupon.promotion?.active) {
-        if (coupon.promotion.type === "PERCENTAGE") {
-          discountAmount = Money.round(Money.percentage(subtotal, coupon.promotion.value), 2);
+      if (coupon && coupon.status === "ACTIVE") {
+        if (coupon.discountType === "PERCENTAGE") {
+          discountAmount = Money.round(Money.percentage(subtotal, coupon.discountValue), 2);
         } else {
-          discountAmount = Money.min(subtotal, Money.toDecimal(coupon.promotion.value));
+          discountAmount = Money.min(subtotal, Money.toDecimal(coupon.discountValue));
+        }
+        if (coupon.maxDiscount) {
+          discountAmount = Money.min(discountAmount, Money.toDecimal(coupon.maxDiscount));
         }
       }
     }
@@ -186,7 +191,7 @@ export class CheckoutService {
 
     return {
       country,
-      currency,
+      currency: normCurrency,
       subtotal: Money.round(subtotal, 2),
       discountAmount: Money.round(discountAmount, 2),
       shippingAmount: Money.round(shippingAmount, 2),
@@ -204,11 +209,14 @@ export class CheckoutService {
     const calculation = await this.validateCheckout(user, checkoutPayload);
     const orderNumber = IdGenerator.generateOrderNumber();
 
+    const finalBusinessId = checkoutPayload.businessId || checkoutPayload.companyId || null;
     const customerSnapshot = {
       id: user.id,
       email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
       customerType: user.customerType,
-      company: user.companyMembers?.find((m) => m.companyId === checkoutPayload.companyId)?.company || null,
+      business: user.businessMemberships?.find((m) => m.businessId === finalBusinessId)?.business || null,
     };
 
     const order = await prisma.$transaction(async (tx) => {
@@ -216,12 +224,13 @@ export class CheckoutService {
         data: {
           orderNumber,
           userId: user.id,
-          companyId: checkoutPayload.companyId || null,
+          businessId: finalBusinessId,
           customerType: user.customerType || "B2C",
-          source: checkoutPayload.companyId ? "B2B_PORTAL" : "WEB",
+          channel: finalBusinessId ? "B2B" : "B2C",
+          source: finalBusinessId ? "B2B_PORTAL" : "WEB",
           status: "PENDING_PAYMENT",
           countryId: calculation.country.id,
-          currencyId: calculation.currency.id,
+          currency: calculation.currency,
           subtotal: calculation.subtotal,
           discountAmount: calculation.discountAmount,
           shippingAmount: calculation.shippingAmount,
@@ -244,7 +253,7 @@ export class CheckoutService {
               discountAmount: item.discountAmount,
               taxAmount: item.taxAmount,
               totalAmount: item.totalAmount,
-              currencyId: calculation.currency.id,
+              currency: calculation.currency,
               taxRateSnapshot: item.taxRateSnapshot || 0,
               packagingSnapshot: item.packagingSnapshot,
             })),
@@ -259,50 +268,47 @@ export class CheckoutService {
         include: {
           items: true,
           country: true,
-          currency: true,
-          company: true,
+          business: true,
         },
       });
+
+      // Reserve inventory for each item
+      for (const item of calculation.items) {
+        if (item.variantId) {
+          await this.inventoryService.reserveStock(
+            {
+              variantId: item.variantId,
+              quantity: item.quantity,
+              orderId: createdOrder.id,
+            },
+            tx
+          );
+        }
+      }
 
       const activeCart = await tx.cart.findFirst({
         where: {
           userId: user.id,
-          companyId: checkoutPayload.companyId || null,
-          active: true,
+          businessId: finalBusinessId,
+          status: "ACTIVE",
         },
       });
       if (activeCart) {
         await tx.cartItem.deleteMany({ where: { cartId: activeCart.id } });
       }
 
-      await tx.outboxEvent.create({
-        data: {
-          aggregateType: "ORDER",
-          aggregateId: createdOrder.id,
-          eventType: "ORDER_CREATED",
-          payload: {
-            orderId: createdOrder.id,
-            orderNumber: createdOrder.orderNumber,
-            totalAmount: createdOrder.totalAmount,
-            currency: calculation.currency.code,
-            userId: createdOrder.userId,
-            companyId: createdOrder.companyId,
-          },
-        },
-      });
-
       return createdOrder;
     });
 
     if (idempotencyKey) {
-      await saveIdempotentResponse(idempotencyKey, 201, { success: true, data: order }, order.id);
+      await saveIdempotentResponse(idempotencyKey, 201, { success: true, data: order }, user.id);
     }
 
     await this.notificationService.sendNotification({
       userId: user.id,
       channel: "EMAIL",
       title: `Order Confirmation - ${order.orderNumber}`,
-      body: `Thank you for your order! Your order ${order.orderNumber} for total ${calculation.currency.code} ${order.totalAmount} has been placed.`,
+      body: `Thank you for your order! Your order ${order.orderNumber} for total ${calculation.currency} ${order.totalAmount} has been placed.`,
       data: { orderId: order.id, orderNumber: order.orderNumber },
     });
 

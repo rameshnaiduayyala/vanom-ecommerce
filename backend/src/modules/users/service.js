@@ -8,7 +8,7 @@ export class UserService {
   async getProfile(userId) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { profile: true, roles: { include: { role: true } } },
+      include: { addresses: { include: { country: true } }, roles: { include: { role: true } } },
     });
     if (!user) return null;
     const { passwordHash, ...sanitized } = user;

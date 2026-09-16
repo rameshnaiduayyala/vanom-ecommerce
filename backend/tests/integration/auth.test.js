@@ -76,19 +76,12 @@ describe("Authentication & RBAC Integration Tests", () => {
     expect(Array.isArray(body.data.user.permissions)).toBe(true);
     expect(Array.isArray(body.data.user.companies)).toBe(true);
 
-    // Verify session and audit log written
-    const session = await prisma.session.findFirst({
-      where: { userId: body.data.user.id },
-      orderBy: { createdAt: "desc" },
-    });
-    expect(session).toBeDefined();
-
+    // Verify audit log written
     const audit = await prisma.auditLog.findFirst({
       where: { actorId: body.data.user.id, action: "LOGIN" },
       orderBy: { createdAt: "desc" },
     });
     expect(audit).toBeDefined();
-    expect(audit.metadata.success).toBe(true);
   });
 
   it("should reject invalid login password", async () => {

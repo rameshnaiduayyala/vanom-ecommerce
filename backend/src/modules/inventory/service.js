@@ -67,9 +67,9 @@ export class InventoryService {
         variantId,
         type: "RESERVATION",
         quantity,
-        referenceType: "ORDER",
         referenceId: orderId,
         reason: "Order checkout reservation",
+        metadata: { referenceType: "ORDER" },
       },
     });
 

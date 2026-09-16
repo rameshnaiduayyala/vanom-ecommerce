@@ -6,51 +6,47 @@ import { prisma } from "../../infrastructure/database/prisma.js";
  */
 export class CustomerService {
   async getAddresses(userId) {
-    const profile = await prisma.customerProfile.findUnique({
+    return prisma.address.findMany({
       where: { userId },
-      include: { addresses: { include: { country: true } } },
+      include: { country: true },
     });
-    return profile?.addresses || [];
   }
 
   async getAddressById(userId, addressId) {
-    const profile = await prisma.customerProfile.findUnique({ where: { userId } });
-    if (!profile) return null;
-    return prisma.customerAddress.findFirst({
-      where: { id: addressId, profileId: profile.id },
+    return prisma.address.findFirst({
+      where: { id: addressId, userId },
       include: { country: true },
     });
   }
 
   async addAddress(userId, addressData) {
-    let profile = await prisma.customerProfile.findUnique({ where: { userId } });
-    if (!profile) {
-      profile = await prisma.customerProfile.create({ data: { userId } });
-    }
-
     let countryId = addressData.countryId;
     if (!countryId && addressData.countryCode) {
       const country = await prisma.country.findUnique({ where: { code: addressData.countryCode.toUpperCase() } });
       countryId = country?.id;
     }
+    if (!countryId) {
+      const country = await prisma.country.findFirst();
+      countryId = country?.id;
+    }
 
     if (addressData.isDefault) {
-      await prisma.customerAddress.updateMany({
-        where: { profileId: profile.id, type: addressData.type || "SHIPPING" },
+      await prisma.address.updateMany({
+        where: { userId, type: addressData.type || "SHIPPING" },
         data: { isDefault: false },
       });
     }
 
-    return prisma.customerAddress.create({
+    return prisma.address.create({
       data: {
-        profileId: profile.id,
+        userId,
         type: addressData.type || "SHIPPING",
         name: addressData.name,
-        line1: addressData.line1,
+        line1: addressData.line1 || "",
         line2: addressData.line2,
-        city: addressData.city,
-        state: addressData.state,
-        postalCode: addressData.postalCode,
+        city: addressData.city || "",
+        stateCode: addressData.stateCode || addressData.state || "NA",
+        postalCode: addressData.postalCode || "",
         countryId,
         phone: addressData.phone,
         isDefault: Boolean(addressData.isDefault),
@@ -60,9 +56,6 @@ export class CustomerService {
   }
 
   async updateAddress(userId, addressId, addressData) {
-    const profile = await prisma.customerProfile.findUnique({ where: { userId } });
-    if (!profile) return null;
-
     let countryId = addressData.countryId;
     if (!countryId && addressData.countryCode) {
       const country = await prisma.country.findUnique({ where: { code: addressData.countryCode.toUpperCase() } });
@@ -70,8 +63,8 @@ export class CustomerService {
     }
 
     if (addressData.isDefault) {
-      await prisma.customerAddress.updateMany({
-        where: { profileId: profile.id, type: addressData.type || "SHIPPING" },
+      await prisma.address.updateMany({
+        where: { userId, type: addressData.type || "SHIPPING" },
         data: { isDefault: false },
       });
     }
@@ -81,14 +74,16 @@ export class CustomerService {
     if (addressData.line1 !== undefined) data.line1 = addressData.line1;
     if (addressData.line2 !== undefined) data.line2 = addressData.line2;
     if (addressData.city !== undefined) data.city = addressData.city;
-    if (addressData.state !== undefined) data.state = addressData.state;
+    if (addressData.stateCode !== undefined || addressData.state !== undefined) {
+      data.stateCode = addressData.stateCode || addressData.state;
+    }
     if (addressData.postalCode !== undefined) data.postalCode = addressData.postalCode;
     if (addressData.phone !== undefined) data.phone = addressData.phone;
     if (addressData.type !== undefined) data.type = addressData.type;
     if (addressData.isDefault !== undefined) data.isDefault = Boolean(addressData.isDefault);
     if (countryId) data.countryId = countryId;
 
-    return prisma.customerAddress.update({
+    return prisma.address.update({
       where: { id: addressId },
       data,
       include: { country: true },
@@ -96,57 +91,54 @@ export class CustomerService {
   }
 
   async deleteAddress(userId, addressId) {
-    const profile = await prisma.customerProfile.findUnique({ where: { userId } });
-    if (!profile) return null;
-    return prisma.customerAddress.deleteMany({
-      where: { id: addressId, profileId: profile.id },
+    return prisma.address.deleteMany({
+      where: { id: addressId, userId },
     });
   }
 
   async getProfile(userId) {
-    const profile = await prisma.customerProfile.findUnique({
-      where: { userId },
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
       include: {
-        user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true, avatarUrl: true } },
         addresses: { include: { country: true } },
       },
     });
-    return profile;
+    if (!user) return null;
+    const { passwordHash, ...sanitized } = user;
+    return {
+      id: sanitized.id,
+      userId: sanitized.id,
+      user: sanitized,
+      addresses: sanitized.addresses,
+      marketingOptIn: sanitized.marketingOptIn,
+      preferredCurrency: sanitized.preferredCurrency,
+    };
   }
 
   async updateProfile(userId, data) {
-    if (data.firstName || data.lastName || data.phone || data.avatarUrl !== undefined) {
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          ...(data.firstName && { firstName: data.firstName }),
-          ...(data.lastName && { lastName: data.lastName }),
-          ...(data.phone && { phone: data.phone }),
-          ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
-        },
-      });
-    }
-
-    const profile = await prisma.customerProfile.upsert({
-      where: { userId },
-      create: {
-        userId,
-        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
-        preferredLocale: data.preferredLocale,
-        preferredCurrency: data.preferredCurrency,
-        marketingOptIn: Boolean(data.marketingOptIn),
-      },
-      update: {
-        ...(data.dateOfBirth && { dateOfBirth: new Date(data.dateOfBirth) }),
-        ...(data.preferredLocale && { preferredLocale: data.preferredLocale }),
-        ...(data.preferredCurrency && { preferredCurrency: data.preferredCurrency }),
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(data.firstName && { firstName: data.firstName }),
+        ...(data.lastName && { lastName: data.lastName }),
+        ...(data.phone && { phone: data.phone }),
+        ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
         ...(data.marketingOptIn !== undefined && { marketingOptIn: Boolean(data.marketingOptIn) }),
+        ...(data.preferredCurrency && ["USD", "CAD"].includes(data.preferredCurrency.toUpperCase()) && { preferredCurrency: data.preferredCurrency.toUpperCase() }),
       },
       include: {
-        user: { select: { id: true, email: true, firstName: true, lastName: true, phone: true, avatarUrl: true } },
+        addresses: { include: { country: true } },
       },
     });
 
-    return profile;
+    const { passwordHash, ...sanitized } = updated;
+    return {
+      id: sanitized.id,
+      userId: sanitized.id,
+      user: sanitized,
+      addresses: sanitized.addresses,
+      marketingOptIn: sanitized.marketingOptIn,
+      preferredCurrency: sanitized.preferredCurrency,
+    };
   }
 }

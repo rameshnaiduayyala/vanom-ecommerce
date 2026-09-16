@@ -23,21 +23,21 @@ export class FileService {
       data: {
         type,
         storageKey: uniqueKey,
-        originalName,
+        fileName: originalName,
         mimeType,
         sizeBytes: BigInt(fileBuffer.length),
-        checksum,
-        uploadedById,
+        url: uniqueKey,
       },
     });
 
     return {
       id: asset.id,
       storageKey: asset.storageKey,
-      originalName: asset.originalName,
+      originalName: asset.fileName,
       mimeType: asset.mimeType,
       sizeBytes: Number(asset.sizeBytes),
       type: asset.type,
+      url: asset.url,
     };
   }
 

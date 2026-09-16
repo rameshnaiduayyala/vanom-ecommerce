@@ -8,9 +8,9 @@ export class NotificationRepository {
       data: {
         userId,
         channel,
-        title,
-        body,
-        data,
+        subject: title,
+        message: body || title || "",
+        metadata: data || {},
         status: "SENT",
         sentAt: new Date(),
       },

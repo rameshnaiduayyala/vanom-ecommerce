@@ -12,18 +12,21 @@ async function idempotencyPlugin(fastify, options) {
       }
 
       const requestHash = HashUtil.sha256(JSON.stringify(request.body || {}));
-      const userId = request.user?.id || null;
+      const userId = request.user?.id;
+      if (!userId) return; // Only authenticated idempotent requests
 
       // Look up key in DB
       const existing = await prisma.idempotencyKey.findUnique({
-        where: { key: idempotencyKey },
+        where: {
+          userId_key: { userId, key: idempotencyKey },
+        },
       });
 
       if (existing) {
         // If expired
         if (existing.expiresAt && existing.expiresAt < new Date()) {
           await prisma.idempotencyKey.delete({ where: { id: existing.id } });
-        } else if (existing.responseStatus && existing.responseBody) {
+        } else if (existing.status === "COMPLETED" && existing.responseStatus && existing.responseBody) {
           // Replay cached response
           reply.header("X-Cache-Lookup", "HIT-IDEMPOTENT");
           return reply.status(existing.responseStatus).send(existing.responseBody);
@@ -40,12 +43,15 @@ async function idempotencyPlugin(fastify, options) {
             key: idempotencyKey,
             userId,
             requestHash,
+            status: "PROCESSING",
             expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
           },
         });
       } catch (err) {
         // If race condition hit
-        const raced = await prisma.idempotencyKey.findUnique({ where: { key: idempotencyKey } });
+        const raced = await prisma.idempotencyKey.findUnique({
+          where: { userId_key: { userId, key: idempotencyKey } },
+        });
         if (raced?.responseStatus) {
           reply.header("X-Cache-Lookup", "HIT-IDEMPOTENT");
           return reply.status(raced.responseStatus).send(raced.responseBody);
@@ -59,17 +65,28 @@ async function idempotencyPlugin(fastify, options) {
   });
 }
 
-export async function saveIdempotentResponse(key, statusCode, body, orderId = null) {
+export async function saveIdempotentResponse(key, statusCode, body, userId = null) {
   if (!key) return;
   try {
-    await prisma.idempotencyKey.update({
-      where: { key },
-      data: {
-        responseStatus: statusCode,
-        responseBody: body,
-        orderId,
-      },
-    });
+    if (userId) {
+      await prisma.idempotencyKey.update({
+        where: { userId_key: { userId, key } },
+        data: {
+          status: "COMPLETED",
+          responseStatus: statusCode,
+          responseBody: body,
+        },
+      });
+    } else {
+      await prisma.idempotencyKey.updateMany({
+        where: { key },
+        data: {
+          status: "COMPLETED",
+          responseStatus: statusCode,
+          responseBody: body,
+        },
+      });
+    }
   } catch (err) {
     // Non-blocking error
     console.error("Failed to update idempotency key record:", err.message);

@@ -1,0 +1,582 @@
+VANOM E-COMMERCE API - ENDPOINTS AND TEST BODIES
+================================================
+
+Base URL
+--------
+http://localhost:3000/api/v1
+
+Use these headers for JSON requests:
+Content-Type: application/json
+
+For protected endpoints:
+Authorization: Bearer <ACCESS_TOKEN>
+
+The seeded superadmin is:
+email: admin@vanom.com
+password: Password@123
+
+IDs such as <PRODUCT_ID>, <USER_ID>, <COUNTRY_ID>, and <CURRENCY_ID> come
+from previous API responses. Replace every placeholder before testing.
+
+
+1. HEALTH
+=========
+
+GET /health
+No authentication.
+
+
+2. AUTHENTICATION
+=================
+
+POST /auth/register
+Body:
+{
+  "email": "customer@example.com",
+  "password": "Password@123",
+  "firstName": "John",
+  "lastName": "Doe",
+  "countryId": "<COUNTRY_ID>"
+}
+
+New accounts must verify their email before login. In development, save
+data.verificationToken from the registration response, or copy the link
+printed by the console email provider.
+
+GET /auth/verify-email?token=<VERIFICATION_TOKEN>
+No authentication.
+
+After successful verification, login again with the registered credentials.
+
+POST /auth/login
+Body (customer or superadmin):
+{
+  "email": "admin@vanom.com",
+  "password": "Password@123"
+}
+
+Save data.token from the response as ACCESS_TOKEN.
+
+GET /auth/me
+Auth: logged-in user.
+
+POST /auth/forgot-password
+Body:
+{
+  "email": "customer@example.com"
+}
+
+In development, the response includes resetToken. In production, use the
+token delivered by email.
+
+POST /auth/reset-password
+Body:
+{
+  "token": "<RESET_TOKEN>",
+  "password": "NewPassword@123"
+}
+
+
+3. USERS (SUPERADMIN)
+=====================
+
+POST /users
+Auth: SUPERADMIN.
+JSON body:
+{
+  "email": "newuser@example.com",
+  "password": "Password@123",
+  "firstName": "New",
+  "lastName": "User",
+  "countryId": "<COUNTRY_ID>",
+  "role": "USER",
+  "isActive": true
+}
+
+Multipart body for user avatar:
+- data: {"email":"newuser@example.com","password":"Password@123","firstName":"New"}
+- image: select an image file
+Use field name image, avatar, or file for the upload.
+
+GET /users?page=1&limit=20&search=john&isActive=true&countryId=<COUNTRY_ID>
+Auth: SUPERADMIN.
+
+GET /users/<USER_ID>
+Auth: SUPERADMIN.
+
+PUT /users/<USER_ID>
+Auth: SUPERADMIN.
+JSON body example:
+{
+  "firstName": "Updated",
+  "lastName": "Name",
+  "isActive": true,
+  "role": "USER",
+  "countryId": "<COUNTRY_ID>"
+}
+
+Multipart body for replacing only the avatar:
+- image: select a new image file
+Do not send an empty JSON body with multipart. The old avatar is replaced.
+
+DELETE /users/<USER_ID>
+Auth: SUPERADMIN.
+
+
+4. PRODUCTS
+===========
+
+POST /products
+JSON body for a simple product:
+{
+  "name": "Coffee Mug",
+  "description": "Ceramic coffee mug",
+  "type": "SIMPLE",
+  "basePrice": 12.99,
+  "sku": "MUG-BLACK-001",
+  "stock": 50,
+  "brandId": "<BRAND_ID>",
+  "categoryId": "<CATEGORY_ID>",
+  "isActive": true,
+  "countries": [
+    { "countryId": "<COUNTRY_ID>", "isAvailable": true, "oldPrice": 15, "price": 12.99, "stock": 50 }
+  ]
+}
+
+JSON body for a variable product:
+{
+  "name": "Premium T-Shirt",
+  "description": "Cotton t-shirt with multiple sizes and colors",
+  "type": "VARIABLE",
+  "brandId": "<BRAND_ID>",
+  "categoryId": "<CATEGORY_ID>",
+  "isActive": true,
+  "variants": [
+    {
+      "sku": "TSHIRT-RED-M",
+      "name": "Red / Medium",
+      "attributes": { "color": "Red", "size": "M" },
+      "stock": 25,
+      "isActive": true,
+      "countries": [
+        { "countryId": "<COUNTRY_ID>", "isAvailable": true, "oldPrice": 30, "price": 24.99, "stock": 25 }
+      ]
+    }
+  ],
+  "images": [
+    { "url": "https://example.com/tshirt.jpg", "sortOrder": 0 }
+  ]
+}
+
+Multipart body for product images:
+- data: JSON product body without images
+- images: select one or more image files
+Use the field name images for each uploaded file.
+
+GET /products?page=1&limit=20&search=t-shirt&type=VARIABLE&isActive=true
+GET /products?page=1&limit=20&isNew=true&isFeatured=true&isTrending=true&isBestSeller=true
+GET /products/<PRODUCT_ID>
+
+GET /products/highlights/new?page=1&limit=20
+GET /products/highlights/featured?page=1&limit=20
+GET /products/highlights/trending?page=1&limit=20
+GET /products/highlights/best-seller?page=1&limit=20
+
+The highlights route returns active products matching one flag. Product create
+and update bodies support isNew, isFeatured, isTrending, and isBestSeller.
+
+PUT /products/<PRODUCT_ID>
+Body can contain any product fields. Example:
+{
+  "name": "Updated T-Shirt",
+  "isActive": true,
+  "variants": [
+    {
+      "sku": "TSHIRT-BLUE-L",
+      "name": "Blue / Large",
+      "attributes": { "color": "Blue", "size": "L" },
+      "stock": 15,
+      "isActive": true
+    }
+  ]
+}
+
+DELETE /products/<PRODUCT_ID>
+
+Product deletion is a soft delete. It sets isActive=false and deletedAt, so
+the product, variants, images, reviews, and order history remain in the
+database. Normal product listing and product details exclude deleted products.
+
+POST /products/<PRODUCT_ID>/variants
+Body:
+{
+  "sku": "TSHIRT-BLACK-XL",
+  "name": "Black / XL",
+  "attributes": { "color": "Black", "size": "XL" },
+  "stock": 20,
+  "isActive": true,
+  "countries": [
+    { "countryId": "<COUNTRY_ID>", "isAvailable": true, "oldPrice": 32, "price": 27.99, "stock": 20 }
+  ]
+}
+
+GET /products/<PRODUCT_ID>/variants
+GET /products/<PRODUCT_ID>/variants/<VARIANT_ID>
+
+PUT /products/<PRODUCT_ID>/variants/<VARIANT_ID>
+Body:
+{
+  "stock": 30,
+  "isActive": true,
+  "countries": [
+    { "countryId": "<COUNTRY_ID>", "isAvailable": true, "oldPrice": 35, "price": 28.99, "stock": 30 }
+  ]
+}
+
+DELETE /products/<PRODUCT_ID>/variants/<VARIANT_ID>
+
+
+5. CATEGORIES (SUPERADMIN FOR WRITE)
+=====================================
+
+POST /categories
+Auth: SUPERADMIN.
+JSON body:
+{
+  "name": "Clothing",
+  "slug": "clothing",
+  "isActive": true
+}
+
+Multipart body:
+- data: {"name":"Clothing","slug":"clothing","isActive":true}
+- image: select an image file
+
+GET /categories?page=1&limit=20&search=cloth&isActive=true
+GET /categories/<CATEGORY_ID>
+
+PUT /categories/<CATEGORY_ID>
+Auth: SUPERADMIN.
+Body:
+{
+  "name": "Apparel",
+  "isActive": true
+}
+
+DELETE /categories/<CATEGORY_ID>
+Auth: SUPERADMIN.
+
+
+6. BRANDS (SUPERADMIN FOR WRITE)
+===============================
+
+POST /brands
+Auth: SUPERADMIN.
+JSON body:
+{
+  "name": "Vanom Basics",
+  "slug": "vanom-basics",
+  "isActive": true
+}
+
+Multipart body:
+- data: {"name":"Vanom Basics","slug":"vanom-basics","isActive":true}
+- image: select an image file
+
+GET /brands?page=1&limit=20&search=vanom&isActive=true
+GET /brands/<BRAND_ID>
+
+PUT /brands/<BRAND_ID>
+Auth: SUPERADMIN.
+Body:
+{
+  "name": "Vanom Essentials",
+  "isActive": true
+}
+
+DELETE /brands/<BRAND_ID>
+Auth: SUPERADMIN.
+
+
+7. CURRENCIES (SUPERADMIN FOR WRITE)
+====================================
+
+POST /currencies
+Auth: SUPERADMIN.
+Body:
+{
+  "code": "INR",
+  "name": "Indian Rupee",
+  "symbol": "₹"
+}
+
+GET /currencies?page=1&limit=20&search=rupee
+GET /currencies/<CURRENCY_ID>
+
+PUT /currencies/<CURRENCY_ID>
+Auth: SUPERADMIN.
+Body:
+{
+  "name": "Indian Rupees",
+  "symbol": "₹"
+}
+
+DELETE /currencies/<CURRENCY_ID>
+Auth: SUPERADMIN.
+
+
+8. COUNTRIES (SUPERADMIN FOR WRITE)
+===================================
+
+POST /countries
+Auth: SUPERADMIN.
+Body:
+{
+  "code": "IN",
+  "name": "India",
+  "currencyId": "<CURRENCY_ID>"
+}
+
+GET /countries?page=1&limit=20&search=india&currencyId=<CURRENCY_ID>
+GET /countries/<COUNTRY_ID>
+
+PUT /countries/<COUNTRY_ID>
+Auth: SUPERADMIN.
+Body:
+{
+  "name": "Republic of India",
+  "currencyId": "<CURRENCY_ID>"
+}
+
+DELETE /countries/<COUNTRY_ID>
+Auth: SUPERADMIN.
+
+
+9. PRODUCT AND VARIANT COUNTRY PRICING
+======================================
+
+GET /products/<PRODUCT_ID>/countries
+
+POST /products/<PRODUCT_ID>/countries
+Auth: SUPERADMIN.
+Body:
+{
+  "countryId": "<COUNTRY_ID>",
+  "isAvailable": true,
+  "price": 19.99
+}
+
+DELETE /products/<PRODUCT_ID>/countries/<COUNTRY_ID>
+Auth: SUPERADMIN.
+
+GET /products/<PRODUCT_ID>/variants/<VARIANT_ID>/countries
+
+POST /products/<PRODUCT_ID>/variants/<VARIANT_ID>/countries
+Auth: SUPERADMIN.
+Body:
+{
+  "countryId": "<COUNTRY_ID>",
+  "isAvailable": true,
+  "price": 24.99
+}
+
+DELETE /products/<PRODUCT_ID>/variants/<VARIANT_ID>/countries/<COUNTRY_ID>
+Auth: SUPERADMIN.
+
+
+10. CART
+========
+
+GET /cart
+Auth: logged-in user.
+
+POST /cart/items
+Auth: logged-in user.
+Body for a simple product:
+{
+  "productId": "<PRODUCT_ID>",
+  "quantity": 2
+}
+
+Body for a variable product:
+{
+  "productId": "<PRODUCT_ID>",
+  "variantId": "<VARIANT_ID>",
+  "quantity": 1
+}
+
+PUT /cart/items/<ITEM_ID>
+Auth: logged-in user.
+Body:
+{
+  "quantity": 3
+}
+
+DELETE /cart/items/<ITEM_ID>
+Auth: logged-in user.
+
+DELETE /cart
+Auth: logged-in user.
+
+
+11. ORDERS
+==========
+
+POST /orders
+Auth: logged-in user.
+Creates an order from the current cart.
+Body:
+{
+  "countryId": "<COUNTRY_ID>",
+  "currencyCode": "USD",
+  "shippingAddress": {
+    "fullName": "John Doe",
+    "phone": "+15551234567",
+    "addressLine1": "123 Main Street",
+    "addressLine2": "Apartment 4B",
+    "city": "New York",
+    "state": "NY",
+    "postalCode": "10001",
+    "countryCode": "US"
+  },
+  "billingAddress": {
+    "fullName": "John Doe",
+    "phone": "+15551234567",
+    "addressLine1": "123 Main Street",
+    "addressLine2": null,
+    "city": "New York",
+    "state": "NY",
+    "postalCode": "10001",
+    "countryCode": "US"
+  }
+}
+
+ billingAddress is optional. If omitted, shippingAddress is copied as the
+ billing address. Addresses are saved as immutable order snapshots.
+
+GET /orders?page=1&limit=20&status=PENDING
+Auth: logged-in user. SUPERADMIN can see all orders.
+
+GET /orders/<ORDER_ID>
+Auth: logged-in user or SUPERADMIN.
+
+PUT /orders/<ORDER_ID>/status
+Auth: SUPERADMIN.
+Body:
+{
+  "status": "CONFIRMED"
+}
+
+Allowed statuses:
+PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+
+DELETE /orders/<ORDER_ID>
+Auth: SUPERADMIN.
+
+
+12. REVIEWS
+===========
+
+One user can create one review per product after purchasing it. The order
+must be CONFIRMED, PROCESSING, SHIPPED, or DELIVERED; PENDING and CANCELLED
+orders do not qualify. A logged-in user can edit or delete their own review.
+SUPERADMIN can edit or delete any review.
+
+POST /products/<PRODUCT_ID>/reviews
+Auth: logged-in user.
+Body:
+{
+  "rating": 5,
+  "title": "Excellent product",
+  "comment": "The quality and fit are great.",
+  "images": [
+    "products/reviews/review-image-1.webp",
+    "products/reviews/review-image-2.webp"
+  ]
+}
+
+GET /products/<PRODUCT_ID>/reviews?page=1&limit=20&rating=5
+Public endpoint. The response includes the reviewer and product summary.
+
+GET /reviews/<REVIEW_ID>
+Public endpoint.
+
+PUT /reviews/<REVIEW_ID>
+Auth: review owner or SUPERADMIN.
+Body (all fields are optional):
+{
+  "rating": 4,
+  "title": "Updated review",
+  "comment": "Updated comment",
+  "images": ["products/reviews/new-image.webp"]
+}
+
+DELETE /reviews/<REVIEW_ID>
+Auth: review owner or SUPERADMIN.
+
+The images array stores storage keys. Upload image files first with the
+existing upload flow, then send the returned storage keys in images.
+
+
+13. COUPONS (SUPERADMIN)
+========================
+
+POST /coupons
+Auth: SUPERADMIN.
+Percentage coupon:
+{
+  "code": "WELCOME10",
+  "type": "PERCENTAGE",
+  "value": 10,
+  "minOrder": 50,
+  "maxDiscount": 20,
+  "usageLimit": 100,
+  "startsAt": "2026-09-16T00:00:00.000Z",
+  "expiresAt": "2026-12-31T23:59:59.000Z",
+  "isActive": true
+}
+
+Fixed coupon:
+{
+  "code": "SAVE5",
+  "type": "FIXED",
+  "value": 5,
+  "isActive": true
+}
+
+GET /coupons?page=1&limit=20&search=welcome&type=PERCENTAGE&isActive=true
+Auth: SUPERADMIN.
+
+GET /coupons/<COUPON_ID>
+Auth: SUPERADMIN.
+
+PUT /coupons/<COUPON_ID>
+Auth: SUPERADMIN.
+Body:
+{
+  "value": 15,
+  "isActive": false
+}
+
+DELETE /coupons/<COUPON_ID>
+Auth: SUPERADMIN.
+
+
+14. STATIC FILES
+================
+
+Local uploaded files are served at:
+http://localhost:3000/static/<storageKey>
+
+Assets are served at:
+http://localhost:3000/assets/<asset-file-name>
+
+The database should store the storage key, not a port-dependent full URL.
+
+
+NOT IMPLEMENTED AS ROUTES
+=========================
+
+There are currently no checkout/payment routes and no banner CRUD routes
+registered in src/routes/index.js. The order flow currently creates an order
+from the cart through POST /orders.

@@ -46,8 +46,8 @@ describe("Cart, Checkout, Orders & Idempotency Pipeline", () => {
       url: "/api/v1/cart/items",
       headers: {
         authorization: `Bearer ${userToken}`,
-        "x-country-code": "IN",
-        "x-currency-code": "INR",
+        "x-country-code": "US",
+        "x-currency-code": "USD",
       },
       payload: {
         variantId: soilVariant.id,
@@ -84,8 +84,8 @@ describe("Cart, Checkout, Orders & Idempotency Pipeline", () => {
       url: `/api/v1/cart/items/${itemId}`,
       headers: {
         authorization: `Bearer ${userToken}`,
-        "x-country-code": "IN",
-        "x-currency-code": "INR",
+        "x-country-code": "US",
+        "x-currency-code": "USD",
       },
       payload: { quantity: 2 },
     });
@@ -99,16 +99,16 @@ describe("Cart, Checkout, Orders & Idempotency Pipeline", () => {
       url: "/api/v1/checkout/validate",
       headers: {
         authorization: `Bearer ${userToken}`,
-        "x-country-code": "IN",
-        "x-currency-code": "INR",
+        "x-country-code": "US",
+        "x-currency-code": "USD",
       },
       payload: {
         items: [{ variantId: soilVariant.id, quantity: 2 }],
         shippingAddress: {
-          line1: "123 Green Lane",
-          city: "Bengaluru",
-          state: "Karnataka",
-          postalCode: "560001",
+          line1: "123 Main St",
+          city: "New York",
+          state: "NY",
+          postalCode: "10001",
         },
       },
     });
@@ -116,7 +116,7 @@ describe("Cart, Checkout, Orders & Idempotency Pipeline", () => {
     expect(valRes.statusCode).toBe(200);
     const body = JSON.parse(valRes.payload);
     expect(body.success).toBe(true);
-    expect(Number(body.data.subtotal)).toBe(998); // 2 * 499
+    expect(Number(body.data.subtotal)).toBe(49.98); // 2 * 24.99
     expect(body.data.taxAmount).toBeDefined();
     expect(body.data.totalAmount).toBeDefined();
   });
@@ -133,16 +133,16 @@ describe("Cart, Checkout, Orders & Idempotency Pipeline", () => {
       headers: {
         authorization: `Bearer ${userToken}`,
         "idempotency-key": idempotencyKey,
-        "x-country-code": "IN",
-        "x-currency-code": "INR",
+        "x-country-code": "US",
+        "x-currency-code": "USD",
       },
       payload: {
         items: [{ variantId: soilVariant.id, quantity: 2 }],
         shippingAddress: {
-          line1: "123 Green Lane",
-          city: "Bengaluru",
-          state: "Karnataka",
-          postalCode: "560001",
+          line1: "123 Main St",
+          city: "New York",
+          state: "NY",
+          postalCode: "10001",
         },
       },
     });
@@ -171,8 +171,8 @@ describe("Cart, Checkout, Orders & Idempotency Pipeline", () => {
       headers: {
         authorization: `Bearer ${userToken}`,
         "idempotency-key": idempotencyKey,
-        "x-country-code": "IN",
-        "x-currency-code": "INR",
+        "x-country-code": "US",
+        "x-currency-code": "USD",
       },
       payload: {
         items: [{ variantId: soilVariant.id, quantity: 2 }],

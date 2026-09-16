@@ -31,9 +31,8 @@ export class AuditService {
           requestId,
           ipAddress,
           userAgent,
-          beforeData,
-          afterData,
-          metadata,
+          oldData: beforeData ? (typeof beforeData === "object" ? beforeData : { value: beforeData }) : undefined,
+          newData: afterData ? (typeof afterData === "object" ? afterData : { value: afterData }) : (metadata ? (typeof metadata === "object" ? metadata : { value: metadata }) : undefined),
         },
       });
     } catch (err) {

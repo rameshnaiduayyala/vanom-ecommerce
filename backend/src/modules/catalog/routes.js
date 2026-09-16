@@ -20,6 +20,11 @@ export default async function catalogRoutes(fastify, options) {
     handler: controller.getBestSellers,
   });
 
+  fastify.get("/products/new-arrivals", {
+    preHandler: [fastify.optionalAuthenticate],
+    handler: controller.getNewArrivals,
+  });
+
   fastify.get("/products/:id", {
     preHandler: [fastify.optionalAuthenticate],
     handler: controller.getById,

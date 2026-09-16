@@ -34,6 +34,12 @@ export class CatalogController {
     return reply.status(HTTP_STATUS.OK).send(ApiResponse.success(items));
   };
 
+  getNewArrivals = async (request, reply) => {
+    const limit = request.query.limit ? parseInt(request.query.limit, 10) : 10;
+    const items = await this.service.getNewArrivals({ limit });
+    return reply.status(HTTP_STATUS.OK).send(ApiResponse.success(items));
+  };
+
   getById = async (request, reply) => {
     const context = {
       countryCode: request.headers["x-country-code"] || request.query.countryCode || "IN",
@@ -45,8 +51,13 @@ export class CatalogController {
   };
 
   create = async (request, reply) => {
-    const data = await this.service.createProduct(request.body);
-    return reply.status(HTTP_STATUS.CREATED).send(ApiResponse.success(data));
+    try {
+      const data = await this.service.createProduct(request.body);
+      return reply.status(HTTP_STATUS.CREATED).send(ApiResponse.success(data));
+    } catch (err) {
+      console.error("CATALOG CREATE ERROR:", err);
+      throw err;
+    }
   };
 
   update = async (request, reply) => {
