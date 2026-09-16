@@ -7,7 +7,7 @@ import { slugify } from "../../common/utils/slug.js";
 
 const productInclude = { images: { orderBy: { sortOrder: "asc" } }, countryPrices: { include: { tiers: { orderBy: { minQuantity: "asc" } } } }, variants: { include: { countryPrices: { include: { tiers: { orderBy: { minQuantity: "asc" } } } } } } };
 const orderInclude = { items: true, business: { select: { id: true, businessName: true, businessEmail: true } } };
-async function businessByUser(userId) { return prisma.bulkBusiness.findFirst({ where: { users: { some: { userId, isActive: true } } } }); }
+async function businessByUser(userId) { return prisma.bulkBusiness.findFirst({ where: { userId } }); }
 async function userEmail(userId) { const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } }); return user?.email; }
 async function findOrCreateCart(businessId) { return prisma.bulkCart.upsert({ where: { businessId }, create: { businessId }, update: {}, include: { items: { include: { product: true, variant: true } } } }); }
 
@@ -25,12 +25,8 @@ export async function getBusinessForUser(userId, { approved = false } = {}) {
 }
 
 export async function registerBusiness(input, userId) {
-  const data = { ...input, businessEmail: input.businessEmail.trim().toLowerCase() };
-  const business = await prisma.$transaction(async (tx) => {
-    const created = await tx.bulkBusiness.create({ data });
-    if (userId) await tx.bulkBusinessUser.create({ data: { businessId: created.id, userId, role: "PRIMARY_CONTACT" } });
-    return created;
-  });
+  const data = { ...input, businessEmail: input.businessEmail.trim().toLowerCase(), ...(userId ? { userId } : {}) };
+  const business = await prisma.bulkBusiness.create({ data });
   return business;
 }
 
@@ -45,11 +41,11 @@ export async function updateMyBusiness(userId, input) {
 export async function listBusinesses(query = {}) {
   const { page, limit, skip } = getPagination(query);
   const where = { ...(query.status ? { status: query.status } : {}), ...(query.search ? { OR: [{ businessName: { contains: query.search, mode: "insensitive" } }, { businessEmail: { contains: query.search, mode: "insensitive" } }] } : {}), ...(query.countryCode ? { countryCode: query.countryCode } : {}), ...(query.from || query.to ? { createdAt: { ...(query.from ? { gte: new Date(query.from) } : {}), ...(query.to ? { lte: new Date(query.to) } : {}) } } : {}) };
-  const [items, total] = await prisma.$transaction([prisma.bulkBusiness.findMany({ where, skip, take: limit, orderBy: { createdAt: "desc" }, include: { users: true, addresses: true } }), prisma.bulkBusiness.count({ where })]);
+  const [items, total] = await prisma.$transaction([prisma.bulkBusiness.findMany({ where, skip, take: limit, orderBy: { createdAt: "desc" }, include: { user: true, addresses: true } }), prisma.bulkBusiness.count({ where })]);
   return { items, total, page, limit };
 }
 
-export async function getBusiness(id) { const item = await prisma.bulkBusiness.findUnique({ where: { id }, include: { users: true, addresses: true } }); return item ?? fail("Bulk business not found"); }
+export async function getBusiness(id) { const item = await prisma.bulkBusiness.findUnique({ where: { id }, include: { user: true, addresses: true } }); return item ?? fail("Bulk business not found"); }
 export async function changeBusinessStatus(id, status, approvedBy, rejectionReason) {
   await getBusiness(id);
   return prisma.bulkBusiness.update({ where: { id }, data: { status, approvedBy: status === "APPROVED" ? approvedBy : null, approvedAt: status === "APPROVED" ? new Date() : null, rejectionReason: status === "REJECTED" ? rejectionReason : null } });

@@ -48,13 +48,6 @@ enum BulkBusinessStatus {
   SUSPENDED
 }
 
-enum BulkBusinessUserRole {
-  PRIMARY_CONTACT
-  BUYER
-  MANAGER
-  EMPLOYEE
-}
-
 enum BulkProductType {
   SIMPLE
   VARIABLE
@@ -113,6 +106,7 @@ model User {
   reviews Review[]
   passwordResetTokens PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
+  bulkBusiness BulkBusiness?
 
   @@index([countryId])
   @@index([isActive])
@@ -826,6 +820,7 @@ model BannerCountry {
 
 model BulkBusiness {
   id                    String              @id @default(cuid())
+  userId                String?             @unique
   businessName          String
   businessEmail         String              @unique
   businessPhone         String
@@ -841,7 +836,7 @@ model BulkBusiness {
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
 
-  users     BulkBusinessUser[]
+  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   addresses BulkAddress[]
   cart      BulkCart?
   orders    BulkOrder[]
@@ -850,20 +845,6 @@ model BulkBusiness {
   @@index([businessName])
   @@index([countryCode])
   @@index([createdAt])
-}
-
-model BulkBusinessUser {
-  id         String             @id @default(cuid())
-  businessId String
-  userId     String
-  role       BulkBusinessUserRole @default(EMPLOYEE)
-  isActive   Boolean            @default(true)
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
-
-  business BulkBusiness @relation(fields: [businessId], references: [id], onDelete: Cascade)
-
-  @@unique([businessId, userId])
   @@index([userId])
 }
 

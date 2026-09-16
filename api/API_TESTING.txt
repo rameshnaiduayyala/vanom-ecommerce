@@ -574,9 +574,205 @@ http://localhost:3000/assets/<asset-file-name>
 The database should store the storage key, not a port-dependent full URL.
 
 
-NOT IMPLEMENTED AS ROUTES
-=========================
+15. BULK / B2B COMMERCE ENDPOINTS
+=================================
 
-There are currently no checkout/payment routes and no banner CRUD routes
-registered in src/routes/index.js. The order flow currently creates an order
-from the cart through POST /orders.
+A. Business Registration & Management
+-------------------------------------
+POST /bulk/business/register
+No auth required.
+Body:
+{
+  "businessName": "Acme Industrial Corp",
+  "businessEmail": "purchasing@acmecorp.com",
+  "businessPhone": "+1-800-555-0199",
+  "registrationNumber": "REG-9928172",
+  "taxRegistrationNumber": "US-TAX-8827110",
+  "countryCode": "US",
+  "address": "100 Enterprise Way, Suite 400, Chicago, IL 60601",
+  "contactPersonName": "Robert Davis"
+}
+
+GET /bulk/business/me
+Auth: Logged-in user associated with a business.
+
+PUT /bulk/business/me
+Auth: Logged-in business user.
+Body:
+{
+  "contactPersonName": "Robert Davis Jr."
+}
+
+
+B. Admin Bulk Business Review (SUPERADMIN)
+------------------------------------------
+GET /admin/bulk/businesses?page=1&limit=20&status=PENDING
+Auth: SUPERADMIN
+
+GET /admin/bulk/businesses/<BUSINESS_ID>
+Auth: SUPERADMIN
+
+PATCH /admin/bulk/businesses/<BUSINESS_ID>/approve
+Auth: SUPERADMIN
+
+PATCH /admin/bulk/businesses/<BUSINESS_ID>/reject
+Auth: SUPERADMIN
+Body:
+{
+  "rejectionReason": "Invalid business tax registration document."
+}
+
+PATCH /admin/bulk/businesses/<BUSINESS_ID>/suspend
+Auth: SUPERADMIN
+
+
+C. Bulk Product Catalog (Admin & Approved Businesses)
+-----------------------------------------------------
+POST /admin/bulk/products (Create Simple Product)
+Auth: SUPERADMIN
+Body:
+{
+  "name": "Heavy Duty Work Gloves (Pack of 50)",
+  "sku": "BULK-GLOVE-001",
+  "type": "SIMPLE",
+  "category": "Industrial Equipment",
+  "brand": "Demo Brand",
+  "countryPrices": [
+    {
+      "countryCode": "US",
+      "currencyCode": "USD",
+      "moq": 10,
+      "stock": 2500,
+      "isAvailable": true,
+      "tiers": [
+        { "minQuantity": 10, "maxQuantity": 49, "price": 45.00 },
+        { "minQuantity": 50, "maxQuantity": 99, "price": 38.00 },
+        { "minQuantity": 100, "maxQuantity": null, "price": 32.00 }
+      ]
+    }
+  ]
+}
+
+POST /admin/bulk/products (Create Variable Product)
+Auth: SUPERADMIN
+Body:
+{
+  "name": "Industrial High-Vis Safety Vests",
+  "sku": "BULK-VEST-001",
+  "type": "VARIABLE",
+  "category": "Safety Wear",
+  "brand": "Demo Brand",
+  "variants": [
+    {
+      "name": "Neon Yellow / L",
+      "sku": "BULK-VEST-YLW-L",
+      "attributes": { "color": "Neon Yellow", "size": "L" },
+      "countryPrices": [
+        {
+          "countryCode": "US",
+          "currencyCode": "USD",
+          "moq": 20,
+          "stock": 3000,
+          "isAvailable": true,
+          "tiers": [
+            { "minQuantity": 20, "maxQuantity": 99, "price": 12.50 },
+            { "minQuantity": 100, "maxQuantity": 499, "price": 10.00 },
+            { "minQuantity": 500, "maxQuantity": null, "price": 8.50 }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+GET /bulk/products?page=1&limit=20&countryCode=US
+Public/Approved Business catalog view with tier pricing.
+
+GET /bulk/products/<PRODUCT_ID>
+
+
+D. Bulk Cart (Approved Businesses)
+----------------------------------
+GET /bulk/cart?countryCode=US
+Auth: Logged-in user of an APPROVED business.
+
+POST /bulk/cart/items
+Auth: Logged-in user of an APPROVED business.
+Body:
+{
+  "productId": "<BULK_PRODUCT_ID>",
+  "variantId": null,
+  "quantity": 100,
+  "countryCode": "US"
+}
+
+PATCH /bulk/cart/items/<CART_ITEM_ID>
+Auth: Logged-in user of an APPROVED business.
+Body:
+{
+  "quantity": 500,
+  "countryCode": "US"
+}
+
+DELETE /bulk/cart/items/<CART_ITEM_ID>
+Auth: Logged-in user of an APPROVED business.
+
+
+E. Bulk Addresses
+-----------------
+GET /bulk/addresses
+Auth: Logged-in user of an APPROVED business.
+
+POST /bulk/addresses
+Auth: Logged-in user of an APPROVED business.
+Body:
+{
+  "label": "Primary Warehouse",
+  "contactName": "Robert Davis",
+  "phone": "+1-800-555-0199",
+  "addressLine1": "100 Enterprise Way",
+  "city": "Chicago",
+  "state": "IL",
+  "postalCode": "60601",
+  "countryCode": "US",
+  "isDefault": true
+}
+
+
+F. Bulk Checkout & Orders
+-------------------------
+POST /bulk/orders
+Auth: Logged-in user of an APPROVED business.
+Body:
+{
+  "countryCode": "US",
+  "shippingCharges": 50,
+  "tax": 120,
+  "shippingAddress": {
+    "contactName": "Robert Davis",
+    "phone": "+1-800-555-0199",
+    "addressLine1": "100 Enterprise Way",
+    "city": "Chicago",
+    "state": "IL",
+    "postalCode": "60601",
+    "countryCode": "US"
+  }
+}
+
+GET /bulk/orders?page=1&limit=20
+Auth: Logged-in business user (lists their business orders).
+
+GET /bulk/orders/<BULK_ORDER_ID>
+Auth: Business user or SUPERADMIN.
+
+GET /admin/bulk/orders?page=1&limit=20
+Auth: SUPERADMIN
+
+PATCH /admin/bulk/orders/<BULK_ORDER_ID>/status
+Auth: SUPERADMIN
+Body:
+{
+  "status": "CONFIRMED",
+  "paymentStatus": "PAID",
+  "shippingStatus": "PROCESSING"
+}
