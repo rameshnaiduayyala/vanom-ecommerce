@@ -177,16 +177,74 @@ export function AdminBulkProductsPage() {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
+
+    const selectedCatObj = categories.find((c) => c.id === form.categoryId);
+    const categoryName = selectedCatObj?.name || form.categoryName || "General";
+
+    // Build countryPrices array for multi-currency support matching Prisma schema
+    const countryPrices = [
+      {
+        countryCode: "US",
+        currencyCode: "USD",
+        moq: parseInt(form.moq, 10) || 20,
+        stock: parseInt(form.stockQuantity, 10) || 5000,
+        isAvailable: true,
+        tiers: form.wholesaleTiers.map((t) => ({
+          minQuantity: parseInt(t.minQuantity, 10) || 1,
+          maxQuantity: t.maxQuantity ? parseInt(t.maxQuantity, 10) : null,
+          price: parseFloat(t.unitPriceUSD || form.basePriceUSD) || 25.0,
+        })),
+      },
+      {
+        countryCode: "CA",
+        currencyCode: "CAD",
+        moq: parseInt(form.moq, 10) || 20,
+        stock: parseInt(form.stockQuantity, 10) || 5000,
+        isAvailable: true,
+        tiers: form.wholesaleTiers.map((t) => ({
+          minQuantity: parseInt(t.minQuantity, 10) || 1,
+          maxQuantity: t.maxQuantity ? parseInt(t.maxQuantity, 10) : null,
+          price: parseFloat(t.unitPriceCAD || form.basePriceCAD) || 33.75,
+        })),
+      },
+      {
+        countryCode: "IN",
+        currencyCode: "INR",
+        moq: parseInt(form.moq, 10) || 20,
+        stock: parseInt(form.stockQuantity, 10) || 5000,
+        isAvailable: true,
+        tiers: form.wholesaleTiers.map((t) => ({
+          minQuantity: parseInt(t.minQuantity, 10) || 1,
+          maxQuantity: t.maxQuantity ? parseInt(t.maxQuantity, 10) : null,
+          price: parseFloat(t.unitPriceINR || form.basePriceINR) || 1800,
+        })),
+      },
+    ];
+
     const payload = {
-      ...form,
+      name: form.name.trim(),
+      sku: form.sku.trim(),
+      description: form.description?.trim() || null,
+      category: categoryName,
+      brand: form.originCountry || "Vanom Wholesale",
+      type: "SIMPLE",
+      isActive: true,
+      countryPrices,
+      // Pass along frontend packaging and tier metadata for display
+      packaging: {
+        type: form.packagingType,
+        unitsPerPackage: parseInt(form.unitsPerPackage, 10) || 1,
+        packagesPerPallet: parseInt(form.packagesPerPallet, 10) || 40,
+        palletCapacityUnits: (parseInt(form.unitsPerPackage, 10) || 1) * (parseInt(form.packagesPerPallet, 10) || 40),
+      },
       moq: parseInt(form.moq, 10) || 20,
-      unitsPerPackage: parseInt(form.unitsPerPackage, 10) || 1,
-      packagesPerPallet: parseInt(form.packagesPerPallet, 10) || 40,
       leadTimeDays: parseInt(form.leadTimeDays, 10) || 2,
+      originCountry: form.originCountry,
       basePriceUSD: parseFloat(form.basePriceUSD) || 25.0,
       basePriceCAD: parseFloat(form.basePriceCAD) || 33.75,
       basePriceINR: parseFloat(form.basePriceINR) || 1800,
       stockQuantity: parseInt(form.stockQuantity, 10) || 5000,
+      wholesaleTiers: form.wholesaleTiers,
     };
 
     if (editingProduct) {
@@ -195,6 +253,7 @@ export function AdminBulkProductsPage() {
       createMutation.mutate(payload);
     }
   };
+
 
   // Filtered List
   const filteredProducts = bulkProducts.filter((p) => {

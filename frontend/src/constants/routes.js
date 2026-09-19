@@ -53,6 +53,7 @@ export const ROUTES = {
     PRODUCT_EDIT: "/admin/products/:id/edit",
     BULK_PRODUCTS: "/admin/bulk-products",
     CATEGORIES: "/admin/categories",
+    BULK_CATEGORIES: "/admin/bulk-categories",
     BRANDS: "/admin/brands",
     INVENTORY: "/admin/inventory",
     ORDERS: "/admin/orders",
@@ -64,4 +65,5 @@ export const ROUTES = {
     AUDIT_LOGS: "/admin/audit-logs",
   },
 };
+
 

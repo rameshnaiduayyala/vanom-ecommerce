@@ -120,8 +120,9 @@ export const ADMIN_NAV_CONFIG = [
     id: "b2b-categories",
     label: "Categories",
     icon: FolderTree,
-    path: `${ROUTES.ADMIN.CATEGORIES}?channel=b2b`,
+    path: ROUTES.ADMIN.BULK_CATEGORIES,
   },
+
   {
     id: "b2b-orders",
     label: "Orders",
