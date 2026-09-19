@@ -96,6 +96,10 @@ export async function createProduct(input) {
         isFeatured: input.isFeatured ?? false,
         isTrending: input.isTrending ?? false,
         isBestSeller: input.isBestSeller ?? false,
+        deliveryInfo: input.deliveryInfo ?? null,
+        returnPolicy: input.returnPolicy ?? null,
+        warrantyInfo: input.warrantyInfo ?? null,
+        keyHighlights: input.keyHighlights ?? null,
         ...(input.countries ? { countries: { create: countryData(input.countries) } } : {}),
         ...(input.images ? { images: { create: imageData(input.images) } } : {}),
         ...(input.variants ? { variants: { create: input.variants.map(variantCreateData) } } : {})
@@ -208,6 +212,10 @@ export async function updateProduct(id, input) {
           ...(input.isFeatured !== undefined && { isFeatured: input.isFeatured }),
           ...(input.isTrending !== undefined && { isTrending: input.isTrending }),
           ...(input.isBestSeller !== undefined && { isBestSeller: input.isBestSeller }),
+          ...(input.deliveryInfo !== undefined && { deliveryInfo: input.deliveryInfo }),
+          ...(input.returnPolicy !== undefined && { returnPolicy: input.returnPolicy }),
+          ...(input.warrantyInfo !== undefined && { warrantyInfo: input.warrantyInfo }),
+          ...(input.keyHighlights !== undefined && { keyHighlights: input.keyHighlights }),
           ...(input.countries ? { countries: { deleteMany: {}, create: countryData(input.countries) } } : {}),
           ...(input.images ? { images: { deleteMany: {}, create: imageData(input.images) } } : {}),
           ...(input.variants ? { variants: { deleteMany: {}, create: input.variants.map(variantCreateData) } } : {})

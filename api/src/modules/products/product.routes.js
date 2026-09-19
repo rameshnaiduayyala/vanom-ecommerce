@@ -22,7 +22,13 @@ const productProperties = {
   isNew: { type: "boolean" },
   isFeatured: { type: "boolean" },
   isTrending: { type: "boolean" },
-  isBestSeller: { type: "boolean" }
+  isBestSeller: { type: "boolean" },
+  deliveryInfo: { type: ["string", "null"] },
+  returnPolicy: { type: ["string", "null"] },
+  warrantyInfo: { type: ["string", "null"] },
+  keyHighlights: {
+    type: ["array", "object", "null"]
+  }
 };
 
 const productBodySchema = {

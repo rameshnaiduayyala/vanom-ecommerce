@@ -266,6 +266,11 @@ model Product {
   isBestSeller Boolean @default(false)
   deletedAt DateTime?
 
+  deliveryInfo String?
+  returnPolicy String?
+  warrantyInfo String?
+  keyHighlights Json?
+
   brandId    String?
   categoryId String?
 

@@ -70,6 +70,15 @@ export function AddProductPage() {
     price_cad: "",
     old_price_cad: "",
     stock_quantity: 100,
+    delivery_info: "Free Delivery By Thu, 12 Sep",
+    return_policy: "7 Days Easy Returns",
+    warranty_info: "1 Year Brand Warranty",
+    key_highlights: [
+      { label: "Delivery", value: "Free Fast Delivery" },
+      { label: "Returns", value: "7 Days Easy Return" },
+      { label: "Warranty", value: "1 Year Brand Warranty" },
+      { label: "Authenticity", value: "100% Genuine Organic" },
+    ],
     sku: "",
     status: "ACTIVE",
     variants: [
@@ -104,20 +113,63 @@ export function AddProductPage() {
   useEffect(() => {
     if (existingProduct) {
       const p = existingProduct;
+      // Extract US and CA country entries from product.countries
+      const usCountryEntry = Array.isArray(p.countries)
+        ? p.countries.find((c) => c.currency === "USD" || c.country === "United States" || c.country?.code === "US")
+        : null;
+      const caCountryEntry = Array.isArray(p.countries)
+        ? p.countries.find((c) => c.currency === "CAD" || c.country === "Canada" || c.country?.code === "CA")
+        : null;
+
       const pVariants = Array.isArray(p.variants) && p.variants.length > 0
-        ? p.variants.map((v, i) => ({
-            id: v.id || `v-${i + 1}`,
-            sku: v.sku || "",
-            variant_name: v.variant_name || v.name || `Variant ${i + 1}`,
-            weight: v.weight ? Number(v.weight) : 1.0,
-            price_usd: v.price_usd !== null && v.price_usd !== undefined ? String(v.price_usd) : "",
-            old_price_usd: v.old_price_usd !== null && v.old_price_usd !== undefined ? String(v.old_price_usd) : "",
-            price_cad: v.price_cad !== null && v.price_cad !== undefined ? String(v.price_cad) : "",
-            old_price_cad: v.old_price_cad !== null && v.old_price_cad !== undefined ? String(v.old_price_cad) : "",
-            stock_quantity: v.stock_quantity !== undefined ? v.stock_quantity : (v.stock || 50),
-            status: v.status || "ACTIVE",
-          }))
+        ? p.variants.map((v, i) => {
+            const vUs = Array.isArray(v.countries)
+              ? v.countries.find((c) => c.currency === "USD" || c.country === "United States" || c.country?.code === "US")
+              : null;
+            const vCa = Array.isArray(v.countries)
+              ? v.countries.find((c) => c.currency === "CAD" || c.country === "Canada" || c.country?.code === "CA")
+              : null;
+
+            return {
+              id: v.id || `v-${i + 1}`,
+              sku: v.sku || "",
+              variant_name: v.variant_name || v.name || `Variant ${i + 1}`,
+              weight: v.attributes?.weight ? Number(v.attributes.weight) : (v.weight ? Number(v.weight) : 1.0),
+              price_usd: vUs?.price !== null && vUs?.price !== undefined
+                ? String(vUs.price)
+                : (v.price_usd !== null && v.price_usd !== undefined ? String(v.price_usd) : ""),
+              old_price_usd: vUs?.oldPrice !== null && vUs?.oldPrice !== undefined
+                ? String(vUs.oldPrice)
+                : (v.old_price_usd !== null && v.old_price_usd !== undefined ? String(v.old_price_usd) : ""),
+              price_cad: vCa?.price !== null && vCa?.price !== undefined
+                ? String(vCa.price)
+                : (v.price_cad !== null && v.price_cad !== undefined ? String(v.price_cad) : ""),
+              old_price_cad: vCa?.oldPrice !== null && vCa?.oldPrice !== undefined
+                ? String(vCa.oldPrice)
+                : (v.old_price_cad !== null && v.old_price_cad !== undefined ? String(v.old_price_cad) : ""),
+              stock_quantity: v.stock !== undefined ? v.stock : (v.stock_quantity !== undefined ? v.stock_quantity : 50),
+              status: v.isActive !== false ? "ACTIVE" : "INACTIVE",
+            };
+          })
         : [];
+
+      const resolvedPriceUsd = usCountryEntry?.price !== null && usCountryEntry?.price !== undefined
+        ? String(usCountryEntry.price)
+        : (p.basePrice !== null && p.basePrice !== undefined ? String(p.basePrice) : (p.price_usd ? String(p.price_usd) : ""));
+
+      const resolvedOldPriceUsd = usCountryEntry?.oldPrice !== null && usCountryEntry?.oldPrice !== undefined
+        ? String(usCountryEntry.oldPrice)
+        : (p.old_price_usd ? String(p.old_price_usd) : (p.oldPrice ? String(p.oldPrice) : ""));
+
+      const resolvedPriceCad = caCountryEntry?.price !== null && caCountryEntry?.price !== undefined
+        ? String(caCountryEntry.price)
+        : (p.price_cad ? String(p.price_cad) : (p.priceCA ? String(p.priceCA) : ""));
+
+      const resolvedOldPriceCad = caCountryEntry?.oldPrice !== null && caCountryEntry?.oldPrice !== undefined
+        ? String(caCountryEntry.oldPrice)
+        : (p.old_price_cad ? String(p.old_price_cad) : "");
+
+      const resolvedStock = p.stock !== undefined ? p.stock : (p.stock_quantity !== undefined ? p.stock_quantity : 100);
 
       setFormData({
         name: p.name || "",
@@ -125,18 +177,24 @@ export function AddProductPage() {
         description: p.description || "",
         category_id: p.category_id || p.categoryId || (p.categories?.[0]?.categoryId || ""),
         brand_id: p.brand_id || p.brandId || "",
-        product_type: p.product_type || (pVariants.length > 1 ? "variable" : "simple"),
+        product_type: p.product_type || p.type?.toLowerCase() || (pVariants.length > 0 ? "variable" : "simple"),
         is_featured: Boolean(p.is_featured ?? p.isFeatured),
         is_new: Boolean(p.is_new ?? p.isNew ?? p.isNewProduct),
         is_best_seller: Boolean(p.is_best_seller ?? p.isBestSeller),
-        images: Array.isArray(p.images) && p.images.length > 0 ? p.images : [p.image || "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80"],
-        price_usd: p.price_usd !== null && p.price_usd !== undefined ? String(p.price_usd) : (p.priceUS ? String(p.priceUS) : ""),
-        old_price_usd: p.old_price_usd !== null && p.old_price_usd !== undefined ? String(p.old_price_usd) : (p.oldPrice ? String(p.oldPrice) : ""),
-        price_cad: p.price_cad !== null && p.price_cad !== undefined ? String(p.price_cad) : (p.priceCA ? String(p.priceCA) : ""),
-        old_price_cad: p.old_price_cad !== null && p.old_price_cad !== undefined ? String(p.old_price_cad) : "",
-        stock_quantity: p.stock_quantity !== undefined ? p.stock_quantity : (p.stock || 100),
+        delivery_info: p.deliveryInfo || p.delivery_info || "Free Delivery By Thu, 12 Sep",
+        return_policy: p.returnPolicy || p.return_policy || "7 Days Easy Returns",
+        warranty_info: p.warrantyInfo || p.warranty_info || "1 Year Brand Warranty",
+        key_highlights: Array.isArray(p.keyHighlights) && p.keyHighlights.length > 0 ? p.keyHighlights : (Array.isArray(p.key_highlights) ? p.key_highlights : formData.key_highlights),
+        images: Array.isArray(p.images) && p.images.length > 0
+          ? p.images.map(img => typeof img === "string" ? img : (img.url || img.file?.url || ""))
+          : [p.image || "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80"],
+        price_usd: resolvedPriceUsd,
+        old_price_usd: resolvedOldPriceUsd,
+        price_cad: resolvedPriceCad,
+        old_price_cad: resolvedOldPriceCad,
+        stock_quantity: resolvedStock,
         sku: p.sku || "",
-        status: p.status || "ACTIVE",
+        status: p.isActive !== false ? "ACTIVE" : "INACTIVE",
         variants: pVariants.length > 0 ? pVariants : formData.variants,
       });
     }
@@ -368,6 +426,10 @@ export function AddProductPage() {
       isFeatured: Boolean(formData.is_featured),
       isNew: Boolean(formData.is_new),
       isBestSeller: Boolean(formData.is_best_seller),
+      deliveryInfo: formData.delivery_info?.trim() || null,
+      returnPolicy: formData.return_policy?.trim() || null,
+      warrantyInfo: formData.warranty_info?.trim() || null,
+      keyHighlights: Array.isArray(formData.key_highlights) ? formData.key_highlights : null,
       isActive: formData.status !== "INACTIVE",
       images: cleanImages,
       basePrice: baseUsdPrice,
@@ -975,6 +1037,48 @@ export function AddProductPage() {
                     className="accent-[#358B5B] w-4 h-4 rounded cursor-pointer"
                   />
                 </label>
+              </div>
+            </div>
+
+            {/* Card: Delivery, Warranty & Policy */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                Delivery & Trust Policies
+              </h4>
+
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-slate-700">Delivery Info</label>
+                  <input
+                    type="text"
+                    value={formData.delivery_info}
+                    onChange={(e) => setFormData({ ...formData, delivery_info: e.target.value })}
+                    placeholder="e.g. Free Delivery By Thu, 12 Sep"
+                    className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-slate-700">Return Policy</label>
+                  <input
+                    type="text"
+                    value={formData.return_policy}
+                    onChange={(e) => setFormData({ ...formData, return_policy: e.target.value })}
+                    placeholder="e.g. 7 Days Easy Returns"
+                    className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-slate-700">Warranty Info</label>
+                  <input
+                    type="text"
+                    value={formData.warranty_info}
+                    onChange={(e) => setFormData({ ...formData, warranty_info: e.target.value })}
+                    placeholder="e.g. 1 Year Brand Warranty"
+                    className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B]"
+                  />
+                </div>
               </div>
             </div>
 

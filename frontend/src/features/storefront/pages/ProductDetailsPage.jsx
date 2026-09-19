@@ -154,8 +154,27 @@ export function ProductDetailsPage() {
 
   const currentImage = gallery[selectedImage] || gallery[0] || product?.image;
 
+  // Estimated Delivery String
+  const deliveryDateStr = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 3);
+    return `By ${d.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" })}`;
+  }, []);
+
+  // Dynamic Delivery & Policy Info from Database / Product API
+  const deliveryInfoText = product?.deliveryInfo || product?.delivery_info || `By ${deliveryDateStr}`;
+  const returnPolicyText = product?.returnPolicy || product?.return_policy || "7 Days Easy Returns";
+  const warrantyInfoText = product?.warrantyInfo || product?.warranty_info || "1 Year Brand Warranty";
+
   // Highlights (8 Pills)
   const highlights = useMemo(() => {
+    if (product?.keyHighlights && Array.isArray(product.keyHighlights) && product.keyHighlights.length > 0) {
+      return product.keyHighlights.map((h) => ({
+        label: h.label || "Highlight",
+        value: h.value || "",
+        icon: getHighlightIcon(h.label),
+      }));
+    }
     if (product?.highlights && Array.isArray(product.highlights) && product.highlights.length > 0) {
       return product.highlights.map((h) => ({
         label: h.label,
@@ -164,16 +183,16 @@ export function ProductDetailsPage() {
       }));
     }
     return [
+      { label: "Delivery", value: deliveryInfoText, icon: Truck },
+      { label: "Returns", value: returnPolicyText, icon: RotateCcw },
+      { label: "Warranty", value: warrantyInfoText, icon: ShieldCheck },
+      { label: "Authenticity", value: "100% Genuine Organic", icon: CheckCircle2 },
       { label: "Category", value: categoryName, icon: Cpu },
       { label: "Brand", value: brandName, icon: Sparkles },
-      { label: "SKU", value: product?.sku || "Standard", icon: ShieldCheck },
-      { label: "Delivery", value: "Express 2-3 Days", icon: Truck },
-      { label: "Condition", value: "100% Authentic Organic", icon: CheckCircle2 },
-      { label: "Stock", value: product?.stock ? `${product.stock} Units In Stock` : "In Stock & Ready", icon: Layers },
+      { label: "SKU", value: product?.sku || "Standard", icon: Layers },
       { label: "Rating", value: `${rating} / 5 Stars`, icon: Star },
-      { label: "Returns", value: "7-Day Easy Return", icon: RotateCcw },
     ];
-  }, [product, brandName, categoryName, rating]);
+  }, [product, deliveryInfoText, returnPolicyText, warrantyInfoText, brandName, categoryName, rating]);
 
   // Features list
   const features = useMemo(() => {
@@ -195,19 +214,30 @@ export function ProductDetailsPage() {
     ];
   }, [product]);
 
+  // Available Stock
+  const availableStock = selectedVariantObj
+    ? (variantCountryPricing?.stock ?? selectedVariantObj.stock_quantity ?? selectedVariantObj.stock ?? 100)
+    : (countryPricing?.stock ?? product?.stock ?? product?.totalStock ?? 100);
+
+  const isOutOfStock = (product?.isActive === false) || availableStock <= 0;
+
   // Specifications
   const specifications = useMemo(() => {
     if (product?.specifications && Object.keys(product.specifications).length > 0) {
       return product.specifications;
     }
     return {
-      Brand: brandName,
-      SKU: product?.sku || product?.id || "N/A",
-      Category: categoryName,
-      Availability: product?.isActive ? "In Stock" : "Unavailable",
-      Status: product?.isBestSeller ? "Top Seller" : product?.isNew ? "New Launch" : "Standard",
+      "Product Title": title,
+      "Brand": brandName,
+      "Category": categoryName,
+      "SKU / Code": product?.sku || product?.id || "N/A",
+      "Ranking": product?.isBestSeller ? "#1 Best Seller in " + categoryName : (product?.isNew ? "New Launch" : "Premium Choice"),
+      "Delivery": deliveryInfoText,
+      "Return Policy": returnPolicyText,
+      "Warranty": warrantyInfoText,
+      "Stock Status": product?.isActive !== false && availableStock > 0 ? `${availableStock} Units In Stock` : "Out of Stock",
     };
-  }, [product, brandName, categoryName]);
+  }, [product, title, brandName, categoryName, deliveryInfoText, returnPolicyText, warrantyInfoText, availableStock]);
 
   // Related items
   const relatedList = useMemo(() => {
@@ -215,12 +245,6 @@ export function ProductDetailsPage() {
     const filtered = raw.filter((p) => p.slug !== slug && p.id !== product?.id && p.id !== slug);
     return filtered.slice(0, 5);
   }, [allProducts, slug, product]);
-
-  const availableStock = selectedVariantObj
-    ? (variantCountryPricing?.stock ?? selectedVariantObj.stock_quantity ?? selectedVariantObj.stock ?? 100)
-    : (countryPricing?.stock ?? product?.stock ?? product?.totalStock ?? 100);
-
-  const isOutOfStock = (product?.isActive === false) || availableStock <= 0;
 
   const handleAddToCart = () => {
     if (isOutOfStock) {
@@ -350,8 +374,8 @@ export function ProductDetailsPage() {
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
                     className={`w-14 h-14 rounded-xl border p-1 bg-gray-50/50 flex items-center justify-center overflow-hidden transition-all cursor-pointer ${selectedImage === idx
-                        ? "border-[#003D2B] ring-2 ring-[#003D2B]/20"
-                        : "border-gray-200 hover:border-gray-400"
+                      ? "border-[#003D2B] ring-2 ring-[#003D2B]/20"
+                      : "border-gray-200 hover:border-gray-400"
                       }`}
                   >
                     <img src={img} alt={`Thumb ${idx + 1}`} className="w-full h-full object-contain" />
@@ -484,8 +508,8 @@ export function ProductDetailsPage() {
                         type="button"
                         onClick={() => setSelectedVariantId(v.id)}
                         className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex flex-col items-start gap-0.5 ${isSelected
-                            ? "bg-emerald-50/80 border-[#003D2B] text-[#003D2B] ring-2 ring-[#003D2B]/20"
-                            : "bg-white border-gray-200 text-gray-700 hover:border-gray-400"
+                          ? "bg-emerald-50/80 border-[#003D2B] text-[#003D2B] ring-2 ring-[#003D2B]/20"
+                          : "bg-white border-gray-200 text-gray-700 hover:border-gray-400"
                           }`}
                       >
                         <span>{v.variant_name || v.name}</span>
@@ -501,33 +525,33 @@ export function ProductDetailsPage() {
 
             {/* 3 Inline Trust / Delivery Pillars */}
             <div className="grid grid-cols-3 gap-2.5 py-2">
-              <div className="bg-[#F8FAF9] rounded-xl p-3 border border-gray-200/80 flex items-center gap-2.5">
+              <div className="bg-[#F8FAF9] rounded-xl p-3 border border-gray-200/80 flex items-center gap-2.5 shadow-2xs">
                 <div className="w-8 h-8 rounded-full bg-[#003D2B] text-white flex items-center justify-center shrink-0">
                   <Truck className="w-4 h-4 text-[#dff0d8]" />
                 </div>
                 <div>
                   <h4 className="text-[11px] font-bold text-gray-900">Free Delivery</h4>
-                  <p className="text-[10px] text-gray-500">By Thu, 12 Sep</p>
+                  <p className="text-[10px] text-gray-500">{deliveryInfoText}</p>
                 </div>
               </div>
 
-              <div className="bg-[#F8FAF9] rounded-xl p-3 border border-gray-200/80 flex items-center gap-2.5">
+              <div className="bg-[#F8FAF9] rounded-xl p-3 border border-gray-200/80 flex items-center gap-2.5 shadow-2xs">
                 <div className="w-8 h-8 rounded-full bg-[#003D2B] text-white flex items-center justify-center shrink-0">
                   <RotateCcw className="w-4 h-4 text-[#dff0d8]" />
                 </div>
                 <div>
-                  <h4 className="text-[11px] font-bold text-gray-900">7 Days</h4>
-                  <p className="text-[10px] text-gray-500">Easy Returns</p>
+                  <h4 className="text-[11px] font-bold text-gray-900">Return Policy</h4>
+                  <p className="text-[10px] text-gray-500">{returnPolicyText}</p>
                 </div>
               </div>
 
-              <div className="bg-[#F8FAF9] rounded-xl p-3 border border-gray-200/80 flex items-center gap-2.5">
+              <div className="bg-[#F8FAF9] rounded-xl p-3 border border-gray-200/80 flex items-center gap-2.5 shadow-2xs">
                 <div className="w-8 h-8 rounded-full bg-[#003D2B] text-white flex items-center justify-center shrink-0">
                   <ShieldCheck className="w-4 h-4 text-[#dff0d8]" />
                 </div>
                 <div>
-                  <h4 className="text-[11px] font-bold text-gray-900">1 Year</h4>
-                  <p className="text-[10px] text-gray-500">Brand Warranty</p>
+                  <h4 className="text-[11px] font-bold text-gray-900">Warranty</h4>
+                  <p className="text-[10px] text-gray-500">{warrantyInfoText}</p>
                 </div>
               </div>
             </div>
@@ -538,8 +562,8 @@ export function ProductDetailsPage() {
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
                 className={`py-3 px-6 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${isOutOfStock
-                    ? "border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed"
-                    : "border-[rgb(60,170,130)] text-[rgb(60,170,130)] hover:bg-[rgb(60,170,130)]/10 active:scale-95"
+                  ? "border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed"
+                  : "border-[rgb(60,170,130)] text-[rgb(60,170,130)] hover:bg-[rgb(60,170,130)]/10 active:scale-95"
                   }`}
               >
                 {isOutOfStock ? (
@@ -561,8 +585,8 @@ export function ProductDetailsPage() {
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
                 className={`py-3 px-6 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md ${isOutOfStock
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none"
-                    : "bg-[rgb(60,170,130)] hover:brightness-95 text-white active:scale-95 cursor-pointer"
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none"
+                  : "bg-[rgb(60,170,130)] hover:brightness-95 text-white active:scale-95 cursor-pointer"
                   }`}
               >
                 <Zap className="w-4 h-4 fill-white" />
@@ -572,54 +596,6 @@ export function ProductDetailsPage() {
 
           </div>
 
-        </div>
-
-        {/* ─── 3. Offers Available (4 Card Grid) ─── */}
-        <div className="space-y-3 pt-4">
-          <h3 className="text-base font-bold text-gray-900">Offers Available</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-            <div className="bg-white rounded-2xl p-4 border border-gray-200/90 shadow-2xs flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-[#EAF7F0] text-[#006B3C] flex items-center justify-center shrink-0">
-                <CreditCard className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-gray-900">₹2,000 Instant Discount</h4>
-                <p className="text-[11px] text-gray-500">on HDFC Bank Cards</p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-4 border border-gray-200/90 shadow-2xs flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-[#EAF7F0] text-[#006B3C] flex items-center justify-center shrink-0">
-                <Percent className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-gray-900">10% Cashback</h4>
-                <p className="text-[11px] text-gray-500">up to ₹2,000 on UPI</p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-4 border border-gray-200/90 shadow-2xs flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-[#EAF7F0] text-[#006B3C] flex items-center justify-center shrink-0">
-                <Layers className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-gray-900">No Cost EMI</h4>
-                <p className="text-[11px] text-gray-500">from ₹{emiAmount.toLocaleString()}/month</p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-4 border border-gray-200/90 shadow-2xs flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-[#EAF7F0] text-[#006B3C] flex items-center justify-center shrink-0">
-                <RefreshCw className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-gray-900">Exchange Offer</h4>
-                <p className="text-[11px] text-gray-500">Up to ₹5,000 off</p>
-              </div>
-            </div>
-
-          </div>
         </div>
 
         {/* ─── 4. Key Highlights (8 Card Pill Grid) ─── */}
