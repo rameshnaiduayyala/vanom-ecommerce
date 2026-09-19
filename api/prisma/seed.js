@@ -4,258 +4,139 @@ import { hashPassword } from "../src/common/utils/password.js";
 const prisma = new PrismaClient();
 
 async function main() {
-  // 1. Currencies
+  console.log("🧹 Cleaning existing database records...");
+
+  // Delete in proper dependency order (child tables first)
+  await prisma.bulkOrderItem.deleteMany({});
+  await prisma.bulkOrder.deleteMany({});
+  await prisma.bulkCartItem.deleteMany({});
+  await prisma.bulkCart.deleteMany({});
+  await prisma.bulkAddress.deleteMany({});
+  await prisma.bulkPricingTier.deleteMany({});
+  await prisma.bulkVariantCountryPrice.deleteMany({});
+  await prisma.bulkProductCountryPrice.deleteMany({});
+  await prisma.bulkProductVariant.deleteMany({});
+  await prisma.bulkProductImage.deleteMany({});
+  await prisma.bulkProduct.deleteMany({});
+  await prisma.bulkBusiness.deleteMany({});
+
+  await prisma.cartItem.deleteMany({});
+  await prisma.cart.deleteMany({});
+  await prisma.orderItem.deleteMany({});
+  await prisma.orderAddress.deleteMany({});
+  await prisma.order.deleteMany({});
+  await prisma.review.deleteMany({});
+  await prisma.productImage.deleteMany({});
+  await prisma.productVariantCountry.deleteMany({});
+  await prisma.productVariant.deleteMany({});
+  await prisma.productCountry.deleteMany({});
+  await prisma.product.deleteMany({});
+
+  await prisma.bannerCountry.deleteMany({});
+  await prisma.banner.deleteMany({});
+  await prisma.coupon.deleteMany({});
+  await prisma.passwordResetToken.deleteMany({});
+  await prisma.emailVerificationToken.deleteMany({});
+  await prisma.user.deleteMany({});
+  await prisma.category.deleteMany({});
+  await prisma.brand.deleteMany({});
+  await prisma.file.deleteMany({});
+
+  console.log("🌱 Seeding essential records only...");
+
+  // 1. Currencies (USD & CAD required for cross-border pricing)
   const usd = await prisma.currency.upsert({
     where: { code: "USD" },
     update: {},
-    create: { code: "USD", name: "US Dollar", symbol: "$" }
+    create: { code: "USD", name: "US Dollar", symbol: "$" },
   });
 
-  const ca = await prisma.currency.upsert({
+  const cad = await prisma.currency.upsert({
     where: { code: "CAD" },
     update: {},
-    create: { code: "CAD", name: "Canadian Dollar", symbol: "CA$" }
+    create: { code: "CAD", name: "Canadian Dollar", symbol: "CA$" },
   });
 
-  const inr = await prisma.currency.upsert({
-    where: { code: "INR" },
-    update: {},
-    create: { code: "INR", name: "Indian Rupee", symbol: "₹" }
-  });
-
-  // 2. Countries
-  await prisma.country.upsert({
+  // 2. Countries (US & CA)
+  const usCountry = await prisma.country.upsert({
     where: { code: "US" },
     update: { currencyId: usd.id },
-    create: { code: "US", name: "United States", currencyId: usd.id }
+    create: { code: "US", name: "United States", currencyId: usd.id },
   });
 
-  await prisma.country.upsert({
+  const caCountry = await prisma.country.upsert({
     where: { code: "CA" },
-    update: { currencyId: ca.id },
-    create: { code: "CA", name: "Canada", currencyId: ca.id }
+    update: { currencyId: cad.id },
+    create: { code: "CA", name: "Canada", currencyId: cad.id },
   });
 
-  await prisma.country.upsert({
-    where: { code: "IN" },
-    update: { currencyId: inr.id },
-    create: { code: "IN", name: "India", currencyId: inr.id }
-  });
-
-  // 3. Categories
-  const catGroceries = await prisma.category.upsert({
-    where: { slug: "groceries" },
-    update: { name: "Groceries & Pantry", imageUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80" },
-    create: { name: "Groceries & Pantry", slug: "groceries", imageUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80" }
-  });
-
-  const catSuperfoods = await prisma.category.upsert({
-    where: { slug: "superfoods" },
-    update: { name: "Organic Superfoods", imageUrl: "https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=600&q=80" },
-    create: { name: "Organic Superfoods", slug: "superfoods", imageUrl: "https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=600&q=80" }
-  });
-
-  const catWellness = await prisma.category.upsert({
-    where: { slug: "wellness" },
-    update: { name: "Ayurvedic Wellness", imageUrl: "https://images.unsplash.com/photo-1608248597359-009a25b12a21?auto=format&fit=crop&w=600&q=80" },
-    create: { name: "Ayurvedic Wellness", slug: "wellness", imageUrl: "https://images.unsplash.com/photo-1608248597359-009a25b12a21?auto=format&fit=crop&w=600&q=80" }
-  });
-
-  const catNuts = await prisma.category.upsert({
-    where: { slug: "dryfruits-nuts" },
-    update: { name: "Dry Fruits & Nuts", imageUrl: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?auto=format&fit=crop&w=600&q=80" },
-    create: { name: "Dry Fruits & Nuts", slug: "dryfruits-nuts", imageUrl: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?auto=format&fit=crop&w=600&q=80" }
-  });
-
-  // 4. Brands
-  const brand = await prisma.brand.upsert({
-    where: { slug: "vanom-organics" },
-    update: {},
-    create: { name: "Vanom Organics", slug: "vanom-organics" }
-  });
-
-  // 5. Admin User
-  const passwordHash = await hashPassword("Password@123");
-  const adminUser = await prisma.user.upsert({
-    where: { email: "admin@vanom.com" },
-    update: {
-      passwordHash,
+  // 3. Exactly 1 Category
+  const category = await prisma.category.create({
+    data: {
+      name: "Organic Superfoods",
+      slug: "organic-superfoods",
+      imageUrl: "https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=600&q=80",
       isActive: true,
-      role: "SUPERADMIN",
-      emailVerifiedAt: new Date(),
-      firstName: "Super",
-      lastName: "Admin"
     },
-    create: {
+  });
+
+  // 4. Exactly 1 Brand
+  const brand = await prisma.brand.create({
+    data: {
+      name: "Vanom Organics",
+      slug: "vanom-organics",
+      isActive: true,
+    },
+  });
+
+  const defaultPassword = await hashPassword("Password@123");
+
+  // 5. Superadmin User
+  const superAdmin = await prisma.user.create({
+    data: {
       email: "admin@vanom.com",
-      passwordHash,
+      passwordHash: defaultPassword,
       firstName: "Super",
       lastName: "Admin",
-      isActive: true,
       role: "SUPERADMIN",
-      emailVerifiedAt: new Date()
-    }
+      isActive: true,
+      emailVerifiedAt: new Date(),
+      countryId: usCountry.id,
+    },
   });
 
-  // 6. Regular Customer
-  await prisma.user.upsert({
-    where: { email: "customer@vanom.com" },
-    update: {
-      passwordHash,
-      isActive: true,
-      role: "USER",
-      emailVerifiedAt: new Date(),
-      firstName: "Ramesh",
-      lastName: "Ayyala"
-    },
-    create: {
+  // 6. Exactly 1 Customer User
+  const customer = await prisma.user.create({
+    data: {
       email: "customer@vanom.com",
-      passwordHash,
+      passwordHash: defaultPassword,
       firstName: "Ramesh",
       lastName: "Ayyala",
-      isActive: true,
       role: "USER",
-      emailVerifiedAt: new Date()
-    }
+      isActive: true,
+      emailVerifiedAt: new Date(),
+      countryId: usCountry.id,
+    },
   });
 
-  // 7. Storefront Products
-  const products = [
-    {
-      name: "Wild Organic Sundarbans Forest Honey 500g",
-      slug: "wild-organic-sundarbans-forest-honey-500g",
-      sku: "HONEY-SUN-500",
-      description: "100% raw, unpasteurized and unprocessed organic forest honey sourced from natural hives.",
-      categoryId: catGroceries.id,
-      brandId: brand.id,
-      basePrice: 699,
-      isFeatured: true,
-      isBestSeller: true,
-      isNewLaunch: true,
-      images: ["https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=600&q=80"]
+  // 7. Exactly 1 B2B User & BulkBusiness
+  const b2bUser = await prisma.user.create({
+    data: {
+      email: "b2b@acmecorp.com",
+      passwordHash: defaultPassword,
+      firstName: "Robert",
+      lastName: "Davis",
+      role: "USER",
+      isActive: true,
+      emailVerifiedAt: new Date(),
+      countryId: usCountry.id,
     },
-    {
-      name: "California Whole Raw Almonds 500g",
-      slug: "california-whole-raw-almonds-500g",
-      sku: "NUTS-ALM-500",
-      description: "Premium Nonpareil variety whole California raw almonds packed with natural vitamin E and plant protein.",
-      categoryId: catNuts.id,
-      brandId: brand.id,
-      basePrice: 599,
-      isFeatured: true,
-      isBestSeller: true,
-      isNewLaunch: false,
-      images: ["https://images.unsplash.com/photo-1508061253366-f7da158b6d46?auto=format&fit=crop&w=600&q=80"]
-    },
-    {
-      name: "Cold Pressed Extra Virgin Olive Oil 1L",
-      slug: "cold-pressed-extra-virgin-olive-oil-1l",
-      sku: "OIL-EVOO-1000",
-      description: "First single cold pressed Spanish Arbequina olives with ultra-low acidity and rich polyphenols.",
-      categoryId: catGroceries.id,
-      brandId: brand.id,
-      basePrice: 1299,
-      isFeatured: true,
-      isBestSeller: false,
-      isNewLaunch: true,
-      images: ["https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80"]
-    },
-    {
-      name: "Ceremonial Grade Matcha Green Tea 100g",
-      slug: "ceremonial-grade-matcha-green-tea-100g",
-      sku: "TEA-MATCHA-100",
-      description: "First harvest shade-grown Japanese Uji matcha stone-ground for smooth sustained energy.",
-      categoryId: catSuperfoods.id,
-      brandId: brand.id,
-      basePrice: 1199,
-      isFeatured: true,
-      isBestSeller: true,
-      isNewLaunch: true,
-      images: ["https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80"]
-    },
-    {
-      name: "Pure Himalayan Pink Rock Salt 1kg",
-      slug: "pure-himalayan-pink-rock-salt-1kg",
-      sku: "SALT-PINK-1000",
-      description: "Mineral-rich unrefined pink crystal salt containing 84+ essential trace minerals.",
-      categoryId: catGroceries.id,
-      brandId: brand.id,
-      basePrice: 199,
-      isFeatured: false,
-      isBestSeller: true,
-      isNewLaunch: false,
-      images: ["https://images.unsplash.com/photo-1518110925495-5fe2fda0442c?auto=format&fit=crop&w=600&q=80"]
-    },
-    {
-      name: "24K Kashmiri Saffron Kumkumadi Facial Oil 30ml",
-      slug: "24k-kashmiri-saffron-kumkumadi-facial-oil-30ml",
-      sku: "OIL-KUM-30",
-      description: "Traditional classical formulation infused with pure Kashmiri Mongra Saffron and sandalwood.",
-      categoryId: catWellness.id,
-      brandId: brand.id,
-      basePrice: 1899,
-      isFeatured: true,
-      isBestSeller: true,
-      isNewLaunch: true,
-      images: ["https://images.unsplash.com/photo-1608248597359-009a25b12a21?auto=format&fit=crop&w=600&q=80"]
-    }
-  ];
+  });
 
-  for (const p of products) {
-    const created = await prisma.product.upsert({
-      where: { slug: p.slug },
-      update: {
-        name: p.name,
-        description: p.description,
-        category: p.categoryId ? { connect: { id: p.categoryId } } : undefined,
-        brand: p.brandId ? { connect: { id: p.brandId } } : undefined,
-        basePrice: p.basePrice,
-        isFeatured: p.isFeatured,
-        isBestSeller: p.isBestSeller,
-        isNew: p.isNewLaunch,
-      },
-      create: {
-        name: p.name,
-        slug: p.slug,
-        sku: p.sku,
-        description: p.description,
-        category: p.categoryId ? { connect: { id: p.categoryId } } : undefined,
-        brand: p.brandId ? { connect: { id: p.brandId } } : undefined,
-        basePrice: p.basePrice,
-        isFeatured: p.isFeatured,
-        isBestSeller: p.isBestSeller,
-        isNew: p.isNewLaunch,
-        isActive: true,
-      }
-    });
-
-    // Add product image
-    if (p.images && p.images[0]) {
-      const existingImg = await prisma.productImage.findFirst({ where: { productId: created.id } });
-      if (!existingImg) {
-        await prisma.productImage.create({
-          data: {
-            productId: created.id,
-            url: p.images[0],
-            sortOrder: 0,
-          }
-        });
-      }
-    }
-  }
-
-  // 8. Bulk Business
-  await prisma.bulkBusiness.upsert({
-    where: { businessEmail: "purchasing@acmecorp.com" },
-    update: {
-      userId: adminUser.id,
-      status: "APPROVED",
-      approvedAt: new Date(),
-      approvedBy: "SUPERADMIN"
-    },
-    create: {
-      userId: adminUser.id,
-      businessName: "Acme Industrial Corp",
+  await prisma.bulkBusiness.create({
+    data: {
+      userId: b2bUser.id,
+      businessName: "Acme Organic Imports LLC",
       businessEmail: "purchasing@acmecorp.com",
       businessPhone: "+1-800-555-0199",
       registrationNumber: "REG-9928172",
@@ -265,16 +146,24 @@ async function main() {
       contactPersonName: "Robert Davis",
       status: "APPROVED",
       approvedAt: new Date(),
-      approvedBy: "SUPERADMIN"
-    }
+      approvedBy: "SUPERADMIN",
+    },
   });
 
-  console.log("✅ Seed completed with rich Categories, Products, Currencies, and B2B data!");
+  console.log("\n========================================================");
+  console.log("✅ Clean database and minimal seed completed successfully!");
+  console.log("========================================================");
+  console.log("👤 Superadmin : admin@vanom.com      / Password@123");
+  console.log("👤 Customer   : customer@vanom.com   / Password@123");
+  console.log("🏢 B2B User   : b2b@acmecorp.com     / Password@123");
+  console.log("📁 1 Category : Organic Superfoods (organic-superfoods)");
+  console.log("🏷️  1 Brand    : Vanom Organics (vanom-organics)");
+  console.log("========================================================\n");
 }
 
 main()
   .catch((error) => {
-    console.error(error);
+    console.error("❌ Seed failed:", error);
     process.exit(1);
   })
   .finally(async () => {

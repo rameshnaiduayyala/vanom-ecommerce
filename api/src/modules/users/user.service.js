@@ -7,6 +7,13 @@ import { hashPassword } from "../../common/utils/password.js";
 const userInclude = {
   country: {
     include: { currency: true }
+  },
+  bulkBusiness: true,
+  _count: {
+    select: {
+      orders: true,
+      reviews: true
+    }
   }
 };
 
@@ -106,6 +113,9 @@ export async function updateUser(id, input) {
 }
 
 export async function deleteUser(id) {
-  await getUserById(id);
+  const user = await getUserById(id);
+  if (user.role === "SUPERADMIN") {
+    throw new AppError("Superadmin accounts cannot be deleted.", HTTP_STATUS.FORBIDDEN, "SUPERADMIN_CANNOT_BE_DELETED");
+  }
   return prisma.user.delete({ where: { id } });
 }

@@ -81,9 +81,6 @@ export function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-slate-900">Dashboard</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Welcome back! Here is the latest live performance breakdown for Vanom Commerce.
-          </p>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -93,81 +90,17 @@ export function Dashboard() {
               <button
                 key={r}
                 onClick={() => setTimeRange(r)}
-                className={`px-3 py-1 rounded-md font-semibold transition-all cursor-pointer ${
-                  timeRange === r
-                    ? "bg-[#204B38] text-white"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
+                className={`px-3 py-1 rounded-md font-semibold transition-all cursor-pointer ${timeRange === r
+                  ? "bg-[#204B38] text-white"
+                  : "text-slate-600 hover:text-slate-900"
+                  }`}
               >
                 {r.toUpperCase()}
               </button>
             ))}
           </div>
-
-          <Link
-            to="/admin/products/new"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#358B5B] hover:bg-[#204B38] text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Product</span>
-          </Link>
         </div>
       </div>
-
-      {/* ── Today Live Snapshot Strip ── */}
-      <div className="bg-gradient-to-r from-[#0F2B1C] via-[#16422C] to-[#0F2B1C] rounded-2xl p-4 sm:p-5 text-white shadow-md border border-emerald-800/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-black tracking-tight text-white uppercase">Today's Live Snapshot</h3>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold tracking-wider">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                LIVE SYNC
-              </span>
-            </div>
-            <p className="text-xs text-emerald-100/70 mt-0.5">
-              Real-time activity recorded for today ({new Date().toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}).
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-6 sm:gap-8 flex-wrap pt-2 md:pt-0 border-t md:border-t-0 border-emerald-800/40 w-full md:w-auto justify-start sm:justify-end">
-          <div>
-            <span className="text-[10px] font-bold text-emerald-200/70 uppercase tracking-wider block">
-              Today's Sales
-            </span>
-            <span className="text-lg sm:text-xl font-black text-emerald-300">
-              ${Number(metrics?.today?.revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-
-          <div className="h-8 w-px bg-emerald-700/40 hidden sm:block" />
-
-          <div>
-            <span className="text-[10px] font-bold text-emerald-200/70 uppercase tracking-wider block">
-              Today's Orders
-            </span>
-            <span className="text-lg sm:text-xl font-black text-white">
-              {metrics?.today?.orders || 0}
-            </span>
-          </div>
-
-          <div className="h-8 w-px bg-emerald-700/40 hidden sm:block" />
-
-          <div>
-            <span className="text-[10px] font-bold text-emerald-200/70 uppercase tracking-wider block">
-              New Buyers Today
-            </span>
-            <span className="text-lg sm:text-xl font-black text-white">
-              {metrics?.today?.newCustomers || 0}
-            </span>
-          </div>
-        </div>
-      </div>
-
       {/* ── KPI Stat Cards (5 Cards Grid) ── */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
@@ -507,12 +440,12 @@ export function Dashboard() {
                             ord.status === "DELIVERED" || ord.status === "COMPLETED" || ord.status === "PAID"
                               ? "green"
                               : ord.status === "SHIPPED"
-                              ? "blue"
-                              : ord.status === "PROCESSING" || ord.status === "PENDING"
-                              ? "yellow"
-                              : ord.status === "CANCELLED" || ord.status === "FAILED"
-                              ? "red"
-                              : "default"
+                                ? "blue"
+                                : ord.status === "PROCESSING" || ord.status === "PENDING"
+                                  ? "yellow"
+                                  : ord.status === "CANCELLED" || ord.status === "FAILED"
+                                    ? "red"
+                                    : "default"
                           }
                           size="sm"
                         >

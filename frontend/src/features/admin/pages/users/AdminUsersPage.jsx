@@ -80,33 +80,13 @@ export function AdminUsersPage() {
       firstName: formData.firstName,
       lastName: formData.lastName,
       email: formData.email,
-      phone: formData.phone,
-      customerType: formData.customerType,
-      status: formData.status,
-      roles: [formData.role],
+      role: formData.role || "USER",
+      isActive: formData.isActive ?? true,
+      countryId: formData.countryId || null,
     };
 
     if (formData.password) {
       payload.password = formData.password;
-    }
-
-    if (formData.customerType === "B2B") {
-      if (b2bCompanyMode === "EXISTING" && formData.companyId) {
-        payload.companyId = formData.companyId;
-      } else if (b2bCompanyMode === "NEW") {
-        payload.newCompany = {
-          legalName: formData.newCompanyLegalName || formData.newCompanyName,
-          businessName: formData.newCompanyName || formData.newCompanyLegalName,
-          taxId: formData.newCompanyTaxId,
-          registrationNumber: formData.newCompanyRegNo,
-          countryCode: formData.newCompanyCountryCode,
-          addressLine1: formData.newCompanyAddressLine1,
-          city: formData.newCompanyCity,
-          state: formData.newCompanyState,
-          postalCode: formData.newCompanyPostalCode,
-          status: "APPROVED",
-        };
-      }
     }
 
     try {
@@ -132,15 +112,40 @@ export function AdminUsersPage() {
 
   // Filtered Users
   const filteredUsers = users.filter((u) => {
-    const nameMatch =
-      `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.company?.legalName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.company?.tradingName?.toLowerCase().includes(searchTerm.toLowerCase());
+    const fullName = `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase();
+    const email = (u.email || "").toLowerCase();
+    const company = (
+      u.bulkBusiness?.businessName ||
+      u.bulkBusiness?.companyName ||
+      u.company?.legalName ||
+      ""
+    ).toLowerCase();
+    const country = (u.country?.name || u.country?.code || "").toLowerCase();
+    const term = searchTerm.toLowerCase();
 
-    const roles = Array.isArray(u.roles) ? u.roles : [u.roles || "CUSTOMER"];
-    const roleMatch = roleFilter === "ALL" || roles.includes(roleFilter);
-    const statusMatch = statusFilter === "ALL" || u.status === statusFilter;
+    const nameMatch =
+      fullName.includes(term) ||
+      email.includes(term) ||
+      company.includes(term) ||
+      country.includes(term);
+
+    // Role Match
+    let roleMatch = true;
+    if (roleFilter === "SUPERADMIN") {
+      roleMatch = u.role === "SUPERADMIN";
+    } else if (roleFilter === "USER") {
+      roleMatch = u.role === "USER" && !u.bulkBusiness;
+    } else if (roleFilter === "B2B") {
+      roleMatch = Boolean(u.bulkBusiness);
+    }
+
+    // Status Match
+    let statusMatch = true;
+    if (statusFilter === "ACTIVE") {
+      statusMatch = (u.isActive ?? true) === true;
+    } else if (statusFilter === "INACTIVE") {
+      statusMatch = (u.isActive ?? true) === false;
+    }
 
     return nameMatch && roleMatch && statusMatch;
   });
@@ -154,9 +159,6 @@ export function AdminUsersPage() {
             <User className="w-6 h-6 text-[#00875A]" />
             User Management
           </h1>
-          <p className="text-xs text-text-muted mt-1">
-            Manage system administrators, retail customers, and commercial B2B buyer accounts.
-          </p>
         </div>
 
         <div className="flex items-center gap-3">
