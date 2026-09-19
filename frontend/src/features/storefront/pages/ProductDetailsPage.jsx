@@ -37,9 +37,6 @@ import {
 } from "lucide-react";
 import { Spinner } from "../../../components/ui/Alert.jsx";
 
-const FALLBACK_THUMBNAILS = [
-  "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?auto=format&fit=crop&w=800&q=80",
-];
 
 function getHighlightIcon(label = "") {
   const l = label.toLowerCase();
@@ -84,43 +81,45 @@ export function ProductDetailsPage() {
     return product.variants.find((v) => v.id === selectedVariantId) || product.variants[0];
   }, [product, selectedVariantId]);
 
-  const title = product?.name || "Product Name";
-  const subtitle = product?.specs || product?.subtitle || product?.description || "High Performance Quality Product";
-  const brand = product?.brand || "Vanom Choice";
+  const title = product?.name || "";
+  const subtitle = product?.description || "";
+  const brand = typeof product?.brand === "object" ? product.brand?.name : product?.brand || "Vanom Choice";
+  const brandName = brand;
+  const categoryName = typeof product?.category === "object" ? product.category?.name : product?.category || "General";
   
-  // Dynamic price resolving variant USD / CAD or country price
+  // Dynamic price resolving variant USD / CAD or country price or basePrice
   const basePrice = country.code === "CA"
-    ? (selectedVariantObj?.price_cad || product?.price_cad || product?.priceCA || (product?.price_usd ? product.price_usd * 1.35 : 45))
+    ? (selectedVariantObj?.price_cad || product?.price_cad || product?.priceCA || (product?.basePrice ? Number(product.basePrice) * 1.35 : 45))
     : country.code === "US"
-    ? (selectedVariantObj?.price_usd || product?.price_usd || product?.priceUS || 35)
-    : (product?.price || product?.pricing?.[country.code]?.retailPrice || product?.pricing?.IN?.retailPrice || 1999);
+    ? (selectedVariantObj?.price_usd || product?.price_usd || product?.priceUS || product?.basePrice || 35)
+    : (product?.basePrice || product?.price || product?.pricing?.[country.code]?.retailPrice || product?.pricing?.IN?.retailPrice || 1999);
 
   const price = Number(basePrice);
   const baseMrp = country.code === "CA"
     ? (selectedVariantObj?.old_price_cad || product?.old_price_cad || Math.round(price * 1.35))
     : country.code === "US"
     ? (selectedVariantObj?.old_price_usd || product?.old_price_usd || product?.oldPrice || Math.round(price * 1.35))
-    : (product?.mrp || product?.pricing?.[country.code]?.mrp || (price > 0 ? Math.round(price * 1.35) : 2699));
+    : (product?.mrp || product?.pricing?.[country.code]?.mrp || (price > 0 ? Math.round(price * 1.35) : Math.round(price * 1.3)));
 
   const mrp = Number(baseMrp);
-  const discount = product?.discount || (mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 25);
-  const rating = product?.rating || 4.7;
-  const reviewsCount = product?.reviewsCount || 1420;
-  const answeredQuestions = Math.round(reviewsCount * 0.12) || 85;
-  const emiAmount = Math.round(price / 24) || 299;
+  const discount = product?.discount || (mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0);
+  const rating = product?.rating || 4.8;
+  const reviewsCount = product?.reviewsCount || (product?.reviews?.length ?? 12);
+  const answeredQuestions = Math.round(reviewsCount * 0.12) || 4;
+  const emiAmount = Math.round(price / 24) || 29;
 
   // Gallery
   const gallery = useMemo(() => {
-    if (product?.gallery && Array.isArray(product.gallery) && product.gallery.length > 0) {
-      return product.gallery;
-    }
     if (product?.images && Array.isArray(product.images) && product.images.length > 0) {
       return product.images.map((img) => (typeof img === "string" ? img : img.file?.url || img.url || img));
+    }
+    if (product?.gallery && Array.isArray(product.gallery) && product.gallery.length > 0) {
+      return product.gallery;
     }
     if (product?.image) {
       return [product.image];
     }
-    return FALLBACK_THUMBNAILS;
+    return [];
   }, [product]);
 
   const currentImage = gallery[selectedImage] || gallery[0] || product?.image;
@@ -135,16 +134,16 @@ export function ProductDetailsPage() {
       }));
     }
     return [
-      { label: "Category", value: product?.category || "General", icon: Cpu },
-      { label: "Brand", value: brand, icon: Sparkles },
-      { label: "Warranty", value: product?.specifications?.Warranty || "1 Year Standard", icon: ShieldCheck },
+      { label: "Category", value: categoryName, icon: Cpu },
+      { label: "Brand", value: brandName, icon: Sparkles },
+      { label: "SKU", value: product?.sku || "Standard", icon: ShieldCheck },
       { label: "Delivery", value: "Express 2-3 Days", icon: Truck },
-      { label: "Condition", value: "100% Authentic Brand New", icon: CheckCircle2 },
+      { label: "Condition", value: "100% Authentic Organic", icon: CheckCircle2 },
       { label: "Stock", value: product?.stock ? `${product.stock} Units In Stock` : "In Stock & Ready", icon: Layers },
       { label: "Rating", value: `${rating} / 5 Stars`, icon: Star },
       { label: "Returns", value: "7-Day Easy Return", icon: RotateCcw },
     ];
-  }, [product, brand, rating]);
+  }, [product, brandName, categoryName, rating]);
 
   // Features list
   const features = useMemo(() => {
@@ -154,16 +153,15 @@ export function ProductDetailsPage() {
     if (product?.description) {
       return [
         product.description,
-        "Commercial-grade certified build for long-lasting performance and reliability",
-        "Comprehensive warranty backed by authorized brand service centers",
-        "Verified authentic packaging with original brand accessories included",
+        "Certified pure organic formulation with zero artificial additives",
+        "Directly sourced and batch-tested for superior quality & potency",
+        "Secure eco-friendly food-grade packaging",
       ];
     }
     return [
-      "Commercial-grade certified build for long-lasting performance",
-      "Energy-efficient architecture with precision controls",
-      "Comprehensive warranty backed by authorized brand service centers",
-      "Verified authentic packaging with original accessories included",
+      "Certified pure organic formulation with zero artificial additives",
+      "Directly sourced and batch-tested for superior quality & potency",
+      "Secure eco-friendly food-grade packaging",
     ];
   }, [product]);
 
@@ -173,14 +171,13 @@ export function ProductDetailsPage() {
       return product.specifications;
     }
     return {
-      Brand: brand,
-      Model: product?.sku || "VN-" + (product?.id || "GENERIC"),
-      Category: product?.category || "Standard",
-      Availability: "In Stock",
-      Warranty: "1 Year Comprehensive",
-      "Country of Origin": "India",
+      Brand: brandName,
+      SKU: product?.sku || product?.id || "N/A",
+      Category: categoryName,
+      Availability: product?.isActive ? "In Stock" : "Unavailable",
+      Status: product?.isBestSeller ? "Top Seller" : product?.isNew ? "New Launch" : "Standard",
     };
-  }, [product, brand]);
+  }, [product, brandName, categoryName]);
 
   // Related items
   const relatedList = useMemo(() => {
@@ -263,7 +260,7 @@ export function ProductDetailsPage() {
       <SEO
         title={`${title} - Buy Online at Best Price`}
         description={product?.description || subtitle}
-        keywords={`${title}, ${brand}, ${product?.category || "groceries"}, buy online, best price`}
+        keywords={`${title}, ${brand}, ${categoryName}, buy online, best price`}
         ogType="product"
         ogImage={currentImage}
         schema={{
@@ -301,7 +298,7 @@ export function ProductDetailsPage() {
           <Link to="/" className="hover:text-gray-900 transition-colors">Home</Link>
           <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
           <Link to="/products" className="hover:text-gray-900 transition-colors">
-            {product?.category || "Catalog"}
+            {categoryName}
           </Link>
           <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
           <span className="text-gray-500">{brand}</span>
@@ -336,17 +333,27 @@ export function ProductDetailsPage() {
 
             {/* Central Main Image Container */}
             <div className="flex-1 bg-white rounded-2xl border border-gray-200 p-6 relative flex items-center justify-center min-h-[380px] sm:min-h-[440px]">
-              <img
-                src={currentImage}
-                alt={title}
-                className="max-h-[340px] sm:max-h-[400px] w-full object-contain drop-shadow-md transition-transform duration-300 hover:scale-105"
-              />
-              <button
-                className="absolute right-4 bottom-4 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 transition-colors cursor-pointer"
-                title="Expand image"
-              >
-                <Maximize2 className="w-4 h-4" />
-              </button>
+              {currentImage ? (
+                <>
+                  <img
+                    src={currentImage}
+                    alt={title}
+                    className="max-h-[340px] sm:max-h-[400px] w-full object-contain drop-shadow-md transition-transform duration-300 hover:scale-105"
+                  />
+                  <button
+                    className="absolute right-4 bottom-4 p-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 border border-gray-200 transition-colors cursor-pointer"
+                    title="Expand image"
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                  </button>
+                </>
+              ) : (
+                <div className="w-full h-full min-h-[320px] flex items-center justify-center text-center p-8 bg-emerald-50/70 rounded-xl border-2 border-dashed border-emerald-300">
+                  <span className="font-extrabold text-2xl text-[#1a3c2e] leading-snug max-w-sm">
+                    {title}
+                  </span>
+                </div>
+              )}
             </div>
 
           </div>
@@ -395,7 +402,7 @@ export function ProductDetailsPage() {
               <span className="bg-[#003D2B] text-white text-[11px] font-bold px-2 py-0.5 rounded">
                 #1 Best Seller
               </span>
-              <span className="text-xs text-gray-500">in {product?.category || "Featured Catalog"}</span>
+              <span className="text-xs text-gray-500">in {categoryName}</span>
             </div>
 
             {/* Price Row */}

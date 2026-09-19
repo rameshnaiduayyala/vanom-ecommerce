@@ -41,10 +41,26 @@ export async function listCategories({ page, limit, skip, search, isActive }) {
   };
 
   const [items, total] = await prisma.$transaction([
-    prisma.category.findMany({ where, skip, take: limit, orderBy: { createdAt: "desc" } }),
+    prisma.category.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      include: {
+        _count: {
+          select: { products: true }
+        }
+      }
+    }),
     prisma.category.count({ where })
   ]);
-  return { items, total };
+  return {
+    items: items.map((cat) => ({
+      ...cat,
+      count: cat._count?.products ?? 0
+    })),
+    total
+  };
 }
 
 export async function getCategoryById(id) {

@@ -18,7 +18,6 @@ import {
   LockKeyhole,
   AlertCircle,
 } from "lucide-react";
-import { Button } from "../../../components/ui/Button.jsx";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -26,7 +25,7 @@ export function LoginPage() {
   const { addToast } = useUIStore();
 
   const [email, setEmail] = useState("customer@vanom.com");
-  const [password, setPassword] = useState("Password123!");
+  const [password, setPassword] = useState("Password@123");
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState("B2C");
   const [loading, setLoading] = useState(false);
@@ -40,7 +39,8 @@ export function LoginPage() {
     try {
       const data = await Api.auth.login({ email, password });
       const user = data?.user || data;
-      const tokens = data?.tokens;
+      const token = data?.token || data?.tokens?.accessToken || data?.accessToken;
+      const tokens = typeof data?.tokens === "object" ? data.tokens : { accessToken: token };
 
       if (!user) {
         throw new Error("Invalid response from server. User payload missing.");
@@ -81,20 +81,20 @@ export function LoginPage() {
     setErrorMessage("");
     if (demoType === "ADMIN") {
       setEmail("admin@vanom.com");
-      setPassword("Password123!");
+      setPassword("Password@123");
     } else if (demoType === "B2B") {
       setEmail("buyer@agrowholesale.in");
-      setPassword("Password123!");
+      setPassword("password@123");
     } else {
       setEmail("customer@vanom.com");
-      setPassword("Password123!");
+      setPassword("password@123");
     }
   };
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center bg-[#F8FAF9] px-4 py-12">
       <div className="max-w-md w-full space-y-6">
-        
+
         {/* ─── Header Logo & Welcome ─── */}
         <div className="text-center space-y-2">
           <Link to={ROUTES.HOME} className="inline-block hover:opacity-90 transition-opacity">
@@ -126,11 +126,10 @@ export function LoginPage() {
             <button
               type="button"
               onClick={() => handleQuickDemo("B2C")}
-              className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer ${
-                selectedRole === "B2C"
-                  ? "border-[#00875A] bg-[#E6F4EA] text-[#00875A] shadow-xs"
-                  : "border-[#E8EDE9] bg-[#F8FAF9] text-[#3D5648] hover:bg-white hover:border-[#DCE8DF]"
-              }`}
+              className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer ${selectedRole === "B2C"
+                ? "border-[#00875A] bg-[#E6F4EA] text-[#00875A] shadow-xs"
+                : "border-[#E8EDE9] bg-[#F8FAF9] text-[#3D5648] hover:bg-white hover:border-[#DCE8DF]"
+                }`}
             >
               <User className="w-4 h-4" />
               <span>Customer</span>
@@ -139,11 +138,10 @@ export function LoginPage() {
             <button
               type="button"
               onClick={() => handleQuickDemo("B2B")}
-              className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer ${
-                selectedRole === "B2B"
-                  ? "border-[#00875A] bg-[#E6F4EA] text-[#00875A] shadow-xs"
-                  : "border-[#E8EDE9] bg-[#F8FAF9] text-[#3D5648] hover:bg-white hover:border-[#DCE8DF]"
-              }`}
+              className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer ${selectedRole === "B2B"
+                ? "border-[#00875A] bg-[#E6F4EA] text-[#00875A] shadow-xs"
+                : "border-[#E8EDE9] bg-[#F8FAF9] text-[#3D5648] hover:bg-white hover:border-[#DCE8DF]"
+                }`}
             >
               <Building2 className="w-4 h-4" />
               <span>B2B Client</span>
@@ -152,11 +150,10 @@ export function LoginPage() {
             <button
               type="button"
               onClick={() => handleQuickDemo("ADMIN")}
-              className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer ${
-                selectedRole === "ADMIN"
-                  ? "border-[#00875A] bg-[#E6F4EA] text-[#00875A] shadow-xs"
-                  : "border-[#E8EDE9] bg-[#F8FAF9] text-[#3D5648] hover:bg-white hover:border-[#DCE8DF]"
-              }`}
+              className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer ${selectedRole === "ADMIN"
+                ? "border-[#00875A] bg-[#E6F4EA] text-[#00875A] shadow-xs"
+                : "border-[#E8EDE9] bg-[#F8FAF9] text-[#3D5648] hover:bg-white hover:border-[#DCE8DF]"
+                }`}
             >
               <ShieldCheck className="w-4 h-4" />
               <span>Admin Desk</span>

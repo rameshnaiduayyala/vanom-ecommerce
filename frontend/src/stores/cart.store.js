@@ -54,7 +54,7 @@ export const useCartStore = create(
               price: Number(item.unitPrice || item.price || 0),
               quantity: item.quantity,
               maxStock: item.availableStock !== undefined ? item.availableStock : (item.maxStock ?? 100),
-              image: item.image || item.imageUrl || "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=400&q=80",
+              image: item.image || item.imageUrl || null,
               sku: item.sku,
             }));
             const subtotal = Number(data.subtotal || items.reduce((sum, i) => sum + i.price * i.quantity, 0));

@@ -11,6 +11,7 @@ import { couponRoutes } from "../modules/coupons/coupon.routes.js";
 import { pricingRoutes } from "../modules/pricing/pricing.routes.js";
 import { reviewRoutes } from "../modules/reviews/review.routes.js";
 import { bulkRoutes } from "../modules/bulk/routes/index.js";
+import { adminRoutes } from "../modules/admin/admin.routes.js";
 
 export async function registerRoutes(fastify) {
   await fastify.register(productRoutes, {
@@ -40,4 +41,5 @@ export async function registerRoutes(fastify) {
   await fastify.register(pricingRoutes, { prefix: "/api/v1" });
   await fastify.register(reviewRoutes, { prefix: "/api/v1" });
   await fastify.register(bulkRoutes, { prefix: "/api/v1" });
+  await fastify.register(adminRoutes, { prefix: "/api/v1" });
 }

@@ -162,7 +162,7 @@ export function useCartPage() {
   const handleAddRecommended = (product) => {
     const pricing = product.pricing?.[country.code] || product.pricing?.US || {};
     const price   = Number(product.price || pricing.retailPrice || 399);
-    const image   = product.image || product.images?.[0]?.url || "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=600&q=80";
+    const image   = product.image || product.images?.[0]?.url || null;
     const newItems = [...(cart.items || []), { id: product.id, name: product.name, price, mrp: product.mrp || Math.round(price * 1.35), quantity: 1, image }];
     setCart({ items: newItems, itemCount: newItems.length, subtotal: newItems.reduce((s, i) => s + i.price * i.quantity, 0) });
     setSelectedIds((prev) => [...prev, product.id]);

@@ -102,7 +102,7 @@ export async function createProduct(input) {
   }
 }
 
-export async function listProducts({ page, limit, skip, search, type, isActive, isNew, isFeatured, isTrending, isBestSeller }) {
+export async function listProducts({ page, limit, skip, search, categoryId, type, isActive, isNew, isFeatured, isTrending, isBestSeller }) {
   const where = {
     isActive: isActive !== undefined ? isActive : true,
     ...(search ? {
@@ -110,6 +110,12 @@ export async function listProducts({ page, limit, skip, search, type, isActive, 
         { name: { contains: search, mode: "insensitive" } },
         { slug: { contains: search, mode: "insensitive" } },
         { sku: { contains: search, mode: "insensitive" } }
+      ]
+    } : {}),
+    ...(categoryId ? {
+      OR: [
+        { categoryId: categoryId },
+        { category: { slug: categoryId } }
       ]
     } : {}),
     ...(type ? { type } : {}),
@@ -133,9 +139,16 @@ export async function listProducts({ page, limit, skip, search, type, isActive, 
   return { items: items.map(serializeProduct), total };
 }
 
-export async function getProductById(id) {
-  const product = await prisma.product.findUnique({
-    where: { id, isActive: true },
+export async function getProductById(idOrSlug) {
+  const product = await prisma.product.findFirst({
+    where: {
+      OR: [
+        { id: idOrSlug },
+        { slug: idOrSlug }
+      ],
+      isActive: true,
+      deletedAt: null,
+    },
     include: productInclude
   });
 

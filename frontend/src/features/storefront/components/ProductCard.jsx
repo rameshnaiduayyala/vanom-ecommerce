@@ -32,12 +32,20 @@ export function ProductCard({ product, badge = null }) {
       {/* ── Image area ─────────────────────────────────────────────────── */}
       <div className="relative w-full aspect-square bg-gradient-to-b from-[#F8FAF9] via-[#F3F8F5] to-[#EAF4EF]/60 overflow-hidden flex items-center justify-center border-b border-gray-100">
         <Link to={productUrl} aria-label={product.name} className="w-full h-full flex items-center justify-center p-5">
-          <img
-            src={productImage}
-            alt={product.name}
-            className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 ease-out drop-shadow-sm"
-            loading="lazy"
-          />
+          {productImage ? (
+            <img
+              src={productImage}
+              alt={product.name}
+              className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 ease-out drop-shadow-sm"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-center p-4 bg-emerald-50/70 rounded-2xl border border-dashed border-emerald-300">
+              <span className="font-extrabold text-sm sm:text-base text-[#1a3c2e] leading-snug line-clamp-3">
+                {product.name}
+              </span>
+            </div>
+          )}
         </Link>
 
         {/* Badges */}

@@ -3,8 +3,6 @@ import { useCountryStore } from "../../../stores/country.store.js";
 import { useCartStore } from "../../../stores/cart.store.js";
 import { useUIStore } from "../../../stores/ui.store.js";
 
-const FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=600&q=80";
 
 /** Resolves price from multiple possible API shapes */
 function resolvePrice(product, countryCode) {

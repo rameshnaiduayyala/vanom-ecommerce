@@ -42,18 +42,6 @@ export function HomePage() {
   const { country } = useCountryStore();
 
   // ── Data Fetching (parallel, non-blocking) ──────────────────────
-  const { data: heroBanners = [] } = useQuery({
-    queryKey: ["banners-hero"],
-    queryFn: () => Api.banners.list({ type: "HERO_CAROUSEL" }),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: promoBanners = [] } = useQuery({
-    queryKey: ["banners-promo"],
-    queryFn: () => Api.banners.list({ type: "PROMOTIONAL" }),
-    staleTime: 5 * 60 * 1000,
-  });
-
   const { data: productsData, isLoading: loadingProducts } = useQuery({
     queryKey: ["home-products", country.code],
     queryFn: () => Api.catalog.getProducts(),
@@ -104,8 +92,7 @@ export function HomePage() {
       />
       {/* ── 1. Hero Banner Slider (Primary promotional marketing) ── */}
       <section className="bg-transparent">
-
-        <HeroBanner banners={heroBanners} />
+        <HeroBanner />
       </section>
 
       {/* ── 2. Quick Category Pills Strip (Soft Warm Cream / Vanilla BG) ── */}
@@ -126,7 +113,7 @@ export function HomePage() {
 
       {/* ── 4. Promo Banner 3-Grid (Candy White BG) ── */}
       <section className="py-8 bg-[#FAF9F6] border-b border-gray-200/60">
-        <PromoBannerGrid banners={promoBanners} />
+        <PromoBannerGrid />
       </section>
 
       {/* ── 5. New Launches Carousel (Soft Warm Ivory BG) ── */}

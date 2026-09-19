@@ -51,6 +51,7 @@ export async function list(request, reply) {
   const result = await productService.listProducts({
     ...pagination,
     search: request.query.search,
+    categoryId: request.query.categoryId,
     type: request.query.type,
     isActive: request.query.isActive,
     isNew: request.query.isNew,

@@ -7,6 +7,14 @@ import { formatPrice } from "../../../../utils/formatters.js";
 import { Star, Check, Plus, Minus, Heart, Sparkles, PackageCheck, Layers } from "lucide-react";
 
 export function ComboProductCard({ combo, badge = null }) {
+  if (!combo || !combo.name) {
+    return (
+      <div className="w-full h-full min-h-[300px] flex items-center justify-center p-6 bg-gray-50/80 rounded-3xl border border-dashed border-gray-300 text-gray-400 text-sm font-medium">
+        No Data Available
+      </div>
+    );
+  }
+
   const { country } = useCountryStore();
   const { cart, setCart } = useCartStore();
   const { addToast } = useUIStore();
@@ -32,7 +40,7 @@ export function ComboProductCard({ combo, badge = null }) {
     combo.image ||
     combo.images?.[0]?.file?.url ||
     combo.images?.[0]?.url ||
-    "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=600&q=80";
+    null;
 
   const itemsIncluded = combo.itemsIncluded || [
     "Kadha Sips for Cold Defense (30 Sachets)",
@@ -94,12 +102,20 @@ export function ComboProductCard({ combo, badge = null }) {
           className="w-full h-full flex items-center justify-center p-4 relative"
           aria-label={combo.name}
         >
-          <img
-            src={image}
-            alt={combo.name}
-            className="w-full h-full object-contain group-hover:scale-108 transition-transform duration-500 ease-out drop-shadow-md"
-            loading="lazy"
-          />
+          {image ? (
+            <img
+              src={image}
+              alt={combo.name}
+              className="w-full h-full object-contain group-hover:scale-108 transition-transform duration-500 ease-out drop-shadow-md"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-center p-4 bg-purple-50/70 rounded-2xl border border-dashed border-purple-300">
+              <span className="font-extrabold text-sm sm:text-base text-purple-950 leading-snug line-clamp-3">
+                {combo.name}
+              </span>
+            </div>
+          )}
         </Link>
 
         {/* Top-Left Badges */}
