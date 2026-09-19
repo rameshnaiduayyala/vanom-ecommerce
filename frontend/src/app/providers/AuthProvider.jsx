@@ -26,9 +26,7 @@ export function AuthProvider({ children }) {
         }
       } catch (err) {
         console.warn("Auth initialization token check failed:", err.message);
-        if (import.meta.env.VITE_USE_MOCK_API !== "true") {
-          logout();
-        }
+        logout();
       } finally {
         setInitializing(false);
       }

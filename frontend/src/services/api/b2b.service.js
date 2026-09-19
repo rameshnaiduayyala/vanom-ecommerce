@@ -1,24 +1,12 @@
 import { apiClient } from "./axios.js";
-import { MOCK_COMPANIES, MOCK_QUOTES } from "./mock-data.js";
-
-const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === "true";
-const delay = (ms = 150) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const b2bService = {
   // ── Bulk Business Account Management ──
   getCompany: async () => {
-    if (USE_MOCK) {
-      await delay(150);
-      return MOCK_COMPANIES[0];
-    }
     return apiClient.get("/bulk/business/me");
   },
 
   registerCompany: async (payload) => {
-    if (USE_MOCK) {
-      await delay(200);
-      return { success: true, data: { ...payload, id: `bulk-biz-${Date.now()}`, status: "PENDING" } };
-    }
     return apiClient.post("/bulk/business/register", {
       businessName: payload.businessName || payload.legalName,
       businessEmail: payload.businessEmail || payload.email,
@@ -32,10 +20,6 @@ export const b2bService = {
   },
 
   updateCompany: async (payload) => {
-    if (USE_MOCK) {
-      await delay(150);
-      return { success: true };
-    }
     return apiClient.put("/bulk/business/me", payload);
   },
 
@@ -136,4 +120,3 @@ export const b2bService = {
     return apiClient.post("/bulk/addresses", payload);
   },
 };
-

@@ -7,7 +7,7 @@ export function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuthStore();
   const location = useLocation();
 
-  if (!isAuthenticated && import.meta.env.VITE_USE_MOCK_API !== "true") {
+  if (!isAuthenticated) {
     return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 
@@ -18,7 +18,7 @@ export function B2BRoute({ children }) {
   const { isAuthenticated, user, isB2BApproved } = useAuthStore();
   const location = useLocation();
 
-  if (!isAuthenticated && import.meta.env.VITE_USE_MOCK_API !== "true") {
+  if (!isAuthenticated) {
     return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 
@@ -31,7 +31,7 @@ export function AdminRoute({ children }) {
 
   const isAdmin = hasRole("ADMIN") || hasRole("SUPER_ADMIN") || hasRole("SUPERADMIN");
 
-  if (!isAuthenticated && import.meta.env.VITE_USE_MOCK_API !== "true") {
+  if (!isAuthenticated) {
     return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 

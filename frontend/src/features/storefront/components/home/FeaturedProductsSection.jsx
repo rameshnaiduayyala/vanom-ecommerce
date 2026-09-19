@@ -1,12 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, PackageOpen } from "lucide-react";
 import { ProductCardCompact } from "./ProductCardCompact.jsx";
 import { ROUTES } from "../../../../constants/routes.js";
-import {
-  FEATURED_FALLBACK_PRODUCTS,
-  FILTER_TABS,
-} from "../../data/featuredProducts.data.js";
 
 // ─── Skeleton ──────────────────────────────────────────────────────────────────
 function FeaturedSkeleton() {
@@ -35,52 +31,19 @@ export function FeaturedProductsSection({
   isLoading = false,
   className = "",
 }) {
-  const [activeFilter] = useState("ALL");
-
-  // Resolve the base list — prefer API data, fall back to reference data
-  const baseList = useMemo(() => {
-    const raw = products.length > 0
-      ? products
-      : featuredProducts.length > 0
-        ? featuredProducts
-        : FEATURED_FALLBACK_PRODUCTS;
-    return Array.isArray(raw) ? raw : (raw?.items || FEATURED_FALLBACK_PRODUCTS);
-  }, [products, featuredProducts]);
-
-  const bestSellerList = useMemo(() => {
-    const raw = Array.isArray(bestSellers) && bestSellers.length > 0
-      ? bestSellers
-      : baseList.filter((p) => p.badge === "Bestseller" || p.isBestSeller);
-    return raw.length > 0 ? raw : baseList;
-  }, [bestSellers, baseList]);
-
-  // Apply active filter
+  // Resolve purely from live API data
   const displayed = useMemo(() => {
-    let list;
-    switch (activeFilter) {
-      case "BEST_SELLERS":
-        list = bestSellerList;
-        break;
-      case "NEW":
-        list = baseList.filter((p) => p.badge === "New" || p.isNewLaunch);
-        break;
-      case "TOP_RATED":
-        list = [...baseList].sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      case "OFFERS":
-        list = baseList.filter((p) => (p.discount || 0) >= 25);
-        break;
-      default:
-        list = baseList;
-    }
-    // Always show something
-    return (list.length > 0 ? list : baseList).slice(0, 12);
-  }, [activeFilter, baseList, bestSellerList]);
+    const list = featuredProducts.length > 0
+      ? featuredProducts
+      : products.length > 0
+      ? products
+      : bestSellers;
+    return (Array.isArray(list) ? list : []).slice(0, 12);
+  }, [products, featuredProducts, bestSellers]);
 
   return (
     <section className={`py-8 sm:py-10 w-full max-w-full overflow-hidden ${className}`}>
       <div className="max-w-[1440px] mx-auto px-4 sm:px-8 w-full min-w-0">
-
         {/* ── Header row ──────────────────────────────────────────── */}
         <div className="flex flex-col gap-3 mb-6">
           <div className="flex items-center justify-between">
@@ -99,6 +62,12 @@ export function FeaturedProductsSection({
         {/* ── Product grid ────────────────────────────────────────── */}
         {isLoading ? (
           <FeaturedSkeleton />
+        ) : displayed.length === 0 ? (
+          <div className="bg-white/80 rounded-2xl border border-gray-200/80 p-8 text-center space-y-2">
+            <PackageOpen className="w-8 h-8 text-[#358B5B] mx-auto opacity-70" />
+            <p className="text-sm font-bold text-[#204B38]">No featured products available at this moment</p>
+            <p className="text-xs text-gray-500">Check back soon for freshly updated catalog items.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
             {displayed.map((p, i) => (

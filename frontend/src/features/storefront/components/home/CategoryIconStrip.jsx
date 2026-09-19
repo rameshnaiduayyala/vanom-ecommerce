@@ -1,50 +1,11 @@
-/**
- * CategoryIconStrip.jsx — Responsive horizontal category pill strip.
- * Matches reference: rounded outline pills with icons, responsive touch scrolling on mobile, arrow controls on desktop.
- */
 import React, { useRef } from "react";
 import { Link } from "react-router-dom";
-import {
-  ShoppingBasket,
-  ChevronLeft,
-  ChevronRight,
-  Laptop,
-  Home,
-  UtensilsCrossed,
-  Sparkles,
-  HeartPulse,
-  Baby,
-  Dumbbell,
-  BookOpen,
-  PawPrint,
-  Car,
-  Trees,
-  Grid,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Grid, ShoppingBasket } from "lucide-react";
 import { ROUTES } from "../../../../constants/routes.js";
 
-const DEFAULT_CATEGORIES = [
-  { id: "groceries", name: "Groceries", icon: ShoppingBasket },
-  { id: "electronics", name: "Electronics", icon: Laptop },
-  { id: "home-living", name: "Home & Living", icon: Home },
-  { id: "kitchen-dining", name: "Kitchen & Dining", icon: UtensilsCrossed },
-  { id: "beauty-care", name: "Beauty & Personal Care", icon: Sparkles },
-  { id: "toys-baby", name: "Toys & Baby", icon: Baby },
-  { id: "sports-fitness", name: "Sports & Fitness", icon: Dumbbell },
-  { id: "stationery-office", name: "Stationery & Office", icon: BookOpen },
-  { id: "pet-care", name: "Pet Care", icon: PawPrint },
-];
-
-export function CategoryIconStrip({ categories = [], activeCategory = null, onSelectCategory, className = "" }) {
+export function CategoryIconStrip({ categories = [], activeCategory = null, className = "" }) {
   const scrollRef = useRef(null);
-
-  const items =
-    (categories.length > 0
-      ? categories.map((c, i) => {
-        const fb = DEFAULT_CATEGORIES[i % DEFAULT_CATEGORIES.length];
-        return { ...fb, id: c.id || fb.id, name: c.name || fb.name };
-      })
-      : DEFAULT_CATEGORIES).slice(0, 10);
+  const items = Array.isArray(categories) ? categories : [];
 
   const scroll = (dir) => {
     if (scrollRef.current) {
@@ -52,10 +13,17 @@ export function CategoryIconStrip({ categories = [], activeCategory = null, onSe
     }
   };
 
+  if (items.length === 0) {
+    return (
+      <div className={`w-full max-w-full overflow-hidden py-3 px-4 text-center ${className}`}>
+        <p className="text-xs text-[#264D3B]/70 font-medium">No categories available at the moment.</p>
+      </div>
+    );
+  }
+
   return (
     <div className={`w-full max-w-full overflow-hidden ${className}`}>
       <div className="max-w-[1440px] mx-auto relative py-2.5 px-0 sm:px-12 w-full min-w-0">
-        
         {/* Desktop Left Scroll Button */}
         <button
           onClick={() => scroll(-1)}
@@ -65,32 +33,31 @@ export function CategoryIconStrip({ categories = [], activeCategory = null, onSe
           <ChevronLeft className="w-4 h-4" />
         </button>
 
-        {/* Scrollable Pill Container (Touch-scrollable on mobile, seamless overflow) */}
+        {/* Scrollable Pill Container */}
         <div
           ref={scrollRef}
           className="flex items-center justify-start lg:justify-center overflow-x-auto scrollbar-none gap-2 sm:gap-2.5 px-4 sm:px-2 py-1 w-full min-w-0 touch-pan-x"
         >
           {items.map((cat, idx) => {
-            const Icon = cat.icon;
             const isFirst = idx === 0 && !activeCategory;
             const isActive = activeCategory === cat.id || isFirst;
 
             return (
               <Link
                 key={cat.id}
-                to={`${ROUTES.PRODUCTS}?category=${cat.id}`}
-                className={`flex items-center gap-2 px-3.5 sm:px-4.5 py-2 sm:py-2.5 rounded-full border transition-all duration-200 shrink-0 whitespace-nowrap cursor-pointer select-none font-bold text-[11px] sm:text-xs uppercase tracking-wider ${isActive
-                  ? "bg-[#358B5B] text-white border-[#358B5B] shadow-xs"
-                  : "bg-transparent text-[#264D3B] border-[#7CA98B]/60 hover:bg-[#358B5B] hover:text-white hover:border-[#358B5B]"
-                  }`}
+                to={`${ROUTES.PRODUCTS}?category=${cat.id || cat.slug}`}
+                className={`flex items-center gap-2 px-3.5 sm:px-4.5 py-2 sm:py-2.5 rounded-full border transition-all duration-200 shrink-0 whitespace-nowrap cursor-pointer select-none font-bold text-[11px] sm:text-xs uppercase tracking-wider ${
+                  isActive
+                    ? "bg-[#358B5B] text-white border-[#358B5B] shadow-xs"
+                    : "bg-transparent text-[#264D3B] border-[#7CA98B]/60 hover:bg-[#358B5B] hover:text-white hover:border-[#358B5B]"
+                }`}
               >
-                {/* Left side outline line icon matching reference */}
-                <Icon
-                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 transition-colors ${isActive ? "text-white" : "text-[#264D3B] group-hover:text-white"
-                    }`}
+                <ShoppingBasket
+                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 transition-colors ${
+                    isActive ? "text-white" : "text-[#264D3B] group-hover:text-white"
+                  }`}
                   strokeWidth={1.8}
                 />
-                {/* Right side category uppercase name */}
                 <span>{cat.name}</span>
               </Link>
             );

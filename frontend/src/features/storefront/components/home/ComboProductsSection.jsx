@@ -1,92 +1,18 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Sparkles, Layers, BadgePercent } from "lucide-react";
+import { ArrowRight, BadgePercent } from "lucide-react";
 import { ComboProductCard } from "./ComboProductCard.jsx";
 import { ROUTES } from "../../../../constants/routes.js";
 
-const DEFAULT_COMBOS = [
-  {
-    id: "combo-breakfast-organic",
-    name: "Organic Breakfast & Superfood Duo",
-    slug: "combo-breakfast-organic",
-    category: "Groceries & Pantry",
-    price: 899,
-    mrp: 1348,
-    discount: 33,
-    rating: 4.94,
-    reviewsCount: 1840,
-    badge: "BEST VALUE",
-    subtitle: "Pure raw forest honey paired with premium California crunchy almonds",
-    image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=600&q=80",
-    itemsIncluded: [
-      "Pure Raw Organic Forest Honey (500g Glass Jar)",
-      "California Whole Raw Almonds (500g Pouch)",
-    ],
-  },
-  {
-    id: "combo-kitchen-pantry",
-    name: "Mediterranean Kitchen Pantry Pack",
-    slug: "combo-kitchen-pantry",
-    category: "Organic Grocery",
-    price: 1399,
-    mrp: 2149,
-    discount: 35,
-    rating: 4.88,
-    reviewsCount: 2190,
-    badge: "TOP SELLER",
-    subtitle: "First cold-pressed extra virgin olive oil, 2-year aged rice & rock salt",
-    image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80",
-    itemsIncluded: [
-      "Cold Pressed Extra Virgin Olive Oil (1 Litre Bottle)",
-      "Royal Heritage Aged Basmati Rice (5 KG Sack)",
-      "Pure Organic Himalayan Pink Salt (1 KG)",
-    ],
-  },
-  {
-    id: "combo-superfood-energy",
-    name: "Morning Energy Superfood Trio",
-    slug: "combo-superfood-energy",
-    category: "Superfoods & Pantry",
-    price: 1199,
-    mrp: 1948,
-    discount: 38,
-    rating: 4.95,
-    reviewsCount: 940,
-    badge: "ORGANIC PACK",
-    subtitle: "Sustained focus, rich antioxidants & protein crunch",
-    image: "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80",
-    itemsIncluded: [
-      "Ceremonial Grade Matcha Green Tea (100g Tin)",
-      "California Whole Raw Almonds (500g)",
-      "Organic Raw Chia Seeds (400g)",
-    ],
-  },
-  {
-    id: "combo-dryfruits-nuts",
-    name: "Royal Dry Fruits & Nuts Connoisseur Box",
-    slug: "combo-dryfruits-nuts",
-    category: "Dry Fruits & Nuts",
-    price: 1499,
-    mrp: 2299,
-    discount: 35,
-    rating: 4.91,
-    reviewsCount: 1620,
-    badge: "PREMIUM BOX",
-    subtitle: "Hand-picked jumbo cashews, organic walnuts & sun-dried figs",
-    image: "https://images.unsplash.com/photo-1508061253366-f7da158b6d46?auto=format&fit=crop&w=600&q=80",
-    itemsIncluded: [
-      "Premium Jumbo Roasted Cashews (500g)",
-      "Kashmiri Mammoth Walnut Kernels (500g)",
-      "Organic Sun-Dried Figs (500g)",
-    ],
-  },
-];
-
 export function ComboProductsSection({
-  combos = DEFAULT_COMBOS,
+  combos = [],
   className = "",
 }) {
-  const list = Array.isArray(combos) && combos.length > 0 ? combos : DEFAULT_COMBOS;
+  const list = Array.isArray(combos) ? combos : [];
+
+  if (list.length === 0) {
+    return null;
+  }
 
   return (
     <section className={`py-10 sm:py-14 w-full max-w-full overflow-hidden ${className}`}>
