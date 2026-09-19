@@ -55,7 +55,7 @@ export const catalogService = {
       const items = getLiveProducts().slice(0, params.limit || 8);
       return items;
     }
-    return apiClient.get("/products/featured", { params });
+    return apiClient.get("/products/highlights/featured", { params });
   },
 
   getBestSellers: async (params = {}) => {
@@ -64,7 +64,7 @@ export const catalogService = {
       const items = getLiveProducts().slice(0, params.limit || 8);
       return items;
     }
-    return apiClient.get("/products/best-sellers", { params });
+    return apiClient.get("/products/highlights/best-seller", { params });
   },
 
   // --- Product CRUD ---

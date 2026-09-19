@@ -53,9 +53,18 @@ export function LoginPage() {
         type: "success",
       });
 
-      if (user?.roles?.includes("ADMIN") || user?.roles?.includes("SUPER_ADMIN")) {
+      const role = user?.role;
+      const roles = Array.isArray(user?.roles) ? user.roles : [];
+      const isAdmin =
+        role === "SUPERADMIN" ||
+        role === "ADMIN" ||
+        roles.includes("ADMIN") ||
+        roles.includes("SUPER_ADMIN") ||
+        roles.includes("SUPERADMIN");
+
+      if (isAdmin) {
         navigate(ROUTES.ADMIN.DASHBOARD);
-      } else if (user?.customerType === "B2B") {
+      } else if (user?.customerType === "B2B" || user?.bulkBusiness) {
         navigate(ROUTES.B2B.DASHBOARD);
       } else {
         navigate(ROUTES.HOME);

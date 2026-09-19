@@ -2,6 +2,7 @@ import * as authService from "./auth.service.js";
 import { sendSuccess } from "../../common/response/api-response.js";
 import { HTTP_STATUS } from "../../constants/http-status.js";
 import { MESSAGES } from "../../constants/messages.js";
+import { createAccessToken } from "../../common/utils/jwt.js";
 
 export async function register(request, reply) {
   const result = await authService.register(request.body);

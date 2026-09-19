@@ -1,147 +1,139 @@
 import { apiClient } from "./axios.js";
 import { MOCK_COMPANIES, MOCK_QUOTES } from "./mock-data.js";
 
-const USE_MOCK = import.meta.env.VITE_USE_MOCK_API !== "false";
+const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === "true";
 const delay = (ms = 150) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const b2bService = {
-  getCompany: async (id) => {
+  // ── Bulk Business Account Management ──
+  getCompany: async () => {
     if (USE_MOCK) {
       await delay(150);
       return MOCK_COMPANIES[0];
     }
-    if (id) return apiClient.get(`/companies/${id}`);
-    const res = await apiClient.get("/companies");
-    return Array.isArray(res) ? res[0] : res?.items?.[0] || MOCK_COMPANIES[0];
-  },
-
-  listCompanies: async () => {
-    if (USE_MOCK) {
-      await delay(100);
-      return MOCK_COMPANIES;
-    }
-    return apiClient.get("/companies");
+    return apiClient.get("/bulk/business/me");
   },
 
   registerCompany: async (payload) => {
     if (USE_MOCK) {
       await delay(200);
-      const newCompany = {
-        id: `comp-${Date.now()}`,
-        legalName: payload.legalName,
-        tradingName: payload.businessName || payload.tradingName || payload.legalName,
-        registrationNumber: payload.registrationNumber || "U01100DL2024PTC123456",
-        taxId: payload.taxId || "27AAACA1234A1Z1",
-        country: payload.countryCode === "US" ? "United States" : "India",
-        countryCode: payload.countryCode || "IN",
-        status: "PENDING",
-        addresses: payload.address ? [payload.address] : [],
-        members: payload.adminUser
-          ? [
-              {
-                id: `mem-${Date.now()}`,
-                name: `${payload.adminUser.firstName} ${payload.adminUser.lastName}`.trim(),
-                email: payload.adminUser.email,
-                role: "COMPANY_ADMIN",
-                isPrimary: true,
-              },
-            ]
-          : [],
-      };
-      return { success: true, data: newCompany };
+      return { success: true, data: { ...payload, id: `bulk-biz-${Date.now()}`, status: "PENDING" } };
     }
-    return apiClient.post("/companies/register", payload);
+    return apiClient.post("/bulk/business/register", {
+      businessName: payload.businessName || payload.legalName,
+      businessEmail: payload.businessEmail || payload.email,
+      businessPhone: payload.businessPhone || payload.phone,
+      registrationNumber: payload.registrationNumber || null,
+      taxRegistrationNumber: payload.taxRegistrationNumber || payload.taxId || null,
+      countryCode: payload.countryCode || "US",
+      address: typeof payload.address === "string" ? payload.address : `${payload.address?.line1 || ""}, ${payload.address?.city || ""}`.trim(),
+      contactPersonName: payload.contactPersonName || `${payload.adminUser?.firstName || ""} ${payload.adminUser?.lastName || ""}`.trim() || "Contact Person",
+    });
   },
 
-
-  updateCompany: async (id, payload) => {
+  updateCompany: async (payload) => {
     if (USE_MOCK) {
       await delay(150);
       return { success: true };
     }
-    return apiClient.put(`/companies/${id}`, payload);
+    return apiClient.put("/bulk/business/me", payload);
   },
 
-  uploadDocument: async (companyId, formData) => {
-    if (USE_MOCK) {
-      await delay(250);
-      return { success: true, status: "UNDER_REVIEW" };
-    }
-    return apiClient.post(`/companies/${companyId}/documents`, formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-  },
-
-  submitVerification: async (companyId) => {
-    if (USE_MOCK) {
-      await delay(150);
-      return { success: true, status: "UNDER_REVIEW" };
-    }
-    return apiClient.post(`/companies/${companyId}/submit-verification`);
-  },
-
-  getQuotes: async () => {
-    if (USE_MOCK) {
-      await delay(150);
-      return MOCK_QUOTES;
-    }
-    return apiClient.get("/quotes");
-  },
-
-  requestQuote: async (payload) => {
-    if (USE_MOCK) {
-      await delay(250);
-      return {
-        id: `qte-${Date.now()}`,
-        quoteNumber: `QTE-${Date.now().toString().slice(-8)}`,
-        status: "REQUESTED",
-        createdAt: new Date().toISOString(),
-        ...payload,
-      };
-    }
-    return apiClient.post("/quotes", payload);
-  },
-
-  acceptQuote: async (id) => {
-    if (USE_MOCK) {
-      await delay(200);
-      return { status: "ACCEPTED" };
-    }
-    return apiClient.post(`/quotes/${id}/accept`);
-  },
-
-  // ── Dedicated Enterprise B2B Bulk Products API (Private Wholesale) ──
+  // ── Dedicated Bulk Catalog (Volume Tier Pricing) ──
   getBulkProducts: async (params = {}) => {
-    const res = await apiClient.get("/bulk-products", { params });
+    const res = await apiClient.get("/bulk/products", { params });
     return Array.isArray(res) ? res : res?.items || [];
   },
 
   getBulkProductById: async (id) => {
-    return apiClient.get(`/bulk-products/${id}`);
+    return apiClient.get(`/bulk/products/${id}`);
   },
 
+  // ── Admin Bulk Product Management ──
   createBulkProduct: async (payload) => {
-    return apiClient.post("/bulk-products", payload);
+    return apiClient.post("/admin/bulk/products", payload);
   },
 
   updateBulkProduct: async (id, payload) => {
-    return apiClient.put(`/bulk-products/${id}`, payload);
+    return apiClient.put(`/admin/bulk/products/${id}`, payload);
   },
 
   deleteBulkProduct: async (id) => {
-    return apiClient.delete(`/bulk-products/${id}`);
+    return apiClient.delete(`/admin/bulk/products/${id}`);
   },
 
-  // ── B2B Bulk Order & Spreadsheet Quote Dispatch ──
+  // ── Bulk Cart ──
+  getBulkCart: async (params = {}) => {
+    return apiClient.get("/bulk/cart", { params });
+  },
+
+  addBulkCartItem: async (payload) => {
+    return apiClient.post("/bulk/cart/items", payload);
+  },
+
+  updateBulkCartItem: async (itemId, payload) => {
+    return apiClient.patch(`/bulk/cart/items/${itemId}`, payload);
+  },
+
+  removeBulkCartItem: async (itemId) => {
+    return apiClient.delete(`/bulk/cart/items/${itemId}`);
+  },
+
+  // ── Bulk Orders & Checkout ──
   createBulkOrder: async (payload) => {
-    return apiClient.post("/bulk-orders", payload);
+    return apiClient.post("/bulk/orders", payload);
   },
 
   listBulkOrders: async (params = {}) => {
-    return apiClient.get("/bulk-orders", { params });
+    const res = await apiClient.get("/bulk/orders", { params });
+    return Array.isArray(res) ? res : res?.items || [];
   },
 
-  updateBulkOrderStatus: async (id, status) => {
-    return apiClient.put(`/bulk-orders/${id}/status`, { status });
+  getBulkOrderById: async (id) => {
+    return apiClient.get(`/bulk/orders/${id}`);
+  },
+
+  // ── Admin Bulk Review & Operations ──
+  listAdminBusinesses: async (params = {}) => {
+    return apiClient.get("/admin/bulk/businesses", { params });
+  },
+
+  getAdminBusinessById: async (id) => {
+    return apiClient.get(`/admin/bulk/businesses/${id}`);
+  },
+
+  approveBusiness: async (id) => {
+    return apiClient.patch(`/admin/bulk/businesses/${id}/approve`);
+  },
+
+  rejectBusiness: async (id, rejectionReason) => {
+    return apiClient.patch(`/admin/bulk/businesses/${id}/reject`, { rejectionReason });
+  },
+
+  suspendBusiness: async (id) => {
+    return apiClient.patch(`/admin/bulk/businesses/${id}/suspend`);
+  },
+
+  listAdminBulkOrders: async (params = {}) => {
+    return apiClient.get("/admin/bulk/orders", { params });
+  },
+
+  getAdminBulkOrderById: async (id) => {
+    return apiClient.get(`/admin/bulk/orders/${id}`);
+  },
+
+  updateBulkOrderStatus: async (id, statusData) => {
+    const payload = typeof statusData === "string" ? { status: statusData } : statusData;
+    return apiClient.patch(`/admin/bulk/orders/${id}/status`, payload);
+  },
+
+  // ── Business Addresses ──
+  listAddresses: async () => {
+    return apiClient.get("/bulk/addresses");
+  },
+
+  createAddress: async (payload) => {
+    return apiClient.post("/bulk/addresses", payload);
   },
 };
+

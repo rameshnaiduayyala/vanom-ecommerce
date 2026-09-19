@@ -29,10 +29,14 @@ export function AdminRoute({ children }) {
   const { isAuthenticated, hasRole } = useAuthStore();
   const location = useLocation();
 
-  const isAdmin = hasRole("ADMIN") || hasRole("SUPER_ADMIN");
+  const isAdmin = hasRole("ADMIN") || hasRole("SUPER_ADMIN") || hasRole("SUPERADMIN");
 
   if (!isAuthenticated && import.meta.env.VITE_USE_MOCK_API !== "true") {
     return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
+  }
+
+  if (isAuthenticated && !isAdmin) {
+    return <Navigate to={ROUTES.HOME} replace />;
   }
 
   return children;

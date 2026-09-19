@@ -52,16 +52,23 @@ export const useAuthStore = create(
       hasRole: (role) => {
         const { user } = get();
         if (!user) return false;
+        const userRole = user.role;
         const roles = Array.isArray(user.roles)
           ? user.roles.map((r) => (typeof r === "string" ? r : r.name || r.role?.name))
           : [];
-        return roles.includes(role) || roles.includes("SUPER_ADMIN");
+        if (userRole) roles.push(userRole);
+        return (
+          roles.includes(role) ||
+          roles.includes("SUPERADMIN") ||
+          roles.includes("SUPER_ADMIN") ||
+          roles.includes("ADMIN")
+        );
       },
 
       hasPermission: (permission) => {
         const { user } = get();
         if (!user) return false;
-        if (get().hasRole("SUPER_ADMIN")) return true;
+        if (get().hasRole("SUPERADMIN") || get().hasRole("SUPER_ADMIN")) return true;
         const permissions = user.permissions || [];
         return permissions.includes(permission);
       },

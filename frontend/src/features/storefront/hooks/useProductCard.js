@@ -34,14 +34,10 @@ function resolvePrice(product, countryCode) {
   return { price, originalPrice, discount };
 }
 
-/** Resolves the best available product image */
+import { resolveProductImageUrl } from "../../../utils/image.js";
+
 function resolveImage(product) {
-  return (
-    product.image ||
-    product.images?.[0]?.file?.url ||
-    product.images?.[0]?.url ||
-    FALLBACK_IMAGE
-  );
+  return resolveProductImageUrl(product);
 }
 
 /**
