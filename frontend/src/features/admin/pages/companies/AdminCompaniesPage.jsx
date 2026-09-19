@@ -8,6 +8,7 @@ import { CompaniesFilter } from "./components/CompaniesFilter.jsx";
 import { CompanyFormModal } from "./components/CompanyFormModal.jsx";
 import { ViewCompanyModal } from "./components/ViewCompanyModal.jsx";
 import { DeleteCompanyModal } from "./components/DeleteCompanyModal.jsx";
+import { ChangeCompanyStatusModal } from "./components/ChangeCompanyStatusModal.jsx";
 
 export function AdminCompaniesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -17,6 +18,7 @@ export function AdminCompaniesPage() {
     isLoading,
     createMutation,
     updateMutation,
+    changeStatusMutation,
     deleteMutation,
   } = useAdminCompanies();
 
@@ -27,6 +29,7 @@ export function AdminCompaniesPage() {
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState(null);
   const [viewingCompany, setViewingCompany] = useState(null);
+  const [changingStatusCompany, setChangingStatusCompany] = useState(null);
   const [deleteConfirmCompany, setDeleteConfirmCompany] = useState(null);
   const [formError, setFormError] = useState("");
 
@@ -152,7 +155,20 @@ export function AdminCompaniesPage() {
         isLoading={isLoading}
         onView={handleOpenView}
         onEdit={handleOpenEdit}
+        onChangeStatus={(comp) => setChangingStatusCompany(comp)}
         onDelete={setDeleteConfirmCompany}
+      />
+
+      {/* ─── Quick Status Change Modal ─── */}
+      <ChangeCompanyStatusModal
+        isOpen={Boolean(changingStatusCompany)}
+        company={changingStatusCompany}
+        onClose={() => setChangingStatusCompany(null)}
+        onConfirm={async ({ id, status, reason }) => {
+          await changeStatusMutation.mutateAsync({ id, status, reason });
+          setChangingStatusCompany(null);
+        }}
+        isPending={changeStatusMutation.isPending}
       />
 
       {/* ─── View Company Modal ─── */}

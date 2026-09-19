@@ -100,6 +100,8 @@ export const adminService = {
   getBusinessApplications: companyService.getBusinessApplications,
   approveApplication: companyService.approveApplication,
   rejectApplication: companyService.rejectApplication,
+  suspendApplication: companyService.suspendApplication,
+  changeStatus: companyService.changeStatus,
 
   // Delegate User Management
   getUsers: userService.getUsers,

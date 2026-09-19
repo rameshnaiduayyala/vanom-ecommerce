@@ -40,6 +40,26 @@ export function useAdminCompanies() {
     },
   });
 
+  const changeStatusMutation = useMutation({
+    mutationFn: ({ id, status, reason }) => Api.admin.changeStatus(id, status, reason),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-companies"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-applications"] });
+      addToast({
+        title: "Status Updated",
+        message: `Business status changed to ${variables.status}.`,
+        type: variables.status === "APPROVED" ? "success" : variables.status === "REJECTED" ? "error" : "warning",
+      });
+    },
+    onError: (err) => {
+      addToast({
+        title: "Action Failed",
+        message: err.message || "Failed to update business status.",
+        type: "error",
+      });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id) => Api.admin.deleteCompany(id),
     onSuccess: () => {
@@ -73,6 +93,7 @@ export function useAdminCompanies() {
     isLoading: companiesQuery.isLoading,
     createMutation,
     updateMutation,
+    changeStatusMutation,
     deleteMutation,
   };
 }

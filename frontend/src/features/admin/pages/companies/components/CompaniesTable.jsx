@@ -1,8 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Building2, Globe, Clock, Ban, Edit2, Trash2, CheckCircle2, User, Phone, Mail } from "lucide-react";
+import { Building2, Globe, Clock, Ban, Edit2, Trash2, CheckCircle2, User, Phone, Mail, ShieldAlert, SlidersHorizontal } from "lucide-react";
 
-export function CompaniesTable({ companies, isLoading, onView, onEdit, onDelete }) {
+export function CompaniesTable({ companies, isLoading, onView, onEdit, onChangeStatus, onDelete }) {
   return (
     <div className="rounded-2xl bg-white border border-border overflow-hidden shadow-xs">
       <div className="overflow-x-auto">
@@ -13,7 +13,7 @@ export function CompaniesTable({ companies, isLoading, onView, onEdit, onDelete 
               <th className="p-4">Contact Info</th>
               <th className="p-4">Country & Tax ID</th>
               <th className="p-4">Linked User / Admin</th>
-              <th className="p-4">Status</th>
+              <th className="p-4">Status & Compliance</th>
               <th className="p-4">Registered</th>
               <th className="p-4 text-right">Actions</th>
             </tr>
@@ -144,26 +144,38 @@ export function CompaniesTable({ companies, isLoading, onView, onEdit, onDelete 
                       )}
                     </td>
 
-                    {/* Status */}
+                    {/* Status & Compliance Change */}
                     <td className="p-4">
-                      <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                      <button
+                        type="button"
+                        onClick={() => onChangeStatus && onChangeStatus(c)}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition hover:opacity-85 cursor-pointer ${
                           c.status === "APPROVED"
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
                             : c.status === "PENDING"
-                            ? "bg-amber-50 text-amber-700 border border-amber-200"
-                            : "bg-red-50 text-red-700 border border-red-200"
+                            ? "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"
+                            : c.status === "SUSPENDED"
+                            ? "bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100"
+                            : "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
                         }`}
+                        title="Click to change compliance status"
                       >
                         {c.status === "APPROVED" ? (
                           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                         ) : c.status === "PENDING" ? (
                           <Clock className="w-3 h-3 text-amber-600" />
+                        ) : c.status === "SUSPENDED" ? (
+                          <ShieldAlert className="w-3 h-3 text-orange-600" />
                         ) : (
                           <Ban className="w-3 h-3 text-red-500" />
                         )}
-                        {c.status || "PENDING"}
-                      </span>
+                        <span>{c.status || "PENDING"}</span>
+                      </button>
+                      {c.status === "REJECTED" && c.rejectionReason && (
+                        <div className="text-[10px] text-red-600 mt-1 truncate max-w-[160px]" title={c.rejectionReason}>
+                          Reason: {c.rejectionReason}
+                        </div>
+                      )}
                     </td>
 
                     {/* Registered Date */}
@@ -180,6 +192,13 @@ export function CompaniesTable({ companies, isLoading, onView, onEdit, onDelete 
                     {/* Actions */}
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => onChangeStatus && onChangeStatus(c)}
+                          className="p-1.5 rounded-lg text-text-secondary hover:text-amber-700 hover:bg-amber-50 transition-colors cursor-pointer"
+                          title="Change Status & Reason"
+                        >
+                          <SlidersHorizontal className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => onEdit(c)}
                           className="p-1.5 rounded-lg text-text-secondary hover:text-[#00875A] hover:bg-emerald-50 transition-colors cursor-pointer"

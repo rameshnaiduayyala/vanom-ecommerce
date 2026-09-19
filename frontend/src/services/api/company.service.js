@@ -34,4 +34,21 @@ export const companyService = {
   rejectApplication: async (id, reason) => {
     return apiClient.patch(`/admin/bulk/businesses/${id}/reject`, { rejectionReason: reason });
   },
+
+  suspendApplication: async (id) => {
+    return apiClient.patch(`/admin/bulk/businesses/${id}/suspend`);
+  },
+
+  changeStatus: async (id, status, reason) => {
+    if (status === "APPROVED") {
+      return apiClient.patch(`/admin/bulk/businesses/${id}/approve`);
+    }
+    if (status === "REJECTED") {
+      return apiClient.patch(`/admin/bulk/businesses/${id}/reject`, { rejectionReason: reason });
+    }
+    if (status === "SUSPENDED") {
+      return apiClient.patch(`/admin/bulk/businesses/${id}/suspend`);
+    }
+    return apiClient.put(`/admin/bulk/businesses/${id}`, { status });
+  },
 };
