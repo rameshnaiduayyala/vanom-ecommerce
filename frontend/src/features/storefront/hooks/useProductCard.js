@@ -4,30 +4,81 @@ import { useCartStore } from "../../../stores/cart.store.js";
 import { useUIStore } from "../../../stores/ui.store.js";
 
 
-/** Resolves price from multiple possible API shapes */
-function resolvePrice(product, countryCode) {
-  const pricing =
-    product.pricing?.[countryCode] ||
-    product.pricing?.US ||
-    product.pricing?.IN ||
-    {};
+/** Resolves price from multiple possible API shapes and country-specific pricing */
+function resolvePrice(product, countryCode = "US") {
+  if (!product) return { price: 0, originalPrice: 0, discount: 0 };
 
-  const raw =
-    product.resolvedPrice?.unitPrice ||
-    product.prices?.[0]?.amount ||
-    product.variants?.[0]?.prices?.[0]?.amount ||
-    pricing.retailPrice ||
-    product.price ||
-    339;
+  const isCanada = countryCode === "CA";
 
-  const price = Number(raw);
-  const originalPrice =
-    product.mrp || pricing.mrp || (price > 0 ? Math.round(price * 1.32) : 400);
+  // 1. Check product.countries table entry
+  const countryEntry = Array.isArray(product.countries)
+    ? product.countries.find(
+        (c) =>
+          c.country?.code === countryCode ||
+          c.currency === (isCanada ? "CAD" : "USD") ||
+          c.country?.name?.toLowerCase()?.includes(isCanada ? "canada" : "united states")
+      ) || product.countries[0]
+    : null;
+
+  // 2. Check variant country table entry if variable product
+  const firstVariant = Array.isArray(product.variants) && product.variants.length > 0 ? product.variants[0] : null;
+  const variantCountryEntry = firstVariant && Array.isArray(firstVariant.countries)
+    ? firstVariant.countries.find(
+        (c) =>
+          c.country?.code === countryCode ||
+          c.currency === (isCanada ? "CAD" : "USD") ||
+          c.country?.name?.toLowerCase()?.includes(isCanada ? "canada" : "united states")
+      ) || firstVariant.countries[0]
+    : null;
+
+  let resolvedUnit = 0;
+  let resolvedOld = 0;
+
+  if (isCanada) {
+    resolvedUnit =
+      variantCountryEntry?.price ??
+      countryEntry?.price ??
+      firstVariant?.price_cad ??
+      product.price_cad ??
+      product.priceCA ??
+      product.pricing?.CA?.retailPrice ??
+      (product.basePrice ? Number(product.basePrice) * 1.35 : (product.price ? Number(product.price) * 1.35 : (firstVariant?.price_usd ? Number(firstVariant.price_usd) * 1.35 : 0)));
+
+    resolvedOld =
+      variantCountryEntry?.oldPrice ??
+      countryEntry?.oldPrice ??
+      firstVariant?.old_price_cad ??
+      product.old_price_cad ??
+      (product.oldPrice ? Number(product.oldPrice) * 1.35 : 0);
+  } else {
+    // US or default
+    resolvedUnit =
+      variantCountryEntry?.price ??
+      countryEntry?.price ??
+      firstVariant?.price_usd ??
+      product.basePrice ??
+      product.price_usd ??
+      product.priceUS ??
+      product.price ??
+      product.pricing?.US?.retailPrice ??
+      (firstVariant?.price ? Number(firstVariant.price) : 0);
+
+    resolvedOld =
+      variantCountryEntry?.oldPrice ??
+      countryEntry?.oldPrice ??
+      firstVariant?.old_price_usd ??
+      product.old_price_usd ??
+      product.oldPrice ??
+      product.pricing?.US?.mrp ??
+      0;
+  }
+
+  const price = Number(resolvedUnit) || 0;
+  const originalPrice = Number(resolvedOld) > price ? Number(resolvedOld) : (price > 0 ? Math.round(price * 1.25) : 0);
   const discount =
-    product.discount ||
-    (originalPrice > price
+    originalPrice > price
       ? Math.round(((originalPrice - price) / originalPrice) * 100)
-      : 0);
+      : (product.discount || 0);
 
   return { price, originalPrice, discount };
 }
