@@ -85,6 +85,20 @@ export function BulkOrder() {
     }
   }, [user]);
 
+  function resolveCountryConfig(prod, countryCode) {
+    if (!prod) return null;
+    const targetCode = (countryCode || country.code || "US").toUpperCase();
+    if (Array.isArray(prod.countryPrices) && prod.countryPrices.length > 0) {
+      const match = prod.countryPrices.find(
+        (cp) => cp.countryCode?.toUpperCase() === targetCode && cp.isAvailable !== false
+      );
+      if (match) return match;
+      const fallback = prod.countryPrices.find((cp) => cp.isAvailable !== false);
+      if (fallback) return fallback;
+    }
+    return null;
+  }
+
   function resolveTier(tiers, qty) {
     if (!tiers || tiers.length === 0) return null;
     const sorted = [...tiers].sort((a, b) => (b.minQuantity || 0) - (a.minQuantity || 0));
@@ -96,14 +110,17 @@ export function BulkOrder() {
     const newRows = [...rows];
     const targetQty = Math.max(1, parseInt(qty, 10) || 1);
     const item = newRows[index];
-    const matchedTier = resolveTier(item.wholesaleTiers, targetQty);
+    const matchedTier = resolveTier(item.tiers, targetQty);
+    const unitPrice = matchedTier ? Number(matchedTier.price) : Number(item.basePrice || item.unitPrice || 0);
 
     newRows[index] = {
       ...item,
       quantity: targetQty,
-      unitPrice: matchedTier ? (country.currency === "CAD" ? matchedTier.unitPriceCAD : matchedTier.unitPriceUSD) : item.unitPrice,
-      tierName: matchedTier?.name || "Tier 1",
-      discountPercent: matchedTier?.discountPercent || 0,
+      unitPrice,
+      matchedTierIndex: matchedTier ? item.tiers.findIndex((t) => t.minQuantity === matchedTier.minQuantity) : 0,
+      discountPercent: item.basePrice && unitPrice < item.basePrice
+        ? Math.round(((item.basePrice - unitPrice) / item.basePrice) * 100)
+        : 0,
     };
     setRows(newRows);
   };
@@ -112,14 +129,27 @@ export function BulkOrder() {
     const prod = bulkProducts.find((p) => p.id === prodId);
     if (!prod) return;
 
-    if (rows.some((r) => r.id === prod.id)) {
+    if (rows.some((r) => r.productId === prod.id)) {
       toast.info("Already in Matrix", `"${prod.name}" is already in your bulk spreadsheet.`);
       return;
     }
 
-    const moq = prod.moq || 20;
+    const countryConfig = resolveCountryConfig(prod, country.code);
+    const tiers = Array.isArray(countryConfig?.tiers) && countryConfig.tiers.length > 0
+      ? countryConfig.tiers
+      : Array.isArray(prod.wholesaleTiers)
+      ? prod.wholesaleTiers.map((t) => ({
+          minQuantity: t.minQuantity,
+          maxQuantity: t.maxQuantity,
+          price: country.currency === "CAD" ? t.unitPriceCAD : t.unitPriceUSD || 30.0,
+        }))
+      : [];
+
+    const moq = countryConfig?.moq || prod.moq || 20;
     const initialQty = moq;
-    const matchedTier = resolveTier(prod.wholesaleTiers, initialQty);
+    const basePrice = tiers[0]?.price || (country.currency === "CAD" ? prod.basePriceCAD : country.currency === "INR" ? prod.basePriceINR : prod.basePriceUSD) || 30.0;
+    const matchedTier = resolveTier(tiers, initialQty);
+    const unitPrice = matchedTier ? Number(matchedTier.price) : Number(basePrice);
 
     const newRow = {
       id: prod.id,
@@ -128,19 +158,26 @@ export function BulkOrder() {
       name: prod.name,
       sku: prod.sku,
       categoryName: prod.categoryName || "General",
-      packaging: prod.packaging?.type || "Cartons / Sacks",
+      packaging: prod.packaging?.type || "25 KG Poly Sacks",
       unitsPerPackage: prod.packaging?.unitsPerPackage || 1,
+      packagesPerPallet: prod.packaging?.packagesPerPallet || 40,
+      palletCapacityUnits: prod.packaging?.palletCapacityUnits || 1000,
+      currencyCode: countryConfig?.currencyCode || country.currency || "USD",
+      stock: countryConfig?.stock !== undefined ? countryConfig.stock : prod.stockQuantity || 1000,
       moq: moq,
       quantity: initialQty,
-      unitPrice: matchedTier ? (country.currency === "CAD" ? matchedTier.unitPriceCAD : matchedTier.unitPriceUSD) : 30.0,
-      tierName: matchedTier?.name || "Tier 1",
-      discountPercent: matchedTier?.discountPercent || 0,
-      wholesaleTiers: prod.wholesaleTiers || [],
+      basePrice: Number(basePrice),
+      unitPrice: Number(unitPrice),
+      tiers: tiers,
+      matchedTierIndex: matchedTier ? tiers.findIndex((t) => t.minQuantity === matchedTier.minQuantity) : 0,
+      discountPercent: basePrice && unitPrice < basePrice
+        ? Math.round(((basePrice - unitPrice) / basePrice) * 100)
+        : 0,
     };
 
     setRows([...rows, newRow]);
     setSelectedProductToAdd("");
-    toast.success("Product Added", `Added ${prod.name} to bulk order matrix.`);
+    toast.success("Product Added", `Added ${prod.name} (MOQ: ${moq}) to bulk order matrix.`);
   };
 
   const handleRemoveRow = (index) => {
@@ -188,10 +225,13 @@ export function BulkOrder() {
   // Submit Mutation
   const submitOrderMutation = useMutation({
     mutationFn: async () => {
+      const company = user?.companyMembers?.[0]?.company;
+      const contactPerson = user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Bulk Procurement Manager";
+
       const payload = {
-        companyId: selectedCompanyId || user?.companyMembers?.[0]?.companyId || "default-company",
         countryCode: country.code || "IN",
-        currencyCode: country.currency || "INR",
+        shippingCharges: 0,
+        tax: 0,
         notes: notes || "B2B Bulk Purchase Order dispatch",
         items: rows.map((r) => ({
           productId: r.productId,
@@ -199,12 +239,26 @@ export function BulkOrder() {
           quantity: r.quantity,
           unitPrice: r.unitPrice,
         })),
+        shippingAddress: {
+          contactName: contactPerson,
+          phone: user?.phone || "+1-555-0199",
+          addressLine1: typeof company?.address === "string" ? company.address : "Corporate Fulfillment Hub",
+          city: company?.city || "Procurement HQ",
+          state: company?.state || "State/Province",
+          postalCode: company?.postalCode || "00000",
+          countryCode: country.code || "IN",
+        },
       };
       return Api.b2b.createBulkOrder(payload);
     },
-    onSuccess: () => {
-      toast.success("Bulk Order Submitted", "Official quote request has been generated and dispatched to account manager.");
-      navigate(ROUTES.B2B.QUOTES);
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["b2b-bulk-orders-list"] });
+      queryClient.invalidateQueries({ queryKey: ["b2b-orders"] });
+      toast.success(
+        "Bulk Order Placed Successfully!",
+        `Order ${data?.orderNumber || "PO"} has been recorded into the wholesale system.`
+      );
+      navigate(ROUTES.B2B.ORDERS);
     },
     onError: (err) => {
       toast.error("Submission Failed", err.message || "Failed to submit bulk order.");
@@ -396,25 +450,58 @@ export function BulkOrder() {
 
                       {/* Applied Tier */}
                       <td className="p-4">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-emerald-700 text-xs">{row.tierName}</span>
-                          {row.discountPercent > 0 ? (
-                            <span className="text-[10px] text-amber-700 font-bold">
-                              {row.discountPercent}% Volume Discount
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-emerald-800 text-xs px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200">
+                              Tier #{(row.matchedTierIndex ?? 0) + 1}
                             </span>
-                          ) : (
-                            <span className="text-[10px] text-slate-400">Standard Base Rate</span>
+                            {row.discountPercent > 0 && (
+                              <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                {row.discountPercent}% OFF
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Tier quantity breakdown hints */}
+                          {row.tiers && row.tiers.length > 1 && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              {row.tiers.map((t, tIdx) => {
+                                const isCurrent = tIdx === (row.matchedTierIndex ?? 0);
+                                return (
+                                  <span
+                                    key={tIdx}
+                                    title={`${t.minQuantity}${t.maxQuantity ? `-${t.maxQuantity}` : '+'} units: ${formatPrice(t.price, country.currency, country.symbol)}`}
+                                    className={`text-[9px] px-1.5 py-0.2 rounded border transition-colors ${
+                                      isCurrent
+                                        ? "bg-emerald-600 text-white font-bold border-emerald-700 shadow-2xs"
+                                        : "bg-slate-100 text-slate-500 border-slate-200"
+                                    }`}
+                                  >
+                                    {t.minQuantity}+
+                                  </span>
+                                );
+                              })}
+                            </div>
                           )}
                         </div>
                       </td>
 
                       {/* Wholesale Unit Price */}
-                      <td className="p-4 font-bold text-slate-900 text-sm">
-                        {formatPrice(row.unitPrice, country.currency, country.symbol)}
+                      <td className="p-4">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-900 text-sm font-mono">
+                            {formatPrice(row.unitPrice, country.currency, country.symbol)}
+                          </span>
+                          {row.basePrice && row.unitPrice < row.basePrice && (
+                            <span className="text-[10px] text-slate-400 line-through font-mono">
+                              {formatPrice(row.basePrice, country.currency, country.symbol)}
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Line Subtotal */}
-                      <td className="p-4 font-black text-slate-900 text-base">
+                      <td className="p-4 font-black text-slate-900 text-base font-mono">
                         {formatPrice(lineTotal, country.currency, country.symbol)}
                       </td>
 
@@ -437,7 +524,33 @@ export function BulkOrder() {
           </table>
         </div>
 
-        {/* Footer Summary & Instant Quote Dispatch */}
+        {/* Order Specifications & Notes */}
+        <div className="p-6 bg-slate-50/50 border-t border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Purchase Order (PO) Reference / Internal Tracking #
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. PO-2026-VANOM-0089"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="w-full px-3.5 py-2 text-xs rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:border-[#006B3C] font-mono"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Procurement & Delivery Requirements (Optional)
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. Requires hydraulic liftgate at unloading dock, deliver before 2 PM"
+              className="w-full px-3.5 py-2 text-xs rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:border-[#006B3C]"
+            />
+          </div>
+        </div>
+
+        {/* Footer Summary & Order Dispatch */}
         <div className="p-6 bg-slate-50 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-1 text-xs text-slate-600">
             <div>
@@ -455,7 +568,7 @@ export function BulkOrder() {
           <div className="flex items-center gap-6">
             <div className="text-right">
               <span className="text-[11px] text-slate-500 block uppercase font-semibold">Estimated Wholesale Total</span>
-              <span className="text-2xl font-black text-slate-900 tracking-tight">
+              <span className="text-2xl font-black text-slate-900 tracking-tight font-mono">
                 {formatPrice(totalSubtotal, country.currency, country.symbol)}
               </span>
             </div>
@@ -469,7 +582,7 @@ export function BulkOrder() {
               className="font-bold shadow-sm cursor-pointer px-6"
               icon={FileSpreadsheet}
             >
-              Submit Bulk Purchase Quote
+              Submit Bulk Purchase Order
             </Button>
           </div>
         </div>

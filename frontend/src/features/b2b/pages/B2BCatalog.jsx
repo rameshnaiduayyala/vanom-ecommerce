@@ -109,14 +109,23 @@ export function B2BCatalog() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product) => {
-            const tiers = product.wholesaleTiers || [];
-            const moq = product.moq || 20;
-            const basePrice =
-              country.currency === "CAD"
+            const targetCountryCode = (country.code || "US").toUpperCase();
+            const countryConfig = Array.isArray(product.countryPrices)
+              ? product.countryPrices.find((cp) => cp.countryCode?.toUpperCase() === targetCountryCode && cp.isAvailable !== false) ||
+                product.countryPrices.find((cp) => cp.isAvailable !== false)
+              : null;
+
+            const tiers = Array.isArray(countryConfig?.tiers) && countryConfig.tiers.length > 0
+              ? countryConfig.tiers
+              : product.wholesaleTiers || [];
+
+            const moq = countryConfig?.moq || product.moq || 20;
+            const basePrice = tiers[0]?.price ||
+              (country.currency === "CAD"
                 ? product.price_cad || product.basePriceCAD
                 : country.currency === "INR"
                 ? product.price_inr || product.basePriceINR
-                : product.price_usd || product.basePriceUSD || 30.0;
+                : product.price_usd || product.basePriceUSD || 30.0);
 
             const productImage =
               product.images?.[0] ||
@@ -147,7 +156,7 @@ export function B2BCatalog() {
                   <div className="p-5 space-y-3">
                     <div>
                       <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
-                        {product.categoryName || "General Commodity"}
+                        {product.categoryName || product.category || "General Commodity"}
                       </span>
                       <h3 className="text-sm font-bold text-slate-900 leading-snug mt-0.5">{product.name}</h3>
                       <p className="text-xs text-slate-500 font-mono mt-0.5">SKU: {product.sku}</p>
@@ -157,7 +166,7 @@ export function B2BCatalog() {
                     <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-700 space-y-1">
                       <div className="flex justify-between">
                         <span className="text-slate-500">Packaging Type:</span>
-                        <span className="font-semibold">{product.packagingType || "Cartons / Sacks"}</span>
+                        <span className="font-semibold">{product.packagingType || product.packaging?.type || "Cartons / Sacks"}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-500">Pallet Spec:</span>
@@ -182,7 +191,7 @@ export function B2BCatalog() {
                         </div>
                         <div className="divide-y divide-slate-100 bg-white">
                           {tiers.slice(0, 3).map((t, idx) => {
-                            const tierPrice =
+                            const tierPrice = t.price !== undefined ? t.price :
                               country.currency === "CAD"
                                 ? t.unitPriceCAD
                                 : country.currency === "INR"
@@ -192,7 +201,7 @@ export function B2BCatalog() {
                             return (
                               <div key={idx} className="px-3 py-1.5 flex justify-between text-[11px] text-slate-700">
                                 <span>{t.maxQuantity ? `${t.minQuantity} - ${t.maxQuantity}` : `${t.minQuantity}+`} units</span>
-                                <span className="font-bold text-slate-900">
+                                <span className="font-bold text-slate-900 font-mono">
                                   {formatPrice(tierPrice || basePrice, country.currency, country.symbol)}
                                 </span>
                               </div>
@@ -203,7 +212,7 @@ export function B2BCatalog() {
                     ) : (
                       <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
                         <span className="text-slate-500 font-medium">Wholesale Base Rate:</span>
-                        <span className="font-black text-slate-900 text-sm">
+                        <span className="font-black text-slate-900 text-sm font-mono">
                           {formatPrice(basePrice, country.currency, country.symbol)}
                         </span>
                       </div>

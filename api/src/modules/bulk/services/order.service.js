@@ -5,17 +5,25 @@ import { getBusinessForUser, resolvePrice, orderInclude, fail } from "./bulk.hel
 
 export async function create(userId, input) {
   const business = await getBusinessForUser(userId, { approved: true });
-  const cart = await prisma.bulkCart.findUnique({
-    where: { businessId: business.id },
-    include: { items: true }
-  });
 
-  if (!cart?.items.length) {
-    fail("Bulk cart is empty", "BULK_CART_EMPTY", HTTP_STATUS.BAD_REQUEST);
+  let orderItems = [];
+
+  if (Array.isArray(input.items) && input.items.length > 0) {
+    orderItems = input.items;
+  } else {
+    const cart = await prisma.bulkCart.findUnique({
+      where: { businessId: business.id },
+      include: { items: true }
+    });
+
+    if (!cart?.items.length) {
+      fail("Bulk cart or order items is empty", "BULK_CART_EMPTY", HTTP_STATUS.BAD_REQUEST);
+    }
+    orderItems = cart.items;
   }
 
   const resolved = [];
-  for (const item of cart.items) {
+  for (const item of orderItems) {
     resolved.push({
       item,
       ...(await resolvePrice(item.productId, item.variantId, input.countryCode, item.quantity))
@@ -58,6 +66,15 @@ export async function create(userId, input) {
       });
     }
 
+    const shippingAddress = input.shippingAddress || {
+      contactName: business.contactPersonName || business.businessName || "Bulk Procurement",
+      phone: business.businessPhone || "+1-000-000-0000",
+      addressLine1: business.address || "Corporate Office HQ",
+      city: "Commercial Hub",
+      postalCode: "00000",
+      countryCode: input.countryCode.toUpperCase()
+    };
+
     return tx.bulkOrder.create({
       data: {
         orderNumber: `BULK-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -69,7 +86,7 @@ export async function create(userId, input) {
         shippingCharges,
         tax,
         total,
-        shippingAddress: input.shippingAddress,
+        shippingAddress,
         items: {
           create: resolved.map((r) => ({
             productId: r.product.id,
@@ -93,7 +110,16 @@ export async function create(userId, input) {
     });
   });
 
-  await prisma.bulkCartItem.deleteMany({ where: { cartId: cart.id } });
+  // Safely clean up cart if order was checked out from cart
+  try {
+    const existingCart = await prisma.bulkCart.findUnique({ where: { businessId: business.id } });
+    if (existingCart?.id) {
+      await prisma.bulkCartItem.deleteMany({ where: { cartId: existingCart.id } });
+    }
+  } catch (err) {
+    // Non-fatal cart cleanup
+  }
+
   return order;
 }
 

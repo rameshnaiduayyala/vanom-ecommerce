@@ -37,9 +37,14 @@ export function AdminBulkOrdersPage() {
   } = useQuery({
     queryKey: ["admin-b2b-bulk-orders"],
     queryFn: async () => {
-      const res = await Api.b2b.listBulkOrders();
-      if (Array.isArray(res)) return res;
-      return res?.items || [];
+      try {
+        const res = await Api.b2b.listAdminBulkOrders();
+        if (Array.isArray(res)) return res;
+        return res?.items || [];
+      } catch (err) {
+        const fallback = await Api.b2b.listBulkOrders();
+        return Array.isArray(fallback) ? fallback : fallback?.items || [];
+      }
     },
   });
 
@@ -66,9 +71,9 @@ export function AdminBulkOrdersPage() {
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       const num = (b.orderNumber || b.id || "").toLowerCase();
-      const company = (b.company?.legalName || b.company?.name || "").toLowerCase();
+      const company = (b.company?.legalName || b.company?.name || b.business?.businessName || "").toLowerCase();
       const user = `${b.requestedBy?.firstName || ""} ${b.requestedBy?.lastName || ""}`.toLowerCase();
-      const email = (b.requestedBy?.email || "").toLowerCase();
+      const email = (b.requestedBy?.email || b.business?.businessEmail || "").toLowerCase();
       return num.includes(q) || company.includes(q) || user.includes(q) || email.includes(q);
     }
     return true;
@@ -76,7 +81,7 @@ export function AdminBulkOrdersPage() {
 
   const totalWholesaleValue = rawBulkOrders
     .filter((b) => b.status !== "CANCELLED" && b.status !== "REJECTED")
-    .reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
+    .reduce((sum, b) => sum + Number(b.total ?? b.totalAmount ?? 0), 0);
 
   const totalUnits = rawBulkOrders.reduce((sum, b) => {
     const itemSum = b.items?.reduce((isum, it) => isum + (it.quantity || 0), 0) || 0;
@@ -211,13 +216,21 @@ export function AdminBulkOrdersPage() {
               </tr>
             ) : filteredOrders.length > 0 ? (
               filteredOrders.map((b) => {
-                const companyName = b.company?.legalName || b.company?.name || "Private Enterprise";
+                const companyName =
+                  b.company?.legalName ||
+                  b.company?.name ||
+                  b.business?.businessName ||
+                  b.shippingAddress?.contactName ||
+                  "Private Enterprise";
                 const requesterName =
                   `${b.requestedBy?.firstName || ""} ${b.requestedBy?.lastName || ""}`.trim() ||
                   b.requestedBy?.email ||
+                  b.business?.businessEmail ||
                   "Authorized Officer";
                 const totalUnits =
                   b.items?.reduce((sum, it) => sum + (it.quantity || 0), 0) || b.totalQuantity || 0;
+                const currencyCode = b.currencyCode || b.currency?.code || "USD";
+                const orderTotal = Number(b.total ?? b.totalAmount ?? 0);
 
                 return (
                   <tr key={b.id} className="hover:bg-slate-50/60 transition-colors">
@@ -225,16 +238,16 @@ export function AdminBulkOrdersPage() {
                       <div className="font-mono font-bold text-slate-900">
                         {b.orderNumber || b.id?.slice(0, 10)}
                       </div>
-                      <span className="text-[10px] text-amber-700 font-semibold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                        B2B PO
+                      <span className="text-[10px] text-amber-700 font-semibold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 font-mono">
+                        {b.countryCode || "B2B"}
                       </span>
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                        <Building2 className="w-3.5 h-3.5 text-amber-600" />
-                        <span>{companyName}</span>
+                        <Building2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span className="truncate max-w-[200px]">{companyName}</span>
                       </div>
-                      <p className="text-[11px] text-slate-400">Buyer: {requesterName}</p>
+                      <p className="text-[11px] text-slate-400 truncate max-w-[200px]">{requesterName}</p>
                     </td>
                     <td className="p-4 text-slate-600 whitespace-nowrap">
                       {formatDate(b.createdAt)}
@@ -245,8 +258,8 @@ export function AdminBulkOrdersPage() {
                         {b.items?.length || 1} line {b.items?.length === 1 ? "item" : "items"}
                       </p>
                     </td>
-                    <td className="p-4 font-black text-amber-800">
-                      {formatPrice(b.totalAmount || 0, "USD")}
+                    <td className="p-4 font-black text-amber-800 font-mono text-sm">
+                      {formatPrice(orderTotal, currencyCode)}
                     </td>
                     <td className="p-4">
                       <Badge
@@ -335,22 +348,22 @@ export function AdminBulkOrdersPage() {
             <div className="py-4 space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl">
                 <div>
-                  <span className="text-slate-400 block text-[10px] uppercase">Enterprise Account</span>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Enterprise Account</span>
                   <p className="font-bold text-slate-800 mt-0.5">
-                    {selectedBulkOrder.company?.legalName || selectedBulkOrder.company?.name || "Corporate Account"}
+                    {selectedBulkOrder.company?.legalName || selectedBulkOrder.company?.name || selectedBulkOrder.business?.businessName || selectedBulkOrder.shippingAddress?.contactName || "Corporate Account"}
                   </p>
                   <p className="text-slate-500">
-                    Buyer: {selectedBulkOrder.requestedBy?.firstName} {selectedBulkOrder.requestedBy?.lastName} ({selectedBulkOrder.requestedBy?.email})
+                    Buyer: {selectedBulkOrder.requestedBy?.firstName || selectedBulkOrder.shippingAddress?.contactName || "Authorized"} {selectedBulkOrder.requestedBy?.lastName || ""} ({selectedBulkOrder.requestedBy?.email || selectedBulkOrder.business?.businessEmail || "N/A"})
                   </p>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px] uppercase">Date Submitted</span>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">Date Submitted</span>
                   <p className="font-semibold text-slate-700 mt-0.5">
                     {formatDate(selectedBulkOrder.createdAt)}
                   </p>
-                  <span className="text-slate-400 block text-[10px] uppercase mt-2">Shipping Facility</span>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold mt-2">Shipping Facility</span>
                   <p className="text-slate-600">
-                    {selectedBulkOrder.shippingAddress?.city || "Standard Logistics Center"}
+                    {selectedBulkOrder.shippingAddress?.addressLine1 || selectedBulkOrder.shippingAddress?.city || "Standard Logistics Center"}
                   </p>
                 </div>
               </div>
@@ -359,29 +372,35 @@ export function AdminBulkOrdersPage() {
                 <h4 className="font-bold text-slate-800 mb-2">Wholesale Bulk Items</h4>
                 <div className="space-y-2 max-h-56 overflow-y-auto border border-slate-100 rounded-lg p-2">
                   {selectedBulkOrder.items && selectedBulkOrder.items.length > 0 ? (
-                    selectedBulkOrder.items.map((it, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0"
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-                            #{i + 1}
+                    selectedBulkOrder.items.map((it, i) => {
+                      const itemCurrency = it.currencyCode || selectedBulkOrder.currencyCode || "USD";
+                      const itemUnit = Number(it.unitPrice || 0);
+                      const itemTotal = Number(it.total ?? (it.quantity * itemUnit));
+
+                      return (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+                              #{i + 1}
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-800">
+                                {it.productName || it.bulkProduct?.name || it.product?.name || `Wholesale Item #${i + 1}`}
+                              </p>
+                              <p className="text-[11px] text-slate-400 font-mono">
+                                SKU: {it.sku || it.bulkProduct?.sku || "COMMODITY-BULK"} • Qty: {it.quantity} units @ {formatPrice(itemUnit, itemCurrency)}/unit
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-bold text-slate-800">
-                              {it.bulkProduct?.name || it.product?.name || `Wholesale Item #${i + 1}`}
-                            </p>
-                            <p className="text-[11px] text-slate-400">
-                              SKU: {it.bulkProduct?.sku || "COMMODITY-BULK"} • Qty: {it.quantity} units @ {formatPrice(it.unitPrice || 0, "USD")}/unit
-                            </p>
-                          </div>
+                          <p className="font-bold text-amber-900 font-mono">
+                            {formatPrice(itemTotal, itemCurrency)}
+                          </p>
                         </div>
-                        <p className="font-bold text-amber-900">
-                          {formatPrice((it.quantity || 1) * (it.unitPrice || 0), "USD")}
-                        </p>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <p className="text-slate-400 text-center py-2">
                       Wholesale line items recorded in master contract.
@@ -392,8 +411,8 @@ export function AdminBulkOrdersPage() {
 
               <div className="flex justify-between items-center pt-3 border-t border-slate-100 font-bold text-sm">
                 <span>Contract Grand Total:</span>
-                <span className="text-base text-amber-800 font-black">
-                  {formatPrice(selectedBulkOrder.totalAmount || 0, "USD")}
+                <span className="text-base text-amber-800 font-black font-mono">
+                  {formatPrice(Number(selectedBulkOrder.total ?? selectedBulkOrder.totalAmount ?? 0), selectedBulkOrder.currencyCode || "USD")}
                 </span>
               </div>
             </div>
