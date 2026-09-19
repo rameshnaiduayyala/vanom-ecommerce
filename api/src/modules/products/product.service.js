@@ -50,6 +50,19 @@ function countryData(countries = []) {
   }));
 }
 
+function imageData(images = []) {
+  return images.map((img, idx) => {
+    if (typeof img === "string") {
+      return { url: img, sortOrder: idx };
+    }
+    return {
+      url: img.url,
+      fileId: img.fileId ?? null,
+      sortOrder: img.sortOrder ?? idx
+    };
+  });
+}
+
 function variantCreateData(variant) {
   return {
     sku: variant.sku,
@@ -84,7 +97,7 @@ export async function createProduct(input) {
         isTrending: input.isTrending ?? false,
         isBestSeller: input.isBestSeller ?? false,
         ...(input.countries ? { countries: { create: countryData(input.countries) } } : {}),
-        ...(input.images ? { images: { create: input.images } } : {}),
+        ...(input.images ? { images: { create: imageData(input.images) } } : {}),
         ...(input.variants ? { variants: { create: input.variants.map(variantCreateData) } } : {})
       },
       include: productInclude
@@ -196,7 +209,7 @@ export async function updateProduct(id, input) {
           ...(input.isTrending !== undefined && { isTrending: input.isTrending }),
           ...(input.isBestSeller !== undefined && { isBestSeller: input.isBestSeller }),
           ...(input.countries ? { countries: { deleteMany: {}, create: countryData(input.countries) } } : {}),
-          ...(input.images ? { images: { deleteMany: {}, create: input.images } } : {}),
+          ...(input.images ? { images: { deleteMany: {}, create: imageData(input.images) } } : {}),
           ...(input.variants ? { variants: { deleteMany: {}, create: input.variants.map(variantCreateData) } } : {})
         },
         include: productInclude

@@ -3,7 +3,8 @@ import { sendSuccess } from "../../common/response/api-response.js";
 import { HTTP_STATUS } from "../../constants/http-status.js";
 
 export async function getMetrics(request, reply) {
-  const data = await adminService.getDashboardMetrics();
+  const timeRange = request.query?.timeRange || "30d";
+  const data = await adminService.getDashboardMetrics(timeRange);
   return sendSuccess(reply, {
     statusCode: HTTP_STATUS.OK,
     message: "Admin metrics fetched successfully",

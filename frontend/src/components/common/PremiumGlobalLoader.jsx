@@ -17,7 +17,7 @@ export function PremiumGlobalLoader() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed inset-0 z-9999 flex flex-col items-center justify-center bg-slate-900/15 backdrop-blur-[2px] transition-all duration-200 animate-in fade-in"
+      className="fixed inset-0 z-9999 pointer-events-none flex flex-col items-center justify-start pt-6 bg-transparent transition-all duration-200 animate-in fade-in"
     >
       {/* Top Edge Slim Progress Line */}
       <div className="fixed top-0 left-0 right-0 h-[2.5px] bg-emerald-500/20 z-100 overflow-hidden">

@@ -4,9 +4,8 @@ import { userService } from "./user.service.js";
 import { companyService } from "./company.service.js";
 
 export const adminService = {
-  // Metrics & Reports
-  getDashboardMetrics: async () => {
-    return apiClient.get("/admin/metrics");
+  getDashboardMetrics: async (params = {}) => {
+    return apiClient.get("/admin/metrics", { params });
   },
 
   getReports: async () => {

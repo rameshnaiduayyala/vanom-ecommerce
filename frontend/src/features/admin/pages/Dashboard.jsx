@@ -12,6 +12,10 @@ import {
   Plus,
   ShieldCheck,
   ChevronRight,
+  Calendar,
+  Sparkles,
+  TrendingUp,
+  UserPlus,
 } from "lucide-react";
 import { Badge } from "../../../components/ui/Badge.jsx";
 import { Skeleton } from "../../../components/ui/Alert.jsx";
@@ -50,9 +54,11 @@ const DEFAULT_CATEGORY_DISTRIBUTION = [
 export function Dashboard() {
   const [timeRange, setTimeRange] = useState("30d");
 
-  const { data: metrics, isLoading } = useQuery({
-    queryKey: ["admin-dashboard-metrics"],
-    queryFn: () => Api.admin.getDashboardMetrics(),
+  const { data: metrics, isLoading, isFetching } = useQuery({
+    queryKey: ["admin-dashboard-metrics", timeRange],
+    queryFn: () => Api.admin.getDashboardMetrics({ timeRange }),
+    refetchInterval: 10000, // Live poll every 10 seconds for real-time order & revenue updates
+    refetchOnWindowFocus: true,
   });
 
   const { data: productsData } = useQuery({
@@ -83,7 +89,7 @@ export function Dashboard() {
         <div className="flex items-center gap-2.5">
           {/* Time range selector */}
           <div className="flex items-center bg-white border border-slate-200 rounded-lg p-1 shadow-xs text-xs">
-            {["7d", "30d", "90d", "1y"].map((r) => (
+            {["today", "7d", "30d", "90d", "1y"].map((r) => (
               <button
                 key={r}
                 onClick={() => setTimeRange(r)}
@@ -105,6 +111,60 @@ export function Dashboard() {
             <Plus className="w-4 h-4" />
             <span>Add Product</span>
           </Link>
+        </div>
+      </div>
+
+      {/* ── Today Live Snapshot Strip ── */}
+      <div className="bg-gradient-to-r from-[#0F2B1C] via-[#16422C] to-[#0F2B1C] rounded-2xl p-4 sm:p-5 text-white shadow-md border border-emerald-800/50 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400 shrink-0">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-black tracking-tight text-white uppercase">Today's Live Snapshot</h3>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                LIVE SYNC
+              </span>
+            </div>
+            <p className="text-xs text-emerald-100/70 mt-0.5">
+              Real-time activity recorded for today ({new Date().toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}).
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-6 sm:gap-8 flex-wrap pt-2 md:pt-0 border-t md:border-t-0 border-emerald-800/40 w-full md:w-auto justify-start sm:justify-end">
+          <div>
+            <span className="text-[10px] font-bold text-emerald-200/70 uppercase tracking-wider block">
+              Today's Sales
+            </span>
+            <span className="text-lg sm:text-xl font-black text-emerald-300">
+              ${Number(metrics?.today?.revenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+
+          <div className="h-8 w-px bg-emerald-700/40 hidden sm:block" />
+
+          <div>
+            <span className="text-[10px] font-bold text-emerald-200/70 uppercase tracking-wider block">
+              Today's Orders
+            </span>
+            <span className="text-lg sm:text-xl font-black text-white">
+              {metrics?.today?.orders || 0}
+            </span>
+          </div>
+
+          <div className="h-8 w-px bg-emerald-700/40 hidden sm:block" />
+
+          <div>
+            <span className="text-[10px] font-bold text-emerald-200/70 uppercase tracking-wider block">
+              New Buyers Today
+            </span>
+            <span className="text-lg sm:text-xl font-black text-white">
+              {metrics?.today?.newCustomers || 0}
+            </span>
+          </div>
         </div>
       </div>
 

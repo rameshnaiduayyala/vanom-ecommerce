@@ -56,7 +56,15 @@ const variantProperties = {
 };
 
 productProperties.countries = { type: "array", items: { type: "object", additionalProperties: false, properties: countryProperties } };
-productProperties.images = { type: "array", items: { type: "object", required: ["url"], additionalProperties: false, properties: imageProperties } };
+productProperties.images = {
+  type: "array",
+  items: {
+    anyOf: [
+      { type: "string", minLength: 1 },
+      { type: "object", required: ["url"], additionalProperties: false, properties: imageProperties }
+    ]
+  }
+};
 productProperties.variants = { type: "array", items: { type: "object", required: ["sku"], additionalProperties: false, properties: variantProperties } };
 
 export async function productRoutes(fastify) {

@@ -308,25 +308,25 @@ export function AddProductPage() {
       ? (processedVariants[0]?.old_price_cad || null)
       : (formData.old_price_cad ? parseFloat(formData.old_price_cad) : null);
 
+    const cleanImages = (formData.images || [])
+      .filter((img) => img && (typeof img === "string" ? img.trim().length > 0 : Boolean(img.url)))
+      .map((img, idx) => (typeof img === "string" ? { url: img.trim(), sortOrder: idx } : img));
+
     const payload = {
       name: formData.name.trim(),
-      slug: formData.slug.trim() || undefined,
-      description: formData.description.trim(),
-      category_id: formData.category_id || (categories[0]?.id || undefined),
-      brand_id: formData.brand_id || null,
-      product_type: formData.product_type,
-      is_featured: Boolean(formData.is_featured),
-      is_new: Boolean(formData.is_new),
-      is_best_seller: Boolean(formData.is_best_seller),
-      images: formData.images.filter((img) => typeof img === "string" && img.trim().length > 0),
-      price_usd: baseUsdPrice,
-      old_price_usd: baseOldUsdPrice,
-      price_cad: baseCadPrice,
-      old_price_cad: baseOldCadPrice,
-      stock_quantity: totalStock,
+      ...(formData.slug?.trim() ? { slug: formData.slug.trim() } : {}),
+      description: formData.description?.trim() || null,
+      categoryId: formData.category_id || (categories[0]?.id || null),
+      brandId: formData.brand_id || null,
+      type: formData.product_type === "variable" ? "VARIABLE" : "SIMPLE",
+      isFeatured: Boolean(formData.is_featured),
+      isNew: Boolean(formData.is_new),
+      isBestSeller: Boolean(formData.is_best_seller),
+      isActive: formData.status !== "INACTIVE",
+      images: cleanImages,
+      basePrice: baseUsdPrice,
+      stock: totalStock,
       sku: mainSku,
-      status: formData.status || "ACTIVE",
-      variants: processedVariants,
     };
 
     if (isEditMode) {
