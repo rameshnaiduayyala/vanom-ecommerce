@@ -1,6 +1,9 @@
 import * as bulk from "../service.js";
 export const listBusinesses = bulk.listBusinesses;
 export const getBusiness = bulk.getBusiness;
+export const createBusiness = bulk.registerBusiness;
+export const updateBusiness = bulk.updateBusiness;
+export const deleteBusiness = bulk.deleteBusiness;
 export const approveBusiness = (id, adminId) => bulk.changeBusinessStatus(id, "APPROVED", adminId);
 export const rejectBusiness = (id, adminId, reason) => bulk.changeBusinessStatus(id, "REJECTED", adminId, reason);
 export const suspendBusiness = (id, adminId) => bulk.changeBusinessStatus(id, "SUSPENDED", adminId);

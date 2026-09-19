@@ -2,42 +2,33 @@ import React from "react";
 import { Modal } from "@/components/ui/Modal.jsx";
 import { Badge } from "@/components/ui/Badge.jsx";
 import { Button } from "@/components/ui/Button.jsx";
-import { formatPrice } from "@/utils/formatters.js";
 import {
   Building2,
   Globe,
-  FileText,
   User,
-  ShieldCheck,
   Calendar,
   CheckCircle2,
   Clock,
   Ban,
   MapPin,
-  CreditCard,
   Mail,
   Phone,
   Edit2,
-  ExternalLink,
+  FileText,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 
 export function ViewCompanyModal({ company, isOpen, onClose, onEdit }) {
   if (!isOpen || !company) return null;
 
-  const primaryMember = company.members?.find((m) => m.isPrimary) || company.members?.[0];
-  const adminUser = primaryMember?.user;
-  const defaultAddress =
-    company.addresses?.find((a) => a.isDefault) ||
-    company.addresses?.[0] ||
-    (company.address ? company.address : null);
+  const adminUser = company.user;
+  const businessName = company.businessName || company.legalName || "Unnamed Business";
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Corporate Entity Dossier"
-      maxWidth="max-w-4xl"
+      title="Wholesale Business Entity Dossier"
+      maxWidth="max-w-3xl"
     >
       <div className="space-y-6 text-xs text-text-primary max-h-[75vh] overflow-y-auto pr-1">
         {/* Header Profile Section */}
@@ -48,21 +39,21 @@ export function ViewCompanyModal({ company, isOpen, onClose, onEdit }) {
 
           <div className="space-y-1.5 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="brand" size="sm">
-                B2B Corporate Wholesale
+              <Badge variant="warning" size="sm">
+                B2B Corporate Wholesale Partner
               </Badge>
               <span
                 className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                   company.status === "APPROVED"
                     ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                    : company.status === "PENDING" || company.status === "UNDER_REVIEW"
+                    : company.status === "PENDING"
                     ? "bg-amber-50 text-amber-700 border border-amber-200"
                     : "bg-red-50 text-red-700 border border-red-200"
                 }`}
               >
                 {company.status === "APPROVED" ? (
                   <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                ) : company.status === "PENDING" || company.status === "UNDER_REVIEW" ? (
+                ) : company.status === "PENDING" ? (
                   <Clock className="w-3 h-3 text-amber-600" />
                 ) : (
                   <Ban className="w-3 h-3 text-red-500" />
@@ -72,7 +63,7 @@ export function ViewCompanyModal({ company, isOpen, onClose, onEdit }) {
             </div>
 
             <h3 className="text-base sm:text-lg font-bold text-text-primary">
-              {company.tradingName || company.legalName}
+              {businessName}
             </h3>
 
             <div className="flex flex-wrap items-center gap-3 text-text-muted font-mono text-[11px]">
@@ -92,141 +83,119 @@ export function ViewCompanyModal({ company, isOpen, onClose, onEdit }) {
           <div className="p-4 rounded-2xl bg-surface-muted border border-border space-y-3">
             <h5 className="font-bold text-text-primary uppercase tracking-wider text-[11px] flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5 text-[#00875A]" />
-              Company Legal Registrations
+              Registration & Tax Details
             </h5>
             <div className="space-y-2 text-xs">
               <div className="flex items-center justify-between py-1 border-b border-border/50">
-                <span className="text-text-muted">Legal Entity Name</span>
-                <span className="font-semibold text-text-primary">{company.legalName}</span>
+                <span className="text-text-muted">Business Name</span>
+                <span className="font-semibold text-text-primary">{businessName}</span>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-border/50">
-                <span className="text-text-muted">Brand / Trading Name</span>
-                <span className="font-semibold text-text-primary">{company.tradingName || company.legalName}</span>
+                <span className="text-text-muted">Tax Registration (GST/EIN)</span>
+                <span className="font-mono font-bold text-amber-800">{company.taxRegistrationNumber || "Not Provided"}</span>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-border/50">
-                <span className="text-text-muted">Tax ID / GST / EIN</span>
-                <span className="font-mono font-bold text-amber-700">{company.taxId || "Not Provided"}</span>
+                <span className="text-text-muted">Corporate Reg No.</span>
+                <span className="font-mono font-semibold text-text-primary">{company.registrationNumber || "N/A"}</span>
               </div>
               <div className="flex items-center justify-between py-1">
-                <span className="text-text-muted">Company Registration No.</span>
-                <span className="font-mono font-semibold text-text-primary">{company.registrationNumber || "N/A"}</span>
+                <span className="text-text-muted">Country Jurisdiction</span>
+                <span className="font-bold text-text-primary flex items-center gap-1">
+                  <Globe className="w-3.5 h-3.5 text-text-muted" />
+                  {company.countryCode || "US"}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Wholesale Credit & Payment Facility */}
+          {/* Contact Details */}
           <div className="p-4 rounded-2xl bg-surface-muted border border-border space-y-3">
             <h5 className="font-bold text-text-primary uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-              <CreditCard className="w-3.5 h-3.5 text-emerald-700" />
-              Wholesale Credit & Terms
+              <Mail className="w-3.5 h-3.5 text-amber-700" />
+              Direct Contact Details
             </h5>
             <div className="space-y-2 text-xs">
               <div className="flex items-center justify-between py-1 border-b border-border/50">
-                <span className="text-text-muted">Approved Credit Limit</span>
-                <span className="font-bold text-emerald-800 text-sm">
-                  {formatPrice(company.creditLimit || 0, company.country?.currencyCode || "USD")}
-                </span>
+                <span className="text-text-muted">Contact Person</span>
+                <span className="font-semibold text-text-primary">{company.contactPersonName || "Direct"}</span>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-border/50">
-                <span className="text-text-muted">Invoice Payment Terms</span>
-                <span className="font-bold text-text-primary">NET {company.paymentTermsDays || 30} Days</span>
+                <span className="text-text-muted">Business Email</span>
+                <span className="font-medium text-text-primary">{company.businessEmail || "—"}</span>
               </div>
               <div className="flex items-center justify-between py-1 border-b border-border/50">
-                <span className="text-text-muted">Operating Jurisdiction</span>
-                <span className="font-semibold text-text-primary flex items-center gap-1">
-                  <Globe className="w-3.5 h-3.5 text-text-muted" />
-                  {company.country?.name || company.countryCode || "India (IN)"}
-                </span>
+                <span className="text-text-muted">Business Phone</span>
+                <span className="font-mono font-semibold text-text-primary">{company.businessPhone || "—"}</span>
               </div>
               <div className="flex items-center justify-between py-1">
-                <span className="text-text-muted">Currency Code</span>
-                <span className="font-mono font-bold text-slate-800">{company.country?.currencyCode || "USD"}</span>
+                <span className="text-text-muted">Approval Status</span>
+                <span className="font-bold text-emerald-700">{company.status || "APPROVED"}</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Primary Administrator Profile */}
+        {/* Linked User Account */}
         <div className="p-4 rounded-2xl bg-surface-muted border border-border space-y-3">
           <h5 className="font-bold text-text-primary uppercase tracking-wider text-[11px] flex items-center gap-1.5">
             <User className="w-3.5 h-3.5 text-blue-600" />
-            Primary Corporate Administrator
+            Linked User Account (Wholesale Buyer)
           </h5>
           {adminUser ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div className="bg-white p-3 rounded-xl border border-border">
-                <span className="text-text-muted block text-[10px] uppercase font-semibold">Admin Name</span>
-                <span className="font-bold text-text-primary text-sm">{adminUser.firstName} {adminUser.lastName}</span>
+                <span className="text-text-muted block text-[10px] uppercase font-semibold">User Name</span>
+                <span className="font-bold text-text-primary text-sm">{adminUser.firstName || adminUser.lastName ? `${adminUser.firstName || ""} ${adminUser.lastName || ""}`.trim() : "Linked User"}</span>
               </div>
               <div className="bg-white p-3 rounded-xl border border-border">
-                <span className="text-text-muted block text-[10px] uppercase font-semibold">Official Email</span>
+                <span className="text-text-muted block text-[10px] uppercase font-semibold">Login Email</span>
                 <span className="font-medium text-text-primary">{adminUser.email}</span>
               </div>
               <div className="bg-white p-3 rounded-xl border border-border">
-                <span className="text-text-muted block text-[10px] uppercase font-semibold">Phone Number</span>
-                <span className="font-mono font-semibold text-text-primary">{adminUser.phone || "N/A"}</span>
+                <span className="text-text-muted block text-[10px] uppercase font-semibold">Role</span>
+                <span className="font-mono font-bold text-purple-700">{adminUser.role || "USER"}</span>
               </div>
             </div>
           ) : (
             <div className="p-3 rounded-xl bg-white border border-border text-text-muted italic">
-              No designated administrator attached to this entity record.
+              No user account is directly attached to this business yet.
             </div>
           )}
         </div>
 
         {/* Registered Business Address */}
-        {defaultAddress && (
+        {company.address && (
           <div className="p-4 rounded-2xl bg-surface-muted border border-border space-y-3">
             <h5 className="font-bold text-text-primary uppercase tracking-wider text-[11px] flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-rose-600" />
-              Registered Commercial Address
+              Principal Business Address
             </h5>
-            <div className="bg-white p-3 rounded-xl border border-border text-xs space-y-1">
-              <p className="font-semibold text-text-primary">{defaultAddress.line1}</p>
-              {defaultAddress.line2 && <p className="text-text-muted">{defaultAddress.line2}</p>}
-              <p className="text-text-secondary">
-                {defaultAddress.city}, {defaultAddress.state} - {defaultAddress.postalCode}
-              </p>
-              {defaultAddress.phone && (
-                <p className="text-text-muted font-mono pt-1 flex items-center gap-1">
-                  <Phone className="w-3 h-3" /> {defaultAddress.phone}
-                </p>
-              )}
+            <div className="bg-white p-3 rounded-xl border border-border text-xs flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-amber-700 shrink-0" />
+              <span className="font-medium text-text-primary">{company.address}</span>
             </div>
           </div>
         )}
 
         {/* Footer Actions */}
-        <div className="pt-4 border-t border-border flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Link
-              to={`/admin/companies/${company.id}`}
-              className="text-xs font-semibold text-[#00875A] hover:underline flex items-center gap-1"
+        <div className="pt-4 border-t border-border flex items-center justify-end gap-3">
+          {onEdit && (
+            <Button
+              variant="outline"
+              size="md"
+              icon={Edit2}
+              onClick={() => {
+                onClose();
+                onEdit(company);
+              }}
+              className="cursor-pointer"
             >
-              <span>View Compliance Audit Record</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {onEdit && (
-              <Button
-                variant="outline"
-                size="md"
-                icon={Edit2}
-                onClick={() => {
-                  onClose();
-                  onEdit(company);
-                }}
-                className="cursor-pointer"
-              >
-                Edit Entity
-              </Button>
-            )}
-            <Button variant="secondary" size="md" onClick={onClose}>
-              Close Dossier
+              Edit Business
             </Button>
-          </div>
+          )}
+          <Button variant="secondary" size="md" onClick={onClose}>
+            Close Dossier
+          </Button>
         </div>
       </div>
     </Modal>

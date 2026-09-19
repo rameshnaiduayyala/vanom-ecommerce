@@ -2,34 +2,36 @@ import { apiClient } from "./axios.js";
 
 export const companyService = {
   getCompanies: async (params = {}) => {
-    return apiClient.get("/admin/companies", { params });
+    const res = await apiClient.get("/admin/bulk/businesses", { params });
+    return Array.isArray(res) ? res : res?.items || [];
   },
 
   getCompanyById: async (id) => {
-    return apiClient.get(`/companies/${id}`);
+    return apiClient.get(`/admin/bulk/businesses/${id}`);
   },
 
   createCompany: async (companyData) => {
-    return apiClient.post("/companies", companyData);
+    return apiClient.post("/admin/bulk/businesses", companyData);
   },
 
   updateCompany: async (id, companyData) => {
-    return apiClient.patch(`/companies/${id}`, companyData);
+    return apiClient.put(`/admin/bulk/businesses/${id}`, companyData);
   },
 
   deleteCompany: async (id) => {
-    return apiClient.delete(`/companies/${id}`);
+    return apiClient.delete(`/admin/bulk/businesses/${id}`);
   },
 
   getBusinessApplications: async (params = {}) => {
-    return apiClient.get("/admin/business-applications", { params });
+    const res = await apiClient.get("/admin/bulk/businesses", { params });
+    return Array.isArray(res) ? res : res?.items || [];
   },
 
   approveApplication: async (id, notes) => {
-    return apiClient.post(`/admin/business-applications/${id}/approve`, { notes });
+    return apiClient.patch(`/admin/bulk/businesses/${id}/approve`, { notes });
   },
 
   rejectApplication: async (id, reason) => {
-    return apiClient.post(`/admin/business-applications/${id}/reject`, { reason });
+    return apiClient.patch(`/admin/bulk/businesses/${id}/reject`, { rejectionReason: reason });
   },
 };
