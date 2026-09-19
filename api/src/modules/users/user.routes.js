@@ -14,15 +14,19 @@ const userProperties = {
   password: { type: "string", minLength: 8, maxLength: 200 },
   firstName: { type: ["string", "null"], maxLength: 100 },
   lastName: { type: ["string", "null"], maxLength: 100 },
+  phone: { type: ["string", "null"], maxLength: 50 },
   imageUrl: { type: ["string", "null"], maxLength: 2000 },
   isActive: { type: "boolean" },
   role: { type: "string", enum: ["USER", "SUPERADMIN"] },
-  countryId: { type: ["string", "null"], minLength: 1 }
+  countryId: { type: ["string", "null"], minLength: 1 },
+  businessId: { type: ["string", "null"], minLength: 1 },
+  businessName: { type: ["string", "null"], maxLength: 200 },
+  business: { type: ["object", "null"] }
 };
 
 const userBodySchema = {
   type: "object",
-  additionalProperties: false,
+  additionalProperties: true,
   properties: userProperties
 };
 

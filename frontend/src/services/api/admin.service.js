@@ -90,7 +90,10 @@ export const adminService = {
   },
 
   // Delegate Company & Business Applications
-  getCompanies: companyService.getCompanies,
+  getCompanies: async (params = {}) => {
+    const res = await apiClient.get("/admin/bulk/businesses", { params });
+    return Array.isArray(res) ? res : res?.items || [];
+  },
   createCompany: companyService.createCompany,
   updateCompany: companyService.updateCompany,
   deleteCompany: companyService.deleteCompany,

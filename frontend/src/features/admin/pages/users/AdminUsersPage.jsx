@@ -56,7 +56,7 @@ export function AdminUsersPage() {
     setViewingUser(user);
   };
 
-  const handleFormSubmit = async (formData, b2bCompanyMode) => {
+  const handleFormSubmit = async (formData) => {
     setFormError("");
 
     if (!formData.email) {
@@ -69,35 +69,20 @@ export function AdminUsersPage() {
       return;
     }
 
-    if (formData.customerType === "B2B" && !editingUser && b2bCompanyMode === "NEW") {
-      if (!formData.newCompanyLegalName && !formData.newCompanyName) {
-        setFormError("Please provide the legal or trading business name for the new company.");
-        return;
-      }
-    }
-
-    const payload = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      role: formData.role || "USER",
-      isActive: formData.isActive ?? true,
-      countryId: formData.countryId || null,
-    };
-
-    if (formData.password) {
-      payload.password = formData.password;
-    }
-
     try {
       if (editingUser) {
-        await updateMutation.mutateAsync({ id: editingUser.id, data: payload });
+        await updateMutation.mutateAsync({ id: editingUser.id, data: formData });
       } else {
-        await createMutation.mutateAsync(payload);
+        await createMutation.mutateAsync(formData);
       }
       setFormModalOpen(false);
     } catch (err) {
-      setFormError(err.message || "Failed to save user.");
+      const msg =
+        err?.message ||
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Failed to save user account. Please check your inputs.";
+      setFormError(msg);
     }
   };
 

@@ -130,15 +130,20 @@ apiClient.interceptors.response.use(
       }
     }
 
-    const apiError = error.response?.data?.error;
-    if (apiError) {
-      const customErr = new Error(apiError.message || apiError.code || "An unexpected error occurred");
-      customErr.code = apiError.code;
-      customErr.details = apiError.details;
-      customErr.requestId = apiError.requestId;
-      return Promise.reject(customErr);
-    }
+    const responseData = error.response?.data;
+    const apiError = responseData?.error;
+    const errorMessage =
+      responseData?.message ||
+      (typeof apiError === "string" ? apiError : apiError?.message) ||
+      (typeof responseData?.error === "string" ? responseData.error : null) ||
+      error.message ||
+      "An unexpected error occurred";
 
-    return Promise.reject(error.response?.data || error);
+    const customErr = new Error(errorMessage);
+    customErr.code = responseData?.code || apiError?.code || error.code;
+    customErr.details = responseData?.details || apiError?.details;
+    customErr.statusCode = responseData?.statusCode || error.response?.status;
+    customErr.requestId = responseData?.requestId || apiError?.requestId;
+    return Promise.reject(customErr);
   }
 );
