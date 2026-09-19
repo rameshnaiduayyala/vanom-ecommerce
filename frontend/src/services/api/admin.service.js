@@ -83,6 +83,12 @@ export const adminService = {
     return apiClient.delete(`/categories/${id}`);
   },
 
+  // Brand Management
+  getBrands: async () => {
+    const res = await apiClient.get("/brands");
+    return Array.isArray(res) ? res : (res?.data || res?.items || []);
+  },
+
   // Delegate Company & Business Applications
   getCompanies: companyService.getCompanies,
   createCompany: companyService.createCompany,

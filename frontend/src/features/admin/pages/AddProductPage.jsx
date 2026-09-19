@@ -34,6 +34,18 @@ export function AddProductPage() {
     queryFn: () => Api.admin.getCategories(),
   });
 
+  // Load Brands from Backend API
+  const { data: brands = [] } = useQuery({
+    queryKey: ["admin-brands"],
+    queryFn: () => Api.admin.getBrands(),
+  });
+
+  // Load Countries for Cross-Border Pricing
+  const { data: countries = [] } = useQuery({
+    queryKey: ["admin-countries"],
+    queryFn: () => Api.geography.getCountries(),
+  });
+
   // Load Product Data if in Edit Mode
   const { data: existingProduct, isLoading: loadingProduct } = useQuery({
     queryKey: ["admin-product-edit", editId],
@@ -256,61 +268,95 @@ export function AddProductPage() {
       }
     }
 
+    // Find Country IDs
+    const usCountry = countries.find((c) => c.code === "US" || c.name?.toLowerCase().includes("united states"));
+    const caCountry = countries.find((c) => c.code === "CA" || c.name?.toLowerCase().includes("canada"));
+
     // Prepare variants payload matching the API schema
     const processedVariants = isVariable
-      ? formData.variants.map((v, i) => ({
-          sku: v.sku.trim() || `${mainSku}-V${i + 1}`,
-          variant_name: v.variant_name.trim() || `Variant ${i + 1}`,
-          weight: parseFloat(v.weight) || 1.0,
-          price_usd: parseFloat(v.price_usd) || 0,
-          old_price_usd: v.old_price_usd ? parseFloat(v.old_price_usd) : null,
-          price_cad: v.price_cad ? parseFloat(v.price_cad) : (parseFloat(v.price_usd || 0) * 1.35),
-          old_price_cad: v.old_price_cad ? parseFloat(v.old_price_cad) : null,
-          stock_quantity: parseInt(v.stock_quantity, 10) || 50,
-          status: v.status || "ACTIVE",
-          attributes: {},
-          images: [],
-        }))
-      : [
-          {
-            sku: `${mainSku}-VAR`,
-            variant_name: `${formData.name.trim()} Standard`,
-            weight: 1.0,
-            price_usd: parseFloat(formData.price_usd) || 0,
-            old_price_usd: formData.old_price_usd ? parseFloat(formData.old_price_usd) : null,
-            price_cad: formData.price_cad ? parseFloat(formData.price_cad) : (parseFloat(formData.price_usd) * 1.35),
-            old_price_cad: formData.old_price_cad ? parseFloat(formData.old_price_cad) : null,
-            stock_quantity: parseInt(formData.stock_quantity, 10) || 100,
-            status: "ACTIVE",
-            attributes: {},
-            images: [],
-          },
-        ];
+      ? formData.variants.map((v, i) => {
+          const vPriceUsd = parseFloat(v.price_usd) || 0;
+          const vOldPriceUsd = v.old_price_usd ? parseFloat(v.old_price_usd) : null;
+          const vPriceCad = v.price_cad ? parseFloat(v.price_cad) : parseFloat((vPriceUsd * 1.35).toFixed(2));
+          const vOldPriceCad = v.old_price_cad ? parseFloat(v.old_price_cad) : (vOldPriceUsd ? parseFloat((vOldPriceUsd * 1.35).toFixed(2)) : null);
+          const vStock = parseInt(v.stock_quantity, 10) || 0;
+
+          const variantCountryPricing = [];
+          if (usCountry) {
+            variantCountryPricing.push({
+              countryId: usCountry.id,
+              isAvailable: true,
+              price: vPriceUsd,
+              oldPrice: vOldPriceUsd,
+              stock: Math.round(vStock * 0.6),
+            });
+          }
+          if (caCountry) {
+            variantCountryPricing.push({
+              countryId: caCountry.id,
+              isAvailable: true,
+              price: vPriceCad,
+              oldPrice: vOldPriceCad,
+              stock: Math.max(0, vStock - Math.round(vStock * 0.6)),
+            });
+          }
+
+          return {
+            sku: v.sku.trim() || `${mainSku}-V${i + 1}`,
+            name: v.variant_name.trim() || `Variant ${i + 1}`,
+            stock: vStock,
+            isActive: v.status !== "INACTIVE",
+            attributes: { weight: String(v.weight || 1.0) },
+            ...(variantCountryPricing.length > 0 ? { countries: variantCountryPricing } : {}),
+          };
+        })
+      : [];
 
     // Compute total stock quantity
     const totalStock = isVariable
-      ? processedVariants.reduce((sum, v) => sum + v.stock_quantity, 0)
+      ? formData.variants.reduce((sum, v) => sum + (parseInt(v.stock_quantity, 10) || 0), 0)
       : (parseInt(formData.stock_quantity, 10) || 100);
 
     const baseUsdPrice = isVariable
-      ? (processedVariants[0]?.price_usd || 0)
+      ? (parseFloat(formData.variants[0]?.price_usd) || 0)
       : (parseFloat(formData.price_usd) || 0);
 
     const baseOldUsdPrice = isVariable
-      ? (processedVariants[0]?.old_price_usd || null)
+      ? (formData.variants[0]?.old_price_usd ? parseFloat(formData.variants[0]?.old_price_usd) : null)
       : (formData.old_price_usd ? parseFloat(formData.old_price_usd) : null);
 
     const baseCadPrice = isVariable
-      ? (processedVariants[0]?.price_cad || (baseUsdPrice * 1.35))
-      : (formData.price_cad ? parseFloat(formData.price_cad) : (baseUsdPrice * 1.35));
+      ? (formData.variants[0]?.price_cad ? parseFloat(formData.variants[0]?.price_cad) : parseFloat((baseUsdPrice * 1.35).toFixed(2)))
+      : (formData.price_cad ? parseFloat(formData.price_cad) : parseFloat((baseUsdPrice * 1.35).toFixed(2)));
 
     const baseOldCadPrice = isVariable
-      ? (processedVariants[0]?.old_price_cad || null)
-      : (formData.old_price_cad ? parseFloat(formData.old_price_cad) : null);
+      ? (formData.variants[0]?.old_price_cad ? parseFloat(formData.variants[0]?.old_price_cad) : (baseOldUsdPrice ? parseFloat((baseOldUsdPrice * 1.35).toFixed(2)) : null))
+      : (formData.old_price_cad ? parseFloat(formData.old_price_cad) : (baseOldUsdPrice ? parseFloat((baseOldUsdPrice * 1.35).toFixed(2)) : null));
 
     const cleanImages = (formData.images || [])
       .filter((img) => img && (typeof img === "string" ? img.trim().length > 0 : Boolean(img.url)))
       .map((img, idx) => (typeof img === "string" ? { url: img.trim(), sortOrder: idx } : img));
+
+    // Construct Product Country Pricing entries
+    const productCountries = [];
+    if (usCountry) {
+      productCountries.push({
+        countryId: usCountry.id,
+        isAvailable: true,
+        price: baseUsdPrice,
+        oldPrice: baseOldUsdPrice,
+        stock: Math.round(totalStock * 0.6),
+      });
+    }
+    if (caCountry) {
+      productCountries.push({
+        countryId: caCountry.id,
+        isAvailable: true,
+        price: baseCadPrice,
+        oldPrice: baseOldCadPrice,
+        stock: Math.max(0, totalStock - Math.round(totalStock * 0.6)),
+      });
+    }
 
     const payload = {
       name: formData.name.trim(),
@@ -318,7 +364,7 @@ export function AddProductPage() {
       description: formData.description?.trim() || null,
       categoryId: formData.category_id || (categories[0]?.id || null),
       brandId: formData.brand_id || null,
-      type: formData.product_type === "variable" ? "VARIABLE" : "SIMPLE",
+      type: isVariable ? "VARIABLE" : "SIMPLE",
       isFeatured: Boolean(formData.is_featured),
       isNew: Boolean(formData.is_new),
       isBestSeller: Boolean(formData.is_best_seller),
@@ -327,6 +373,8 @@ export function AddProductPage() {
       basePrice: baseUsdPrice,
       stock: totalStock,
       sku: mainSku,
+      ...(productCountries.length > 0 ? { countries: productCountries } : {}),
+      ...(isVariable && processedVariants.length > 0 ? { variants: processedVariants } : {}),
     };
 
     if (isEditMode) {
@@ -422,11 +470,11 @@ export function AddProductPage() {
                 />
               </div>
 
-              {/* Category Dropdown & SKU */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Category, Brand & SKU */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-slate-700">
-                    Category (category_id) <span className="text-rose-500">*</span>
+                    Category <span className="text-rose-500">*</span>
                   </label>
                   <select
                     value={formData.category_id}
@@ -442,6 +490,24 @@ export function AddProductPage() {
                     ) : (
                       <option value="">No categories available</option>
                     )}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Brand
+                  </label>
+                  <select
+                    value={formData.brand_id}
+                    onChange={(e) => setFormData({ ...formData, brand_id: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#358B5B] cursor-pointer"
+                  >
+                    <option value="">Select Brand (Optional)</option>
+                    {brands.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 

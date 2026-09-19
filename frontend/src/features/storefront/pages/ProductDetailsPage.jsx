@@ -86,22 +86,52 @@ export function ProductDetailsPage() {
   const brand = typeof product?.brand === "object" ? product.brand?.name : product?.brand || "Vanom Choice";
   const brandName = brand;
   const categoryName = typeof product?.category === "object" ? product.category?.name : product?.category || "General";
-  
-  // Dynamic price resolving variant USD / CAD or country price or basePrice
+
+  // Resolve country pricing entry from product.countries
+  const countryPricing = useMemo(() => {
+    if (!product?.countries || !Array.isArray(product.countries)) return null;
+    return (
+      product.countries.find(
+        (c) =>
+          c.country?.code === country.code ||
+          c.currency === country.currency ||
+          c.country?.name?.toLowerCase() === country.name?.toLowerCase() ||
+          (country.code === "US" && c.country?.code === "US") ||
+          (country.code === "CA" && c.country?.code === "CA")
+      ) || product.countries[0]
+    );
+  }, [product, country]);
+
+  // Resolve variant country pricing if variant selected
+  const variantCountryPricing = useMemo(() => {
+    if (!selectedVariantObj?.countries || !Array.isArray(selectedVariantObj.countries)) return null;
+    return (
+      selectedVariantObj.countries.find(
+        (c) =>
+          c.country?.code === country.code ||
+          c.currency === country.currency ||
+          (country.code === "US" && c.country?.code === "US") ||
+          (country.code === "CA" && c.country?.code === "CA")
+      ) || selectedVariantObj.countries[0]
+    );
+  }, [selectedVariantObj, country]);
+
+  // Dynamic price resolving variant / country price / basePrice
   const basePrice = country.code === "CA"
-    ? (selectedVariantObj?.price_cad || product?.price_cad || product?.priceCA || (product?.basePrice ? Number(product.basePrice) * 1.35 : 45))
+    ? (variantCountryPricing?.price ?? selectedVariantObj?.price_cad ?? countryPricing?.price ?? product?.price_cad ?? product?.priceCA ?? (product?.basePrice ? Number(product.basePrice) * 1.35 : 45))
     : country.code === "US"
-    ? (selectedVariantObj?.price_usd || product?.price_usd || product?.priceUS || product?.basePrice || 35)
-    : (product?.basePrice || product?.price || product?.pricing?.[country.code]?.retailPrice || product?.pricing?.IN?.retailPrice || 1999);
+      ? (variantCountryPricing?.price ?? selectedVariantObj?.price_usd ?? countryPricing?.price ?? product?.price_usd ?? product?.priceUS ?? product?.basePrice ?? 35)
+      : (countryPricing?.price ?? product?.basePrice ?? product?.price ?? product?.pricing?.[country.code]?.retailPrice ?? 1999);
 
-  const price = Number(basePrice);
+  const price = Number(basePrice) || 0;
+
   const baseMrp = country.code === "CA"
-    ? (selectedVariantObj?.old_price_cad || product?.old_price_cad || Math.round(price * 1.35))
+    ? (variantCountryPricing?.oldPrice ?? selectedVariantObj?.old_price_cad ?? countryPricing?.oldPrice ?? product?.old_price_cad ?? (price > 0 ? Math.round(price * 1.25) : 55))
     : country.code === "US"
-    ? (selectedVariantObj?.old_price_usd || product?.old_price_usd || product?.oldPrice || Math.round(price * 1.35))
-    : (product?.mrp || product?.pricing?.[country.code]?.mrp || (price > 0 ? Math.round(price * 1.35) : Math.round(price * 1.3)));
+      ? (variantCountryPricing?.oldPrice ?? selectedVariantObj?.old_price_usd ?? countryPricing?.oldPrice ?? product?.old_price_usd ?? product?.oldPrice ?? (price > 0 ? Math.round(price * 1.25) : 45))
+      : (countryPricing?.oldPrice ?? product?.mrp ?? product?.pricing?.[country.code]?.mrp ?? (price > 0 ? Math.round(price * 1.25) : 2499));
 
-  const mrp = Number(baseMrp);
+  const mrp = Number(baseMrp) || price;
   const discount = product?.discount || (mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0);
   const rating = product?.rating || 4.8;
   const reviewsCount = product?.reviewsCount || (product?.reviews?.length ?? 12);
@@ -187,10 +217,10 @@ export function ProductDetailsPage() {
   }, [allProducts, slug, product]);
 
   const availableStock = selectedVariantObj
-    ? (selectedVariantObj.stock_quantity ?? selectedVariantObj.stock ?? 100)
-    : (product?.stock ?? product?.totalStock ?? 100);
+    ? (variantCountryPricing?.stock ?? selectedVariantObj.stock_quantity ?? selectedVariantObj.stock ?? 100)
+    : (countryPricing?.stock ?? product?.stock ?? product?.totalStock ?? 100);
 
-  const isOutOfStock = availableStock <= 0;
+  const isOutOfStock = (product?.isActive === false) || availableStock <= 0;
 
   const handleAddToCart = () => {
     if (isOutOfStock) {
@@ -205,7 +235,7 @@ export function ProductDetailsPage() {
     setAddingToCart(true);
     const cartItemId = selectedVariantObj?.id || product?.id || slug;
     const existing = cart.items.find((i) => i.id === cartItemId || i.variantId === selectedVariantObj?.id);
-    
+
     if (existing && existing.quantity >= availableStock) {
       addToast({
         title: "Stock Limit Reached",
@@ -292,7 +322,7 @@ export function ProductDetailsPage() {
       />
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-4 space-y-8">
 
-        
+
         {/* ─── 1. Breadcrumbs matching reference ─── */}
         <nav className="flex items-center gap-1.5 text-xs text-gray-500">
           <Link to="/" className="hover:text-gray-900 transition-colors">Home</Link>
@@ -308,10 +338,10 @@ export function ProductDetailsPage() {
 
         {/* ─── 2. Top Product Showcase Section ─── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-          
+
           {/* ── LEFT: Product Gallery (Thumbnails + Main Image) ── */}
           <div className="lg:col-span-6 flex gap-4">
-            
+
             {/* Vertical Thumbnail Strip (Only show if multiple images exist) */}
             {gallery.length > 1 && (
               <div className="flex flex-col gap-2.5 shrink-0">
@@ -319,11 +349,10 @@ export function ProductDetailsPage() {
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
-                    className={`w-14 h-14 rounded-xl border p-1 bg-gray-50/50 flex items-center justify-center overflow-hidden transition-all cursor-pointer ${
-                      selectedImage === idx
+                    className={`w-14 h-14 rounded-xl border p-1 bg-gray-50/50 flex items-center justify-center overflow-hidden transition-all cursor-pointer ${selectedImage === idx
                         ? "border-[#003D2B] ring-2 ring-[#003D2B]/20"
                         : "border-gray-200 hover:border-gray-400"
-                    }`}
+                      }`}
                   >
                     <img src={img} alt={`Thumb ${idx + 1}`} className="w-full h-full object-contain" />
                   </button>
@@ -360,7 +389,7 @@ export function ProductDetailsPage() {
 
           {/* ── RIGHT: Product Info, Pricing & Actions ── */}
           <div className="lg:col-span-6 space-y-4">
-            
+
             {/* Brand badge & Wishlist button */}
             <div className="flex items-center justify-between">
               <span className="bg-[#E50914] text-white text-xs font-extrabold uppercase px-2.5 py-0.5 rounded">
@@ -397,11 +426,23 @@ export function ProductDetailsPage() {
               <span className="text-gray-600">{answeredQuestions} answered questions</span>
             </div>
 
-            {/* #1 Best Seller Tag */}
-            <div className="flex items-center gap-2">
-              <span className="bg-[#003D2B] text-white text-[11px] font-bold px-2 py-0.5 rounded">
-                #1 Best Seller
-              </span>
+            {/* Best Seller / New / Featured Tags */}
+            <div className="flex flex-wrap items-center gap-2">
+              {product?.isBestSeller && (
+                <span className="bg-[#003D2B] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-md shadow-2xs">
+                  #1 Best Seller
+                </span>
+              )}
+              {product?.isNew && (
+                <span className="bg-[#00875A] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-md shadow-2xs">
+                  New Launch
+                </span>
+              )}
+              {product?.isFeatured && (
+                <span className="bg-amber-600 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-md shadow-2xs">
+                  Featured
+                </span>
+              )}
               <span className="text-xs text-gray-500">in {categoryName}</span>
             </div>
 
@@ -421,14 +462,6 @@ export function ProductDetailsPage() {
               <p className="text-[11px] text-gray-500 mt-0.5">Inclusive of all taxes</p>
             </div>
 
-            {/* EMI Text */}
-            <div className="flex items-center gap-1.5 text-xs text-gray-700">
-              <span>EMI from <strong>₹{emiAmount.toLocaleString()}/month</strong>.</span>
-              <button className="text-[#006B3C] font-bold hover:underline inline-flex items-center gap-0.5 cursor-pointer">
-                <span>View Plans</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
 
             {/* Dynamic Variant Selector (if product has variants) */}
             {product?.variants && product.variants.length > 0 && (
@@ -450,11 +483,10 @@ export function ProductDetailsPage() {
                         key={v.id}
                         type="button"
                         onClick={() => setSelectedVariantId(v.id)}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex flex-col items-start gap-0.5 ${
-                          isSelected
+                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex flex-col items-start gap-0.5 ${isSelected
                             ? "bg-emerald-50/80 border-[#003D2B] text-[#003D2B] ring-2 ring-[#003D2B]/20"
                             : "bg-white border-gray-200 text-gray-700 hover:border-gray-400"
-                        }`}
+                          }`}
                       >
                         <span>{v.variant_name || v.name}</span>
                         <span className="text-[10px] font-normal text-gray-500">
@@ -505,11 +537,10 @@ export function ProductDetailsPage() {
               <button
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
-                className={`py-3 px-6 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                  isOutOfStock
+                className={`py-3 px-6 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${isOutOfStock
                     ? "border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed"
                     : "border-[rgb(60,170,130)] text-[rgb(60,170,130)] hover:bg-[rgb(60,170,130)]/10 active:scale-95"
-                }`}
+                  }`}
               >
                 {isOutOfStock ? (
                   <span>Sold Out</span>
@@ -529,11 +560,10 @@ export function ProductDetailsPage() {
               <button
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
-                className={`py-3 px-6 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md ${
-                  isOutOfStock
+                className={`py-3 px-6 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md ${isOutOfStock
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none"
                     : "bg-[rgb(60,170,130)] hover:brightness-95 text-white active:scale-95 cursor-pointer"
-                }`}
+                  }`}
               >
                 <Zap className="w-4 h-4 fill-white" />
                 <span>{isOutOfStock ? "Out of Stock" : "Buy Now"}</span>
@@ -548,7 +578,7 @@ export function ProductDetailsPage() {
         <div className="space-y-3 pt-4">
           <h3 className="text-base font-bold text-gray-900">Offers Available</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            
+
             <div className="bg-white rounded-2xl p-4 border border-gray-200/90 shadow-2xs flex items-center gap-3.5">
               <div className="w-10 h-10 rounded-xl bg-[#EAF7F0] text-[#006B3C] flex items-center justify-center shrink-0">
                 <CreditCard className="w-5 h-5" />
@@ -616,7 +646,7 @@ export function ProductDetailsPage() {
 
         {/* ─── 5. About This Item & Specifications Table (2 Column Grid) ─── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-4">
-          
+
           {/* Left: About This Item */}
           <div className="lg:col-span-6 space-y-3">
             <h3 className="text-base font-bold text-gray-900">About this item</h3>
@@ -633,9 +663,8 @@ export function ProductDetailsPage() {
               {Object.entries(specifications).map(([k, val], idx) => (
                 <div
                   key={idx}
-                  className={`grid grid-cols-2 px-4 py-2.5 ${
-                    idx % 2 === 0 ? "bg-gray-50/70" : "bg-white"
-                  } border-b border-gray-100 last:border-b-0`}
+                  className={`grid grid-cols-2 px-4 py-2.5 ${idx % 2 === 0 ? "bg-gray-50/70" : "bg-white"
+                    } border-b border-gray-100 last:border-b-0`}
                 >
                   <span className="font-bold text-gray-700">{k}</span>
                   <span className="text-gray-600">{val}</span>

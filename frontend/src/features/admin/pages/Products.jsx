@@ -201,15 +201,59 @@ export function Products() {
     setIsProductModalOpen(true);
   };
 
+  // Load Countries for Cross-Border Pricing
+  const { data: countries = [] } = useQuery({
+    queryKey: ["admin-countries"],
+    queryFn: () => Api.geography.getCountries(),
+  });
+
   const handleProductSubmit = (e) => {
     e.preventDefault();
+    const usCountry = countries.find((c) => c.code === "US" || c.name?.toLowerCase().includes("united states"));
+    const caCountry = countries.find((c) => c.code === "CA" || c.name?.toLowerCase().includes("canada"));
+
+    const baseUsdPrice = parseFloat(productForm.priceUS) || 0;
+    const baseOldUsdPrice = productForm.oldPrice ? parseFloat(productForm.oldPrice) : null;
+    const baseCadPrice = productForm.priceCA ? parseFloat(productForm.priceCA) : parseFloat((baseUsdPrice * 1.35).toFixed(2));
+    const baseOldCadPrice = baseOldUsdPrice ? parseFloat((baseOldUsdPrice * 1.35).toFixed(2)) : null;
+    const totalStock = parseInt(productForm.stock, 10) || 100;
+
+    const productCountries = [];
+    if (usCountry) {
+      productCountries.push({
+        countryId: usCountry.id,
+        isAvailable: true,
+        price: baseUsdPrice,
+        oldPrice: baseOldUsdPrice,
+        stock: Math.round(totalStock * 0.6),
+      });
+    }
+    if (caCountry) {
+      productCountries.push({
+        countryId: caCountry.id,
+        isAvailable: true,
+        price: baseCadPrice,
+        oldPrice: baseOldCadPrice,
+        stock: Math.max(0, totalStock - Math.round(totalStock * 0.6)),
+      });
+    }
+
     const payload = {
-      ...productForm,
-      priceUS: parseFloat(productForm.priceUS) || 0,
-      priceCA: productForm.priceCA ? parseFloat(productForm.priceCA) : undefined,
-      oldPrice: productForm.oldPrice ? parseFloat(productForm.oldPrice) : undefined,
-      stock: parseInt(productForm.stock, 10) || 100,
+      name: productForm.name.trim(),
+      description: productForm.description?.trim() || null,
+      categoryId: productForm.categoryId || (categories[0]?.id || null),
+      type: "SIMPLE",
+      basePrice: baseUsdPrice,
+      stock: totalStock,
+      sku: productForm.sku?.trim() || `VAN-${Date.now().toString().slice(-6)}`,
+      isFeatured: Boolean(productForm.isFeatured),
+      isNew: Boolean(productForm.isNewProduct),
+      isBestSeller: Boolean(productForm.isBestSeller),
+      isActive: true,
+      images: productForm.image?.trim() ? [{ url: productForm.image.trim(), sortOrder: 0 }] : [],
+      ...(productCountries.length > 0 ? { countries: productCountries } : {}),
     };
+
     if (editingProduct) {
       updateProductMutation.mutate({ id: editingProduct.id, data: payload });
     } else {
