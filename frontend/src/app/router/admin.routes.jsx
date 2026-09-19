@@ -21,6 +21,7 @@ import { AdminAuditLogsPage } from "../../features/admin/pages/audit/AdminAuditL
 import { AdminInventoryPage } from "../../features/admin/pages/inventory/AdminInventoryPage.jsx";
 import { AdminInventoryPrintPage } from "../../features/admin/pages/inventory/AdminInventoryPrintPage.jsx";
 import { AdminBulkProductsPage } from "../../features/admin/pages/bulk-products/AdminBulkProductsPage.jsx";
+import { AdminBrandsPage } from "../../features/admin/pages/brands/AdminBrandsPage.jsx";
 import { AdminRoute } from "../guards/ProtectedRoute.jsx";
 import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
 
@@ -43,6 +44,7 @@ export const adminRoutes = {
     { path: "products/new", element: <AddProductPage /> },
     { path: "bulk-products", element: <AdminBulkProductsPage /> },
     { path: "categories", element: <AdminCategoriesPage /> },
+    { path: "brands", element: <AdminBrandsPage /> },
     { path: "inventory", element: <AdminInventoryPage /> },
     { path: "inventory/print", element: <AdminInventoryPrintPage /> },
     { path: "orders", element: <AdminOrdersPage /> },
@@ -54,3 +56,4 @@ export const adminRoutes = {
     { path: "audit-logs", element: <AdminAuditLogsPage /> },
   ],
 };
+

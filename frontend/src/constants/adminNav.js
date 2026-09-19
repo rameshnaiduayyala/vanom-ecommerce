@@ -90,8 +90,9 @@ export const ADMIN_NAV_CONFIG = [
     id: "retail-brands",
     label: "Brands",
     icon: Tag,
-    path: `${ROUTES.ADMIN.CATEGORIES}?tab=brands`,
+    path: ROUTES.ADMIN.BRANDS,
   },
+
 
   // ── B2B (WHOLESALE) ──
   {
