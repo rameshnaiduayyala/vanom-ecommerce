@@ -7,7 +7,10 @@ import { sendPasswordResetEmail, sendVerificationEmail } from "../../common/util
 import { HTTP_STATUS } from "../../constants/http-status.js";
 import { MESSAGES } from "../../constants/messages.js";
 
-const userInclude = { country: { include: { currency: true } } };
+const userInclude = {
+  country: { include: { currency: true } },
+  bulkBusiness: { include: { addresses: true } }
+};
 
 function publicUser(user) {
   const { passwordHash, ...safeUser } = user;
@@ -31,11 +34,11 @@ export async function register(input) {
     const user = await prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
         data: {
-        email: normalizeEmail(input.email),
-        passwordHash: await hashPassword(input.password),
-        firstName: input.firstName ?? null,
-        lastName: input.lastName ?? null,
-        countryId: input.countryId ?? null
+          email: normalizeEmail(input.email),
+          passwordHash: await hashPassword(input.password),
+          firstName: input.firstName ?? null,
+          lastName: input.lastName ?? null,
+          countryId: input.countryId ?? null
         },
         include: userInclude
       });

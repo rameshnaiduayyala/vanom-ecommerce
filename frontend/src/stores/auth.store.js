@@ -12,6 +12,8 @@ export const useAuthStore = create(
 
       setUser: (user) => {
         const primaryCompany =
+          user?.bulkBusiness ||
+          user?.business ||
           user?.companies?.[0] ||
           user?.companyMembers?.[0]?.company ||
           user?.company ||
@@ -29,6 +31,8 @@ export const useAuthStore = create(
         if (tokens?.accessToken) TokenStorage.setAccessToken(tokens.accessToken);
         if (tokens?.refreshToken) TokenStorage.setRefreshToken(tokens.refreshToken);
         const primaryCompany =
+          userData?.bulkBusiness ||
+          userData?.business ||
           userData?.companies?.[0] ||
           userData?.companyMembers?.[0]?.company ||
           userData?.company ||
