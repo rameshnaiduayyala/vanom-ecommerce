@@ -67,8 +67,10 @@ export function AddProductPage() {
     images: ["https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80"],
     price_usd: "",
     old_price_usd: "",
+    stock_usd: "60",
     price_cad: "",
     old_price_cad: "",
+    stock_cad: "40",
     stock_quantity: 100,
     delivery_info: "Free Delivery By Thu, 12 Sep",
     return_policy: "7 Days Easy Returns",
@@ -89,8 +91,10 @@ export function AddProductPage() {
         weight: 0.5,
         price_usd: "18.00",
         old_price_usd: "25.00",
+        stock_usd: "30",
         price_cad: "24.00",
         old_price_cad: "32.00",
+        stock_cad: "20",
         stock_quantity: 50,
         status: "ACTIVE",
       },
@@ -101,8 +105,10 @@ export function AddProductPage() {
         weight: 1.0,
         price_usd: "35.00",
         old_price_usd: "50.00",
+        stock_usd: "60",
         price_cad: "45.00",
         old_price_cad: "65.00",
+        stock_cad: "40",
         stock_quantity: 100,
         status: "ACTIVE",
       },
@@ -130,6 +136,10 @@ export function AddProductPage() {
               ? v.countries.find((c) => c.currency === "CAD" || c.country === "Canada" || c.country?.code === "CA")
               : null;
 
+            const totalVStock = v.stock !== undefined ? v.stock : (v.stock_quantity !== undefined ? v.stock_quantity : 50);
+            const vStockUsd = vUs?.stock !== null && vUs?.stock !== undefined ? String(vUs.stock) : String(Math.round(totalVStock * 0.6));
+            const vStockCad = vCa?.stock !== null && vCa?.stock !== undefined ? String(vCa.stock) : String(Math.max(0, totalVStock - Math.round(totalVStock * 0.6)));
+
             return {
               id: v.id || `v-${i + 1}`,
               sku: v.sku || "",
@@ -141,13 +151,15 @@ export function AddProductPage() {
               old_price_usd: vUs?.oldPrice !== null && vUs?.oldPrice !== undefined
                 ? String(vUs.oldPrice)
                 : (v.old_price_usd !== null && v.old_price_usd !== undefined ? String(v.old_price_usd) : ""),
+              stock_usd: vStockUsd,
               price_cad: vCa?.price !== null && vCa?.price !== undefined
                 ? String(vCa.price)
                 : (v.price_cad !== null && v.price_cad !== undefined ? String(v.price_cad) : ""),
               old_price_cad: vCa?.oldPrice !== null && vCa?.oldPrice !== undefined
                 ? String(vCa.oldPrice)
                 : (v.old_price_cad !== null && v.old_price_cad !== undefined ? String(v.old_price_cad) : ""),
-              stock_quantity: v.stock !== undefined ? v.stock : (v.stock_quantity !== undefined ? v.stock_quantity : 50),
+              stock_cad: vStockCad,
+              stock_quantity: totalVStock,
               status: v.isActive !== false ? "ACTIVE" : "INACTIVE",
             };
           })
@@ -170,6 +182,23 @@ export function AddProductPage() {
         : (p.old_price_cad ? String(p.old_price_cad) : "");
 
       const resolvedStock = p.stock !== undefined ? p.stock : (p.stock_quantity !== undefined ? p.stock_quantity : 100);
+      const resolvedStockUsd = usCountryEntry?.stock !== null && usCountryEntry?.stock !== undefined ? String(usCountryEntry.stock) : String(Math.round(resolvedStock * 0.6));
+      const resolvedStockCad = caCountryEntry?.stock !== null && caCountryEntry?.stock !== undefined ? String(caCountryEntry.stock) : String(Math.max(0, resolvedStock - Math.round(resolvedStock * 0.6)));
+
+      // Normalized keyHighlights array
+      let loadedHighlights = [];
+      if (Array.isArray(p.keyHighlights) && p.keyHighlights.length > 0) {
+        loadedHighlights = p.keyHighlights.map((kh) => typeof kh === "string" ? { label: "Feature", value: kh } : { label: kh.label || "Highlight", value: kh.value || "" });
+      } else if (Array.isArray(p.key_highlights) && p.key_highlights.length > 0) {
+        loadedHighlights = p.key_highlights.map((kh) => typeof kh === "string" ? { label: "Feature", value: kh } : { label: kh.label || "Highlight", value: kh.value || "" });
+      } else {
+        loadedHighlights = [
+          { label: "Delivery", value: "Free Fast Delivery" },
+          { label: "Returns", value: "7 Days Easy Return" },
+          { label: "Warranty", value: "1 Year Brand Warranty" },
+          { label: "Authenticity", value: "100% Genuine Organic" },
+        ];
+      }
 
       setFormData({
         name: p.name || "",
@@ -184,14 +213,16 @@ export function AddProductPage() {
         delivery_info: p.deliveryInfo || p.delivery_info || "Free Delivery By Thu, 12 Sep",
         return_policy: p.returnPolicy || p.return_policy || "7 Days Easy Returns",
         warranty_info: p.warrantyInfo || p.warranty_info || "1 Year Brand Warranty",
-        key_highlights: Array.isArray(p.keyHighlights) && p.keyHighlights.length > 0 ? p.keyHighlights : (Array.isArray(p.key_highlights) ? p.key_highlights : formData.key_highlights),
+        key_highlights: loadedHighlights,
         images: Array.isArray(p.images) && p.images.length > 0
           ? p.images.map(img => typeof img === "string" ? img : (img.url || img.file?.url || ""))
           : [p.image || "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80"],
         price_usd: resolvedPriceUsd,
         old_price_usd: resolvedOldPriceUsd,
+        stock_usd: resolvedStockUsd,
         price_cad: resolvedPriceCad,
         old_price_cad: resolvedOldPriceCad,
+        stock_cad: resolvedStockCad,
         stock_quantity: resolvedStock,
         sku: p.sku || "",
         status: p.isActive !== false ? "ACTIVE" : "INACTIVE",
@@ -255,8 +286,10 @@ export function AddProductPage() {
           weight: 1.0,
           price_usd: "",
           old_price_usd: "",
+          stock_usd: "30",
           price_cad: "",
           old_price_cad: "",
+          stock_cad: "20",
           stock_quantity: 50,
           status: "ACTIVE",
         },
@@ -278,7 +311,43 @@ export function AddProductPage() {
   const updateVariantRow = (id, field, value) => {
     setFormData((prev) => ({
       ...prev,
-      variants: prev.variants.map((v) => (v.id === id ? { ...v, [field]: value } : v)),
+      variants: prev.variants.map((v) => {
+        if (v.id !== id) return v;
+        const updated = { ...v, [field]: value };
+        if (field === "stock_usd" || field === "stock_cad") {
+          const usStock = parseInt(field === "stock_usd" ? value : v.stock_usd, 10) || 0;
+          const caStock = parseInt(field === "stock_cad" ? value : v.stock_cad, 10) || 0;
+          updated.stock_quantity = usStock + caStock;
+        }
+        return updated;
+      }),
+    }));
+  };
+
+  // Key Highlights Handlers
+  const addHighlightRow = () => {
+    setFormData((prev) => ({
+      ...prev,
+      key_highlights: [
+        ...(prev.key_highlights || []),
+        { label: "Highlight", value: "" },
+      ],
+    }));
+  };
+
+  const removeHighlightRow = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      key_highlights: (prev.key_highlights || []).filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateHighlightRow = (index, field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      key_highlights: (prev.key_highlights || []).map((kh, i) =>
+        i === index ? { ...kh, [field]: value } : kh
+      ),
     }));
   };
 
@@ -337,7 +406,9 @@ export function AddProductPage() {
           const vOldPriceUsd = v.old_price_usd ? parseFloat(v.old_price_usd) : null;
           const vPriceCad = v.price_cad ? parseFloat(v.price_cad) : parseFloat((vPriceUsd * 1.35).toFixed(2));
           const vOldPriceCad = v.old_price_cad ? parseFloat(v.old_price_cad) : (vOldPriceUsd ? parseFloat((vOldPriceUsd * 1.35).toFixed(2)) : null);
-          const vStock = parseInt(v.stock_quantity, 10) || 0;
+          const vStockUsd = parseInt(v.stock_usd, 10) || 0;
+          const vStockCad = parseInt(v.stock_cad, 10) || 0;
+          const vStock = vStockUsd + vStockCad;
 
           const variantCountryPricing = [];
           if (usCountry) {
@@ -346,7 +417,7 @@ export function AddProductPage() {
               isAvailable: true,
               price: vPriceUsd,
               oldPrice: vOldPriceUsd,
-              stock: Math.round(vStock * 0.6),
+              stock: vStockUsd,
             });
           }
           if (caCountry) {
@@ -355,7 +426,7 @@ export function AddProductPage() {
               isAvailable: true,
               price: vPriceCad,
               oldPrice: vOldPriceCad,
-              stock: Math.max(0, vStock - Math.round(vStock * 0.6)),
+              stock: vStockCad,
             });
           }
 
@@ -370,10 +441,12 @@ export function AddProductPage() {
         })
       : [];
 
-    // Compute total stock quantity
+    // Compute simple product country stocks and total stock
+    const simpleUsStock = parseInt(formData.stock_usd, 10) || 0;
+    const simpleCaStock = parseInt(formData.stock_cad, 10) || 0;
     const totalStock = isVariable
-      ? formData.variants.reduce((sum, v) => sum + (parseInt(v.stock_quantity, 10) || 0), 0)
-      : (parseInt(formData.stock_quantity, 10) || 100);
+      ? processedVariants.reduce((sum, v) => sum + (parseInt(v.stock, 10) || 0), 0)
+      : (simpleUsStock + simpleCaStock || parseInt(formData.stock_quantity, 10) || 100);
 
     const baseUsdPrice = isVariable
       ? (parseFloat(formData.variants[0]?.price_usd) || 0)
@@ -403,7 +476,10 @@ export function AddProductPage() {
         isAvailable: true,
         price: baseUsdPrice,
         oldPrice: baseOldUsdPrice,
-        stock: Math.round(totalStock * 0.6),
+        stock: isVariable ? processedVariants.reduce((sum, v) => {
+          const usEntry = v.countries?.find(c => c.countryId === usCountry.id);
+          return sum + (usEntry?.stock || 0);
+        }, 0) : simpleUsStock,
       });
     }
     if (caCountry) {
@@ -412,9 +488,17 @@ export function AddProductPage() {
         isAvailable: true,
         price: baseCadPrice,
         oldPrice: baseOldCadPrice,
-        stock: Math.max(0, totalStock - Math.round(totalStock * 0.6)),
+        stock: isVariable ? processedVariants.reduce((sum, v) => {
+          const caEntry = v.countries?.find(c => c.countryId === caCountry.id);
+          return sum + (caEntry?.stock || 0);
+        }, 0) : simpleCaStock,
       });
     }
+
+    // Filter out blank key highlights
+    const cleanKeyHighlights = (formData.key_highlights || [])
+      .filter(h => h && (h.label?.trim() || h.value?.trim()))
+      .map(h => ({ label: h.label?.trim() || "Feature", value: h.value?.trim() || "" }));
 
     const payload = {
       name: formData.name.trim(),
@@ -429,7 +513,7 @@ export function AddProductPage() {
       deliveryInfo: formData.delivery_info?.trim() || null,
       returnPolicy: formData.return_policy?.trim() || null,
       warrantyInfo: formData.warranty_info?.trim() || null,
-      keyHighlights: Array.isArray(formData.key_highlights) ? formData.key_highlights : null,
+      keyHighlights: cleanKeyHighlights.length > 0 ? cleanKeyHighlights : null,
       isActive: formData.status !== "INACTIVE",
       images: cleanImages,
       basePrice: baseUsdPrice,
@@ -643,7 +727,7 @@ export function AddProductPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                  {/* USA Pricing Box */}
+                  {/* USA Pricing & Stock Box */}
                   <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-200/70 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-emerald-900">🇺🇸 United States (USD)</span>
@@ -678,9 +762,29 @@ export function AddProductPage() {
                         />
                       </div>
                     </div>
+
+                    <div className="space-y-1 pt-1 border-t border-emerald-200/50">
+                      <label className="text-[11px] font-semibold text-emerald-900 flex items-center justify-between">
+                        <span>🇺🇸 US Warehouse Stock</span>
+                        <span className="text-[10px] text-emerald-700">Units</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.stock_usd}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const usStock = parseInt(val, 10) || 0;
+                          const caStock = parseInt(formData.stock_cad, 10) || 0;
+                          setFormData({ ...formData, stock_usd: val, stock_quantity: usStock + caStock });
+                        }}
+                        placeholder="60"
+                        className="w-full px-3 py-1.5 text-sm bg-white border border-emerald-300 rounded-lg focus:outline-none focus:border-[#358B5B] font-bold text-slate-900"
+                      />
+                    </div>
                   </div>
 
-                  {/* Canada Pricing Box */}
+                  {/* Canada Pricing & Stock Box */}
                   <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-200/70 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-blue-900">🇨🇦 Canada (CAD)</span>
@@ -714,6 +818,26 @@ export function AddProductPage() {
                         />
                       </div>
                     </div>
+
+                    <div className="space-y-1 pt-1 border-t border-blue-200/50">
+                      <label className="text-[11px] font-semibold text-blue-900 flex items-center justify-between">
+                        <span>🇨🇦 CA Warehouse Stock</span>
+                        <span className="text-[10px] text-blue-700">Units</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.stock_cad}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const usStock = parseInt(formData.stock_usd, 10) || 0;
+                          const caStock = parseInt(val, 10) || 0;
+                          setFormData({ ...formData, stock_cad: val, stock_quantity: usStock + caStock });
+                        }}
+                        placeholder="40"
+                        className="w-full px-3 py-1.5 text-sm bg-white border border-blue-300 rounded-lg focus:outline-none focus:border-[#358B5B] font-bold text-slate-900"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -723,19 +847,15 @@ export function AddProductPage() {
                     <div>
                       <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                         <Boxes className="w-4 h-4 text-emerald-700" />
-                        <span>Available Stock Quantity</span>
+                        <span>Combined Total Stock (US + CA)</span>
                       </h4>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Total units available in warehouse for simple product.</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Sum of USA and Canada warehouse stock counts.</p>
                     </div>
 
                     <div className="w-36">
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.stock_quantity}
-                        onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
-                        className="w-full px-3.5 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-[#358B5B] font-bold text-slate-900 text-center"
-                      />
+                      <div className="w-full px-3.5 py-2 text-sm bg-emerald-50 border border-emerald-300 rounded-xl font-bold text-emerald-950 text-center">
+                        {(parseInt(formData.stock_usd, 10) || 0) + (parseInt(formData.stock_cad, 10) || 0)} units
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -749,10 +869,10 @@ export function AddProductPage() {
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <Layers className="w-4 h-4 text-[#358B5B]" />
-                      <span>Variant Prices & Stock Quantities</span>
+                      <span>Variant Prices & Country-Wise Stock</span>
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Each variant has its own individual SKU, weight, USD & CAD prices, and inventory stock.
+                      Each variant has its own individual SKU, weight, USD & CAD prices, and US/CA warehouse stocks.
                     </p>
                   </div>
 
@@ -776,16 +896,17 @@ export function AddProductPage() {
                           <th className="py-2.5 px-2">Weight (KG)</th>
                           <th className="py-2.5 px-2 bg-emerald-50/50 text-emerald-900">Price ($ USD) *</th>
                           <th className="py-2.5 px-2">Old ($)</th>
+                          <th className="py-2.5 px-2 bg-emerald-50/70 text-emerald-900">🇺🇸 US Stock</th>
                           <th className="py-2.5 px-2 bg-blue-50/50 text-blue-900">Price (CA$)</th>
                           <th className="py-2.5 px-2">Old (CA$)</th>
-                          <th className="py-2.5 px-2 bg-amber-50/50 text-amber-900">Stock Qty *</th>
+                          <th className="py-2.5 px-2 bg-blue-50/70 text-blue-900">🇨🇦 CA Stock</th>
                           <th className="py-2.5 px-2 text-right rounded-r-lg">Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {formData.variants.map((v, i) => (
                           <tr key={v.id} className="hover:bg-slate-50/70">
-                            <td className="py-2.5 px-1 min-w-[140px]">
+                            <td className="py-2.5 px-1 min-w-[130px]">
                               <input
                                 type="text"
                                 value={v.variant_name}
@@ -794,7 +915,7 @@ export function AddProductPage() {
                                 className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B] font-medium"
                               />
                             </td>
-                            <td className="py-2.5 px-1 w-24">
+                            <td className="py-2.5 px-1 w-20">
                               <input
                                 type="text"
                                 value={v.sku}
@@ -803,7 +924,7 @@ export function AddProductPage() {
                                 className="w-full px-2 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B] font-mono text-slate-600"
                               />
                             </td>
-                            <td className="py-2.5 px-1 w-16">
+                            <td className="py-2.5 px-1 w-14">
                               <input
                                 type="number"
                                 step="0.1"
@@ -812,7 +933,7 @@ export function AddProductPage() {
                                 className="w-full px-2 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B] text-center"
                               />
                             </td>
-                            <td className="py-2.5 px-1 w-24 bg-emerald-50/30">
+                            <td className="py-2.5 px-1 w-20 bg-emerald-50/30">
                               <input
                                 type="number"
                                 step="0.01"
@@ -820,10 +941,10 @@ export function AddProductPage() {
                                 value={v.price_usd}
                                 onChange={(e) => updateVariantRow(v.id, "price_usd", e.target.value)}
                                 placeholder="18.00"
-                                className="w-full px-2.5 py-1.5 text-xs bg-white border border-emerald-300 rounded-lg focus:outline-none focus:border-[#358B5B] font-bold text-emerald-950"
+                                className="w-full px-2 py-1.5 text-xs bg-white border border-emerald-300 rounded-lg focus:outline-none focus:border-[#358B5B] font-bold text-emerald-950"
                               />
                             </td>
-                            <td className="py-2.5 px-1 w-20">
+                            <td className="py-2.5 px-1 w-16">
                               <input
                                 type="number"
                                 step="0.01"
@@ -833,17 +954,27 @@ export function AddProductPage() {
                                 className="w-full px-2 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B] line-through text-slate-400"
                               />
                             </td>
-                            <td className="py-2.5 px-1 w-24 bg-blue-50/30">
+                            <td className="py-2.5 px-1 w-16 bg-emerald-50/50">
+                              <input
+                                type="number"
+                                min="0"
+                                value={v.stock_usd}
+                                onChange={(e) => updateVariantRow(v.id, "stock_usd", e.target.value)}
+                                placeholder="30"
+                                className="w-full px-2 py-1.5 text-xs bg-white border border-emerald-300 rounded-lg focus:outline-none focus:border-[#358B5B] font-bold text-emerald-900 text-center"
+                              />
+                            </td>
+                            <td className="py-2.5 px-1 w-20 bg-blue-50/30">
                               <input
                                 type="number"
                                 step="0.01"
                                 value={v.price_cad}
                                 onChange={(e) => updateVariantRow(v.id, "price_cad", e.target.value)}
                                 placeholder={v.price_usd ? (Number(v.price_usd) * 1.35).toFixed(2) : "24.00"}
-                                className="w-full px-2.5 py-1.5 text-xs bg-white border border-blue-300 rounded-lg focus:outline-none focus:border-[#358B5B] font-bold text-blue-950"
+                                className="w-full px-2 py-1.5 text-xs bg-white border border-blue-300 rounded-lg focus:outline-none focus:border-[#358B5B] font-bold text-blue-950"
                               />
                             </td>
-                            <td className="py-2.5 px-1 w-20">
+                            <td className="py-2.5 px-1 w-16">
                               <input
                                 type="number"
                                 step="0.01"
@@ -853,14 +984,14 @@ export function AddProductPage() {
                                 className="w-full px-2 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B] line-through text-slate-400"
                               />
                             </td>
-                            <td className="py-2.5 px-1 w-20 bg-amber-50/30">
+                            <td className="py-2.5 px-1 w-16 bg-blue-50/50">
                               <input
                                 type="number"
                                 min="0"
-                                required
-                                value={v.stock_quantity}
-                                onChange={(e) => updateVariantRow(v.id, "stock_quantity", e.target.value)}
-                                className="w-full px-2 py-1.5 text-xs bg-white border border-amber-300 rounded-lg focus:outline-none focus:border-[#358B5B] font-bold text-slate-900 text-center"
+                                value={v.stock_cad}
+                                onChange={(e) => updateVariantRow(v.id, "stock_cad", e.target.value)}
+                                placeholder="20"
+                                className="w-full px-2 py-1.5 text-xs bg-white border border-blue-300 rounded-lg focus:outline-none focus:border-[#358B5B] font-bold text-blue-900 text-center"
                               />
                             </td>
                             <td className="py-2.5 px-1 text-right">
@@ -1037,6 +1168,61 @@ export function AddProductPage() {
                     className="accent-[#358B5B] w-4 h-4 rounded cursor-pointer"
                   />
                 </label>
+              </div>
+            </div>
+
+            {/* Card: Key Highlights Manager */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Key Highlights ({formData.key_highlights?.length || 0})</span>
+                </h4>
+                <button
+                  type="button"
+                  onClick={addHighlightRow}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Add Highlight</span>
+                </button>
+              </div>
+
+              <p className="text-[11px] text-slate-500">
+                Pill highlights rendered in the storefront (e.g. Delivery, Shelf Life, Origin, Authenticity).
+              </p>
+
+              <div className="space-y-2.5">
+                {(formData.key_highlights || []).map((kh, idx) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 rounded-xl bg-slate-50/70 border border-slate-200/80">
+                    <div className="w-1/3">
+                      <input
+                        type="text"
+                        value={kh.label}
+                        onChange={(e) => updateHighlightRow(idx, "label", e.target.value)}
+                        placeholder="Label"
+                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B] font-semibold text-slate-700"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={kh.value}
+                        onChange={(e) => updateHighlightRow(idx, "value", e.target.value)}
+                        placeholder="Highlight value (e.g. 100% Organic)"
+                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B] text-slate-800"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeHighlightRow(idx)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
+                      title="Delete highlight"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
 
