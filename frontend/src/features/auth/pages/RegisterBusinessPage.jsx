@@ -105,48 +105,48 @@ export function RegisterBusinessPage() {
     setLoading(true);
 
     try {
-      const companyPayload = {
-        businessName: formData.businessName || formData.legalName,
-        legalName: formData.legalName || formData.businessName,
-        registrationNumber: formData.registrationNumber,
-        taxId: formData.taxId,
-        countryCode: formData.countryCode || country.code || "IN",
-        address: {
-          line1: formData.addressLine1 || "Business Address",
-          line2: formData.addressLine2 || "",
-          city: formData.city || "City",
-          state: formData.state || "State",
-          postalCode: formData.postalCode || "000000",
-          phone: formData.phone || "",
-        },
-        adminUser: {
-          email: formData.email,
-          password: formData.password,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          phone: formData.phone,
-        },
+      const fullAddress = `${formData.addressLine1}${formData.addressLine2 ? `, ${formData.addressLine2}` : ""}, ${formData.city}, ${formData.state} - ${formData.postalCode}`;
+      const contactPerson = `${formData.firstName || ""} ${formData.lastName || ""}`.trim() || "Account Admin";
+
+      // 1. If user is not logged in, register user account first or register with adminUser
+      const businessPayload = {
+        businessName: formData.businessName.trim(),
+        businessEmail: formData.email.trim().toLowerCase(),
+        businessPhone: formData.phone.trim() || "—",
+        taxRegistrationNumber: formData.taxId ? formData.taxId.trim() : null,
+        registrationNumber: formData.registrationNumber ? formData.registrationNumber.trim() : null,
+        countryCode: (formData.countryCode || country?.code || "IN").toUpperCase(),
+        address: fullAddress,
+        contactPersonName: contactPerson,
       };
 
-      await Api.b2b.registerCompany(companyPayload);
+      await Api.b2b.registerCompany({
+        ...businessPayload,
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        phone: formData.phone.trim(),
+      });
 
       addToast({
         title: "Application Submitted Successfully!",
-        message: `${formData.businessName || formData.legalName} has been submitted for B2B validation.`,
+        message: `${formData.businessName} has been submitted for wholesale B2B approval.`,
         type: "success",
       });
 
       navigate(ROUTES.REGISTER_BUSINESS_SUCCESS, {
         state: {
-          businessName: formData.businessName || formData.legalName,
-          legalName: formData.legalName || formData.businessName,
+          businessName: formData.businessName,
+          legalName: formData.legalName,
           adminEmail: formData.email,
         },
       });
     } catch (err) {
+      const msg = err.response?.data?.message || err.message || "Failed to register company. Please check your credentials.";
       addToast({
         title: "Business Registration Failed",
-        message: err.message || "Failed to register company. Please check your credentials.",
+        message: msg,
         type: "error",
       });
     } finally {

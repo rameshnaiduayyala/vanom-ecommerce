@@ -16,6 +16,13 @@ export const b2bService = {
       countryCode: payload.countryCode || "US",
       address: typeof payload.address === "string" ? payload.address : `${payload.address?.line1 || ""}, ${payload.address?.city || ""}`.trim(),
       contactPersonName: payload.contactPersonName || `${payload.adminUser?.firstName || ""} ${payload.adminUser?.lastName || ""}`.trim() || "Contact Person",
+      user: payload.adminUser || (payload.password ? {
+        email: payload.email,
+        password: payload.password,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        phone: payload.phone
+      } : null)
     });
   },
 

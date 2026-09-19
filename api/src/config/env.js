@@ -11,6 +11,7 @@ export const env = {
   emailFrom: process.env.EMAIL_FROM,
   resendApiKey: process.env.RESEND_API_KEY,
   appUrl: process.env.APP_URL || "http://localhost:3000",
+  clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
   awsRegion: process.env.AWS_REGION || "us-east-1",
   smsProvider: process.env.SMS_PROVIDER || "console",
   smtpHost: process.env.SMTP_HOST,

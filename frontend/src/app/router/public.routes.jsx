@@ -13,6 +13,7 @@ import { ContactPage } from "../../features/storefront/pages/ContactPage.jsx";
 import { ConsumerAccountPage } from "../../features/account/pages/ConsumerAccountPage.jsx";
 import { LoginPage } from "../../features/auth/pages/LoginPage.jsx";
 import { RegisterPage, ForgotPasswordPage } from "../../features/auth/pages/RegisterPage.jsx";
+import { VerifyEmailPage } from "../../features/auth/pages/VerifyEmailPage.jsx";
 import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
 
 export const publicRoutes = {
@@ -38,6 +39,7 @@ export const publicRoutes = {
     { path: "/account/addresses", element: <ConsumerAccountPage /> },
     { path: "/login", element: <LoginPage /> },
     { path: "/register", element: <RegisterPage /> },
+    { path: "/verify-email", element: <VerifyEmailPage /> },
     { path: "/forgot-password", element: <ForgotPasswordPage /> },
   ],
 };

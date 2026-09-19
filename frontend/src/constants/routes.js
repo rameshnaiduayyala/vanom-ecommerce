@@ -17,6 +17,7 @@ export const ROUTES = {
   REGISTER: "/register",
   REGISTER_BUSINESS: "/register-business",
   REGISTER_BUSINESS_SUCCESS: "/register-business/pending-approval",
+  VERIFY_EMAIL: "/verify-email",
   FORGOT_PASSWORD: "/forgot-password",
   CONTACT: "/contact",
 

@@ -3,6 +3,13 @@ import { AppError } from "../../common/errors/app-error.js";
 import { HTTP_STATUS } from "../../constants/http-status.js";
 import { MESSAGES } from "../../constants/messages.js";
 import { hashPassword } from "../../common/utils/password.js";
+import { createHash, randomBytes } from "node:crypto";
+import { env } from "../../config/env.js";
+import { sendVerificationEmail } from "../../common/utils/email.js";
+
+function tokenHash(token) {
+  return createHash("sha256").update(token).digest("hex");
+}
 
 const userInclude = {
   country: {
@@ -61,7 +68,7 @@ export async function createUser(input) {
 
       const determinedRole = input.role === "SUPERADMIN"
         ? "SUPERADMIN"
-        : bulkBusinessId
+        : bulkBusinessId || input.role === "B2B_USER"
         ? "B2B_USER"
         : (input.role || "USER");
 
@@ -79,13 +86,42 @@ export async function createUser(input) {
         }
       });
 
-      return tx.user.findUnique({
+      const token = randomBytes(32).toString("hex");
+
+      await tx.emailVerificationToken.create({
+        data: {
+          userId: newUser.id,
+          tokenHash: tokenHash(token),
+          expiresAt: new Date(Date.now() + (env.emailVerificationExpiresMinutes || 1440) * 60 * 1000)
+        }
+      });
+
+      const fullUser = await tx.user.findUnique({
         where: { id: newUser.id },
         include: userInclude
       });
+
+      return { fullUser, token };
     });
 
-    return publicUser(user);
+    if (user?.fullUser?.email && user?.token) {
+      try {
+        await sendVerificationEmail(user.fullUser.email, user.token, {
+          firstName: user.fullUser.firstName,
+          isB2B: user.fullUser.role === "B2B_USER" || !!user.fullUser.bulkBusiness,
+          businessName: user.fullUser.bulkBusiness?.businessName,
+          businessEmail: user.fullUser.bulkBusiness?.businessEmail,
+          businessPhone: user.fullUser.bulkBusiness?.businessPhone,
+          taxRegistrationNumber: user.fullUser.bulkBusiness?.taxRegistrationNumber,
+          registrationNumber: user.fullUser.bulkBusiness?.registrationNumber,
+          address: user.fullUser.bulkBusiness?.address,
+        });
+      } catch (emailErr) {
+        console.error("Failed to send verification email:", emailErr);
+      }
+    }
+
+    return publicUser(user.fullUser);
   } catch (error) {
     handleUniqueError(error);
   }

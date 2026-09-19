@@ -2,10 +2,28 @@ const id = { type: "string", minLength: 1 };
 const idParams = { type: "object", required: ["id"], properties: { id } };
 
 export const businessBody = {
-  type: "object", required: ["businessName", "businessEmail", "businessPhone", "countryCode", "address", "contactPersonName"], additionalProperties: false,
+  type: "object",
+  required: ["businessName", "businessEmail", "businessPhone", "countryCode", "address", "contactPersonName"],
+  additionalProperties: false,
   properties: {
-    businessName: { type: "string", minLength: 2, maxLength: 200 }, businessEmail: { type: "string", format: "email" }, businessPhone: { type: "string", minLength: 5, maxLength: 40 },
-    taxRegistrationNumber: { type: ["string", "null"], maxLength: 100 }, registrationNumber: { type: ["string", "null"], maxLength: 100 }, countryCode: { type: "string", minLength: 2, maxLength: 10 }, address: { type: "string", minLength: 5, maxLength: 500 }, contactPersonName: { type: "string", minLength: 2, maxLength: 150 }
+    businessName: { type: "string", minLength: 2, maxLength: 200 },
+    businessEmail: { type: "string", format: "email" },
+    businessPhone: { type: "string", minLength: 5, maxLength: 40 },
+    taxRegistrationNumber: { type: ["string", "null"], maxLength: 100 },
+    registrationNumber: { type: ["string", "null"], maxLength: 100 },
+    countryCode: { type: "string", minLength: 2, maxLength: 10 },
+    address: { type: "string", minLength: 5, maxLength: 500 },
+    contactPersonName: { type: "string", minLength: 2, maxLength: 150 },
+    user: {
+      type: ["object", "null"],
+      properties: {
+        email: { type: "string", format: "email" },
+        password: { type: "string", minLength: 8 },
+        firstName: { type: ["string", "null"] },
+        lastName: { type: ["string", "null"] },
+        phone: { type: ["string", "null"] }
+      }
+    }
   }
 };
 const tier = { type: "object", required: ["minQuantity", "price"], additionalProperties: false, properties: { minQuantity: { type: "integer", minimum: 1 }, maxQuantity: { type: ["integer", "null"], minimum: 1 }, price: { type: ["number", "string"], minimum: 0 } } };

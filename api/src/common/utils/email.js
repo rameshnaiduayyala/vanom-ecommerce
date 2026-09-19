@@ -43,15 +43,28 @@ async function sendWithSes({ to, subject, html, text }) {
 
 let smtpTransporter;
 function getSmtpTransporter() {
-  if (!smtpTransporter) smtpTransporter = nodemailer.createTransport({
-    host: required(env.smtpHost, "SMTP_HOST"), port: env.smtpPort, secure: env.smtpSecure,
-    auth: env.smtpUser ? { user: env.smtpUser, pass: env.smtpPassword } : undefined
-  });
+  if (!smtpTransporter) {
+    smtpTransporter = nodemailer.createTransport({
+      host: required(env.smtpHost, "SMTP_HOST"),
+      port: env.smtpPort,
+      secure: env.smtpSecure,
+      auth: env.smtpUser ? { user: env.smtpUser, pass: env.smtpPassword } : undefined
+    });
+  }
   return smtpTransporter;
 }
 
 async function sendWithSmtp({ to, subject, html, text }) {
-  return getSmtpTransporter().sendMail({ from: required(env.emailFrom, "EMAIL_FROM"), to, subject, text, html });
+  const transporter = getSmtpTransporter();
+  const info = await transporter.sendMail({
+    from: required(env.emailFrom, "EMAIL_FROM"),
+    to,
+    subject,
+    text,
+    html
+  });
+  console.info(`[email:smtp] sent to=${to} id=${info.messageId} response=${info.response}`);
+  return info;
 }
 
 async function sendWithConsole({ to, subject, text }) {
@@ -77,7 +90,7 @@ export async function sendSms({ to, message }) {
 }
 
 export async function sendPasswordResetEmail(email, token) {
-  const resetUrl = `${env.appUrl.replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
+  const resetUrl = `${(env.clientUrl || env.appUrl).replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
   const template = await renderPasswordResetEmail({
     resetUrl,
     expiresInMinutes: env.passwordResetExpiresMinutes
@@ -88,8 +101,18 @@ export async function sendPasswordResetEmail(email, token) {
   });
 }
 
-export async function sendVerificationEmail(email, token) {
-  const verifyUrl = `${env.appUrl.replace(/\/$/, "")}/api/v1/auth/verify-email?token=${encodeURIComponent(token)}`;
-  const template = await renderVerifyEmail({ verifyUrl });
+export async function sendVerificationEmail(email, token, options = {}) {
+  const verifyUrl = `${(env.clientUrl || env.appUrl).replace(/\/$/, "")}/verify-email?token=${encodeURIComponent(token)}`;
+  const template = await renderVerifyEmail({
+    verifyUrl,
+    firstName: options.firstName,
+    businessName: options.businessName,
+    businessEmail: options.businessEmail,
+    businessPhone: options.businessPhone,
+    taxRegistrationNumber: options.taxRegistrationNumber,
+    registrationNumber: options.registrationNumber,
+    address: options.address,
+    isB2B: options.isB2B,
+  });
   return sendEmail({ to: email, ...template });
 }
