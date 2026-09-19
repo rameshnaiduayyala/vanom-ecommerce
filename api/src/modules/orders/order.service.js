@@ -10,10 +10,24 @@ const orderInclude = {
   user: { select: { id: true, email: true, firstName: true, lastName: true } }
 };
 
-export async function createOrder(userId, { countryId, currencyCode, shippingAddress, billingAddress }) {
+export async function createOrder(userId, { countryId, currencyCode, shippingAddress, billingAddress, items: directItems }) {
   if (!shippingAddress) {
     throw new AppError(MESSAGES.SHIPPING_ADDRESS_REQUIRED, HTTP_STATUS.BAD_REQUEST, "SHIPPING_ADDRESS_REQUIRED");
   }
+
+  // Resolve country by ID or code
+  const targetCountry = await prisma.country.findFirst({
+    where: {
+      OR: [
+        { id: countryId },
+        { code: countryId?.toUpperCase?.() || "" },
+        ...(shippingAddress.countryCode ? [{ code: shippingAddress.countryCode.toUpperCase() }] : [])
+      ]
+    }
+  });
+
+  const resolvedCountryId = targetCountry?.id || countryId;
+  const resolvedCurrencyCode = currencyCode || (targetCountry?.code === "IN" ? "INR" : targetCountry?.code === "CA" ? "CAD" : "USD");
 
   const billing = billingAddress ?? shippingAddress;
   const addressData = (address, type) => ({
@@ -25,15 +39,51 @@ export async function createOrder(userId, { countryId, currencyCode, shippingAdd
     city: address.city,
     state: address.state ?? null,
     postalCode: address.postalCode,
-    countryCode: address.countryCode
+    countryCode: address.countryCode || targetCountry?.code || "US"
   });
 
   return prisma.$transaction(async (tx) => {
-    const cart = await tx.cart.findUnique({
+    let cart = await tx.cart.findUnique({
       where: { userId },
       include: {
-        items: { include: { product: { include: { countries: true } }, variant: { include: { countries: true } } } } }
+        items: { include: { product: { include: { countries: true } }, variant: { include: { countries: true } } } }
+      }
     });
+
+    // If server-side cart is empty but client passed items in the request, automatically populate cart items
+    if ((!cart || !cart.items.length) && Array.isArray(directItems) && directItems.length > 0) {
+      if (!cart) {
+        cart = await tx.cart.create({ data: { userId } });
+      }
+      for (const it of directItems) {
+        const pId = it.productId || it.id;
+        const vId = it.variantId || null;
+        const qty = Number(it.quantity) || 1;
+        if (pId) {
+          // Verify product existence
+          const prod = await tx.product.findUnique({ where: { id: pId } });
+          if (prod) {
+            await tx.cartItem.create({
+              data: {
+                cartId: cart.id,
+                productId: prod.id,
+                variantId: vId,
+                quantity: qty,
+              }
+            });
+          }
+        }
+      }
+
+      // Re-fetch populated cart
+      cart = await tx.cart.findUnique({
+        where: { id: cart.id },
+        include: {
+          items: { include: { product: { include: { countries: true } }, variant: { include: { countries: true } } } }
+        }
+      });
+    }
+
     if (!cart?.items.length) throw new AppError(MESSAGES.CART_EMPTY, HTTP_STATUS.UNPROCESSABLE_ENTITY, "CART_EMPTY");
 
     let subtotal = new Prisma.Decimal(0);
@@ -41,14 +91,16 @@ export async function createOrder(userId, { countryId, currencyCode, shippingAdd
 
     for (const item of cart.items) {
       const source = item.variant ?? item.product;
-      const countryPrice = source.countries.find(({ countryId: id, isAvailable }) => id === countryId && isAvailable);
+      const countryPrice = source.countries.find(({ countryId: id, isAvailable }) => (id === resolvedCountryId || id === countryId) && isAvailable) || source.countries.find(({ isAvailable }) => isAvailable);
       if (!countryPrice || countryPrice.price === null) {
         throw new AppError(MESSAGES.PRICE_NOT_AVAILABLE, HTTP_STATUS.UNPROCESSABLE_ENTITY, "PRICE_NOT_AVAILABLE");
       }
 
+      const effectiveCountryId = countryPrice.countryId;
+
       const stockUpdated = item.variant
-        ? await tx.productVariantCountry.updateMany({ where: { variantId: item.variant.id, countryId, stock: { gte: item.quantity }, isAvailable: true }, data: { stock: { decrement: item.quantity } } })
-        : await tx.productCountry.updateMany({ where: { productId: item.product.id, countryId, stock: { gte: item.quantity }, isAvailable: true }, data: { stock: { decrement: item.quantity } } });
+        ? await tx.productVariantCountry.updateMany({ where: { variantId: item.variant.id, countryId: effectiveCountryId, stock: { gte: item.quantity }, isAvailable: true }, data: { stock: { decrement: item.quantity } } })
+        : await tx.productCountry.updateMany({ where: { productId: item.product.id, countryId: effectiveCountryId, stock: { gte: item.quantity }, isAvailable: true }, data: { stock: { decrement: item.quantity } } });
       if (stockUpdated.count !== 1) {
         throw new AppError(MESSAGES.INSUFFICIENT_STOCK, HTTP_STATUS.UNPROCESSABLE_ENTITY, "INSUFFICIENT_STOCK");
       }
@@ -70,7 +122,7 @@ export async function createOrder(userId, { countryId, currencyCode, shippingAdd
     const order = await tx.order.create({
       data: {
         userId,
-        currencyCode,
+        currencyCode: resolvedCurrencyCode,
         subtotal,
         total: subtotal,
         items: { create: items },

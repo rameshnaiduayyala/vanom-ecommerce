@@ -96,10 +96,17 @@ export function CheckoutOrderSummary({
           size="lg"
           className="w-full font-bold shadow-sm"
           isLoading={loading}
+          disabled={!cart?.items?.length || loading}
         >
           <Lock className="w-4 h-4 mr-1.5" />
           Place Order & Pay
         </Button>
+
+        {(!cart?.items || cart.items.length === 0) && (
+          <p className="text-xs text-amber-600 font-medium text-center">
+            Your shopping cart is empty. Please add items to proceed.
+          </p>
+        )}
 
         <p className="text-[10px] text-gray-400 text-center leading-relaxed">
           By placing your order you agree to Vanom's terms. Prices are validated server-side.

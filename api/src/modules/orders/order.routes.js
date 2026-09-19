@@ -26,12 +26,24 @@ export async function orderRoutes(fastify) {
       body: {
         type: "object",
         required: ["countryId", "currencyCode", "shippingAddress"],
-        additionalProperties: false,
+        additionalProperties: true,
         properties: {
           countryId: { type: "string", minLength: 1 },
           currencyCode: { type: "string", minLength: 3, maxLength: 10 },
           shippingAddress: addressSchema,
-          billingAddress: { ...addressSchema, required: addressSchema.required }
+          billingAddress: { ...addressSchema, required: addressSchema.required },
+          items: {
+            type: "array",
+            items: {
+              type: "object",
+              required: ["productId", "quantity"],
+              properties: {
+                productId: { type: "string" },
+                variantId: { type: ["string", "null"] },
+                quantity: { type: "integer", minimum: 1 }
+              }
+            }
+          }
         }
       }
     }

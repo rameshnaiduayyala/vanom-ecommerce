@@ -170,9 +170,6 @@ export function AdminBulkCategoriesPage() {
             <FolderTree className="w-6 h-6 text-[#00875A]" />
             B2B Bulk Product Categories
           </h1>
-          <p className="text-xs text-text-muted mt-1">
-            Manage commercial categories, bulk commodity classifications, and volume catalog taxonomies.
-          </p>
         </div>
 
         <div className="flex items-center gap-3">

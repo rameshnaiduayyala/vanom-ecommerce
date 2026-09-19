@@ -120,40 +120,40 @@ export function AddProductPage() {
 
       const pVariants = Array.isArray(p.variants) && p.variants.length > 0
         ? p.variants.map((v, i) => {
-            const vUs = Array.isArray(v.countries)
-              ? v.countries.find((c) => c.currency === "USD" || c.country === "United States" || c.country?.code === "US")
-              : null;
-            const vCa = Array.isArray(v.countries)
-              ? v.countries.find((c) => c.currency === "CAD" || c.country === "Canada" || c.country?.code === "CA")
-              : null;
+          const vUs = Array.isArray(v.countries)
+            ? v.countries.find((c) => c.currency === "USD" || c.country === "United States" || c.country?.code === "US")
+            : null;
+          const vCa = Array.isArray(v.countries)
+            ? v.countries.find((c) => c.currency === "CAD" || c.country === "Canada" || c.country?.code === "CA")
+            : null;
 
-            const totalVStock = v.stock !== undefined ? v.stock : (v.stock_quantity !== undefined ? v.stock_quantity : 50);
-            const vStockUsd = vUs?.stock !== null && vUs?.stock !== undefined ? String(vUs.stock) : String(Math.round(totalVStock * 0.6));
-            const vStockCad = vCa?.stock !== null && vCa?.stock !== undefined ? String(vCa.stock) : String(Math.max(0, totalVStock - Math.round(totalVStock * 0.6)));
+          const totalVStock = v.stock !== undefined ? v.stock : (v.stock_quantity !== undefined ? v.stock_quantity : 50);
+          const vStockUsd = vUs?.stock !== null && vUs?.stock !== undefined ? String(vUs.stock) : String(Math.round(totalVStock * 0.6));
+          const vStockCad = vCa?.stock !== null && vCa?.stock !== undefined ? String(vCa.stock) : String(Math.max(0, totalVStock - Math.round(totalVStock * 0.6)));
 
-            return {
-              id: v.id || `v-${i + 1}`,
-              sku: v.sku || "",
-              variant_name: v.variant_name || v.name || `Variant ${i + 1}`,
-              weight: v.attributes?.weight ? Number(v.attributes.weight) : (v.weight ? Number(v.weight) : 1.0),
-              price_usd: vUs?.price !== null && vUs?.price !== undefined
-                ? String(vUs.price)
-                : (v.price_usd !== null && v.price_usd !== undefined ? String(v.price_usd) : ""),
-              old_price_usd: vUs?.oldPrice !== null && vUs?.oldPrice !== undefined
-                ? String(vUs.oldPrice)
-                : (v.old_price_usd !== null && v.old_price_usd !== undefined ? String(v.old_price_usd) : ""),
-              stock_usd: vStockUsd,
-              price_cad: vCa?.price !== null && vCa?.price !== undefined
-                ? String(vCa.price)
-                : (v.price_cad !== null && v.price_cad !== undefined ? String(v.price_cad) : ""),
-              old_price_cad: vCa?.oldPrice !== null && vCa?.oldPrice !== undefined
-                ? String(vCa.oldPrice)
-                : (v.old_price_cad !== null && v.old_price_cad !== undefined ? String(v.old_price_cad) : ""),
-              stock_cad: vStockCad,
-              stock_quantity: totalVStock,
-              status: v.isActive !== false ? "ACTIVE" : "INACTIVE",
-            };
-          })
+          return {
+            id: v.id || `v-${i + 1}`,
+            sku: v.sku || "",
+            variant_name: v.variant_name || v.name || `Variant ${i + 1}`,
+            weight: v.attributes?.weight ? Number(v.attributes.weight) : (v.weight ? Number(v.weight) : 1.0),
+            price_usd: vUs?.price !== null && vUs?.price !== undefined
+              ? String(vUs.price)
+              : (v.price_usd !== null && v.price_usd !== undefined ? String(v.price_usd) : ""),
+            old_price_usd: vUs?.oldPrice !== null && vUs?.oldPrice !== undefined
+              ? String(vUs.oldPrice)
+              : (v.old_price_usd !== null && v.old_price_usd !== undefined ? String(v.old_price_usd) : ""),
+            stock_usd: vStockUsd,
+            price_cad: vCa?.price !== null && vCa?.price !== undefined
+              ? String(vCa.price)
+              : (v.price_cad !== null && v.price_cad !== undefined ? String(v.price_cad) : ""),
+            old_price_cad: vCa?.oldPrice !== null && vCa?.oldPrice !== undefined
+              ? String(vCa.oldPrice)
+              : (v.old_price_cad !== null && v.old_price_cad !== undefined ? String(v.old_price_cad) : ""),
+            stock_cad: vStockCad,
+            stock_quantity: totalVStock,
+            status: v.isActive !== false ? "ACTIVE" : "INACTIVE",
+          };
+        })
         : [];
 
       const resolvedPriceUsd = usCountryEntry?.price !== null && usCountryEntry?.price !== undefined
@@ -388,43 +388,43 @@ export function AddProductPage() {
 
     const processedVariants = isVariable
       ? formData.variants.map((v, i) => {
-          const vPriceUsd = parseFloat(v.price_usd) || 0;
-          const vOldPriceUsd = v.old_price_usd ? parseFloat(v.old_price_usd) : null;
-          const vPriceCad = v.price_cad ? parseFloat(v.price_cad) : parseFloat((vPriceUsd * 1.35).toFixed(2));
-          const vOldPriceCad = v.old_price_cad ? parseFloat(v.old_price_cad) : (vOldPriceUsd ? parseFloat((vOldPriceUsd * 1.35).toFixed(2)) : null);
-          const vStockUsd = parseInt(v.stock_usd, 10) || 0;
-          const vStockCad = parseInt(v.stock_cad, 10) || 0;
-          const vStock = vStockUsd + vStockCad;
+        const vPriceUsd = parseFloat(v.price_usd) || 0;
+        const vOldPriceUsd = v.old_price_usd ? parseFloat(v.old_price_usd) : null;
+        const vPriceCad = v.price_cad ? parseFloat(v.price_cad) : parseFloat((vPriceUsd * 1.35).toFixed(2));
+        const vOldPriceCad = v.old_price_cad ? parseFloat(v.old_price_cad) : (vOldPriceUsd ? parseFloat((vOldPriceUsd * 1.35).toFixed(2)) : null);
+        const vStockUsd = parseInt(v.stock_usd, 10) || 0;
+        const vStockCad = parseInt(v.stock_cad, 10) || 0;
+        const vStock = vStockUsd + vStockCad;
 
-          const variantCountryPricing = [];
-          if (usCountry) {
-            variantCountryPricing.push({
-              countryId: usCountry.id,
-              isAvailable: true,
-              price: vPriceUsd,
-              oldPrice: vOldPriceUsd,
-              stock: vStockUsd,
-            });
-          }
-          if (caCountry) {
-            variantCountryPricing.push({
-              countryId: caCountry.id,
-              isAvailable: true,
-              price: vPriceCad,
-              oldPrice: vOldPriceCad,
-              stock: vStockCad,
-            });
-          }
+        const variantCountryPricing = [];
+        if (usCountry) {
+          variantCountryPricing.push({
+            countryId: usCountry.id,
+            isAvailable: true,
+            price: vPriceUsd,
+            oldPrice: vOldPriceUsd,
+            stock: vStockUsd,
+          });
+        }
+        if (caCountry) {
+          variantCountryPricing.push({
+            countryId: caCountry.id,
+            isAvailable: true,
+            price: vPriceCad,
+            oldPrice: vOldPriceCad,
+            stock: vStockCad,
+          });
+        }
 
-          return {
-            sku: v.sku.trim() || `${mainSku}-V${i + 1}`,
-            name: v.variant_name.trim() || `Variant ${i + 1}`,
-            stock: vStock,
-            isActive: v.status !== "INACTIVE",
-            attributes: { weight: String(v.weight || 1.0) },
-            ...(variantCountryPricing.length > 0 ? { countries: variantCountryPricing } : {}),
-          };
-        })
+        return {
+          sku: v.sku.trim() || `${mainSku}-V${i + 1}`,
+          name: v.variant_name.trim() || `Variant ${i + 1}`,
+          stock: vStock,
+          isActive: v.status !== "INACTIVE",
+          attributes: { weight: String(v.weight || 1.0) },
+          ...(variantCountryPricing.length > 0 ? { countries: variantCountryPricing } : {}),
+        };
+      })
       : [];
 
     const simpleUsStock = parseInt(formData.stock_usd, 10) || 0;
@@ -514,7 +514,7 @@ export function AddProductPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto pb-24 space-y-6">
+    <div className="mx-auto pb-24 space-y-6">
       {/* ── Top Header Bar ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
@@ -538,23 +538,9 @@ export function AddProductPage() {
               <h1 className="text-2xl font-black tracking-tight text-slate-900">
                 {isEditMode ? "Edit Product" : "Add Product"}
               </h1>
-              <p className="text-xs text-slate-500">
-                {formData.product_type === "simple"
-                  ? "Configure simple product pricing, stock quantity, and details."
-                  : "Configure variable product with multiple options/sizes, individual prices, and stocks."}
-              </p>
             </div>
           </div>
         </div>
-
-        <Link
-          to={ROUTES.HOME}
-          target="_blank"
-          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:text-slate-950 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl shadow-xs transition-colors self-start sm:self-auto cursor-pointer"
-        >
-          <Eye className="w-3.5 h-3.5 text-slate-500" />
-          <span>View Live Store</span>
-        </Link>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">

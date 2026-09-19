@@ -126,6 +126,11 @@ export function EnterpriseInvoiceModal({ isOpen, onClose, order, type = "RETAIL"
     }
   };
 
+  // Dynamic scan URL that opens directly to this invoice/order details in any browser/phone QR scanner
+  const invoiceScanUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/orders/${order.id || orderNumber}`
+    : `https://vanom-commerce.com/orders/${order.id || orderNumber}`;
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
       <div className="relative w-full max-w-6xl bg-slate-100 rounded-2xl shadow-2xl border border-slate-300 flex flex-col my-auto max-h-[94vh] overflow-hidden animate-in fade-in zoom-in-95">
@@ -227,15 +232,24 @@ export function EnterpriseInvoiceModal({ isOpen, onClose, order, type = "RETAIL"
 
               {/* Order Number & Smart Dual QR Code Header Box */}
               <div className="flex items-stretch gap-4 bg-slate-50/80 p-4 rounded-xl border border-slate-200/80 self-stretch md:self-auto min-w-[280px]">
-                {/* QR Code for Instant Logistics / Tracking Scan */}
-                <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs text-center flex flex-col items-center justify-center shrink-0">
+                {/* QR Code for Instant Scanner Navigation to Order Details Page */}
+                <a
+                  href={invoiceScanUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs text-center flex flex-col items-center justify-center shrink-0 hover:border-emerald-500 transition-colors group cursor-pointer"
+                  title="Scan or Click to Open Live Order Details"
+                >
                   <QRCodeSVG
-                    value={orderNumber}
+                    value={invoiceScanUrl}
                     size={76}
                     level="H"
                     includeMargin={false}
                   />
-                </div>
+                  <span className="block text-[8px] font-mono font-bold text-slate-600 group-hover:text-emerald-700 mt-1.5 uppercase tracking-wider">
+                    Scan Order
+                  </span>
+                </a>
 
                 <div className="flex flex-col justify-between text-left sm:text-right flex-1">
                   <div>
@@ -367,23 +381,29 @@ export function EnterpriseInvoiceModal({ isOpen, onClose, order, type = "RETAIL"
             <div className="pt-6 border-t-2 border-slate-900 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
               {/* Left Verification & Security Stamp */}
               <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
-                <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs shrink-0">
+                <a
+                  href={invoiceScanUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs shrink-0 hover:border-emerald-500 transition-colors group cursor-pointer"
+                  title="Scan or Click to Verify Live Order"
+                >
                   <QRCodeSVG
-                    value={`https://vanom-commerce.com/verify-invoice?id=${orderNumber}&total=${grandTotal}&date=${order.createdAt || ""}`}
+                    value={invoiceScanUrl}
                     size={76}
                     level="M"
                   />
-                </div>
+                </a>
                 <div className="text-[11px] text-slate-500 space-y-1">
                   <div className="flex items-center gap-1.5 font-bold text-slate-800">
                     <ShieldCheck className="w-4 h-4 text-[#006B3C]" />
-                    <span>VANOM Cryptographic Audit Stamp</span>
+                    <span>VANOM Live Order & Audit Authentication</span>
                   </div>
                   <p className="font-mono text-[10px] text-slate-500">
                     HASH: {order.id?.replace(/-/g, "")?.toUpperCase() || "9F84B298A102F87A"}
                   </p>
                   <p className="text-[10px] text-slate-500 leading-relaxed">
-                    Scan this QR code to verify original invoice provenance and tamper-evident digital signature against the VANOM Ledger.
+                    Scan this QR code with any mobile camera or QR app to open and verify the live invoice order details directly.
                   </p>
                 </div>
               </div>

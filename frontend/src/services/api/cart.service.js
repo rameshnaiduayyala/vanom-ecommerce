@@ -26,7 +26,7 @@ export const cartService = {
   },
 
   placeOrder: async (payload) => {
-    return apiClient.post("/checkout/place-order", payload, {
+    return apiClient.post("/orders", payload, {
       headers: { "Idempotency-Key": `idem_${Date.now()}_${Math.random().toString(36).slice(2, 8)}` },
     });
   },

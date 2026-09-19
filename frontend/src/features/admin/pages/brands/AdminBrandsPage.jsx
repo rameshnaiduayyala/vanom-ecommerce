@@ -71,9 +71,6 @@ export function AdminBrandsPage() {
             <Tag className="w-6 h-6 text-[#00875A]" />
             Brand Management
           </h1>
-          <p className="text-xs text-text-muted mt-1">
-            Manage manufacturer labels, brand identities, and product catalog associations.
-          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -112,11 +109,10 @@ export function AdminBrandsPage() {
               <button
                 key={tab.value}
                 onClick={() => setStatusFilter(tab.value)}
-                className={`px-3 py-1.5 font-medium rounded-lg transition-all ${
-                  statusFilter === tab.value
+                className={`px-3 py-1.5 font-medium rounded-lg transition-all ${statusFilter === tab.value
                     ? "bg-white text-text-primary shadow-2xs font-bold"
                     : "text-text-muted hover:text-text-primary"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
