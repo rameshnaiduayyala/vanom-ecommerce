@@ -165,6 +165,8 @@ export function UsersTable({ users, isLoading, onView, onEdit, onDelete }) {
                         className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
                           isSuperAdmin
                             ? "bg-purple-100 text-purple-800 border border-purple-200"
+                            : u.role === "B2B_USER"
+                            ? "bg-amber-100 text-amber-900 border border-amber-300"
                             : "bg-slate-100 text-slate-700 border border-slate-200"
                         }`}
                       >

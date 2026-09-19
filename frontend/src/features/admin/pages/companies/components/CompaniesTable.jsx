@@ -111,9 +111,27 @@ export function CompaniesTable({ companies, isLoading, onView, onEdit, onDelete 
                       </div>
                     </td>
 
-                    {/* Linked User / Admin */}
+                    {/* Linked Users / Members */}
                     <td className="p-4">
-                      {adminUser ? (
+                      {c.users && c.users.length > 0 ? (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5 font-medium text-text-primary">
+                            <User className="w-3.5 h-3.5 text-[#00875A]" />
+                            <span>
+                              {c.users[0].firstName || c.users[0].lastName
+                                ? `${c.users[0].firstName || ""} ${c.users[0].lastName || ""}`.trim()
+                                : c.users[0].email}
+                            </span>
+                          </div>
+                          {c.users.length > 1 ? (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              +{c.users.length - 1} more member{c.users.length > 2 ? "s" : ""}
+                            </span>
+                          ) : (
+                            <div className="text-[11px] text-text-muted">{c.users[0].email}</div>
+                          )}
+                        </div>
+                      ) : adminUser ? (
                         <div className="space-y-0.5">
                           <div className="font-medium text-text-primary flex items-center gap-1">
                             <User className="w-3 h-3 text-text-muted" />
@@ -122,7 +140,7 @@ export function CompaniesTable({ companies, isLoading, onView, onEdit, onDelete 
                           <div className="text-[11px] text-text-muted">{adminUser.email}</div>
                         </div>
                       ) : (
-                        <span className="text-text-muted italic">Unassigned User</span>
+                        <span className="text-text-muted italic">No linked members</span>
                       )}
                     </td>
 

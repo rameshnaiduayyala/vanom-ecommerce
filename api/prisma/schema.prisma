@@ -33,6 +33,7 @@ enum CouponType {
 
 enum UserRole {
   USER
+  B2B_USER
   SUPERADMIN
 }
 
@@ -101,14 +102,17 @@ model User {
 
   country Country? @relation(fields: [countryId], references: [id])
 
+  bulkBusinessId String?
+  bulkBusiness   BulkBusiness? @relation(fields: [bulkBusinessId], references: [id], onDelete: SetNull)
+
   carts  Cart[]
   orders Order[]
   reviews Review[]
   passwordResetTokens PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
-  bulkBusiness BulkBusiness?
 
   @@index([countryId])
+  @@index([bulkBusinessId])
   @@index([isActive])
 }
 
@@ -825,7 +829,6 @@ model BannerCountry {
 
 model BulkBusiness {
   id                    String              @id @default(cuid())
-  userId                String?             @unique
   businessName          String
   businessEmail         String              @unique
   businessPhone         String
@@ -841,7 +844,7 @@ model BulkBusiness {
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
 
-  user      User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  users     User[]
   addresses BulkAddress[]
   cart      BulkCart?
   orders    BulkOrder[]
@@ -850,7 +853,6 @@ model BulkBusiness {
   @@index([businessName])
   @@index([countryCode])
   @@index([createdAt])
-  @@index([userId])
 }
 
 model BulkProduct {

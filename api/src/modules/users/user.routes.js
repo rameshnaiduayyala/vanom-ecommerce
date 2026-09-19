@@ -17,7 +17,7 @@ const userProperties = {
   phone: { type: ["string", "null"], maxLength: 50 },
   imageUrl: { type: ["string", "null"], maxLength: 2000 },
   isActive: { type: "boolean" },
-  role: { type: "string", enum: ["USER", "SUPERADMIN"] },
+  role: { type: "string", enum: ["USER", "B2B_USER", "SUPERADMIN"] },
   countryId: { type: ["string", "null"], minLength: 1 },
   businessId: { type: ["string", "null"], minLength: 1 },
   businessName: { type: ["string", "null"], maxLength: 200 },

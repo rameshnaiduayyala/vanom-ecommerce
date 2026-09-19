@@ -7,7 +7,13 @@ import { slugify } from "../../common/utils/slug.js";
 
 const productInclude = { images: { orderBy: { sortOrder: "asc" } }, countryPrices: { include: { tiers: { orderBy: { minQuantity: "asc" } } } }, variants: { include: { countryPrices: { include: { tiers: { orderBy: { minQuantity: "asc" } } } } } } };
 const orderInclude = { items: true, business: { select: { id: true, businessName: true, businessEmail: true } } };
-async function businessByUser(userId) { return prisma.bulkBusiness.findFirst({ where: { userId } }); }
+async function businessByUser(userId) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { bulkBusiness: true }
+  });
+  return user?.bulkBusiness;
+}
 async function userEmail(userId) { const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } }); return user?.email; }
 async function findOrCreateCart(businessId) { return prisma.bulkCart.upsert({ where: { businessId }, create: { businessId }, update: {}, include: { items: { include: { product: true, variant: true } } } }); }
 
@@ -25,8 +31,14 @@ export async function getBusinessForUser(userId, { approved = false } = {}) {
 }
 
 export async function registerBusiness(input, userId) {
-  const data = { ...input, businessEmail: input.businessEmail.trim().toLowerCase(), ...(userId ? { userId } : {}) };
+  const data = { ...input, businessEmail: input.businessEmail.trim().toLowerCase() };
   const business = await prisma.bulkBusiness.create({ data });
+  if (userId) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { bulkBusinessId: business.id }
+    });
+  }
   return business;
 }
 
@@ -41,11 +53,11 @@ export async function updateMyBusiness(userId, input) {
 export async function listBusinesses(query = {}) {
   const { page, limit, skip } = getPagination(query);
   const where = { ...(query.status ? { status: query.status } : {}), ...(query.search ? { OR: [{ businessName: { contains: query.search, mode: "insensitive" } }, { businessEmail: { contains: query.search, mode: "insensitive" } }] } : {}), ...(query.countryCode ? { countryCode: query.countryCode } : {}), ...(query.from || query.to ? { createdAt: { ...(query.from ? { gte: new Date(query.from) } : {}), ...(query.to ? { lte: new Date(query.to) } : {}) } } : {}) };
-  const [items, total] = await prisma.$transaction([prisma.bulkBusiness.findMany({ where, skip, take: limit, orderBy: { createdAt: "desc" }, include: { user: true, addresses: true } }), prisma.bulkBusiness.count({ where })]);
+  const [items, total] = await prisma.$transaction([prisma.bulkBusiness.findMany({ where, skip, take: limit, orderBy: { createdAt: "desc" }, include: { users: true, addresses: true } }), prisma.bulkBusiness.count({ where })]);
   return { items, total, page, limit };
 }
 
-export async function getBusiness(id) { const item = await prisma.bulkBusiness.findUnique({ where: { id }, include: { user: true, addresses: true } }); return item ?? fail("Bulk business not found"); }
+export async function getBusiness(id) { const item = await prisma.bulkBusiness.findUnique({ where: { id }, include: { users: true, addresses: true } }); return item ?? fail("Bulk business not found"); }
 export async function updateBusiness(id, input) {
   await getBusiness(id);
   return prisma.bulkBusiness.update({
@@ -59,10 +71,9 @@ export async function updateBusiness(id, input) {
       ...(input.countryCode && { countryCode: input.countryCode.toUpperCase() }),
       ...(input.address && { address: input.address }),
       ...(input.contactPersonName && { contactPersonName: input.contactPersonName }),
-      ...(input.status && { status: input.status }),
-      ...(input.userId !== undefined && { userId: input.userId })
+      ...(input.status && { status: input.status })
     },
-    include: { user: true, addresses: true }
+    include: { users: true, addresses: true }
   });
 }
 export async function deleteBusiness(id) {
@@ -71,7 +82,7 @@ export async function deleteBusiness(id) {
 }
 export async function changeBusinessStatus(id, status, approvedBy, rejectionReason) {
   await getBusiness(id);
-  return prisma.bulkBusiness.update({ where: { id }, data: { status, approvedBy: status === "APPROVED" ? approvedBy : null, approvedAt: status === "APPROVED" ? new Date() : null, rejectionReason: status === "REJECTED" ? rejectionReason : null }, include: { user: true, addresses: true } });
+  return prisma.bulkBusiness.update({ where: { id }, data: { status, approvedBy: status === "APPROVED" ? approvedBy : null, approvedAt: status === "APPROVED" ? new Date() : null, rejectionReason: status === "REJECTED" ? rejectionReason : null }, include: { users: true, addresses: true } });
 }
 
 function tierCreate(tiers) { return { create: tiers.map((t) => ({ minQuantity: t.minQuantity, maxQuantity: t.maxQuantity ?? null, price: t.price })) }; }

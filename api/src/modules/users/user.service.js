@@ -36,31 +36,15 @@ function handleUniqueError(error) {
 export async function createUser(input) {
   try {
     const user = await prisma.$transaction(async (tx) => {
-      const newUser = await tx.user.create({
-        data: {
-          email: normalizeEmail(input.email),
-          passwordHash: await hashPassword(input.password),
-          firstName: input.firstName ?? null,
-          lastName: input.lastName ?? null,
-          imageUrl: input.imageUrl ?? null,
-          isActive: input.isActive ?? true,
-          role: input.role ?? "USER",
-          countryId: input.countryId ?? null
-        }
-      });
+      let bulkBusinessId = null;
 
       // Handle B2B Wholesale Business linking or creation if provided
       if (input.businessId) {
-        // Link existing BulkBusiness
-        await tx.bulkBusiness.update({
-          where: { id: input.businessId },
-          data: { userId: newUser.id }
-        });
+        bulkBusinessId = input.businessId;
       } else if (input.businessName || input.business) {
         const b = input.business || input;
-        await tx.bulkBusiness.create({
+        const newBusiness = await tx.bulkBusiness.create({
           data: {
-            userId: newUser.id,
             businessName: b.businessName,
             businessEmail: normalizeEmail(b.businessEmail || input.email),
             businessPhone: b.businessPhone || input.phone || "—",
@@ -72,7 +56,28 @@ export async function createUser(input) {
             status: b.status || "APPROVED"
           }
         });
+        bulkBusinessId = newBusiness.id;
       }
+
+      const determinedRole = input.role === "SUPERADMIN"
+        ? "SUPERADMIN"
+        : bulkBusinessId
+        ? "B2B_USER"
+        : (input.role || "USER");
+
+      const newUser = await tx.user.create({
+        data: {
+          email: normalizeEmail(input.email),
+          passwordHash: await hashPassword(input.password),
+          firstName: input.firstName ?? null,
+          lastName: input.lastName ?? null,
+          imageUrl: input.imageUrl ?? null,
+          isActive: input.isActive ?? true,
+          role: determinedRole,
+          countryId: input.countryId ?? null,
+          bulkBusinessId: bulkBusinessId
+        }
+      });
 
       return tx.user.findUnique({
         where: { id: newUser.id },
@@ -140,11 +145,13 @@ export async function updateUser(id, input) {
       });
 
       // Handle B2B business update/creation/linking if passed
-      if (input.businessId) {
-        // Link existing BulkBusiness
-        await tx.bulkBusiness.update({
-          where: { id: input.businessId },
-          data: { userId: id }
+      let updatedBulkBusinessId = existingUser.bulkBusinessId;
+
+      if (input.businessId !== undefined) {
+        updatedBulkBusinessId = input.businessId || null;
+        await tx.user.update({
+          where: { id },
+          data: { bulkBusinessId: updatedBulkBusinessId }
         });
       } else if (input.businessName || input.business) {
         const b = input.business || input;
@@ -166,11 +173,12 @@ export async function updateUser(id, input) {
             data: businessData
           });
         } else {
-          await tx.bulkBusiness.create({
-            data: {
-              userId: id,
-              ...businessData
-            }
+          const newBusiness = await tx.bulkBusiness.create({
+            data: businessData
+          });
+          await tx.user.update({
+            where: { id },
+            data: { bulkBusinessId: newBusiness.id }
           });
         }
       }

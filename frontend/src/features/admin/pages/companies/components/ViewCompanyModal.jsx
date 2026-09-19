@@ -135,13 +135,29 @@ export function ViewCompanyModal({ company, isOpen, onClose, onEdit }) {
           </div>
         </div>
 
-        {/* Linked User Account */}
+        {/* Linked User Accounts / Team Members */}
         <div className="p-4 rounded-2xl bg-surface-muted border border-border space-y-3">
           <h5 className="font-bold text-text-primary uppercase tracking-wider text-[11px] flex items-center gap-1.5">
             <User className="w-3.5 h-3.5 text-blue-600" />
-            Linked User Account (Wholesale Buyer)
+            Wholesale Authorized Users ({company.users?.length || (adminUser ? 1 : 0)})
           </h5>
-          {adminUser ? (
+          {company.users && company.users.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              {company.users.map((u) => (
+                <div key={u.id} className="bg-white p-3 rounded-xl border border-border flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="font-bold text-text-primary">
+                      {u.firstName || u.lastName ? `${u.firstName || ""} ${u.lastName || ""}`.trim() : "Member"}
+                    </div>
+                    <div className="text-[11px] text-text-muted">{u.email}</div>
+                  </div>
+                  <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                    {u.role}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : adminUser ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div className="bg-white p-3 rounded-xl border border-border">
                 <span className="text-text-muted block text-[10px] uppercase font-semibold">User Name</span>
