@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
+import { useAuthStore } from "../../stores/auth.store.js";
 import { B2BHeader } from "./B2BHeader.jsx";
 import { EnterpriseSidebar } from "../../components/common/EnterpriseSidebar.jsx";
+import { B2BStatusGate } from "../../features/b2b/pages/B2BStatusGate.jsx";
 import { B2B_NAV_CONFIG } from "../../constants/b2bNav.js";
 import { BRAND_COLORS } from "../../constants/colors.js";
 import { ROUTES } from "../../constants/routes.js";
@@ -10,6 +12,17 @@ import { Building2 } from "lucide-react";
 
 export function B2BLayout() {
   const [collapsed, setCollapsed] = useState(false);
+  const { user, activeCompany } = useAuthStore();
+
+  const status =
+    activeCompany?.status ||
+    user?.bulkBusiness?.status ||
+    user?.business?.status;
+
+  // If status is PENDING or REJECTED, do NOT show sidebar, header, or any portal routes
+  if (status && status !== "APPROVED") {
+    return <B2BStatusGate status={status} />;
+  }
 
   const customFooter = (
     <div className="p-3 bg-[#002D20] text-emerald-200">
