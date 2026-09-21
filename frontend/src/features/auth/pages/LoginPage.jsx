@@ -1,297 +1,68 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuthStore } from "../../../stores/auth.store.js";
-import { useUIStore } from "../../../stores/ui.store.js";
-import { Api } from "@/services/api/api-client.js";
-import { ROUTES } from "../../../constants/routes.js";
-import {
-  Building2,
-  ShieldCheck,
-  User,
-  Lock,
-  Mail,
-  ArrowRight,
-  Eye,
-  EyeOff,
-  Sparkles,
-  CheckCircle2,
-  LockKeyhole,
-  AlertCircle,
-} from "lucide-react";
+import React from "react";
+import { SEO } from "@/components/common/SEO.jsx";
+import { useLoginForm } from "../hooks/useLoginForm.js";
+import { AuthHeader } from "../components/AuthHeader.jsx";
+import { QuickLoginSwitcher } from "../components/QuickLoginSwitcher.jsx";
+import { LoginFormCard } from "../components/LoginFormCard.jsx";
+import { SecurityTrustBadges } from "../components/SecurityTrustBadges.jsx";
 
 export function LoginPage() {
-  const navigate = useNavigate();
-  const { login } = useAuthStore();
-  const { addToast } = useUIStore();
-
-  const [email, setEmail] = useState("customer@vanom.com");
-  const [password, setPassword] = useState("Password@123");
-  const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState("B2C");
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErrorMessage("");
-    setLoading(true);
-
-    try {
-      const data = await Api.auth.login({ email, password });
-      const user = data?.user || data;
-      const token = data?.token || data?.tokens?.accessToken || data?.accessToken;
-      const tokens = typeof data?.tokens === "object" ? data.tokens : { accessToken: token };
-
-      if (!user) {
-        throw new Error("Invalid response from server. User payload missing.");
-      }
-
-      login(user, tokens);
-      addToast({
-        title: "Welcome Back",
-        message: `Logged in as ${user?.firstName || user?.email || "User"}`,
-        type: "success",
-      });
-
-      const role = user?.role;
-      const roles = Array.isArray(user?.roles) ? user.roles : [];
-      const isAdmin =
-        role === "SUPERADMIN" ||
-        role === "ADMIN" ||
-        roles.includes("ADMIN") ||
-        roles.includes("SUPER_ADMIN") ||
-        roles.includes("SUPERADMIN");
-
-      if (isAdmin) {
-        navigate(ROUTES.ADMIN.DASHBOARD);
-      } else if (user?.customerType === "B2B" || user?.bulkBusiness) {
-        navigate(ROUTES.B2B.DASHBOARD);
-      } else {
-        navigate(ROUTES.HOME);
-      }
-    } catch (err) {
-      setErrorMessage(err.message || "Invalid email or password. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuickDemo = (demoType) => {
-    setSelectedRole(demoType);
-    setErrorMessage("");
-    if (demoType === "ADMIN") {
-      setEmail("admin@vanom.com");
-      setPassword("Password@123");
-    } else if (demoType === "B2B") {
-      setEmail("buyer@agrowholesale.in");
-      setPassword("password@123");
-    } else {
-      setEmail("customer@vanom.com");
-      setPassword("password@123");
-    }
-  };
+  const {
+    email,
+    setEmail,
+    password,
+    setPassword,
+    showPassword,
+    setShowPassword,
+    rememberMe,
+    setRememberMe,
+    loading,
+    errorMessage,
+    handleSubmit,
+    handleQuickLogin,
+    handleFillCredentials,
+  } = useLoginForm();
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center bg-[#F8FAF9] px-4 py-12">
-      <div className="max-w-md w-full space-y-6">
+      <SEO
+        title="Sign In | Vanom"
+        description="Sign in to your Vanom account to access your orders, wholesale quotes, and account dashboard."
+        noindex={true}
+      />
+      <div className="max-w-md w-full space-y-5">
+        {/* Header */}
+        <AuthHeader
+          subtitle="Access your global retail orders, procurement quotes & enterprise account"
+        />
 
-        {/* ─── Header Logo & Welcome ─── */}
-        <div className="text-center space-y-2">
-          <Link to={ROUTES.HOME} className="inline-block hover:opacity-90 transition-opacity">
-            <img
-              src="/logo.png"
-              alt="Vanom"
-              className="h-10 sm:h-12 w-auto object-contain mx-auto mb-1"
-            />
-          </Link>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0F2B1C] tracking-tight">
-            Sign In to Vanom
-          </h1>
-          <p className="text-xs text-[#5E7D67]">
-            Access your global retail orders, procurement quotes & enterprise account
-          </p>
-        </div>
+        {/* Quick 1-Click Login Bar */}
+        <QuickLoginSwitcher
+          onQuickLogin={handleQuickLogin}
+          onFillCredentials={handleFillCredentials}
+          loading={loading}
+        />
 
-        {/* ─── Quick Role Demo Switcher ─── */}
-        <div className="p-3.5 rounded-2xl bg-white border border-[#DCE8DF] shadow-xs space-y-2.5">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-[10px] font-bold text-[#5E7D67] uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-[#00875A]" />
-              <span>Quick Demo Role Select</span>
-            </span>
-            <span className="text-[10px] text-[#00875A] font-semibold">1-Click Auto-Fill</span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickDemo("B2C")}
-              className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer ${selectedRole === "B2C"
-                ? "border-[#00875A] bg-[#E6F4EA] text-[#00875A] shadow-xs"
-                : "border-[#E8EDE9] bg-[#F8FAF9] text-[#3D5648] hover:bg-white hover:border-[#DCE8DF]"
-                }`}
-            >
-              <User className="w-4 h-4" />
-              <span>Customer</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickDemo("B2B")}
-              className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer ${selectedRole === "B2B"
-                ? "border-[#00875A] bg-[#E6F4EA] text-[#00875A] shadow-xs"
-                : "border-[#E8EDE9] bg-[#F8FAF9] text-[#3D5648] hover:bg-white hover:border-[#DCE8DF]"
-                }`}
-            >
-              <Building2 className="w-4 h-4" />
-              <span>B2B Client</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickDemo("ADMIN")}
-              className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer ${selectedRole === "ADMIN"
-                ? "border-[#00875A] bg-[#E6F4EA] text-[#00875A] shadow-xs"
-                : "border-[#E8EDE9] bg-[#F8FAF9] text-[#3D5648] hover:bg-white hover:border-[#DCE8DF]"
-                }`}
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>Admin Desk</span>
-            </button>
-          </div>
-        </div>
-
-        {/* ─── Main Login Form Card ─── */}
-        <form
+        {/* Login Form Card */}
+        <LoginFormCard
+          email={email}
+          setEmail={setEmail}
+          password={password}
+          setPassword={setPassword}
+          showPassword={showPassword}
+          setShowPassword={setShowPassword}
+          rememberMe={rememberMe}
+          setRememberMe={setRememberMe}
+          loading={loading}
+          errorMessage={errorMessage}
           onSubmit={handleSubmit}
-          className="p-6 sm:p-8 rounded-3xl bg-white border border-[#DCE8DF] shadow-xl shadow-emerald-950/[0.04] space-y-4"
-        >
-          {/* Error Message Text Banner */}
-          {errorMessage && (
-            <div className="p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2.5 animate-in fade-in duration-200">
-              <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-              <div className="flex-1 leading-relaxed font-medium">
-                {errorMessage}
-              </div>
-            </div>
-          )}
-          {/* Email Address */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#0F2B1C] block">
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#5E7D67]" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@company.com"
-                className="w-full pl-10 pr-4 py-3 text-xs sm:text-sm bg-[#F8FAF9] border border-[#DCE8DF] rounded-xl text-[#0F2B1C] placeholder:text-[#8B9E91] focus:bg-white focus:outline-none focus:border-[#00875A] focus:ring-2 focus:ring-[#00875A]/15 transition-all"
-              />
-            </div>
-          </div>
+        />
 
-          {/* Password */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-[#0F2B1C]">
-                Password
-              </label>
-              <Link
-                to={ROUTES.FORGOT_PASSWORD}
-                className="text-xs font-semibold text-[#00875A] hover:underline"
-              >
-                Forgot Password?
-              </Link>
-            </div>
-            <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#5E7D67]" />
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-10 py-3 text-xs sm:text-sm bg-[#F8FAF9] border border-[#DCE8DF] rounded-xl text-[#0F2B1C] placeholder:text-[#8B9E91] focus:bg-white focus:outline-none focus:border-[#00875A] focus:ring-2 focus:ring-[#00875A]/15 transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5E7D67] hover:text-[#0F2B1C] cursor-pointer"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          {/* Remember Session */}
-          <div className="flex items-center gap-2 pt-1">
-            <input
-              type="checkbox"
-              id="remember"
-              defaultChecked
-              className="w-4 h-4 rounded text-[#00875A] focus:ring-[#00875A] cursor-pointer border-[#DCE8DF]"
-            />
-            <label htmlFor="remember" className="text-xs text-[#5E7D67] font-medium cursor-pointer">
-              Remember this device for 30 days
-            </label>
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 px-6 rounded-xl bg-[#00875A] hover:bg-[#00744D] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#00875A]/20 transition-all cursor-pointer disabled:opacity-70 mt-2"
-          >
-            {loading ? (
-              <span>Authenticating...</span>
-            ) : (
-              <>
-                <span>Sign In to Account</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
-
-          {/* Create Account Link */}
-          <div className="pt-3 border-t border-[#E8EDE9] space-y-1.5 text-center">
-            <p className="text-xs text-[#5E7D67]">
-              New customer?{" "}
-              <Link
-                to={ROUTES.REGISTER}
-                className="text-[#00875A] font-bold hover:underline ml-1"
-              >
-                Create an account
-              </Link>
-            </p>
-            <p className="text-xs text-[#5E7D67]">
-              Buying for your business?{" "}
-              <Link
-                to={ROUTES.REGISTER_BUSINESS}
-                className="text-[#00875A] font-bold hover:underline ml-1"
-              >
-                Register Business Entity
-              </Link>
-            </p>
-          </div>
-        </form>
-
-        {/* ─── Security & Compliance Badges ─── */}
-        <div className="flex items-center justify-center gap-4 text-[11px] text-[#5E7D67] pt-2">
-          <div className="flex items-center gap-1.5">
-            <LockKeyhole className="w-3.5 h-3.5 text-[#00875A]" />
-            <span>256-Bit SSL Encrypted</span>
-          </div>
-          <span>•</span>
-          <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-[#00875A]" />
-            <span>ISO 9001 Compliant</span>
-          </div>
-        </div>
-
+        {/* Security & Compliance Badges */}
+        <SecurityTrustBadges
+          firstLabel="256-Bit SSL Encrypted"
+          secondLabel="ISO 9001 Compliant"
+        />
       </div>
     </div>
   );

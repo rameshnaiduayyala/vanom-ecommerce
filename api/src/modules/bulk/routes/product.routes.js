@@ -1,12 +1,32 @@
 import * as controller from "../controllers/product.controller.js";
-import { authenticate, authorize } from "../../../common/guards/auth.guard.js";
-import { pageQuery, productBody, idParams } from "../schema.js";
+import { authenticate } from "../../../common/guards/auth.guard.js";
+import { idParams, pageQuery } from "../schema.js";
+import { productBody, updateProductBody } from "../schemas/product.schema.js";
+import { adminGuard } from "../lib/guards.js";
 
-const admin = [authenticate, authorize("SUPERADMIN")];
 export async function productRoutes(fastify) {
-  fastify.get("/bulk/products", { schema: { querystring: pageQuery } }, controller.list);
-  fastify.get("/bulk/products/:id", { schema: { params: idParams } }, controller.getById);
-  fastify.post("/admin/bulk/products", { preHandler: admin, schema: { body: productBody } }, controller.create);
-  fastify.put("/admin/bulk/products/:id", { preHandler: admin, schema: { params: idParams, body: { ...productBody, required: [], minProperties: 1 } } }, controller.update);
-  fastify.delete("/admin/bulk/products/:id", { preHandler: admin, schema: { params: idParams } }, controller.remove);
+  // Public catalog — no auth required
+  fastify.get("/bulk/products", {
+    schema: { querystring: pageQuery }
+  }, controller.list);
+
+  fastify.get("/bulk/products/:id", {
+    schema: { params: idParams }
+  }, controller.getById);
+
+  // Admin-only product management
+  fastify.post("/admin/bulk/products", {
+    preHandler: adminGuard,
+    schema: { body: productBody }
+  }, controller.create);
+
+  fastify.put("/admin/bulk/products/:id", {
+    preHandler: adminGuard,
+    schema: { params: idParams, body: updateProductBody }
+  }, controller.update);
+
+  fastify.delete("/admin/bulk/products/:id", {
+    preHandler: adminGuard,
+    schema: { params: idParams }
+  }, controller.remove);
 }

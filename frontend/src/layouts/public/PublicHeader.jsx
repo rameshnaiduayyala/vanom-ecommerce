@@ -66,7 +66,32 @@ export function PublicHeader() {
   const location = useLocation();
   const { country, setCountry } = useCountryStore();
   const { cart, openCart } = useCartStore();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, activeCompany, logout } = useAuthStore();
+
+  const roles = Array.isArray(user?.roles) ? user.roles : [];
+  const isSuperAdmin =
+    user?.role === "SUPERADMIN" ||
+    user?.role === "SUPER_ADMIN" ||
+    roles.includes("SUPERADMIN") ||
+    roles.includes("SUPER_ADMIN");
+
+  const isAdmin =
+    isSuperAdmin ||
+    user?.role === "ADMIN" ||
+    roles.includes("ADMIN");
+
+  const isB2B =
+    user?.customerType === "B2B" ||
+    Boolean(activeCompany) ||
+    Boolean(user?.company) ||
+    Boolean(user?.companyId) ||
+    Boolean(user?.business) ||
+    Boolean(user?.bulkBusiness) ||
+    user?.role === "COMPANY_ADMIN" ||
+    user?.role === "COMPANY_BUYER" ||
+    roles.includes("COMPANY_ADMIN") ||
+    roles.includes("COMPANY_BUYER") ||
+    roles.includes("B2B");
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
@@ -336,12 +361,25 @@ export function PublicHeader() {
                 <>
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="p-1.5 sm:px-0 flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors cursor-pointer"
+                    className="p-1.5 sm:px-1.5 sm:py-1 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors cursor-pointer"
                   >
                     <User className="w-[19px] h-[19px] text-gray-600" />
                     <span className="hidden sm:inline truncate max-w-[90px]">
                       {user?.firstName || "Account"}
                     </span>
+                    {isSuperAdmin ? (
+                      <span className="hidden sm:inline-block text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-100 text-rose-800">
+                        Super Admin
+                      </span>
+                    ) : isAdmin ? (
+                      <span className="hidden sm:inline-block text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-100 text-rose-800">
+                        Admin
+                      </span>
+                    ) : isB2B ? (
+                      <span className="hidden sm:inline-block text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
+                        B2B
+                      </span>
+                    ) : null}
                     <ChevronDown className="w-3 h-3 text-gray-400 hidden sm:inline" />
                   </button>
 
@@ -354,71 +392,54 @@ export function PublicHeader() {
                             {user?.firstName} {user?.lastName}
                           </p>
                           {/* Role Badge */}
-                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
-                            user?.roles?.includes("ADMIN") || user?.roles?.includes("SUPER_ADMIN") || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN"
-                              ? "bg-rose-50 text-rose-700 border-rose-200"
-                              : user?.customerType === "B2B" || user?.company
+                          <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${isSuperAdmin || isAdmin
+                            ? "bg-rose-50 text-rose-700 border-rose-200"
+                            : isB2B
                               ? "bg-amber-50 text-amber-800 border-amber-200"
                               : "bg-emerald-50 text-emerald-800 border-emerald-200"
-                          }`}>
-                            {user?.roles?.includes("SUPER_ADMIN") || user?.role === "SUPER_ADMIN"
+                            }`}>
+                            {isSuperAdmin
                               ? "Super Admin"
-                              : user?.roles?.includes("ADMIN") || user?.role === "ADMIN"
-                              ? "Admin"
-                              : user?.customerType === "B2B" || user?.company
-                              ? "Wholesale B2B"
-                              : "Consumer"}
+                              : isAdmin
+                                ? "Admin"
+                                : isB2B
+                                  ? (activeCompany?.businessName || user?.company?.businessName || "B2B Company")
+                                  : "Consumer"}
                           </span>
                         </div>
                         <p className="text-[10px] text-gray-500 truncate mt-0.5">{user?.email}</p>
                       </div>
 
-                      {/* 1. ADMIN AREA (if Admin or Super Admin) */}
-                      {(user?.roles?.includes("ADMIN") || user?.roles?.includes("SUPER_ADMIN") || user?.role === "ADMIN" || user?.role === "SUPER_ADMIN") && (
+                      {/* 1. ADMIN / SUPER ADMIN PORTAL (if Super Admin or Admin) */}
+                      {isAdmin && (
                         <div className="py-1 border-b border-gray-100">
                           <div className="px-4 py-1 text-[9px] font-bold text-gray-400 uppercase tracking-widest">
-                            Management Portal
+                            {isSuperAdmin ? "Super Admin Portal" : "Admin Portal"}
                           </div>
                           <Link
                             to={ROUTES.ADMIN.DASHBOARD}
                             onClick={() => setShowUserMenu(false)}
-                            className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 transition-colors"
+                            className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 transition-colors"
                           >
                             <LayoutDashboard className="w-3.5 h-3.5 text-rose-600" />
-                            <span>Admin Console Dashboard</span>
-                          </Link>
-                          <Link
-                            to={ROUTES.ADMIN.ORDERS}
-                            onClick={() => setShowUserMenu(false)}
-                            className="flex items-center gap-2.5 px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-                          >
-                            <ShieldCheck className="w-3.5 h-3.5 text-gray-400" />
-                            <span>All Orders & Fulfillment</span>
+                            <span>{isSuperAdmin ? "Admin Dashboard" : "Admin Dashboard"}</span>
                           </Link>
                         </div>
                       )}
 
-                      {/* 2. B2B WHOLESALE AREA (if B2B Buyer or Company linked or Admin) */}
-                      {(user?.customerType === "B2B" || user?.company || user?.roles?.includes("ADMIN") || user?.roles?.includes("SUPER_ADMIN") || user?.role === "ADMIN") && (
+                      {/* 2. B2B WHOLESALE COMPANY PORTAL (if B2B Company) */}
+                      {isB2B && (
                         <div className="py-1 border-b border-gray-100">
                           <div className="px-4 py-1 text-[9px] font-bold text-amber-700 uppercase tracking-widest">
-                            Wholesale Workspace
+                            Company Workspace
                           </div>
                           <Link
                             to={ROUTES.B2B.DASHBOARD}
                             onClick={() => setShowUserMenu(false)}
-                            className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-50 transition-colors"
+                            className="flex items-center gap-2.5 px-4 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-50 transition-colors"
                           >
-                            <Building2 className="w-3.5 h-3.5 text-amber-600" />
-                            <span>B2B Wholesale Portal</span>
-                          </Link>
-                          <Link
-                            to={ROUTES.B2B.BULK_ORDER}
-                            onClick={() => setShowUserMenu(false)}
-                            className="flex items-center gap-2.5 px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
-                          >
-                            <Boxes className="w-3.5 h-3.5 text-gray-400" />
-                            <span>Bulk Order Matrix</span>
+                            <Building2 className="w-3.5 h-3.5 text-[#00875A]" />
+                            <span>Dashboard</span>
                           </Link>
                         </div>
                       )}
@@ -561,6 +582,30 @@ export function PublicHeader() {
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <div className="space-y-1">
+                {/* Admin Dashboard Mobile Link */}
+                {isAuthenticated && isAdmin && (
+                  <Link
+                    to={ROUTES.ADMIN.DASHBOARD}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 shadow-2xs mb-2"
+                  >
+                    <LayoutDashboard className="w-4 h-4 text-rose-600" />
+                    <span>{isSuperAdmin ? "Super Admin Dashboard" : "Admin Dashboard"}</span>
+                  </Link>
+                )}
+
+                {/* B2B Dashboard Mobile Link */}
+                {isAuthenticated && isB2B && (
+                  <Link
+                    to={ROUTES.B2B.DASHBOARD}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-[#00875A] bg-[#E6F4EA] border border-[#00875A]/20 shadow-2xs mb-2"
+                  >
+                    <Building2 className="w-4 h-4 text-[#00875A]" />
+                    <span>B2B Wholesale Dashboard</span>
+                  </Link>
+                )}
+
                 <Link
                   to={ROUTES.HOME}
                   onClick={() => setMobileMenuOpen(false)}

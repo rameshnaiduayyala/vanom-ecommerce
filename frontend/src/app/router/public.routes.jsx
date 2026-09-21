@@ -12,7 +12,8 @@ import { WishlistPage } from "../../features/wishlist/pages/WishlistPage.jsx";
 import { ContactPage } from "../../features/storefront/pages/ContactPage.jsx";
 import { ConsumerAccountPage } from "../../features/account/pages/ConsumerAccountPage.jsx";
 import { LoginPage } from "../../features/auth/pages/LoginPage.jsx";
-import { RegisterPage, ForgotPasswordPage } from "../../features/auth/pages/RegisterPage.jsx";
+import { RegisterPage } from "../../features/auth/pages/RegisterPage.jsx";
+import { ForgotPasswordPage } from "../../features/auth/pages/ForgotPasswordPage.jsx";
 import { VerifyEmailPage } from "../../features/auth/pages/VerifyEmailPage.jsx";
 import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
 

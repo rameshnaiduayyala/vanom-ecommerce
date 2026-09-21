@@ -1,10 +1,13 @@
 import { prisma } from "../../../config/prisma.js";
 import { getPagination } from "../../../common/utils/pagination.js";
-import { assert } from "../validator.js";
 import { slugify } from "../../../common/utils/slug.js";
-import { productInclude, fail } from "./bulk.helper.js";
+import { assert } from "../validator.js";
+import { productInclude } from "../lib/db-includes.js";
+import { fail } from "../lib/errors.js";
 
-function tierCreate(tiers) {
+// ─── Internal Builders ────────────────────────────────────────────────────────
+
+function buildTiers(tiers) {
   return {
     create: tiers.map((t) => ({
       minQuantity: t.minQuantity,
@@ -14,28 +17,30 @@ function tierCreate(tiers) {
   };
 }
 
-function priceCreate(price) {
+function buildCountryPrice(price) {
   return {
     countryCode: price.countryCode.toUpperCase(),
     currencyCode: price.currencyCode.toUpperCase(),
     moq: price.moq,
     stock: price.stock ?? 0,
     isAvailable: price.isAvailable ?? true,
-    tiers: tierCreate(price.tiers)
+    tiers: buildTiers(price.tiers)
   };
 }
 
-function variantCreate(variant) {
+function buildVariant(variant) {
   return {
     name: variant.name ?? null,
     sku: variant.sku,
     attributes: variant.attributes ?? null,
     isActive: variant.isActive ?? true,
-    ...(variant.countryPrices ? { countryPrices: { create: variant.countryPrices.map(priceCreate) } } : {})
+    ...(variant.countryPrices
+      ? { countryPrices: { create: variant.countryPrices.map(buildCountryPrice) } }
+      : {})
   };
 }
 
-function productData(input) {
+function buildProductData(input) {
   return {
     name: input.name,
     slug: input.slug ?? slugify(input.name),
@@ -45,26 +50,43 @@ function productData(input) {
     brand: input.brand ?? null,
     type: input.type ?? "SIMPLE",
     isActive: input.isActive ?? true,
-    ...(input.images ? { images: { create: input.images } } : {}),
-    ...(input.countryPrices ? { countryPrices: { create: input.countryPrices.map(priceCreate) } } : {}),
-    ...(input.variants ? { variants: { create: input.variants.map(variantCreate) } } : {})
+    ...(input.images
+      ? { images: { create: input.images } }
+      : {}),
+    ...(input.countryPrices
+      ? { countryPrices: { create: input.countryPrices.map(buildCountryPrice) } }
+      : {}),
+    ...(input.variants
+      ? { variants: { create: input.variants.map(buildVariant) } }
+      : {})
   };
 }
 
+// ─── Public Service Functions ─────────────────────────────────────────────────
+
 export async function list(query = {}) {
   const { page, limit, skip } = getPagination(query);
+
   const where = {
     deletedAt: null,
     ...(query.isActive === undefined ? { isActive: true } : { isActive: query.isActive }),
-    ...(query.search ? {
-      OR: [
-        { name: { contains: query.search, mode: "insensitive" } },
-        { sku: { contains: query.search, mode: "insensitive" } },
-        { slug: { contains: query.search, mode: "insensitive" } }
-      ]
-    } : {}),
+    ...(query.search
+      ? {
+          OR: [
+            { name: { contains: query.search, mode: "insensitive" } },
+            { sku: { contains: query.search, mode: "insensitive" } },
+            { slug: { contains: query.search, mode: "insensitive" } }
+          ]
+        }
+      : {}),
     ...(query.type ? { type: query.type } : {}),
-    ...(query.countryCode ? { countryPrices: { some: { countryCode: query.countryCode.toUpperCase(), isAvailable: true } } } : {})
+    ...(query.countryCode
+      ? {
+          countryPrices: {
+            some: { countryCode: query.countryCode.toUpperCase(), isAvailable: true }
+          }
+        }
+      : {})
   };
 
   const [items, total] = await prisma.$transaction([
@@ -90,13 +112,26 @@ export async function getById(id) {
 }
 
 export async function create(input) {
-  assert(input.type !== "SIMPLE" || !input.variants?.length, "Simple bulk products cannot have variants", "INVALID_BULK_PRODUCT_VARIANTS");
-  assert(input.type !== "VARIABLE" || input.variants?.length, "Variable bulk products require variants", "VARIABLE_BULK_PRODUCT_REQUIRES_VARIANTS");
-  return prisma.bulkProduct.create({ data: productData(input), include: productInclude });
+  assert(
+    input.type !== "SIMPLE" || !input.variants?.length,
+    "Simple bulk products cannot have variants",
+    "INVALID_BULK_PRODUCT_VARIANTS"
+  );
+  assert(
+    input.type !== "VARIABLE" || input.variants?.length,
+    "Variable bulk products require variants",
+    "VARIABLE_BULK_PRODUCT_REQUIRES_VARIANTS"
+  );
+
+  return prisma.bulkProduct.create({
+    data: buildProductData(input),
+    include: productInclude
+  });
 }
 
 export async function update(id, input) {
   await getById(id);
+
   const data = { ...input };
   delete data.images;
   delete data.countryPrices;
@@ -104,13 +139,20 @@ export async function update(id, input) {
 
   if (input.slug === undefined && input.name) data.slug = slugify(input.name);
   if (input.images) data.images = { deleteMany: {}, create: input.images };
-  if (input.countryPrices) data.countryPrices = { deleteMany: {}, create: input.countryPrices.map(priceCreate) };
-  if (input.variants) data.variants = { deleteMany: {}, create: input.variants.map(variantCreate) };
+  if (input.countryPrices) {
+    data.countryPrices = { deleteMany: {}, create: input.countryPrices.map(buildCountryPrice) };
+  }
+  if (input.variants) {
+    data.variants = { deleteMany: {}, create: input.variants.map(buildVariant) };
+  }
 
   return prisma.bulkProduct.update({ where: { id }, data, include: productInclude });
 }
 
 export async function remove(id) {
   await getById(id);
-  return prisma.bulkProduct.update({ where: { id }, data: { isActive: false, deletedAt: new Date() } });
+  return prisma.bulkProduct.update({
+    where: { id },
+    data: { isActive: false, deletedAt: new Date() }
+  });
 }

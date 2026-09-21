@@ -28,13 +28,13 @@ export function ComboProductCard({ combo, badge = null }) {
     combo.prices?.[0]?.amount ||
     pricing.retailPrice ||
     combo.price ||
-    699;
+    0;
   const price = Number(backendPrice);
-  const originalPrice = combo.mrp || pricing.mrp || Math.round(price * 1.45);
-  const discount = combo.discount || (originalPrice > price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 30);
-  const savings = originalPrice - price;
-  const rating = combo.rating || 4.9;
-  const reviews = combo.reviewsCount || combo.reviews || 1480;
+  const originalPrice = combo.mrp || pricing.mrp || 0;
+  const discount = combo.discount || (originalPrice > price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0);
+  const savings = Math.max(0, originalPrice - price);
+  const rating = combo.rating || null;
+  const reviews = combo.reviewsCount || combo.reviews || 0;
 
   const image =
     combo.image ||
@@ -42,10 +42,11 @@ export function ComboProductCard({ combo, badge = null }) {
     combo.images?.[0]?.url ||
     null;
 
-  const itemsIncluded = combo.itemsIncluded || [
-    "Kadha Sips for Cold Defense (30 Sachets)",
-    "Pure Raw Organic Forest Honey (500g)",
-  ];
+  const itemsIncluded = Array.isArray(combo.itemsIncluded)
+    ? combo.itemsIncluded
+    : Array.isArray(combo.products)
+    ? combo.products.map((p) => p.name || p.product?.name).filter(Boolean)
+    : [];
 
   const handleAddToCart = (e) => {
     e.preventDefault();

@@ -1,5 +1,8 @@
 import { prisma } from "../../../config/prisma.js";
-import { getBusinessForUser, findOrCreateCart, resolvePrice, fail, money } from "./bulk.helper.js";
+import { getBusinessForUser, findOrCreateCart } from "../lib/business.repository.js";
+import { resolvePrice } from "../lib/pricing.js";
+import { money } from "../lib/money.js";
+import { fail } from "../lib/errors.js";
 
 export async function get(userId, countryCode) {
   const business = await getBusinessForUser(userId, { approved: true });
@@ -10,14 +13,17 @@ export async function get(userId, countryCode) {
     const resolved = countryCode
       ? await resolvePrice(item.productId, item.variantId, countryCode, item.quantity)
       : null;
+
     items.push({
       ...item,
-      ...(resolved ? {
-        unitPrice: resolved.unitPrice,
-        total: resolved.total,
-        currencyCode: resolved.price.currencyCode,
-        tier: resolved.tier
-      } : {})
+      ...(resolved
+        ? {
+            unitPrice: resolved.unitPrice,
+            total: resolved.total,
+            currencyCode: resolved.price.currencyCode,
+            tier: resolved.tier
+          }
+        : {})
     });
   }
 
@@ -30,13 +36,16 @@ export async function get(userId, countryCode) {
 
 export async function add(userId, input) {
   const business = await getBusinessForUser(userId, { approved: true });
-  await resolvePrice(input.productId, input.variantId, input.countryCode, input.quantity);
-  const cart = await findOrCreateCart(business.id);
 
+  // Validate individual item price first
+  await resolvePrice(input.productId, input.variantId, input.countryCode, input.quantity);
+
+  const cart = await findOrCreateCart(business.id);
   const existing = cart.items.find(
     (i) => i.productId === input.productId && i.variantId === (input.variantId ?? null)
   );
 
+  // Validate combined quantity against MOQ / stock
   const quantity = (existing?.quantity ?? 0) + input.quantity;
   await resolvePrice(input.productId, input.variantId, input.countryCode, quantity);
 
@@ -51,7 +60,8 @@ export async function add(userId, input) {
         }
       });
 
-  return get(userId, input.countryCode).then((c) => ({ ...c, item }));
+  const updatedCart = await get(userId, input.countryCode);
+  return { ...updatedCart, item };
 }
 
 export async function update(userId, id, input) {

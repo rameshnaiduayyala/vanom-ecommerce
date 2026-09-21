@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Navigate } from "react-router-dom";
 import { B2BLayout } from "../../layouts/b2b/B2BLayout.jsx";
 import { B2BDashboard } from "../../features/b2b/pages/B2BDashboard.jsx";
@@ -6,12 +6,10 @@ import { B2BCatalog } from "../../features/b2b/pages/B2BCatalog.jsx";
 import { B2BProductDetails } from "../../features/b2b/pages/B2BProductDetails.jsx";
 import { BulkOrder } from "../../features/b2b/pages/BulkOrder.jsx";
 import { Quotes, QuoteDetails } from "../../features/b2b/pages/Quotes.jsx";
-import {
-  B2BOrders,
-  CompanyProfile,
-  CompanyDocuments,
-  CompanyMembers,
-} from "../../features/b2b/pages/B2BOrders.jsx";
+import { B2BOrdersPage as B2BOrders } from "../../features/b2b/pages/orders/B2BOrdersPage.jsx";
+import { B2BCompanyProfilePage as CompanyProfile } from "../../features/b2b/pages/company/B2BCompanyProfilePage.jsx";
+import { B2BCompanyDocumentsPage as CompanyDocuments } from "../../features/b2b/pages/company/B2BCompanyDocumentsPage.jsx";
+import { B2BCompanyMembersPage as CompanyMembers } from "../../features/b2b/pages/company/B2BCompanyMembersPage.jsx";
 import { B2BRoute } from "../guards/ProtectedRoute.jsx";
 import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
 

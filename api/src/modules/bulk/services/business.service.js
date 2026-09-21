@@ -1,9 +1,11 @@
 import { prisma } from "../../../config/prisma.js";
-import { getBusinessForUser, fail } from "./bulk.helper.js";
+import { HTTP_STATUS } from "../../../constants/http-status.js";
 import { hashPassword } from "../../../common/utils/password.js";
+import { sendVerificationEmail } from "../../../common/utils/email.js";
 import { createHash, randomBytes } from "node:crypto";
 import { env } from "../../../config/env.js";
-import { sendVerificationEmail } from "../../../common/utils/email.js";
+import { getBusinessForUser } from "../lib/business.repository.js";
+import { fail } from "../lib/errors.js";
 
 function tokenHash(token) {
   return createHash("sha256").update(token).digest("hex");
@@ -11,7 +13,11 @@ function tokenHash(token) {
 
 export async function register(input, userId) {
   const { user: userCredentials, ...businessInput } = input;
-  const data = { ...businessInput, businessEmail: businessInput.businessEmail.trim().toLowerCase() };
+  const data = {
+    ...businessInput,
+    businessEmail: businessInput.businessEmail.trim().toLowerCase()
+  };
+
   let verificationToken = null;
   let targetUserEmail = null;
   let targetFirstName = null;
@@ -19,67 +25,68 @@ export async function register(input, userId) {
   try {
     const result = await prisma.$transaction(async (tx) => {
       const business = await tx.bulkBusiness.create({ data });
+      let createdOrUpdatedUserId = userId;
 
-    let createdOrUpdatedUserId = userId;
-
-    if (userId) {
-      const user = await tx.user.update({
-        where: { id: userId },
-        data: { bulkBusinessId: business.id, role: "B2B_USER" }
-      });
-      targetUserEmail = user.email;
-      targetFirstName = user.firstName;
-    } else if (userCredentials && userCredentials.email && userCredentials.password) {
-      const email = userCredentials.email.trim().toLowerCase();
-      const existingUser = await tx.user.findUnique({ where: { email } });
-
-      if (existingUser) {
+      if (userId) {
         const user = await tx.user.update({
-          where: { id: existingUser.id },
+          where: { id: userId },
           data: { bulkBusinessId: business.id, role: "B2B_USER" }
         });
-        createdOrUpdatedUserId = user.id;
         targetUserEmail = user.email;
         targetFirstName = user.firstName;
-      } else {
-        const user = await tx.user.create({
+      } else if (userCredentials?.email && userCredentials?.password) {
+        const email = userCredentials.email.trim().toLowerCase();
+        const existingUser = await tx.user.findUnique({ where: { email } });
+
+        if (existingUser) {
+          const user = await tx.user.update({
+            where: { id: existingUser.id },
+            data: { bulkBusinessId: business.id, role: "B2B_USER" }
+          });
+          createdOrUpdatedUserId = user.id;
+          targetUserEmail = user.email;
+          targetFirstName = user.firstName;
+        } else {
+          const user = await tx.user.create({
+            data: {
+              email,
+              passwordHash: await hashPassword(userCredentials.password),
+              firstName: userCredentials.firstName || null,
+              lastName: userCredentials.lastName || null,
+              role: "B2B_USER",
+              bulkBusinessId: business.id
+            }
+          });
+          createdOrUpdatedUserId = user.id;
+          targetUserEmail = user.email;
+          targetFirstName = user.firstName;
+        }
+      }
+
+      if (createdOrUpdatedUserId) {
+        const token = randomBytes(32).toString("hex");
+        verificationToken = token;
+
+        await tx.emailVerificationToken.deleteMany({
+          where: { userId: createdOrUpdatedUserId, usedAt: null }
+        });
+
+        await tx.emailVerificationToken.create({
           data: {
-            email,
-            passwordHash: await hashPassword(userCredentials.password),
-            firstName: userCredentials.firstName || null,
-            lastName: userCredentials.lastName || null,
-            role: "B2B_USER",
-            bulkBusinessId: business.id
+            userId: createdOrUpdatedUserId,
+            tokenHash: tokenHash(token),
+            expiresAt: new Date(
+              Date.now() + (env.emailVerificationExpiresMinutes || 1440) * 60 * 1000
+            )
           }
         });
-        createdOrUpdatedUserId = user.id;
-        targetUserEmail = user.email;
-        targetFirstName = user.firstName;
       }
-    }
 
-    if (createdOrUpdatedUserId) {
-      const token = randomBytes(32).toString("hex");
-      verificationToken = token;
-
-      await tx.emailVerificationToken.deleteMany({
-        where: { userId: createdOrUpdatedUserId, usedAt: null }
+      return tx.bulkBusiness.findUnique({
+        where: { id: business.id },
+        include: { users: true }
       });
-
-      await tx.emailVerificationToken.create({
-        data: {
-          userId: createdOrUpdatedUserId,
-          tokenHash: tokenHash(token),
-          expiresAt: new Date(Date.now() + (env.emailVerificationExpiresMinutes || 1440) * 60 * 1000)
-        }
-      });
-    }
-
-    return tx.bulkBusiness.findUnique({
-      where: { id: business.id },
-      include: { users: true }
     });
-  });
 
     if (targetUserEmail && verificationToken) {
       try {
@@ -91,7 +98,7 @@ export async function register(input, userId) {
           businessPhone: result.businessPhone,
           taxRegistrationNumber: result.taxRegistrationNumber,
           registrationNumber: result.registrationNumber,
-          address: result.address,
+          address: result.address
         });
       } catch (err) {
         console.error("[bulk:register] Email send error:", err);

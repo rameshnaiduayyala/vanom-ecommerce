@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Sparkles,
   AlertCircle,
+  Zap,
 } from "lucide-react";
 import { Button } from "../ui/Button.jsx";
 
@@ -23,32 +24,17 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialRole = "B2C" }) {
   const { addToast } = useUIStore();
 
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState("customer@vanom.com");
-  const [password, setPassword] = useState("Password123!");
-  const [firstName, setFirstName] = useState("Ramesh");
-  const [lastName, setLastName] = useState("Sharma");
-  const [phone, setPhone] = useState("+91 98765 43210");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState(initialRole);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   if (!isOpen) return null;
-
-  const handleQuickDemo = (demoType) => {
-    setSelectedRole(demoType);
-    setErrorMessage("");
-    if (demoType === "ADMIN") {
-      setEmail("admin@vanom.com");
-      setPassword("Password123!");
-    } else if (demoType === "B2B") {
-      setEmail("buyer@agrowholesale.in");
-      setPassword("Password123!");
-    } else {
-      setEmail("customer@vanom.com");
-      setPassword("Password123!");
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -128,34 +114,41 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialRole = "B2C" }) {
             </div>
           </div>
 
-          {/* Quick Demo Selector */}
           {!isSignUp && (
-            <div className="mt-4 pt-3 border-t border-emerald-100 flex items-center justify-between gap-2">
-              <span className="text-[11px] font-semibold text-emerald-800 flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Demo Login:
+            <div className="mt-3 pt-3 border-t border-emerald-100 flex items-center justify-between text-xs">
+              <span className="text-[11px] font-bold text-emerald-800 flex items-center gap-1">
+                <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-400" /> Quick Login:
               </span>
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => handleQuickDemo("B2C")}
-                  className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${
-                    selectedRole === "B2C"
-                      ? "bg-brand-600 text-white shadow-xs"
-                      : "bg-white text-text-secondary border border-border hover:bg-surface-muted"
-                  }`}
+                  onClick={() => {
+                    setEmail("customer@vanom.com");
+                    setPassword("Password@123");
+                  }}
+                  className="px-2 py-0.5 text-[10px] font-semibold rounded bg-white text-emerald-800 border border-emerald-200 hover:bg-emerald-50 transition-colors cursor-pointer"
                 >
-                  Consumer (B2C)
+                  Customer
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleQuickDemo("B2B")}
-                  className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${
-                    selectedRole === "B2B"
-                      ? "bg-brand-600 text-white shadow-xs"
-                      : "bg-white text-text-secondary border border-border hover:bg-surface-muted"
-                  }`}
+                  onClick={() => {
+                    setEmail("b2b@acmecorp.com");
+                    setPassword("Password@123");
+                  }}
+                  className="px-2 py-0.5 text-[10px] font-semibold rounded bg-white text-emerald-800 border border-emerald-200 hover:bg-emerald-50 transition-colors cursor-pointer"
                 >
-                  Wholesale (B2B)
+                  B2B
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail("admin@vanom.com");
+                    setPassword("Password@123");
+                  }}
+                  className="px-2 py-0.5 text-[10px] font-semibold rounded bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  Admin
                 </button>
               </div>
             </div>
@@ -182,7 +175,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialRole = "B2C" }) {
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:border-brand-500 focus:outline-none"
-                    placeholder="Ramesh"
+                    placeholder="e.g. John"
                   />
                 </div>
                 <div className="space-y-1">
@@ -193,7 +186,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialRole = "B2C" }) {
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:border-brand-500 focus:outline-none"
-                    placeholder="Sharma"
+                    placeholder="e.g. Doe"
                   />
                 </div>
               </div>
@@ -205,7 +198,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialRole = "B2C" }) {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-lg border border-border focus:border-brand-500 focus:outline-none"
-                  placeholder="+91 98765 43210"
+                  placeholder="+1 555 123 4567"
                 />
               </div>
             </>
