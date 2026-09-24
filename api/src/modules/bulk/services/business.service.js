@@ -211,5 +211,26 @@ export async function getDashboardSummary(userId) {
 export async function update(userId, input) {
   const current = await getBusinessForUser(userId);
   if (!current) fail("Bulk business not found");
+
+  // Prevent editing verified entity details and certificates once approved by admin
+  if (current.status === "APPROVED") {
+    const lockedKeys = ["businessName", "taxRegistrationNumber", "registrationNumber", "countryCode", "documents"];
+    const isAttemptingLockedEdit = lockedKeys.some((key) => {
+      if (input[key] === undefined || input[key] === null) return false;
+      if (typeof input[key] === "object") {
+        return JSON.stringify(input[key]) !== JSON.stringify(current[key]);
+      }
+      return input[key] !== current[key];
+    });
+
+    if (isAttemptingLockedEdit) {
+      fail(
+        "This business profile and compliance certificates have been verified and locked by administration. Please contact your account manager to request modifications.",
+        "BUSINESS_PROFILE_LOCKED",
+        HTTP_STATUS.FORBIDDEN
+      );
+    }
+  }
+
   return prisma.bulkBusiness.update({ where: { id: current.id }, data: input });
 }

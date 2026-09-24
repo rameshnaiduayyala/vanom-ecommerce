@@ -10,6 +10,7 @@ import { CompanyEditModal } from "./components/CompanyEditModal.jsx";
 export function B2BCompanyProfilePage() {
   const {
     company,
+    isLocked,
     isEditModalOpen,
     openEditModal,
     closeEditModal,
@@ -44,6 +45,7 @@ export function B2BCompanyProfilePage() {
         setFormData={setEditFormData}
         onSubmit={handleUpdateSubmit}
         isUpdating={isUpdating}
+        isLocked={isLocked}
       />
     </div>
   );

@@ -32,8 +32,9 @@ export function CompanyOverviewCard({ company }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs">
         <div className="space-y-1">
-          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">
-            Legal Business Name
+          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider flex items-center gap-1">
+            <span>Legal Business Name</span>
+            {isVerified && <span className="text-emerald-700 font-bold text-[9px]">(Locked)</span>}
           </span>
           <p className="text-sm font-bold text-slate-900 leading-snug">{legalName}</p>
         </div>
@@ -46,8 +47,9 @@ export function CompanyOverviewCard({ company }) {
         </div>
 
         <div className="space-y-1 p-3 rounded-xl bg-slate-50 border border-slate-100">
-          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">
-            Tax Registration / GSTIN
+          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider flex items-center gap-1">
+            <span>Tax Registration / GSTIN</span>
+            {isVerified && <span className="text-emerald-700 font-bold text-[9px]">(Locked)</span>}
           </span>
           <div className="flex items-center gap-2 mt-0.5">
             {taxId ? (
@@ -66,8 +68,9 @@ export function CompanyOverviewCard({ company }) {
         </div>
 
         <div className="space-y-1 p-3 rounded-xl bg-slate-50 border border-slate-100">
-          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">
-            Registration Number (CIN / Business ID)
+          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider flex items-center gap-1">
+            <span>Registration Number (CIN / Business ID)</span>
+            {isVerified && <span className="text-emerald-700 font-bold text-[9px]">(Locked)</span>}
           </span>
           <div className="flex items-center gap-2 mt-0.5">
             {cin ? (

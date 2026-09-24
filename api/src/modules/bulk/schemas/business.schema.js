@@ -12,6 +12,22 @@ export const businessBody = {
     countryCode: { type: "string", minLength: 2, maxLength: 10 },
     address: { type: "string", minLength: 5, maxLength: 500 },
     contactPersonName: { type: "string", minLength: 2, maxLength: 150 },
+    documents: {
+      type: ["array", "null"],
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string" },
+          title: { type: "string" },
+          type: { type: "string" },
+          url: { type: "string" },
+          description: { type: ["string", "null"] },
+          status: { type: "string" },
+          fileSize: { type: ["string", "null"] },
+          uploadedAt: { type: ["string", "null"] }
+        }
+      }
+    },
     user: {
       type: ["object", "null"],
       properties: {

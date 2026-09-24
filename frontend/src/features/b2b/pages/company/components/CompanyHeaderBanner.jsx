@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldCheck, Edit3, AlertCircle } from "lucide-react";
+import { ShieldCheck, Edit3, AlertCircle, Lock } from "lucide-react";
 import { Button } from "@/components/ui/Button.jsx";
 
 export function CompanyHeaderBanner({ company, onEditClick }) {
@@ -16,7 +16,7 @@ export function CompanyHeaderBanner({ company, onEditClick }) {
           {isApproved ? (
             <>
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Verified Corporate Entity</span>
+              <span>Verified Corporate Entity • Profile Locked</span>
             </>
           ) : (
             <>
@@ -28,23 +28,38 @@ export function CompanyHeaderBanner({ company, onEditClick }) {
 
         <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
           <span>{businessName}</span>
+          {isApproved && <Lock className="w-5 h-5 text-emerald-400/80" title="Profile verified & locked" />}
         </h1>
 
         <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-          Manage your commercial entity credentials, credit terms, logistics addresses, and authorized procurement contacts.
+          {isApproved
+            ? "Your commercial entity credentials, GSTIN/tax identification, and credit facilities have been officially KYC-verified and locked for audit compliance."
+            : "Manage your commercial entity credentials, credit terms, logistics addresses, and authorized procurement contacts."}
         </p>
       </div>
 
       <div className="flex items-center gap-3 shrink-0">
-        <Button
-          variant="primary"
-          size="md"
-          icon={Edit3}
-          onClick={onEditClick}
-          className="font-bold shadow-md bg-emerald-600 hover:bg-emerald-500 text-white border-0 py-2.5 px-5 cursor-pointer"
-        >
-          Edit Business Info
-        </Button>
+        {isApproved ? (
+          <Button
+            variant="outline"
+            size="md"
+            icon={Lock}
+            onClick={onEditClick}
+            className="font-bold border-emerald-500/50 bg-emerald-950/40 text-emerald-200 hover:bg-emerald-900/50 py-2.5 px-5 cursor-pointer"
+          >
+            View Locked Dossier
+          </Button>
+        ) : (
+          <Button
+            variant="primary"
+            size="md"
+            icon={Edit3}
+            onClick={onEditClick}
+            className="font-bold shadow-md bg-emerald-600 hover:bg-emerald-500 text-white border-0 py-2.5 px-5 cursor-pointer"
+          >
+            Edit Business Info
+          </Button>
+        )}
       </div>
     </div>
   );

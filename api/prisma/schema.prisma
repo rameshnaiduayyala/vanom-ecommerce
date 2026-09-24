@@ -846,6 +846,7 @@ model BulkBusiness {
   approvedBy            String?
   approvedAt            DateTime?
   rejectionReason       String?
+  documents             Json?               @default("[]")
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
 

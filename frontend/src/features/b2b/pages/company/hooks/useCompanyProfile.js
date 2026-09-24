@@ -16,6 +16,7 @@ export function useCompanyProfile() {
     address: "",
     taxRegistrationNumber: "",
     registrationNumber: "",
+    countryCode: "US",
   });
 
   // Query live company data from backend API
@@ -46,6 +47,7 @@ export function useCompanyProfile() {
         address: typeof company.address === "string" ? company.address : `${company.address?.line1 || ""}, ${company.address?.city || ""}`.trim(),
         taxRegistrationNumber: company.taxRegistrationNumber || company.taxId || "",
         registrationNumber: company.registrationNumber || "",
+        countryCode: company.countryCode || "US",
       });
     }
   }, [company, user]);
@@ -55,6 +57,7 @@ export function useCompanyProfile() {
     mutationFn: (payload) => Api.b2b.updateCompany(payload),
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ["b2b-company-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["b2b-dashboard-summary"] });
       const newCompanyData = updated?.data || updated || (company ? { ...company, ...editFormData } : editFormData);
       setActiveCompany(newCompanyData);
       toast.success("Profile Updated", "Company information has been saved successfully.");
@@ -75,8 +78,25 @@ export function useCompanyProfile() {
       address: editFormData.address?.trim(),
       taxRegistrationNumber: editFormData.taxRegistrationNumber?.trim() || null,
       registrationNumber: editFormData.registrationNumber?.trim() || null,
+      countryCode: editFormData.countryCode || "US",
     });
   };
+
+  // Document update helper
+  const updateDocumentsMutation = useMutation({
+    mutationFn: (documents) => Api.b2b.updateCompany({ documents }),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ["b2b-company-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["b2b-dashboard-summary"] });
+      const newCompanyData = updated?.data || updated;
+      if (newCompanyData) setActiveCompany(newCompanyData);
+    },
+    onError: (err) => {
+      toast.error("Document Update Failed", err.message || "Failed to update compliance documents.");
+    },
+  });
+
+  const isLocked = company?.status === "APPROVED";
 
   return {
     company,
@@ -84,6 +104,7 @@ export function useCompanyProfile() {
     isLoading,
     isError,
     refetch,
+    isLocked,
     isEditModalOpen,
     setIsEditModalOpen,
     editFormData,
@@ -92,5 +113,7 @@ export function useCompanyProfile() {
     closeEditModal: () => setIsEditModalOpen(false),
     handleUpdateSubmit,
     isUpdating: updateMutation.isPending,
+    updateDocuments: (docs) => updateDocumentsMutation.mutateAsync(docs),
+    isUpdatingDocs: updateDocumentsMutation.isPending,
   };
 }
