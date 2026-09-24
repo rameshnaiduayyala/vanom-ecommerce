@@ -56,14 +56,19 @@ export const productBody = {
     images: {
       type: "array",
       items: {
-        type: "object",
-        required: ["mediaAssetId"],
-        additionalProperties: false,
-        properties: {
-          mediaAssetId: { type: "string", minLength: 1 },
-          isPrimary: { type: "boolean" },
-          sortOrder: { type: "integer", minimum: 0 }
-        }
+        anyOf: [
+          { type: "string", minLength: 1 },
+          {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              mediaAssetId: { type: "string" },
+              url: { type: "string" },
+              isPrimary: { type: "boolean" },
+              sortOrder: { type: "integer", minimum: 0 }
+            }
+          }
+        ]
       }
     },
     countryPrices: { type: "array", items: countryPrice },

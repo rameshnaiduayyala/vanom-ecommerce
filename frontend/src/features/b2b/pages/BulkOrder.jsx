@@ -23,6 +23,7 @@ import {
   Layers,
   Sparkles,
 } from "lucide-react";
+import { resolveProductImageUrl, FALLBACK_PRODUCT_IMAGE } from "@/utils/image.js";
 import { Button } from "../../../components/ui/Button.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";
 
@@ -58,12 +59,30 @@ export function BulkOrder() {
 
   // Filtered bulk products for selector
   const availableBulkProducts = bulkProducts.filter((p) => {
-    if (selectedCategory !== "ALL" && p.categoryId !== selectedCategory) {
-      return false;
+    if (selectedCategory !== "ALL") {
+      const matchedCat = categories.find((c) => c.id === selectedCategory || c.slug === selectedCategory);
+      const catId = matchedCat?.id || selectedCategory;
+      const catName = (matchedCat?.name || selectedCategory).toLowerCase();
+      const catSlug = (matchedCat?.slug || selectedCategory).toLowerCase();
+
+      const prodCat = (p.category || p.categoryName || "").toLowerCase();
+      const prodCatId = p.categoryId;
+
+      const matchesCat =
+        prodCatId === catId ||
+        prodCat === catName ||
+        prodCat === catSlug ||
+        prodCat.includes(catName);
+
+      if (!matchesCat) return false;
     }
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
-      return p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
+      return (
+        p.name.toLowerCase().includes(q) ||
+        (p.sku && p.sku.toLowerCase().includes(q)) ||
+        (p.brand && p.brand.toLowerCase().includes(q))
+      );
     }
     return true;
   });
@@ -157,6 +176,7 @@ export function BulkOrder() {
       variantId: null,
       name: prod.name,
       sku: prod.sku,
+      imageUrl: resolveProductImageUrl(prod),
       categoryName: prod.categoryName || "General",
       packaging: prod.packaging?.type || "25 KG Poly Sacks",
       unitsPerPackage: prod.packaging?.unitsPerPackage || 1,
@@ -405,10 +425,23 @@ export function BulkOrder() {
 
                   return (
                     <tr key={row.id || idx} className="hover:bg-slate-50/80 transition-colors">
-                      {/* Product Title */}
+                      {/* Product Title & Thumbnail */}
                       <td className="p-4 font-bold text-slate-900 max-w-xs">
-                        <div className="leading-snug">{row.name}</div>
-                        <span className="text-[10px] text-slate-400 font-normal">Verified B2B Direct Batch</span>
+                        <div className="flex items-center gap-2.5">
+                          <img
+                            src={row.imageUrl || FALLBACK_PRODUCT_IMAGE}
+                            alt={row.name}
+                            className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-50 shadow-2xs"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = FALLBACK_PRODUCT_IMAGE;
+                            }}
+                          />
+                          <div>
+                            <div className="leading-snug">{row.name}</div>
+                            <span className="text-[10px] text-slate-400 font-normal">Verified B2B Direct Batch</span>
+                          </div>
+                        </div>
                       </td>
 
                       {/* SKU */}

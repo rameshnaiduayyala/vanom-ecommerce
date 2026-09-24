@@ -40,6 +40,25 @@ function buildVariant(variant) {
   };
 }
 
+function buildImages(images) {
+  if (!images || !Array.isArray(images)) return undefined;
+  const items = images.map((img, idx) => {
+    if (typeof img === "string") {
+      return {
+        mediaAssetId: img,
+        sortOrder: idx,
+        isPrimary: idx === 0
+      };
+    }
+    return {
+      mediaAssetId: img.mediaAssetId || img.url || `img_${idx}`,
+      sortOrder: img.sortOrder ?? idx,
+      isPrimary: img.isPrimary ?? (idx === 0)
+    };
+  });
+  return { create: items };
+}
+
 function buildProductData(input) {
   return {
     name: input.name,
@@ -50,9 +69,7 @@ function buildProductData(input) {
     brand: input.brand ?? null,
     type: input.type ?? "SIMPLE",
     isActive: input.isActive ?? true,
-    ...(input.images
-      ? { images: { create: input.images } }
-      : {}),
+    ...(input.images ? { images: buildImages(input.images) } : {}),
     ...(input.countryPrices
       ? { countryPrices: { create: input.countryPrices.map(buildCountryPrice) } }
       : {}),
@@ -80,6 +97,8 @@ export async function list(query = {}) {
         }
       : {}),
     ...(query.type ? { type: query.type } : {}),
+    ...(query.category ? { category: { equals: query.category, mode: "insensitive" } } : {}),
+    ...(query.brand ? { brand: { equals: query.brand, mode: "insensitive" } } : {}),
     ...(query.countryCode
       ? {
           countryPrices: {
@@ -138,7 +157,10 @@ export async function update(id, input) {
   delete data.variants;
 
   if (input.slug === undefined && input.name) data.slug = slugify(input.name);
-  if (input.images) data.images = { deleteMany: {}, create: input.images };
+  if (input.images) {
+    const built = buildImages(input.images);
+    data.images = { deleteMany: {}, ...(built || { create: [] }) };
+  }
   if (input.countryPrices) {
     data.countryPrices = { deleteMany: {}, create: input.countryPrices.map(buildCountryPrice) };
   }

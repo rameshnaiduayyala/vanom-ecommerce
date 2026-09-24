@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal.jsx";
 import { Button } from "@/components/ui/Button.jsx";
 import { Input, Textarea, Select } from "@/components/ui/Input.jsx";
-import { Layers, Plus, Trash2, Globe2 } from "lucide-react";
+import { Layers, Plus, Trash2, Globe2, Image as ImageIcon } from "lucide-react";
+import { FileUploadDropzone } from "@/components/common/FileUploadDropzone.jsx";
 import { DEFAULT_BULK_FORM } from "./constants.js";
 
 export function BulkProductFormModal({
@@ -58,7 +59,7 @@ export function BulkProductFormModal({
         originCountry: initialData.originCountry || initialData.brand || "India",
         images:
           Array.isArray(initialData.images) && initialData.images.length > 0
-            ? initialData.images
+            ? initialData.images.map((img) => (typeof img === "string" ? img : img.url || img.mediaAssetId || img.mediaAsset?.url)).filter(Boolean)
             : DEFAULT_BULK_FORM.images,
         countries: countryMap,
       });
@@ -178,6 +179,7 @@ export function BulkProductFormModal({
       description: form.description?.trim() || null,
       category: categoryName,
       brand: form.originCountry || "Vanom Wholesale",
+      images: Array.isArray(form.images) ? form.images.filter(Boolean) : [],
       type: "SIMPLE",
       isActive: true,
       countryPrices,
@@ -244,10 +246,10 @@ export function BulkProductFormModal({
               required
             />
             <Input
-              label="Country of Origin"
+              label="Brand / Manufacturer"
               value={form.originCountry}
               onChange={(e) => setForm({ ...form, originCountry: e.target.value })}
-              placeholder="e.g. India / USA"
+              placeholder="e.g. India / Vanom Wholesale / Royal Heritage"
             />
             <div className="md:col-span-2">
               <Textarea
@@ -257,6 +259,66 @@ export function BulkProductFormModal({
                 placeholder="Enter bulk packaging, purity certification, moisture specs..."
                 rows={2}
               />
+            </div>
+
+            {/* Wholesale Commodity Media / Image Upload */}
+            <div className="md:col-span-2 space-y-2">
+              <label className="block text-xs font-bold text-slate-700">Commodity Photo & Packaging Image</label>
+              {form.images && form.images[0] ? (
+                <div className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <img
+                      src={typeof form.images[0] === "string" ? form.images[0] : form.images[0]?.url || form.images[0]?.mediaAsset?.url}
+                      alt="Bulk Product Preview"
+                      className="w-14 h-14 rounded-lg object-cover border border-slate-200 shrink-0 bg-white shadow-2xs"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=60";
+                      }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <span className="text-xs font-bold text-slate-800 block">Uploaded Commodity Image</span>
+                      <span className="text-[10px] font-mono text-slate-400 truncate block mt-0.5 max-w-xs sm:max-w-md">
+                        {typeof form.images[0] === "string" ? form.images[0] : form.images[0]?.url || form.images[0]?.mediaAsset?.url}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <FileUploadDropzone
+                      folder="bulk-products"
+                      compact={true}
+                      onUploadSuccess={(url) => setForm((prev) => ({ ...prev, images: [url] }))}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, images: [] }))}
+                      className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+                      title="Remove image"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <FileUploadDropzone
+                  folder="bulk-products"
+                  multiple={false}
+                  onUploadSuccess={(url) => setForm((prev) => ({ ...prev, images: [url] }))}
+                  label="Click or drop wholesale packaging / commodity photo"
+                  hint="High-resolution JPG or PNG recommended"
+                />
+              )}
+
+              <div className="pt-1">
+                <input
+                  type="url"
+                  value={typeof form.images?.[0] === "string" ? form.images[0] : form.images?.[0]?.url || ""}
+                  onChange={(e) => setForm((prev) => ({ ...prev, images: e.target.value ? [e.target.value] : [] }))}
+                  placeholder="Or paste direct image URL (https://...)"
+                  className="w-full px-3 py-1.5 text-xs bg-slate-50/50 border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:border-[#00875A] focus:bg-white"
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/Badge.jsx";
 import { Eye, Edit2, Trash2 } from "lucide-react";
+import { resolveProductImageUrl, FALLBACK_PRODUCT_IMAGE } from "@/utils/image.js";
 
 export function BulkProductList({
   products = [],
@@ -42,17 +43,20 @@ export function BulkProductList({
                     ? p.countryPrices.reduce((acc, cp) => acc + (cp.stock || 0), 0)
                     : p.stockQuantity || 0;
 
+                const imgSrc = resolveProductImageUrl(p);
+
                 return (
                   <tr key={p.id} className="hover:bg-surface-muted/50 transition-colors">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <img
-                          src={
-                            p.images?.[0] ||
-                            "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=400&q=80"
-                          }
+                          src={imgSrc}
                           alt={p.name}
-                          className="w-11 h-11 rounded-lg object-cover border border-border shrink-0"
+                          className="w-11 h-11 rounded-lg object-cover border border-border shrink-0 bg-surface"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = FALLBACK_PRODUCT_IMAGE;
+                          }}
                         />
                         <div>
                           <h4 className="font-bold text-text-primary leading-tight max-w-xs">

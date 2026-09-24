@@ -37,6 +37,20 @@ export function AdminBulkProductsPage() {
     queryFn: () => Api.admin.getCategories(),
   });
 
+  const { data: brands = [] } = useQuery({
+    queryKey: ["admin-brands"],
+    queryFn: async () => {
+      try {
+        const res = await Api.brands.getBrands();
+        return Array.isArray(res) ? res : res?.items || res?.data || [];
+      } catch (e) {
+        return [];
+      }
+    },
+  });
+
+  const [selectedBrand, setSelectedBrand] = useState("ALL");
+
   // Mutations
   const createMutation = useMutation({
     mutationFn: (data) => Api.b2b.createBulkProduct(data),
@@ -91,20 +105,31 @@ export function AdminBulkProductsPage() {
     }
   };
 
-  // Filter products by search and category
+  // Filter products by search, category, and brand
   const filteredProducts = bulkProducts.filter((p) => {
     const matchesSearch =
       !search ||
       p.name?.toLowerCase().includes(search.toLowerCase()) ||
       p.sku?.toLowerCase().includes(search.toLowerCase()) ||
+      p.brand?.toLowerCase().includes(search.toLowerCase()) ||
       p.description?.toLowerCase().includes(search.toLowerCase());
+
+    const matchedCat = categories.find((c) => c.id === selectedCategory || c.slug === selectedCategory);
+    const catId = matchedCat?.id || selectedCategory;
+    const catName = (matchedCat?.name || selectedCategory).toLowerCase();
 
     const matchesCategory =
       selectedCategory === "ALL" ||
-      p.categoryId === selectedCategory ||
-      p.categoryName === selectedCategory;
+      p.categoryId === catId ||
+      (p.category || p.categoryName || "").toLowerCase() === catName ||
+      (p.category || p.categoryName || "").toLowerCase().includes(catName);
 
-    return matchesSearch && matchesCategory;
+    const matchesBrand =
+      selectedBrand === "ALL" ||
+      (p.brand || p.originCountry || "").toLowerCase() === selectedBrand.toLowerCase() ||
+      (p.brand || p.originCountry || "").toLowerCase().includes(selectedBrand.toLowerCase());
+
+    return matchesSearch && matchesCategory && matchesBrand;
   });
 
   return (
@@ -162,8 +187,20 @@ export function AdminBulkProductsPage() {
               { label: "All Wholesale Categories", value: "ALL" },
               ...categories.map((c) => ({ label: c.name, value: c.id })),
             ]}
-            className="w-full sm:w-56 text-xs"
+            className="w-full sm:w-52 text-xs"
           />
+
+          {brands.length > 0 && (
+            <Select
+              value={selectedBrand}
+              onChange={(e) => setSelectedBrand(e.target.value)}
+              options={[
+                { label: "All Brands", value: "ALL" },
+                ...brands.map((b) => ({ label: b.name, value: b.name })),
+              ]}
+              className="w-full sm:w-44 text-xs"
+            />
+          )}
         </div>
       </div>
 
