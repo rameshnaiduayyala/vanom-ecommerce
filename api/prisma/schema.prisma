@@ -197,6 +197,10 @@ model Category {
 
   imageUrl String?
 
+  parentId String?
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children Category[] @relation("CategoryHierarchy")
+
   isActive Boolean @default(true)
 
   createdAt DateTime @default(now())
@@ -204,6 +208,7 @@ model Category {
 
   products Product[]
 
+  @@index([parentId])
   @@index([isActive])
 }
 

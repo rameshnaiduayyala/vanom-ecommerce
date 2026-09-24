@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import fastifyJwt from "@fastify/jwt";
 import { registerCors } from "./plugins/cors.js";
+import { registerRootRoutes } from "./routes/root.routes.js";
 import { registerRoutes } from "./routes/index.js";
 import { registerErrorHandler } from "./common/errors/error-handler.js";
 import { registerRateLimit } from "./plugins/rate-limit.js";
@@ -18,13 +19,7 @@ export async function buildApp() {
 
   await registerCors(fastify);
 
-  fastify.get("/health", async () => ({
-    success: true,
-    message: "API is healthy",
-    data: {
-      status: "UP"
-    }
-  }));
+  await registerRootRoutes(fastify);
 
   await registerRoutes(fastify);
 

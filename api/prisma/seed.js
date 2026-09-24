@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "../src/common/utils/password.js";
+import { seedCategories } from "./seed-categories.js";
 
 const prisma = new PrismaClient();
 
@@ -70,15 +71,8 @@ async function main() {
     create: { code: "CA", name: "Canada", currencyId: cad.id },
   });
 
-  // 3. Exactly 1 Category
-  const category = await prisma.category.create({
-    data: {
-      name: "Organic Superfoods",
-      slug: "organic-superfoods",
-      imageUrl: "https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=600&q=80",
-      isActive: true,
-    },
-  });
+  // 3. Parent & Sub Categories
+  await seedCategories();
 
   // 4. Exactly 1 Brand
   const brand = await prisma.brand.create({

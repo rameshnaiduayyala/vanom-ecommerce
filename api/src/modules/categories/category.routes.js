@@ -7,6 +7,7 @@ const properties = {
   name: { type: "string", minLength: 2, maxLength: 200 },
   slug: { type: "string", minLength: 2, maxLength: 220 },
   imageUrl: { type: ["string", "null"], maxLength: 2000 },
+  parentId: { type: ["string", "null"] },
   isActive: { type: "boolean" }
 };
 
@@ -23,15 +24,19 @@ export async function categoryRoutes(fastify) {
     preHandler: superadminGuard
   }, controller.create);
 
+  fastify.get("/categories/tree", controller.getTree);
+
   fastify.get("/categories", {
     schema: {
       querystring: {
         type: "object",
         properties: {
           page: { type: "integer", minimum: 1, default: 1 },
-          limit: { type: "integer", minimum: 1, maximum: 100, default: 20 },
+          limit: { type: "integer", minimum: 1, maximum: 100, default: 50 },
           search: { type: "string" },
-          isActive: { type: "boolean" }
+          isActive: { type: "boolean" },
+          parentId: { type: "string" },
+          rootOnly: { type: "string" }
         }
       }
     }
