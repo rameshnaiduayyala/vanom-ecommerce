@@ -2,7 +2,9 @@ import React from "react";
 import { Modal } from "@/components/ui/Modal.jsx";
 import { Button } from "@/components/ui/Button.jsx";
 import { Badge } from "@/components/ui/Badge.jsx";
-import { Globe2 } from "lucide-react";
+import { Globe2, FileText, Package } from "lucide-react";
+import { TiptapViewer } from "@/components/common/TiptapViewer.jsx";
+import { resolveProductImageUrl, FALLBACK_PRODUCT_IMAGE } from "@/utils/image.js";
 
 export function BulkProductViewModal({
   product,
@@ -18,29 +20,53 @@ export function BulkProductViewModal({
       maxWidth="max-w-3xl"
     >
       <div className="space-y-4 text-xs">
-        {/* Top Meta Specifications */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-          <div>
-            <span className="text-text-muted block text-[10px] uppercase font-bold">SKU</span>
-            <span className="font-mono font-bold text-slate-800">{product.sku}</span>
-          </div>
-          <div>
-            <span className="text-text-muted block text-[10px] uppercase font-bold">MOQ</span>
-            <span className="font-bold text-amber-700">{product.moq} Units</span>
-          </div>
-          <div>
-            <span className="text-text-muted block text-[10px] uppercase font-bold">Pallet Spec</span>
-            <span className="font-bold text-slate-800">
-              {product.packaging?.packagesPerPallet || 40} Packages
-            </span>
-          </div>
-          <div>
-            <span className="text-text-muted block text-[10px] uppercase font-bold">Origin</span>
-            <span className="font-bold text-slate-800">
-              {product.originCountry || product.brand}
-            </span>
+        {/* Top Meta Specifications with Image Preview */}
+        <div className="flex flex-col sm:flex-row items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+          <img
+            src={resolveProductImageUrl(product)}
+            alt={product.name}
+            className="w-20 h-20 rounded-xl object-cover border border-slate-200 shrink-0 bg-white shadow-xs"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = FALLBACK_PRODUCT_IMAGE;
+            }}
+          />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 w-full">
+            <div>
+              <span className="text-text-muted block text-[10px] uppercase font-bold">SKU</span>
+              <span className="font-mono font-bold text-slate-800">{product.sku}</span>
+            </div>
+            <div>
+              <span className="text-text-muted block text-[10px] uppercase font-bold">MOQ</span>
+              <span className="font-bold text-amber-700">{product.moq} Units</span>
+            </div>
+            <div>
+              <span className="text-text-muted block text-[10px] uppercase font-bold">Pallet Spec</span>
+              <span className="font-bold text-slate-800">
+                {product.packaging?.packagesPerPallet || 40} Packages
+              </span>
+            </div>
+            <div>
+              <span className="text-text-muted block text-[10px] uppercase font-bold">Origin</span>
+              <span className="font-bold text-slate-800">
+                {product.originCountry || product.brand}
+              </span>
+            </div>
           </div>
         </div>
+
+        {/* Rich Description View via TiptapViewer */}
+        {product.description && (
+          <div className="p-4 rounded-2xl border border-slate-200 bg-white space-y-2">
+            <h5 className="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
+              <FileText className="w-4 h-4 text-[#00875A]" />
+              Wholesale Specifications & Description:
+            </h5>
+            <div className="prose-sm max-w-none text-slate-700">
+              <TiptapViewer content={product.description} />
+            </div>
+          </div>
+        )}
 
         {/* Country Prices & Tier Breakdown */}
         <div>

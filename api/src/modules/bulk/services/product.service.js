@@ -122,9 +122,12 @@ export async function list(query = {}) {
   return { items, total, page, limit };
 }
 
-export async function getById(id) {
+export async function getById(idOrSlug) {
   const item = await prisma.bulkProduct.findFirst({
-    where: { id, deletedAt: null },
+    where: {
+      OR: [{ id: idOrSlug }, { slug: idOrSlug }],
+      deletedAt: null
+    },
     include: productInclude
   });
   return item ?? fail("Bulk product not found", "BULK_PRODUCT_NOT_FOUND");

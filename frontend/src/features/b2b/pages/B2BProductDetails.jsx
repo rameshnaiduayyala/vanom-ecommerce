@@ -14,10 +14,16 @@ import {
   AlertTriangle,
   ArrowLeft,
   FileSpreadsheet,
+  FileText,
+  ShieldCheck,
+  Tag,
+  Globe2,
 } from "lucide-react";
 import { Button } from "../../../components/ui/Button.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";
 import { Spinner } from "../../../components/ui/Alert.jsx";
+import { TiptapViewer } from "@/components/common/TiptapViewer.jsx";
+import { resolveProductImageUrl, FALLBACK_PRODUCT_IMAGE } from "@/utils/image.js";
 
 export function B2BProductDetails() {
   const { slug } = useParams();
@@ -27,7 +33,18 @@ export function B2BProductDetails() {
 
   const { data: product, isLoading, error } = useQuery({
     queryKey: ["b2b-product-detail", slug, country.code],
-    queryFn: () => Api.catalog.getProductBySlug(slug),
+    queryFn: async () => {
+      // Try dedicated B2B Bulk Product endpoint first
+      try {
+        const bulkRes = await Api.b2b.getBulkProductById(slug);
+        if (bulkRes && (bulkRes.id || bulkRes.name)) {
+          return bulkRes?.data || bulkRes;
+        }
+      } catch (e) {
+        // Fallback to catalog getProductBySlug
+      }
+      return Api.catalog.getProductBySlug(slug);
+    },
   });
 
   const [quantity, setQuantity] = useState(20);
@@ -42,31 +59,43 @@ export function B2BProductDetails() {
 
   if (error || !product) {
     return (
-      <div className="py-16 text-center text-white">
+      <div className="py-16 text-center text-slate-800">
         <h2 className="text-xl font-bold">Wholesale Product Not Found</h2>
+        <p className="text-xs text-slate-500 mt-1">The requested bulk commodity could not be retrieved from the catalog.</p>
         <Link to={ROUTES.B2B.CATALOG} className="mt-4 inline-block">
-          <Button variant="gold" size="sm">Back to Catalog</Button>
+          <Button variant="primary" size="sm">Back to Catalog</Button>
         </Link>
       </div>
     );
   }
 
+  // Country Pricing & Tiers Resolution
+  const targetCode = (country.code || "US").toUpperCase();
+  const countryConfig = Array.isArray(product.countryPrices)
+    ? product.countryPrices.find((cp) => cp.countryCode?.toUpperCase() === targetCode && cp.isAvailable !== false) ||
+      product.countryPrices.find((cp) => cp.isAvailable !== false)
+    : null;
+
   const pricing = product.pricing?.[country.code] || product.pricing?.IN || {};
-  const tiers = pricing.wholesaleTiers || [];
-  const moq = pricing.moq || 20;
+  const tiers = Array.isArray(countryConfig?.tiers) && countryConfig.tiers.length > 0
+    ? countryConfig.tiers
+    : pricing.wholesaleTiers || product.wholesaleTiers || [];
+
+  const moq = countryConfig?.moq || pricing.moq || product.moq || 20;
 
   // Resolve matching tier price based on current quantity
   const activeTier =
     tiers.find((t) => quantity >= t.minQuantity && (!t.maxQuantity || quantity <= t.maxQuantity)) ||
     tiers[0] ||
-    { unitPrice: 420 };
+    { price: product.basePriceUSD || 30.0, unitPrice: 30.0 };
 
-  const unitPrice = activeTier.unitPrice;
+  const unitPrice = Number(activeTier.price !== undefined ? activeTier.price : activeTier.unitPrice || 30.0);
   const isMoqMet = quantity >= moq;
   const totalAmount = isMoqMet ? unitPrice * quantity : 0;
-  const palletsCount = product.packaging?.palletQuantity
-    ? (quantity / product.packaging.palletQuantity).toFixed(1)
-    : "1.0";
+  const packagesPerPallet = product.packaging?.packagesPerPallet || 40;
+  const palletCapacityUnits = product.packaging?.palletCapacityUnits || (product.packaging?.palletQuantity || 1000);
+  const palletsCount = palletCapacityUnits ? (quantity / palletCapacityUnits).toFixed(1) : "1.0";
+  const productImage = resolveProductImageUrl(product);
 
   const handleCreateQuote = () => {
     if (!isMoqMet) {
@@ -95,20 +124,77 @@ export function B2BProductDetails() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left 2 Cols: Details & Tier Matrix */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold px-2.5 py-1 rounded-lg font-mono">
-                Wholesale SKU: {product.sku}
-              </span>
-              <Badge variant="green" size="sm">
-                MOQ: {moq} {product.packaging?.unitName}s
-              </Badge>
+          {/* Header Card with Image & Identity */}
+          <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col md:flex-row gap-6 items-start">
+            <div className="w-full md:w-52 aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 relative">
+              <img
+                src={productImage}
+                alt={product.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = FALLBACK_PRODUCT_IMAGE;
+                }}
+              />
+              <div className="absolute top-2 left-2">
+                <span className="bg-white/95 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-md shadow-2xs font-mono">
+                  MOQ: {moq} Units
+                </span>
+              </div>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
-              {product.name}
-            </h1>
-            <p className="text-xs text-slate-600 leading-relaxed">{product.description}</p>
+            <div className="space-y-3 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold px-2.5 py-1 rounded-lg font-mono">
+                  Wholesale SKU: {product.sku}
+                </span>
+                <Badge variant="green" size="sm">
+                  MOQ: {moq} {product.packaging?.unitName || "Units"}
+                </Badge>
+                {product.originCountry && (
+                  <span className="bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold px-2.5 py-1 rounded-lg flex items-center gap-1">
+                    <Globe2 className="w-3.5 h-3.5 text-slate-500" /> {product.originCountry}
+                  </span>
+                )}
+                {product.category && (
+                  <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold px-2.5 py-1 rounded-lg">
+                    {product.category}
+                  </span>
+                )}
+              </div>
+
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
+                {product.name}
+              </h1>
+
+              {product.brand && (
+                <p className="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                  <Tag className="w-3.5 h-3.5 text-slate-400" />
+                  Manufacturer / Brand: <strong className="text-slate-800">{product.brand}</strong>
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Detailed Specifications & Overview (Tiptap Rich Viewer) */}
+          <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <FileText className="w-4 h-4 text-emerald-600" />
+                Commodity Overview & Full Description
+              </h3>
+              <span className="text-[11px] text-slate-400 font-medium">Verified Commercial Specifications</span>
+            </div>
+
+            {product.description ? (
+              <div className="prose-sm max-w-none text-slate-700">
+                <TiptapViewer content={product.description} />
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 italic py-2">
+                No detailed rich description provided for this wholesale commodity.
+              </p>
+            )}
           </div>
 
           {/* Wholesale Quantity Tier Matrix */}

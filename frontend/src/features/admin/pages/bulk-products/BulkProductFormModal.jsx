@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal.jsx";
 import { Button } from "@/components/ui/Button.jsx";
 import { Input, Textarea, Select } from "@/components/ui/Input.jsx";
-import { Layers, Plus, Trash2, Globe2, Image as ImageIcon } from "lucide-react";
+import { Layers, Plus, Trash2, Globe2, Image as ImageIcon, FileText } from "lucide-react";
 import { FileUploadDropzone } from "@/components/common/FileUploadDropzone.jsx";
+import { TiptapEditor } from "@/components/common/TiptapEditor.jsx";
 import { DEFAULT_BULK_FORM } from "./constants.js";
 
 export function BulkProductFormModal({
@@ -251,13 +252,21 @@ export function BulkProductFormModal({
               onChange={(e) => setForm({ ...form, originCountry: e.target.value })}
               placeholder="e.g. India / Vanom Wholesale / Royal Heritage"
             />
-            <div className="md:col-span-2">
-              <Textarea
-                label="Wholesale Product Description"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Enter bulk packaging, purity certification, moisture specs..."
-                rows={2}
+            <div className="md:col-span-2 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-[#00875A]" />
+                  <span>Wholesale Product Description (Rich Text Editor)</span>
+                </label>
+                <span className="text-[10px] text-slate-400">
+                  Supports Headings, Lists, Bold, Tables & Specs
+                </span>
+              </div>
+              <TiptapEditor
+                value={form.description || ""}
+                onChange={(html) => setForm({ ...form, description: html })}
+                placeholder="Enter detailed bulk packaging, moisture specs, purity certifications, grading..."
+                minHeight={160}
               />
             </div>
 

@@ -96,11 +96,6 @@ export function B2BCatalog() {
       {/* Catalog Header Banner */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span className="font-bold text-emerald-700 uppercase tracking-wider">Commercial Wholesale Catalog</span>
-            <span>•</span>
-            <span className="text-slate-600">Dedicated B2B Commodities</span>
-          </div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Wholesale & Bulk Catalog</h1>
           <p className="text-xs text-slate-500 mt-1">Browse private wholesale commodities, pallet specifications, and volume tiered discounts.</p>
         </div>
@@ -176,7 +171,7 @@ export function B2BCatalog() {
             const targetCountryCode = (country.code || "US").toUpperCase();
             const countryConfig = Array.isArray(product.countryPrices)
               ? product.countryPrices.find((cp) => cp.countryCode?.toUpperCase() === targetCountryCode && cp.isAvailable !== false) ||
-                product.countryPrices.find((cp) => cp.isAvailable !== false)
+              product.countryPrices.find((cp) => cp.isAvailable !== false)
               : null;
 
             const tiers = Array.isArray(countryConfig?.tiers) && countryConfig.tiers.length > 0
@@ -188,8 +183,8 @@ export function B2BCatalog() {
               (country.currency === "CAD"
                 ? product.price_cad || product.basePriceCAD
                 : country.currency === "INR"
-                ? product.price_inr || product.basePriceINR
-                : product.price_usd || product.basePriceUSD || 30.0);
+                  ? product.price_inr || product.basePriceINR
+                  : product.price_usd || product.basePriceUSD || 30.0);
 
             const productImage = resolveProductImageUrl(product);
 
@@ -200,11 +195,11 @@ export function B2BCatalog() {
               >
                 <div>
                   {/* Image and MOQ Badge */}
-                  <div className="aspect-16/9 bg-slate-100 overflow-hidden relative">
+                  <Link to={`${ROUTES.B2B.CATALOG}/${product.slug || product.id}`} className="block aspect-16/9 bg-slate-100 overflow-hidden relative group">
                     <img
                       src={productImage}
                       alt={product.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = FALLBACK_PRODUCT_IMAGE;
@@ -220,14 +215,18 @@ export function B2BCatalog() {
                         </span>
                       )}
                     </div>
-                  </div>
+                  </Link>
 
                   <div className="p-5 space-y-3">
                     <div>
                       <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
                         {product.categoryName || product.category || "General Commodity"}
                       </span>
-                      <h3 className="text-sm font-bold text-slate-900 leading-snug mt-0.5">{product.name}</h3>
+                      <Link to={`${ROUTES.B2B.CATALOG}/${product.slug || product.id}`} className="block group">
+                        <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#006B3C] transition-colors leading-snug mt-0.5">
+                          {product.name}
+                        </h3>
+                      </Link>
                       <p className="text-xs text-slate-500 font-mono mt-0.5">SKU: {product.sku}</p>
                     </div>
 
@@ -264,8 +263,8 @@ export function B2BCatalog() {
                               country.currency === "CAD"
                                 ? t.unitPriceCAD
                                 : country.currency === "INR"
-                                ? t.unitPriceINR
-                                : t.unitPriceUSD || t.unitPrice;
+                                  ? t.unitPriceINR
+                                  : t.unitPriceUSD || t.unitPrice;
 
                             return (
                               <div key={idx} className="px-3 py-1.5 flex justify-between text-[11px] text-slate-700">
