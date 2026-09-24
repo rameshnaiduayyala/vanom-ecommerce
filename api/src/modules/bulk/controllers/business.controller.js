@@ -16,6 +16,11 @@ export async function me(request, reply) {
   return sendSuccess(reply, { message: "Bulk business fetched", data });
 }
 
+export async function dashboard(request, reply) {
+  const data = await service.getDashboardSummary(request.user.sub);
+  return sendSuccess(reply, { message: "Bulk business dashboard fetched", data });
+}
+
 export async function update(request, reply) {
   const data = await service.update(request.user.sub, request.body);
   return sendSuccess(reply, { message: "Bulk business updated", data });

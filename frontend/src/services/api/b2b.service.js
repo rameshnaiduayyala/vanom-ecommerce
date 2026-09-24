@@ -6,6 +6,10 @@ export const b2bService = {
     return apiClient.get("/bulk/business/me");
   },
 
+  getDashboard: async () => {
+    return apiClient.get("/bulk/business/dashboard");
+  },
+
   registerCompany: async (payload) => {
     return apiClient.post("/bulk/business/register", {
       businessName: payload.businessName || payload.legalName,

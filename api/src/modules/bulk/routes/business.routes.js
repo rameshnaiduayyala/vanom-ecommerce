@@ -12,6 +12,10 @@ export async function businessRoutes(fastify) {
     preHandler: authenticate
   }, controller.me);
 
+  fastify.get("/bulk/business/dashboard", {
+    preHandler: authenticate
+  }, controller.dashboard);
+
   fastify.put("/bulk/business/me", {
     preHandler: authenticate,
     schema: { body: updateBusinessBody }

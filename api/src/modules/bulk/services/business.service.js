@@ -123,6 +123,91 @@ export async function me(userId) {
   return getBusinessForUser(userId);
 }
 
+export async function getDashboardSummary(userId) {
+  const business = await getBusinessForUser(userId);
+  if (!business) {
+    return {
+      business: null,
+      stats: {
+        totalOrders: 0,
+        totalSpend: 0,
+        activeOrders: 0,
+        completedOrders: 0,
+        cartItemsCount: 0,
+        currencyCode: "USD"
+      },
+      recentOrders: [],
+      featuredProducts: [],
+      cart: null
+    };
+  }
+
+  const [orders, cart, featuredProducts] = await Promise.all([
+    prisma.bulkOrder.findMany({
+      where: { businessId: business.id },
+      orderBy: { createdAt: "desc" },
+      include: {
+        items: true,
+        business: {
+          select: { id: true, businessName: true, businessEmail: true }
+        }
+      }
+    }),
+    prisma.bulkCart.findUnique({
+      where: { businessId: business.id },
+      include: {
+        items: {
+          include: {
+            product: {
+              include: {
+                images: { orderBy: { sortOrder: "asc" } }
+              }
+            },
+            variant: true
+          }
+        }
+      }
+    }),
+    prisma.bulkProduct.findMany({
+      where: { isActive: true, deletedAt: null },
+      take: 6,
+      orderBy: { createdAt: "desc" },
+      include: {
+        images: { orderBy: { sortOrder: "asc" } },
+        countryPrices: {
+          include: {
+            tiers: { orderBy: { minQuantity: "asc" } }
+          }
+        }
+      }
+    })
+  ]);
+
+  const totalOrders = orders.length;
+  const totalSpend = orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+  const activeOrders = orders.filter(
+    (o) => o.status !== "CANCELLED" && o.status !== "DELIVERED"
+  ).length;
+  const completedOrders = orders.filter((o) => o.status === "DELIVERED").length;
+  const cartItemsCount =
+    cart?.items?.reduce((sum, it) => sum + (it.quantity || 0), 0) || 0;
+
+  return {
+    business,
+    stats: {
+      totalOrders,
+      totalSpend,
+      activeOrders,
+      completedOrders,
+      cartItemsCount,
+      currencyCode: orders[0]?.currencyCode || business.countryCode === "IN" ? "INR" : business.countryCode === "CA" ? "CAD" : "USD"
+    },
+    recentOrders: orders.slice(0, 5),
+    featuredProducts,
+    cart
+  };
+}
+
 export async function update(userId, input) {
   const current = await getBusinessForUser(userId);
   if (!current) fail("Bulk business not found");
