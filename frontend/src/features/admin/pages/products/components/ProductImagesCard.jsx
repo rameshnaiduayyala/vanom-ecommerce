@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { UploadCloud, X, Plus, Image as ImageIcon } from "lucide-react";
+import { FileUploadDropzone } from "@/components/common/FileUploadDropzone.jsx";
 
 export function ProductImagesCard({ formData, handleAddImageUrl, handleRemoveImageUrl }) {
   const [urlInput, setUrlInput] = useState("");
@@ -8,6 +9,14 @@ export function ProductImagesCard({ formData, handleAddImageUrl, handleRemoveIma
     if (!urlInput.trim()) return;
     handleAddImageUrl(urlInput);
     setUrlInput("");
+  };
+
+  const handleUploadedUrls = (urlsOrUrl) => {
+    if (Array.isArray(urlsOrUrl)) {
+      urlsOrUrl.forEach((u) => u && handleAddImageUrl(u));
+    } else if (typeof urlsOrUrl === "string") {
+      handleAddImageUrl(urlsOrUrl);
+    }
   };
 
   return (
@@ -23,6 +32,15 @@ export function ProductImagesCard({ formData, handleAddImageUrl, handleRemoveIma
       </div>
 
       <div className="space-y-4">
+        {/* Reusable File Upload Dropzone */}
+        <FileUploadDropzone
+          folder="products"
+          multiple={true}
+          onUploadSuccess={handleUploadedUrls}
+          label="Click or drop product photos here"
+          hint="Accepts high-res JPG, PNG, WebP (auto-compressed to WebP on upload)"
+        />
+
         {/* Image Grid Preview */}
         <div className="flex flex-wrap gap-3">
           {(formData.images || []).map((imgUrl, index) => (
@@ -60,22 +78,22 @@ export function ProductImagesCard({ formData, handleAddImageUrl, handleRemoveIma
           ))}
 
           {(!formData.images || formData.images.length === 0) && (
-            <div className="w-full py-8 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 text-xs">
-              <ImageIcon className="w-8 h-8 text-slate-300 mb-1" />
-              <span>No product images added yet. Add a URL below.</span>
+            <div className="w-full py-6 border border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 text-xs">
+              <ImageIcon className="w-7 h-7 text-slate-300 mb-1" />
+              <span>No product images added yet. Upload files above or add an image URL below.</span>
             </div>
           )}
         </div>
 
         {/* Direct Image URL Inputs */}
         <div className="space-y-1.5 pt-1">
-          <label className="block text-xs font-bold text-slate-700">Add Image from URL</label>
+          <label className="block text-xs font-bold text-slate-700">Or Add Image from URL</label>
           <div className="flex gap-2">
             <input
               type="url"
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="https://images.unsplash.com/photo-... or CDN link"
+              placeholder="https://images.unsplash.com/photo-... or external image URL"
               className="flex-1 px-3.5 py-2 text-xs sm:text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#358B5B] focus:bg-white transition-all text-slate-800"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -94,9 +112,6 @@ export function ProductImagesCard({ formData, handleAddImageUrl, handleRemoveIma
               <span>Attach</span>
             </button>
           </div>
-          <p className="text-[11px] text-slate-400">
-            Recommended: Square JPG/PNG/WebP, minimum 800x800 px with plain or transparent background.
-          </p>
         </div>
       </div>
     </div>

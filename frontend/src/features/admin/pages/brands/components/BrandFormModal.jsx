@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal.jsx";
 import { Input, Checkbox } from "@/components/ui/Input.jsx";
 import { Button } from "@/components/ui/Button.jsx";
+import { FileUploadDropzone } from "@/components/common/FileUploadDropzone.jsx";
+import { Trash2 } from "lucide-react";
 
 export function BrandFormModal({
   isOpen,
@@ -84,30 +86,64 @@ export function BrandFormModal({
           required
         />
 
-        <div>
-          <Input
-            label="Brand Logo / Image URL"
-            value={formData.imageUrl}
-            onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-            placeholder="https://images.unsplash.com/..."
-            helperText="Direct logo URL for storefront brand filters & showcase"
-          />
-          {formData.imageUrl && (
-            <div className="mt-2.5 flex items-center gap-3 p-2.5 bg-surface-muted rounded-xl border border-border">
-              <img
-                src={formData.imageUrl}
-                alt="Preview"
-                className="w-12 h-12 rounded-lg object-contain border border-border shrink-0 bg-white p-1"
-                onError={(e) => {
-                  e.target.style.display = "none";
-                }}
-              />
-              <div className="text-xs text-text-secondary truncate">
-                <span className="font-semibold block text-text-primary">Logo Preview</span>
-                <span className="text-[10px] text-text-muted truncate block">{formData.imageUrl}</span>
+        {/* Brand Logo Upload & URL */}
+        <div className="space-y-2">
+          <label className="block text-xs font-bold text-slate-700">Brand Logo</label>
+
+          {formData.imageUrl ? (
+            <div className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <div className="flex items-center gap-3 min-w-0">
+                <img
+                  src={formData.imageUrl}
+                  alt="Brand Logo Preview"
+                  className="w-12 h-12 rounded-lg object-contain border border-slate-200 shrink-0 bg-white p-1 shadow-2xs"
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                  }}
+                />
+                <div className="min-w-0 flex-1">
+                  <span className="text-xs font-bold text-slate-800 block">Uploaded Brand Logo</span>
+                  <span className="text-[10px] font-mono text-slate-400 truncate block mt-0.5 max-w-[200px] sm:max-w-xs">
+                    {formData.imageUrl}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <FileUploadDropzone
+                  folder="brands"
+                  compact={true}
+                  onUploadSuccess={(url) => setFormData((prev) => ({ ...prev, imageUrl: url }))}
+                />
+                <button
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, imageUrl: "" }))}
+                  className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+                  title="Remove logo"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
+          ) : (
+            <FileUploadDropzone
+              folder="brands"
+              multiple={false}
+              onUploadSuccess={(url) => setFormData((prev) => ({ ...prev, imageUrl: url }))}
+              label="Click or drop brand logo photo"
+              hint="PNG or SVG with transparent background recommended"
+            />
           )}
+
+          <div className="pt-1">
+            <input
+              type="url"
+              value={formData.imageUrl}
+              onChange={(e) => setFormData((prev) => ({ ...prev, imageUrl: e.target.value }))}
+              placeholder="Or paste direct image URL (https://...)"
+              className="w-full px-3 py-1.5 text-xs bg-slate-50/50 border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:border-[#358B5B] focus:bg-white"
+            />
+          </div>
         </div>
 
         <div className="pt-2">
@@ -136,3 +172,5 @@ export function BrandFormModal({
     </Modal>
   );
 }
+
+export default BrandFormModal;
