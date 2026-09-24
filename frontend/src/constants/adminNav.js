@@ -208,6 +208,12 @@ export const ADMIN_NAV_CONFIG = [
     icon: ShieldCheck,
     path: ROUTES.ADMIN.AUDIT_LOGS,
   },
+  {
+    id: "store-settings",
+    label: "Store Settings",
+    icon: Store,
+    path: ROUTES.ADMIN.STORE,
+  },
 ];
 
 

@@ -1101,3 +1101,69 @@ model Invoice {
   @@index([status])
   @@index([issuedAt])
 }
+
+// ============================================================
+// STORE SETTINGS & DETAILS
+// ============================================================
+
+model StoreSetting {
+  id                  String   @id @default(cuid())
+  
+  // General Store Details
+  storeName           String   @default("Vanom")
+  storeTagline        String?
+  description         String?
+  logoUrl             String?
+  darkLogoUrl         String?
+  faviconUrl          String?
+
+  // Contact Information
+  email               String?
+  supportEmail        String?
+  phone               String?
+  whatsapp            String?
+
+  // Business Address
+  addressLine1        String?
+  addressLine2        String?
+  city                String?
+  state               String?
+  postalCode          String?
+  country             String?
+
+  // Tax & Legal
+  taxId               String?  // GSTIN / VAT / EIN
+  businessRegistration String? // Company / Business Reg No
+  legalName           String?
+
+  // Social Links
+  instagramUrl        String?
+  facebookUrl         String?
+  twitterUrl          String?
+  linkedinUrl         String?
+  youtubeUrl          String?
+
+  // Operational & Storefront Settings
+  isMaintenanceMode   Boolean  @default(false)
+  maintenanceMessage  String?
+  announcementBarText String?
+  isAnnouncementActive Boolean @default(false)
+  
+  // Order & Inventory Defaults
+  defaultCurrency     String   @default("USD")
+  lowStockThreshold   Int      @default(5)
+  freeShippingThreshold Decimal? @db.Decimal(12, 2)
+  standardShippingFee   Decimal? @db.Decimal(12, 2)
+  taxRatePercentage     Decimal? @db.Decimal(5, 2)
+
+  // Invoice & Policy Notes
+  invoicePrefix       String?  @default("INV-")
+  invoiceFooterNote   String?
+
+  // Flexible Metadata for future extensible settings
+  metadata            Json?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+

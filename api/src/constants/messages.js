@@ -104,7 +104,12 @@ export const MESSAGES = {
   REVIEW_RATING_INVALID: "Rating must be an integer from 1 to 5",
   VARIABLE_PRODUCT_REQUIRES_VARIANT: "Variable products must have at least one variant",
   SIMPLE_PRODUCT_CANNOT_HAVE_VARIANTS: "Simple products cannot have variants",
-  SLUG_ALREADY_EXISTS: "Product slug already exists",
+  STORE_CREATED: "Store settings created successfully",
+  STORE_FETCHED: "Store settings fetched successfully",
+  STORE_UPDATED: "Store settings updated successfully",
+  STORE_DELETED: "Store settings deleted successfully",
+  STORE_NOT_FOUND: "Store settings not found",
+  STORE_ALREADY_EXISTS: "Store settings already exist. Only 1 store is permitted; please update existing store instead.",
   INTERNAL_ERROR: "Internal server error",
   VALIDATION_ERROR: "Validation error"
 };
