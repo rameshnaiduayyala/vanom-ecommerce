@@ -133,9 +133,16 @@ export async function createOrder(userId, { countryId, currencyCode, shippingAdd
       const itemTotal = new Prisma.Decimal(unitPrice).mul(item.quantity);
       subtotal = subtotal.add(itemTotal);
 
+      const productName = variant?.name
+        ? `${product?.name || "Product"} - ${variant.name}`
+        : product?.name || "Product";
+      const sku = variant?.sku || product?.sku || null;
+
       items.push({
         productId: item.productId,
         variantId: item.variantId ?? null,
+        productName,
+        sku,
         unitPrice,
         quantity: item.quantity,
         total: itemTotal

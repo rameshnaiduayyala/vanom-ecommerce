@@ -9,6 +9,7 @@ import { Api } from "@/services/api/api-client.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { getBackendProvider } from "../config/paymentProviders.config.js";
 import { openRazorpayCheckout } from "../../../services/payment/razorpay.handler.js";
+import { calculateCheckoutTax } from "../../../services/tax/taxEngine.js";
 
 // Default address per country
 const COUNTRY_DEFAULTS = {
@@ -74,38 +75,24 @@ export function useCheckout() {
     }));
   }, [country.code]);
 
-  // Live tax calculation (debounced 300 ms)
+  // Self-maintained local tax calculation using autonomous dataset
   useEffect(() => {
-    let isMounted = true;
-    const run = async () => {
-      setIsCalc(true);
-      try {
-        const items = cart.items.length > 0
-          ? cart.items
-          : [{ id: "p1", unitPrice: 499, quantity: 1 }];
-
-        const res = await Api.tax.calculateTax({
-          countryCode: country?.code || "US",
-          regionCode:  formData.state    || undefined,
-          postalCode:  formData.postalCode || undefined,
-          items: items.map((item) => {
-            const unitPrice = Number(item.price || item.unitPrice || 499);
-            return { productId: item.productId || item.id, variantId: item.variantId || null, unitPrice, quantity: item.quantity, subtotal: unitPrice * item.quantity };
-          }),
-        });
-        if (isMounted) setTaxData(res?.data || res);
-      } catch {
-        if (isMounted) {
-          const rate = country.code === "CA" ? 0.13 : 0.0882;
-          setTaxData({ totalTax: Number((subtotal * rate).toFixed(2)), effectiveRate: rate, jurisdiction: formData.state || country.code, provider: "FALLBACK" });
-        }
-      } finally {
-        if (isMounted) setIsCalc(false);
-      }
-    };
-    const t = setTimeout(run, 300);
-    return () => { isMounted = false; clearTimeout(t); };
-  }, [country?.code, formData.state, formData.postalCode, subtotal]); // eslint-disable-line react-hooks/exhaustive-deps
+    setIsCalc(true);
+    try {
+      const calculated = calculateCheckoutTax({
+        countryCode: country?.code || "US",
+        stateCode: formData.state || "",
+        postalCode: formData.postalCode || "",
+        subtotal,
+        items: cart.items || [],
+      });
+      setTaxData(calculated);
+    } catch (err) {
+      console.error("Tax calculation error:", err);
+    } finally {
+      setIsCalc(false);
+    }
+  }, [country?.code, formData.state, formData.postalCode, subtotal, cart.items]);
 
   // ── Handlers ─────────────────────────────────────────────────────
   const setField = (field, value) =>
