@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { useCountryStore } from "../../../stores/country.store.js";
@@ -11,9 +11,10 @@ import { ProductsGrid } from "../components/products/ProductsGrid.jsx";
 
 export function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { slug } = useParams();
   const { country } = useCountryStore();
 
-  const currentCategory = searchParams.get("category") || "";
+  const currentCategory = slug || searchParams.get("category") || "";
   const currentSearch = searchParams.get("q") || "";
   const [sortBy, setSortBy] = useState("popular");
   const [inStockOnly, setInStockOnly] = useState(false);
