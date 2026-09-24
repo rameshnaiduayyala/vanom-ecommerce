@@ -20,8 +20,14 @@ export function ProductsPage() {
   const [gridCols, setGridCols] = useState("standard");
 
   const { data: categories = [] } = useQuery({
-    queryKey: ["categories"],
-    queryFn: () => Api.catalog.getCategories(),
+    queryKey: ["category-tree"],
+    queryFn: async () => {
+      const res = await Api.catalog.getCategoryTree();
+      const tree = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      if (tree.length > 0) return tree;
+      const flat = await Api.catalog.getCategories();
+      return Array.isArray(flat?.data) ? flat.data : Array.isArray(flat?.items) ? flat.items : Array.isArray(flat) ? flat : [];
+    },
   });
 
   const { data: productsData, isLoading } = useQuery({
@@ -49,13 +55,17 @@ export function ProductsPage() {
     ? productsData
     : [];
 
-  // Find active category details
+  // Find active category details across roots and children
   const activeCategoryObj = useMemo(() => {
-    return (
-      catList.find(
-        (c) => c.id === currentCategory || c.slug === currentCategory
-      ) || null
-    );
+    if (!currentCategory) return null;
+    for (const cat of catList) {
+      if (cat.id === currentCategory || cat.slug === currentCategory) return cat;
+      if (Array.isArray(cat.children)) {
+        const foundChild = cat.children.find((c) => c.id === currentCategory || c.slug === currentCategory);
+        if (foundChild) return foundChild;
+      }
+    }
+    return null;
   }, [catList, currentCategory]);
 
   const handleClearFilters = () => {

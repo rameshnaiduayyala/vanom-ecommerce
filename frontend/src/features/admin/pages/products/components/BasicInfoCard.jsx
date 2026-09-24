@@ -54,11 +54,25 @@ export function BasicInfoCard({ formData, setFormData, categories = [], brands =
             className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#358B5B] focus:bg-white cursor-pointer text-slate-800 font-medium"
           >
             {categories.length > 0 ? (
-              categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))
+              categories.map((c) => {
+                if (Array.isArray(c.children) && c.children.length > 0) {
+                  return (
+                    <optgroup key={c.id} label={`📁 ${c.name}`}>
+                      <option value={c.id}>{c.name} (All / General)</option>
+                      {c.children.map((sub) => (
+                        <option key={sub.id} value={sub.id}>
+                          ↳ {sub.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                }
+                return (
+                  <option key={c.id} value={c.id}>
+                    {c.parentName ? `${c.parentName} → ${c.name}` : c.name}
+                  </option>
+                );
+              })
             ) : (
               <option value="">No categories available</option>
             )}

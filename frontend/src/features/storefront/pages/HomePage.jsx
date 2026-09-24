@@ -62,7 +62,13 @@ export function HomePage() {
 
   const { data: categories = [] } = useQuery({
     queryKey: ["home-categories"],
-    queryFn: () => Api.catalog.getCategories(),
+    queryFn: async () => {
+      const res = await Api.catalog.getCategoryTree();
+      const tree = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      if (tree.length > 0) return tree;
+      const flat = await Api.catalog.getCategories();
+      return Array.isArray(flat?.data) ? flat.data : Array.isArray(flat?.items) ? flat.items : Array.isArray(flat) ? flat : [];
+    },
     staleTime: 10 * 60 * 1000,
   });
 

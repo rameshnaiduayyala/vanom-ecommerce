@@ -9,8 +9,12 @@ export const catalogService = {
     return apiClient.get(`/products/${slug}`);
   },
 
-  getCategories: async () => {
-    return apiClient.get("/categories");
+  getCategories: async (params = {}) => {
+    return apiClient.get("/categories", { params });
+  },
+
+  getCategoryTree: async () => {
+    return apiClient.get("/categories/tree");
   },
 
   getFeaturedProducts: async (params = {}) => {
