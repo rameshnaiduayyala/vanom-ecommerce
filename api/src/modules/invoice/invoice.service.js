@@ -136,8 +136,17 @@ export async function issueInvoiceForOrder({ orderId, bulkOrderId, companyOverri
     prefix = "VANOM";
   }
 
+  // 2.5 Resolve store settings from database
+  const storeSetting = await prisma.storeSetting.findFirst({
+    orderBy: { createdAt: "asc" }
+  });
+
+  if (storeSetting?.invoicePrefix) {
+    prefix = storeSetting.invoicePrefix.replace(/-+$/, "");
+  }
+
   // 3. Resolve dynamic company configuration
-  const company = getCompanyConfig(companyOverride || (isB2B ? orderData.business : null));
+  const company = getCompanyConfig(companyOverride || (isB2B ? orderData.business : null), storeSetting);
 
   // 4. Generate unique invoice number if not already present
   const invoiceNumber = existingInvoice?.invoiceNumber || (await generateInvoiceNumber(prefix));

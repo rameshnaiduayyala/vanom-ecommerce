@@ -19,22 +19,56 @@ export const defaultCompanyConfig = {
 
 /**
  * Resolves dynamic organization/company details for a specific order.
+ * Merges priority: Custom Tenant Override > Database Store Settings > System Default
  * @param {object} [tenantOverride] Custom tenant or organization details if present.
+ * @param {object} [storeSetting] Database store setting record.
  * @returns {typeof defaultCompanyConfig}
  */
-export function getCompanyConfig(tenantOverride = null) {
-  if (!tenantOverride) return defaultCompanyConfig;
+export function getCompanyConfig(tenantOverride = null, storeSetting = null) {
+  let baseConfig = { ...defaultCompanyConfig };
+
+  if (storeSetting) {
+    const formattedAddress = [
+      storeSetting.addressLine1,
+      storeSetting.addressLine2,
+      storeSetting.city,
+      storeSetting.state,
+      storeSetting.postalCode,
+      storeSetting.country
+    ].filter(Boolean).join(", ");
+
+    baseConfig = {
+      ...baseConfig,
+      brandName: storeSetting.storeName || baseConfig.brandName,
+      legalName: storeSetting.legalName || storeSetting.storeName || baseConfig.legalName,
+      tagline: storeSetting.storeTagline || baseConfig.tagline,
+      address: formattedAddress || baseConfig.address,
+      phone: storeSetting.phone || storeSetting.whatsapp || baseConfig.phone,
+      email: storeSetting.supportEmail || storeSetting.email || baseConfig.email,
+      taxIds: storeSetting.taxId 
+        ? `Tax/GST: ${storeSetting.taxId}${storeSetting.businessRegistration ? ` • Reg: ${storeSetting.businessRegistration}` : ""}` 
+        : baseConfig.taxIds,
+      logoUrl: storeSetting.logoUrl || baseConfig.logoUrl,
+      footerNote: storeSetting.invoiceFooterNote,
+      invoicePrefix: storeSetting.invoicePrefix
+    };
+  }
+
+  if (!tenantOverride) return baseConfig;
 
   return {
-    legalName: tenantOverride.legalName || defaultCompanyConfig.legalName,
-    brandName: tenantOverride.brandName || tenantOverride.name || defaultCompanyConfig.brandName,
-    tagline: tenantOverride.tagline || defaultCompanyConfig.tagline,
-    address: tenantOverride.address || defaultCompanyConfig.address,
-    phone: tenantOverride.phone || defaultCompanyConfig.phone,
-    email: tenantOverride.email || defaultCompanyConfig.email,
-    website: tenantOverride.website || defaultCompanyConfig.website,
-    taxIds: tenantOverride.taxIds || tenantOverride.taxRegistrationNumber || defaultCompanyConfig.taxIds,
-    logoUrl: tenantOverride.logoUrl || tenantOverride.logo || defaultCompanyConfig.logoUrl,
-    currencyCode: tenantOverride.currencyCode || defaultCompanyConfig.currencyCode
+    ...baseConfig,
+    legalName: tenantOverride.legalName || baseConfig.legalName,
+    brandName: tenantOverride.brandName || tenantOverride.name || baseConfig.brandName,
+    tagline: tenantOverride.tagline || baseConfig.tagline,
+    address: tenantOverride.address || baseConfig.address,
+    phone: tenantOverride.phone || baseConfig.phone,
+    email: tenantOverride.email || baseConfig.email,
+    website: tenantOverride.website || baseConfig.website,
+    taxIds: tenantOverride.taxIds || tenantOverride.taxRegistrationNumber || baseConfig.taxIds,
+    logoUrl: tenantOverride.logoUrl || tenantOverride.logo || baseConfig.logoUrl,
+    currencyCode: tenantOverride.currencyCode || baseConfig.currencyCode,
+    footerNote: tenantOverride.footerNote || baseConfig.footerNote
   };
 }
+

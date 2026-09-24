@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../constants/routes.js";
 import {
@@ -6,37 +6,42 @@ import {
   Instagram,
   Youtube,
   Linkedin,
-  ShieldCheck,
-  Truck,
-  RotateCcw,
-  Headphones,
-  Leaf,
-  Sparkles,
-  ArrowRight,
+  Twitter,
 } from "lucide-react";
 import { VANOM_COMPANY_DETAILS } from "../../constants/company.js";
+import { useStoreSettingsStore } from "../../stores/store.store.js";
 
 export function PublicFooter() {
   const currentYear = new Date().getFullYear();
+  const { store, fetchPublicStore } = useStoreSettingsStore();
+
+  useEffect(() => {
+    fetchPublicStore();
+  }, [fetchPublicStore]);
+
+  const storeName = store?.storeName || "Vanom";
+  const storeTagline = store?.storeTagline || "Pure • Sustainable • Global";
+  const storeDescription = store?.description || "Founded with a mission to bring conscious wellness and natural living directly to your doorstep. We partner exclusively with certified ethical makers and artisanal cultivators across India to deliver non-toxic, eco-friendly lifestyle products worldwide.";
+  const logoUrl = store?.logoUrl || "/logo.png";
+  const legalName = store?.legalName || storeName || VANOM_COMPANY_DETAILS.legalName;
 
   return (
     <footer className="bg-[#246B52] text-white border-t border-[rgb(60,170,130)] mt-auto select-none overflow-hidden">
-      {/* ── 1. Top Section: Dedicated "About Vanom" Brand Feature ── */}
+      {/* ── 1. Top Section: Dedicated Brand Feature ── */}
       <div className="border-b border-white/15 py-10 px-4 sm:px-8 lg:px-12">
         <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
           {/* Logo & Headline */}
           <div className="flex flex-col sm:flex-row items-center md:items-start gap-5 text-center sm:text-left">
-
             <div className="max-w-xl">
               <div className="flex items-center justify-center sm:justify-start gap-2 mb-1.5">
                 <span className="text-[10px] uppercase font-extrabold tracking-widest text-[#F9BC15] bg-[#F9BC15]/20 px-2.5 py-0.5 rounded-full border border-[#F9BC15]/30">
-                  About Vanom
+                  About {storeName}
                 </span>
                 <span className="text-xs text-white/70">•</span>
-                <span className="text-xs font-semibold text-white/90">Pure • Sustainable • Global</span>
+                <span className="text-xs font-semibold text-white/90">{storeTagline}</span>
               </div>
               <p className="text-xs text-white/85 leading-relaxed">
-                Founded with a mission to bring conscious wellness and natural living directly to your doorstep. We partner exclusively with certified ethical makers and artisanal cultivators across India to deliver non-toxic, eco-friendly lifestyle products worldwide.
+                {storeDescription}
               </p>
             </div>
           </div>
@@ -71,8 +76,8 @@ export function PublicFooter() {
           <div className="lg:col-span-4 space-y-4">
             <Link to={ROUTES.HOME} className="inline-flex items-center">
               <img
-                src="/logo.png"
-                alt="Vanom"
+                src={logoUrl}
+                alt={storeName}
                 className="h-16 w-auto object-contain brightness-0 invert"
                 onError={(e) => {
                   e.target.style.display = "none";
@@ -80,59 +85,67 @@ export function PublicFooter() {
                 }}
               />
               <span className="hidden text-2xl font-black text-white tracking-tight font-serif">
-                Vanom<span className="text-[#F9BC15]">™</span>
+                {storeName}<span className="text-[#F9BC15]">™</span>
               </span>
             </Link>
 
-
-
             {/* Circular Social Icons */}
-            <div className="flex items-center gap-4 pt-2">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Facebook"
-                className="w-8 h-8 rounded-full border border-white/25 bg-white/10 hover:bg-[#F9BC15] hover:border-[#F9BC15] hover:text-[#002418] text-white flex items-center justify-center transition-all duration-200"
-              >
-                <Facebook className="w-3.5 h-3.5" />
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Instagram"
-                className="w-8 h-8 rounded-full border border-white/25 bg-white/10 hover:bg-[#F9BC15] hover:border-[#F9BC15] hover:text-[#002418] text-white flex items-center justify-center transition-all duration-200"
-              >
-                <Instagram className="w-3.5 h-3.5" />
-              </a>
-              <a
-                href="https://youtube.com"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Youtube"
-                className="w-8 h-8 rounded-full border border-white/25 bg-white/10 hover:bg-[#F9BC15] hover:border-[#F9BC15] hover:text-[#002418] text-white flex items-center justify-center transition-all duration-200"
-              >
-                <Youtube className="w-3.5 h-3.5" />
-              </a>
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="LinkedIn"
-                className="w-8 h-8 rounded-full border border-white/25 bg-white/10 hover:bg-[#F9BC15] hover:border-[#F9BC15] hover:text-[#002418] text-white flex items-center justify-center transition-all duration-200"
-              >
-                <Linkedin className="w-3.5 h-3.5" />
-              </a>
-              <a
-                href="https://pinterest.com"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Pinterest"
-                className="w-8 h-8 rounded-full border border-white/25 bg-white/10 hover:bg-[#F9BC15] hover:border-[#F9BC15] hover:text-[#002418] text-white flex items-center justify-center transition-all duration-200 text-xs font-bold font-serif"
-              >
-                P
-              </a>
+            <div className="flex items-center gap-3 pt-2">
+              {store?.facebookUrl && (
+                <a
+                  href={store.facebookUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Facebook"
+                  className="w-8 h-8 rounded-full border border-white/25 bg-white/10 hover:bg-[#F9BC15] hover:border-[#F9BC15] hover:text-[#002418] text-white flex items-center justify-center transition-all duration-200"
+                >
+                  <Facebook className="w-3.5 h-3.5" />
+                </a>
+              )}
+              {store?.instagramUrl && (
+                <a
+                  href={store.instagramUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Instagram"
+                  className="w-8 h-8 rounded-full border border-white/25 bg-white/10 hover:bg-[#F9BC15] hover:border-[#F9BC15] hover:text-[#002418] text-white flex items-center justify-center transition-all duration-200"
+                >
+                  <Instagram className="w-3.5 h-3.5" />
+                </a>
+              )}
+              {store?.twitterUrl && (
+                <a
+                  href={store.twitterUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Twitter"
+                  className="w-8 h-8 rounded-full border border-white/25 bg-white/10 hover:bg-[#F9BC15] hover:border-[#F9BC15] hover:text-[#002418] text-white flex items-center justify-center transition-all duration-200"
+                >
+                  <Twitter className="w-3.5 h-3.5" />
+                </a>
+              )}
+              {store?.youtubeUrl && (
+                <a
+                  href={store.youtubeUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Youtube"
+                  className="w-8 h-8 rounded-full border border-white/25 bg-white/10 hover:bg-[#F9BC15] hover:border-[#F9BC15] hover:text-[#002418] text-white flex items-center justify-center transition-all duration-200"
+                >
+                  <Youtube className="w-3.5 h-3.5" />
+                </a>
+              )}
+              {store?.linkedinUrl && (
+                <a
+                  href={store.linkedinUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="LinkedIn"
+                  className="w-8 h-8 rounded-full border border-white/25 bg-white/10 hover:bg-[#F9BC15] hover:border-[#F9BC15] hover:text-[#002418] text-white flex items-center justify-center transition-all duration-200"
+                >
+                  <Linkedin className="w-3.5 h-3.5" />
+                </a>
+              )}
             </div>
           </div>
 
@@ -200,9 +213,9 @@ export function PublicFooter() {
             </ul>
           </div>
 
-          {/* Column 4: About Vanom (2 Cols) */}
+          {/* Column 4: About Store (2 Cols) */}
           <div className="lg:col-span-2 space-y-3">
-            <h4 className="text-xs font-bold text-white tracking-wider uppercase">About Vanom</h4>
+            <h4 className="text-xs font-bold text-white tracking-wider uppercase">About {storeName}</h4>
             <ul className="space-y-2.5 text-xs text-white/80">
               <li>
                 <Link to="/about" className="hover:text-[#F9BC15] transition-colors">
@@ -264,16 +277,15 @@ export function PublicFooter() {
         </div>
       </div>
 
-
-      {/* ── 4. Bottom Sub-Bar: Copyright, Legal Links & Made in India ── */}
+      {/* ── 3. Bottom Sub-Bar: Copyright, Legal Links ── */}
       <div className="border-t border-white/15 bg-[#1B5641] py-4 px-4 sm:px-8 lg:px-12 text-[11px] text-white/80">
         <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Copyright */}
           <div>
-            © {currentYear} {VANOM_COMPANY_DETAILS.legalName}. All rights reserved.
+            © {currentYear} {legalName}. All rights reserved.
           </div>
 
-          {/* Legal Links & Country Badge */}
+          {/* Legal Links */}
           <div className="flex items-center justify-center sm:justify-end gap-1.5 xs:gap-2 sm:gap-4 md:gap-6 w-full sm:w-auto text-[7px] xs:text-[10px] sm:text-[11px] whitespace-nowrap">
             <Link to="/privacy-policy" className="hover:text-white transition-colors">
               Privacy Policy
@@ -304,4 +316,3 @@ export function PublicFooter() {
 }
 
 export default PublicFooter;
-

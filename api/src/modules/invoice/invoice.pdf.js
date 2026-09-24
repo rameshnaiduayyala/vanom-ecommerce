@@ -493,8 +493,15 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
   doc.fontSize(9.5).font("Helvetica-Bold").fillColor(C.navyDark).text("TOTAL AMOUNT:", summaryBoxX + 10, tY);
   doc.fontSize(13).font("Helvetica-Bold").fillColor(C.primary).text(formatCurrency(invoice.total, invoice.currencyCode), summaryBoxX + 10, tY - 2, { width: summaryBoxWidth - 20, align: "right" });
 
-  // ── 6. Bottom Document Sign-off Footer ────────────────────────────────────
-  const footerY = PAGE_HEIGHT - 28;
+  // ── 6. Bottom Document Sign-off Footer & Terms ───────────────────────────
+  let footerY = PAGE_HEIGHT - 32;
+
+  if (invoice.company.footerNote) {
+    footerY = PAGE_HEIGHT - 44;
+    doc.fontSize(7).font("Helvetica-Oblique").fillColor(C.slate500);
+    doc.text(`Note: ${invoice.company.footerNote}`, MARGIN, footerY - 10, { width: CONTENT_WIDTH, align: "center" });
+  }
+
   doc.moveTo(MARGIN, footerY - 4).lineTo(PAGE_WIDTH - MARGIN, footerY - 4).lineWidth(0.5).strokeColor(C.slate200).stroke();
   doc.fontSize(7).font("Helvetica").fillColor(C.slate400);
   doc.text(

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "../../../components/ui/Toast.jsx";
 import { ROUTES } from "../../../constants/routes.js";
@@ -17,9 +17,10 @@ import {
   Shield,
 } from "lucide-react";
 import { VANOM_COMPANY_DETAILS } from "../../../constants/company.js";
-
+import { useStoreSettingsStore } from "../../../stores/store.store.js";
 
 export function ContactPage() {
+  const { store, fetchPublicStore } = useStoreSettingsStore();
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -28,6 +29,16 @@ export function ContactPage() {
     subject: "Order Inquiry",
     message: "",
   });
+
+  useEffect(() => {
+    fetchPublicStore();
+  }, [fetchPublicStore]);
+
+  const storeName = store?.storeName || "Vanom";
+  const contactEmail = store?.supportEmail || store?.email || VANOM_COMPANY_DETAILS.contact.email;
+  const contactPhone = store?.phone || store?.whatsapp || VANOM_COMPANY_DETAILS.contact.phone;
+
+  const hasStoreAddress = Boolean(store?.addressLine1 || store?.city || store?.country);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -54,13 +65,12 @@ export function ContactPage() {
   return (
     <div className="min-h-screen bg-[#E8EDE9]">
       <SEO
-        title="Contact Us | 24/7 Customer Care & Support | Vanom"
-        description="Get in touch with the Vanom customer support team for order inquiries, wholesale b2b partnerships, and delivery support."
-        keywords="contact vanom, customer support, ecommerce help, b2b inquiries"
+        title={`Contact Us | 24/7 Customer Care & Support | ${storeName}`}
+        description={`Get in touch with the ${storeName} customer support team for order inquiries, wholesale b2b partnerships, and delivery support.`}
+        keywords={`contact ${storeName.toLowerCase()}, customer support, ecommerce help, b2b inquiries`}
       />
       {/* ─── Minimal Hero ─── */}
       <section className="relative bg-[#042A19] overflow-hidden">
-
         {/* Ambient glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-[#0a5634]/40 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-[#84CC16]/8 rounded-full blur-[80px] pointer-events-none" />
@@ -72,7 +82,7 @@ export function ContactPage() {
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.1] mb-5">
-            Get in Touch
+            Get in Touch with {storeName}
           </h1>
 
           <p className="text-base sm:text-lg text-emerald-100/60 max-w-lg mx-auto leading-relaxed font-light">
@@ -85,10 +95,9 @@ export function ContactPage() {
       <section className="border-b border-[#E8EDE9]">
         <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#E8EDE9]">
-
             {/* Email */}
             <a
-              href={`mailto:${VANOM_COMPANY_DETAILS.contact.email}`}
+              href={`mailto:${contactEmail}`}
               className="group flex items-center gap-4 py-7 md:py-9 md:pr-8 transition-colors"
             >
               <div className="w-11 h-11 rounded-xl bg-[#F0F7F1] flex items-center justify-center shrink-0 group-hover:bg-[#074428] transition-colors duration-300">
@@ -97,23 +106,23 @@ export function ContactPage() {
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold text-[#8B9E91] uppercase tracking-wider mb-0.5">Email</p>
                 <p className="text-sm font-bold text-[#0F2B1C] truncate group-hover:text-[#074428] transition-colors">
-                  {VANOM_COMPANY_DETAILS.contact.email}
+                  {contactEmail}
                 </p>
               </div>
             </a>
 
             {/* Phone */}
             <a
-              href={`tel:${VANOM_COMPANY_DETAILS.contact.phone}`}
+              href={`tel:${contactPhone}`}
               className="group flex items-center gap-4 py-7 md:py-9 md:px-8 transition-colors"
             >
               <div className="w-11 h-11 rounded-xl bg-[#F0F7F1] flex items-center justify-center shrink-0 group-hover:bg-[#074428] transition-colors duration-300">
                 <Phone className="w-5 h-5 text-[#074428] group-hover:text-white transition-colors duration-300" />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold text-[#8B9E91] uppercase tracking-wider mb-0.5">Phone</p>
+                <p className="text-[11px] font-semibold text-[#8B9E91] uppercase tracking-wider mb-0.5">Phone / WhatsApp</p>
                 <p className="text-sm font-bold text-[#0F2B1C] group-hover:text-[#074428] transition-colors">
-                  {VANOM_COMPANY_DETAILS.contact.phone}
+                  {contactPhone}
                 </p>
                 <p className="text-[11px] text-[#8B9E91]">{VANOM_COMPANY_DETAILS.contact.operatingHours}</p>
               </div>
@@ -143,7 +152,6 @@ export function ContactPage() {
       <section className="py-16 sm:py-24 bg-[#E8EDE9]">
         <div className="max-w-6xl mx-auto px-6 lg:px-8">
           <div className="grid lg:grid-cols-5 gap-12 lg:gap-16">
-
             {/* ── Left: Contact Form (3/5) ── */}
             <div className="lg:col-span-3">
               <div className="mb-10">
@@ -270,39 +278,63 @@ export function ContactPage() {
 
             {/* ── Right Sidebar (2/5) ── */}
             <div className="lg:col-span-2 space-y-8">
-
-              {/* Office Locations */}
+              {/* Office Locations / Registered Business Address */}
               <div>
                 <h3 className="text-xs font-bold text-[#8B9E91] uppercase tracking-[0.15em] mb-5">
-                  Our Global Corporate Offices
+                  Business Headquarters & Offices
                 </h3>
 
                 <div className="space-y-6">
-                  {VANOM_COMPANY_DETAILS.offices.map((off, idx) => (
-                    <div key={idx} className="space-y-4">
-                      {idx > 0 && <div className="w-full h-px bg-[#E8EDE9]" />}
-                      <div className="group">
-                        <div className="flex items-start gap-3.5">
-                          <div className="w-9 h-9 rounded-lg bg-[#F0F7F1] flex items-center justify-center shrink-0 mt-0.5">
-                            <MapPin className="w-4 h-4 text-[#074428]" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="text-sm font-bold text-[#0F2B1C] mb-0.5">{off.region}</h4>
+                  {hasStoreAddress ? (
+                    <div className="group">
+                      <div className="flex items-start gap-3.5">
+                        <div className="w-9 h-9 rounded-lg bg-[#F0F7F1] flex items-center justify-center shrink-0 mt-0.5">
+                          <MapPin className="w-4 h-4 text-[#074428]" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-bold text-[#0F2B1C] mb-0.5">{storeName} Headquarters</h4>
+                            {store?.country && (
                               <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded">
-                                {off.countryCode}
+                                {store.country}
                               </span>
-                            </div>
-                            <p className="text-[12px] font-semibold text-slate-700">{off.entity}</p>
-                            <p className="text-[13px] text-[#5E7D67] leading-relaxed">
-                              {off.line1}<br />
-                              {off.city}, {off.state} {off.postalCode}
-                            </p>
+                            )}
                           </div>
+                          <p className="text-[12px] font-semibold text-slate-700">{store?.legalName || storeName}</p>
+                          <p className="text-[13px] text-[#5E7D67] leading-relaxed">
+                            {store?.addressLine1}{store?.addressLine2 ? `, ${store.addressLine2}` : ""}<br />
+                            {[store?.city, store?.state, store?.postalCode].filter(Boolean).join(", ")}
+                          </p>
                         </div>
                       </div>
                     </div>
-                  ))}
+                  ) : (
+                    VANOM_COMPANY_DETAILS.offices.map((off, idx) => (
+                      <div key={idx} className="space-y-4">
+                        {idx > 0 && <div className="w-full h-px bg-[#E8EDE9]" />}
+                        <div className="group">
+                          <div className="flex items-start gap-3.5">
+                            <div className="w-9 h-9 rounded-lg bg-[#F0F7F1] flex items-center justify-center shrink-0 mt-0.5">
+                              <MapPin className="w-4 h-4 text-[#074428]" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-bold text-[#0F2B1C] mb-0.5">{off.region}</h4>
+                                <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded">
+                                  {off.countryCode}
+                                </span>
+                              </div>
+                              <p className="text-[12px] font-semibold text-slate-700">{off.entity}</p>
+                              <p className="text-[13px] text-[#5E7D67] leading-relaxed">
+                                {off.line1}<br />
+                                {off.city}, {off.state} {off.postalCode}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -321,7 +353,7 @@ export function ContactPage() {
                   </h4>
 
                   <p className="text-[13px] text-emerald-100/60 leading-relaxed">
-                    Fulfillment runs around the clock. Phone support is available Mon–Sat, 9 AM – 8 PM.
+                    Fulfillment runs around the clock. Customer support is available Mon–Sat, 9 AM – 8 PM.
                   </p>
                 </div>
               </div>
@@ -334,7 +366,7 @@ export function ContactPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Globe className="w-4 h-4 text-[#84CC16] shrink-0" />
-                  <span className="text-[13px] text-[#5E7D67]">Multi-market delivery across US & UK</span>
+                  <span className="text-[13px] text-[#5E7D67]">Fast global delivery & tracking</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle2 className="w-4 h-4 text-[#84CC16] shrink-0" />
@@ -342,7 +374,6 @@ export function ContactPage() {
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </section>
