@@ -5,7 +5,24 @@ import { HTTP_STATUS } from "../../constants/http-status.js";
 import { MESSAGES } from "../../constants/messages.js";
 
 const orderInclude = {
-  items: { include: { product: true, variant: true } },
+  items: {
+    include: {
+      product: {
+        include: {
+          images: {
+            orderBy: { sortOrder: "asc" }
+          },
+          category: {
+            select: { id: true, name: true, slug: true }
+          },
+          brand: {
+            select: { id: true, name: true, slug: true, imageUrl: true }
+          }
+        }
+      },
+      variant: true
+    }
+  },
   addresses: true,
   user: { select: { id: true, email: true, firstName: true, lastName: true } }
 };
@@ -58,64 +75,70 @@ export async function createOrder(userId, { countryId, currencyCode, shippingAdd
       for (const it of directItems) {
         const pId = it.productId || it.id;
         const vId = it.variantId || null;
-        const qty = Number(it.quantity) || 1;
-        if (pId) {
-          // Verify product existence
-          const prod = await tx.product.findUnique({ where: { id: pId } });
-          if (prod) {
-            await tx.cartItem.create({
-              data: {
-                cartId: cart.id,
-                productId: prod.id,
-                variantId: vId,
-                quantity: qty,
-              }
-            });
-          }
+        if (!pId) continue;
+        const existing = await tx.cartItem.findFirst({ where: { cartId: cart.id, productId: pId, variantId: vId } });
+        if (existing) {
+          await tx.cartItem.update({ where: { id: existing.id }, data: { quantity: existing.quantity + (it.quantity || 1) } });
+        } else {
+          await tx.cartItem.create({ data: { cartId: cart.id, productId: pId, variantId: vId, quantity: it.quantity || 1 } });
         }
       }
-
-      // Re-fetch populated cart
       cart = await tx.cart.findUnique({
-        where: { id: cart.id },
+        where: { userId },
         include: {
           items: { include: { product: { include: { countries: true } }, variant: { include: { countries: true } } } }
         }
       });
     }
 
-    if (!cart?.items.length) throw new AppError(MESSAGES.CART_EMPTY, HTTP_STATUS.UNPROCESSABLE_ENTITY, "CART_EMPTY");
+    if (!cart || !cart.items.length) {
+      throw new AppError(MESSAGES.CART_EMPTY, HTTP_STATUS.BAD_REQUEST, "CART_EMPTY");
+    }
 
     let subtotal = new Prisma.Decimal(0);
     const items = [];
 
     for (const item of cart.items) {
-      const source = item.variant ?? item.product;
-      const countryPrice = source.countries.find(({ countryId: id, isAvailable }) => (id === resolvedCountryId || id === countryId) && isAvailable) || source.countries.find(({ isAvailable }) => isAvailable);
-      if (!countryPrice || countryPrice.price === null) {
-        throw new AppError(MESSAGES.PRICE_NOT_AVAILABLE, HTTP_STATUS.UNPROCESSABLE_ENTITY, "PRICE_NOT_AVAILABLE");
+      const product = item.product;
+      const variant = item.variant;
+
+      // Price resolution priority:
+      // 1. Variant country pricing (for variable products in target country)
+      // 2. Product country pricing (for simple products in target country)
+      // 3. Fallback to product basePrice
+      let unitPrice = null;
+
+      if (variant) {
+        const variantCountry = await tx.productVariantCountry.findUnique({
+          where: { variantId_countryId: { variantId: variant.id, countryId: resolvedCountryId } }
+        });
+        if (variantCountry?.isAvailable && variantCountry?.price !== null) {
+          unitPrice = variantCountry.price;
+        }
       }
 
-      const effectiveCountryId = countryPrice.countryId;
-
-      const stockUpdated = item.variant
-        ? await tx.productVariantCountry.updateMany({ where: { variantId: item.variant.id, countryId: effectiveCountryId, stock: { gte: item.quantity }, isAvailable: true }, data: { stock: { decrement: item.quantity } } })
-        : await tx.productCountry.updateMany({ where: { productId: item.product.id, countryId: effectiveCountryId, stock: { gte: item.quantity }, isAvailable: true }, data: { stock: { decrement: item.quantity } } });
-      if (stockUpdated.count !== 1) {
-        throw new AppError(MESSAGES.INSUFFICIENT_STOCK, HTTP_STATUS.UNPROCESSABLE_ENTITY, "INSUFFICIENT_STOCK");
+      if (unitPrice === null) {
+        const productCountry = await tx.productCountry.findUnique({
+          where: { productId_countryId: { productId: product.id, countryId: resolvedCountryId } }
+        });
+        if (productCountry?.isAvailable && productCountry?.price !== null) {
+          unitPrice = productCountry.price;
+        }
       }
 
-      const unitPrice = new Prisma.Decimal(countryPrice.price);
-      const total = unitPrice.mul(item.quantity);
-      subtotal = subtotal.add(total);
+      if (unitPrice === null) {
+        unitPrice = product.basePrice || new Prisma.Decimal(0);
+      }
+
+      const itemTotal = new Prisma.Decimal(unitPrice).mul(item.quantity);
+      subtotal = subtotal.add(itemTotal);
+
       items.push({
         productId: item.productId,
-        variantId: item.variantId,
-        productName: item.product.name,
-        sku: item.variant?.sku ?? item.product.sku,
-        quantity: item.quantity,
+        variantId: item.variantId ?? null,
         unitPrice,
-        total
+        quantity: item.quantity,
+        total: itemTotal
       });
     }
 

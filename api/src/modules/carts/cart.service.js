@@ -6,7 +6,22 @@ import { MESSAGES } from "../../constants/messages.js";
 const cartInclude = {
   items: {
     orderBy: { createdAt: "asc" },
-    include: { product: true, variant: true }
+    include: {
+      product: {
+        include: {
+          images: {
+            orderBy: { sortOrder: "asc" }
+          },
+          category: {
+            select: { id: true, name: true, slug: true }
+          },
+          brand: {
+            select: { id: true, name: true, slug: true, imageUrl: true }
+          }
+        }
+      },
+      variant: true
+    }
   }
 };
 
@@ -37,7 +52,6 @@ async function validateItem(productId, variantId) {
   } else if (variantId) {
     throw new AppError(MESSAGES.INVALID_PRODUCT_VARIANT, HTTP_STATUS.BAD_REQUEST, "INVALID_PRODUCT_VARIANT");
   }
-
 }
 
 export async function getCart(userId) {
