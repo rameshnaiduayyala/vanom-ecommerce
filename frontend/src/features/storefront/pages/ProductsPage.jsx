@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { useSearchParams, useParams } from "react-router-dom";
+import { useSearchParams, useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { useCountryStore } from "../../../stores/country.store.js";
@@ -10,6 +10,7 @@ import { MobileCategoryTabs } from "../components/products/MobileCategoryTabs.js
 import { ProductsGrid } from "../components/products/ProductsGrid.jsx";
 
 export function ProductsPage() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { slug } = useParams();
   const { country } = useCountryStore();
@@ -30,6 +31,13 @@ export function ProductsPage() {
       return Array.isArray(flat?.data) ? flat.data : Array.isArray(flat?.items) ? flat.items : Array.isArray(flat) ? flat : [];
     },
   });
+
+  const { data: allCatalogData } = useQuery({
+    queryKey: ["all-products-count", country.code],
+    queryFn: () => Api.catalog.getProducts({ limit: 1 }),
+  });
+
+  const totalCatalogCount = allCatalogData?.total ?? allCatalogData?.meta?.total ?? 0;
 
   const { data: productsData, isLoading } = useQuery({
     queryKey: ["products-list", currentCategory, currentSearch, country.code],
@@ -70,18 +78,30 @@ export function ProductsPage() {
   }, [catList, currentCategory]);
 
   const handleClearFilters = () => {
-    setSearchParams({});
+    if (slug) {
+      navigate("/products");
+    } else {
+      setSearchParams({});
+    }
     setInStockOnly(false);
   };
 
-  const handleSelectCategory = (catId) => {
-    searchParams.set("category", catId);
-    setSearchParams(searchParams);
+  const handleSelectCategory = (catIdOrSlug) => {
+    if (slug) {
+      navigate(`/products?category=${encodeURIComponent(catIdOrSlug)}`);
+    } else {
+      searchParams.set("category", catIdOrSlug);
+      setSearchParams(searchParams);
+    }
   };
 
   const handleClearCategory = () => {
-    searchParams.delete("category");
-    setSearchParams(searchParams);
+    if (slug) {
+      navigate("/products");
+    } else {
+      searchParams.delete("category");
+      setSearchParams(searchParams);
+    }
   };
 
   const handleClearSearch = () => {
@@ -174,7 +194,7 @@ export function ProductsPage() {
         <MobileCategoryTabs
           categories={catList}
           currentCategory={currentCategory}
-          totalProductsCount={rawProducts.length}
+          totalProductsCount={totalCatalogCount || rawProducts.length}
           onSelectCategory={handleSelectCategory}
           onClearCategory={handleClearCategory}
         />
@@ -184,7 +204,7 @@ export function ProductsPage() {
           <ProductsSidebar
             categories={catList}
             currentCategory={currentCategory}
-            totalProductsCount={rawProducts.length}
+            totalProductsCount={totalCatalogCount || rawProducts.length}
             onSelectCategory={handleSelectCategory}
             onClearCategory={handleClearCategory}
           />

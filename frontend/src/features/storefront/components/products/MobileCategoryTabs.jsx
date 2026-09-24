@@ -38,14 +38,19 @@ export function MobileCategoryTabs({
           return (
             <button
               key={cat.id}
-              onClick={() => onSelectCategory(cat.id)}
-              className={`shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              onClick={() => onSelectCategory(cat.slug || cat.id)}
+              className={`shrink-0 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                 isSelected
-                  ? "bg-[#00875A] text-white font-bold shadow-xs"
-                  : "bg-white text-[#3D5648] border border-[#DCE8DF] hover:bg-[#F0F7F1]"
+                  ? "bg-[#003D2B] text-white font-bold shadow-xs"
+                  : "bg-white text-[#2D4536] border border-[#DCE8DF] hover:bg-[#F0F7F1]"
               }`}
             >
-              {cat.name}
+              <span>{cat.name}</span>
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                isSelected ? "bg-white/20 text-white font-bold" : "bg-[#EAF2ED] text-[#006B3C]"
+              }`}>
+                {typeof cat.count === "number" ? cat.count : 0}
+              </span>
             </button>
           );
         })}
@@ -58,7 +63,7 @@ export function MobileCategoryTabs({
             Subcategories:
           </span>
           <button
-            onClick={() => onSelectCategory(activeParent.id)}
+            onClick={() => onSelectCategory(activeParent.slug || activeParent.id)}
             className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
               currentCategory === activeParent.id || currentCategory === activeParent.slug
                 ? "bg-[#E6F4EA] text-[#00875A] font-bold border border-[#00875A]/30"
@@ -72,14 +77,19 @@ export function MobileCategoryTabs({
             return (
               <button
                 key={sub.id}
-                onClick={() => onSelectCategory(sub.id)}
-                className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                onClick={() => onSelectCategory(sub.slug || sub.id)}
+                className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
                   isSubSelected
                     ? "bg-[#00875A] text-white font-bold shadow-2xs"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                {sub.name}
+                <span>{sub.name}</span>
+                <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
+                  isSubSelected ? "bg-white/25 text-white font-bold" : "bg-white text-gray-500"
+                }`}>
+                  {typeof sub.count === "number" ? sub.count : 0}
+                </span>
               </button>
             );
           })}

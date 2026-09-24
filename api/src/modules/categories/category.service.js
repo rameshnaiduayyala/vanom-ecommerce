@@ -72,11 +72,22 @@ export async function listCategories({ page, limit, skip, search, isActive, pare
             slug: true,
             imageUrl: true,
             isActive: true,
-            _count: { select: { products: true } }
+            _count: {
+              select: {
+                products: {
+                  where: { isActive: true, deletedAt: null }
+                }
+              }
+            }
           }
         },
         _count: {
-          select: { products: true, children: true }
+          select: {
+            products: {
+              where: { isActive: true, deletedAt: null }
+            },
+            children: true
+          }
         }
       }
     }),
@@ -102,23 +113,42 @@ export async function getCategoryTree() {
         where: { isActive: true },
         orderBy: { name: "asc" },
         include: {
-          _count: { select: { products: true } }
+          _count: {
+            select: {
+              products: {
+                where: { isActive: true, deletedAt: null }
+              }
+            }
+          }
         }
       },
       _count: {
-        select: { products: true, children: true }
+        select: {
+          products: {
+            where: { isActive: true, deletedAt: null }
+          },
+          children: true
+        }
       }
     }
   });
 
-  return roots.map((cat) => ({
-    ...cat,
-    count: cat._count?.products ?? 0,
-    children: cat.children.map((sub) => ({
+  return roots.map((cat) => {
+    const directProductCount = cat._count?.products ?? 0;
+    const childrenWithCounts = (cat.children || []).map((sub) => ({
       ...sub,
       count: sub._count?.products ?? 0
-    }))
-  }));
+    }));
+
+    const totalChildrenProductCount = childrenWithCounts.reduce((acc, sub) => acc + (sub.count || 0), 0);
+
+    return {
+      ...cat,
+      directCount: directProductCount,
+      count: directProductCount + totalChildrenProductCount,
+      children: childrenWithCounts
+    };
+  });
 }
 
 export async function getCategoryById(id) {
@@ -128,7 +158,12 @@ export async function getCategoryById(id) {
       parent: true,
       children: true,
       _count: {
-        select: { products: true, children: true }
+        select: {
+          products: {
+            where: { isActive: true, deletedAt: null }
+          },
+          children: true
+        }
       }
     }
   });

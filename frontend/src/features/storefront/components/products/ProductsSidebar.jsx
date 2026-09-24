@@ -29,20 +29,24 @@ export function ProductsSidebar({
             <Filter className="w-3.5 h-3.5 text-[#00875A]" />
             <span>Departments</span>
           </span>
-          <span className="text-[10px] font-mono text-[#5E7D67]">({categories.length})</span>
+          <span className="text-[10px] font-mono text-gray-500">({categories.length})</span>
         </h4>
 
         <div className="space-y-1">
           <button
             onClick={onClearCategory}
-            className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-between ${
-              !currentCategory
-                ? "bg-[#E6F4EA] text-[#00875A] shadow-2xs font-bold"
-                : "text-[#3D5648] hover:bg-[#F0F7F1] hover:text-[#00875A]"
-            }`}
+            className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-between group ${!currentCategory
+              ? "bg-[#003D2B] text-white shadow-xs font-bold"
+              : "text-[#2D4536] hover:bg-[#F0F7F1] hover:text-[#003D2B]"
+              }`}
           >
             <span>All Catalog Items</span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/70">
+            <span
+              className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full transition-colors ${!currentCategory
+                ? "bg-white/20 text-white font-bold"
+                : "bg-[#EAF2ED] text-[#006B3C] group-hover:bg-[#d8e8dd]"
+                }`}
+            >
               {totalProductsCount}
             </span>
           </button>
@@ -56,21 +60,27 @@ export function ProductsSidebar({
             return (
               <div key={cat.id} className="space-y-1">
                 <div
-                  onClick={() => onSelectCategory(cat.id)}
-                  className={`w-full text-left px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-between group ${
-                    isParentSelected
-                      ? "bg-[#E6F4EA] text-[#00875A] shadow-2xs font-bold"
-                      : isChildSelected
-                      ? "bg-[#F4FAF6] text-[#00875A] font-medium"
-                      : "text-[#3D5648] hover:bg-[#F0F7F1] hover:text-[#00875A]"
-                  }`}
+                  onClick={() => onSelectCategory(cat.slug || cat.id)}
+                  className={`w-full text-left px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-between group ${isParentSelected
+                    ? "bg-[#003D2B] text-white shadow-xs font-bold"
+                    : isChildSelected
+                      ? "bg-[#EBF6EE] text-[#006B3C] font-bold"
+                      : "text-[#2D4536] hover:bg-[#F0F7F1] hover:text-[#003D2B]"
+                    }`}
                 >
                   <div className="flex items-center gap-2 truncate pr-2">
                     <span className="truncate">{cat.name}</span>
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-[#F4F7F4] text-[#5E7D67]">
+                    <span
+                      className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full transition-colors ${isParentSelected
+                        ? "bg-white/20 text-white font-bold"
+                        : isChildSelected
+                          ? "bg-[#006B3C]/10 text-[#006B3C] font-bold"
+                          : "bg-[#EAF2ED] text-[#426550] group-hover:bg-[#d8e8dd] group-hover:text-[#003D2B]"
+                        }`}
+                    >
                       {typeof cat.count === "number" ? cat.count : 0}
                     </span>
 
@@ -78,11 +88,14 @@ export function ProductsSidebar({
                       <button
                         type="button"
                         onClick={(e) => toggleExpand(cat.id, e)}
-                        className="p-1 hover:bg-black/5 rounded-md transition-colors text-gray-500 cursor-pointer"
+                        className={`p-1 rounded-md transition-colors cursor-pointer ${isParentSelected
+                          ? "hover:bg-white/10 text-white"
+                          : "hover:bg-black/5 text-gray-400 hover:text-gray-700"
+                          }`}
                         aria-label="Toggle subcategories"
                       >
                         {isExpanded ? (
-                          <ChevronDown className="w-3.5 h-3.5 text-[#00875A]" />
+                          <ChevronDown className="w-3.5 h-3.5" />
                         ) : (
                           <ChevronRight className="w-3.5 h-3.5" />
                         )}
@@ -93,23 +106,25 @@ export function ProductsSidebar({
 
                 {/* Subcategories (Children) */}
                 {hasChildren && isExpanded && (
-                  <div className="pl-4 space-y-0.5 border-l-2 border-[#E6F4EA] ml-3 py-1">
+                  <div className="pl-3.5 space-y-0.5 border-l-2 border-[#D8ECE0] ml-3 py-1">
                     {cat.children.map((sub) => {
                       const isSubSelected = currentCategory === sub.id || currentCategory === sub.slug;
                       return (
                         <button
                           key={sub.id}
-                          onClick={() => onSelectCategory(sub.id)}
-                          className={`w-full text-left px-3 py-1.5 rounded-lg text-[11px] transition-all cursor-pointer flex items-center justify-between ${
-                            isSubSelected
-                              ? "bg-[#00875A] text-white font-bold shadow-2xs"
-                              : "text-[#5E7D67] hover:bg-[#F0F7F1] hover:text-[#00875A]"
-                          }`}
+                          onClick={() => onSelectCategory(sub.slug || sub.id)}
+                          className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer flex items-center justify-between group/sub ${isSubSelected
+                            ? "bg-[#00875A] text-white font-bold shadow-2xs"
+                            : "text-[#476553] hover:bg-[#F0F7F1] hover:text-[#003D2B]"
+                            }`}
                         >
                           <span className="truncate">{sub.name}</span>
-                          <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full ${
-                            isSubSelected ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
-                          }`}>
+                          <span
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full transition-colors ${isSubSelected
+                              ? "bg-white/25 text-white font-bold"
+                              : "bg-gray-100 text-gray-500 group-hover/sub:bg-emerald-100 group-hover/sub:text-[#006B3C]"
+                              }`}
+                          >
                             {typeof sub.count === "number" ? sub.count : 0}
                           </span>
                         </button>

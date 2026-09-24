@@ -134,7 +134,9 @@ export async function listProducts({ page, limit, skip, search, categoryId, type
     ...(categoryId ? {
       OR: [
         { categoryId: categoryId },
-        { category: { slug: categoryId } }
+        { category: { slug: categoryId } },
+        { category: { parentId: categoryId } },
+        { category: { parent: { slug: categoryId } } }
       ]
     } : {}),
     ...(type ? { type } : {}),

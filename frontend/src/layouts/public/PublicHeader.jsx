@@ -251,7 +251,7 @@ export function PublicHeader() {
                         key={`${cat.slug}-${idx}`}
                         type="button"
                         onClick={() => handleSelectCategory(cat)}
-                        className={`w-full text-left px-3.5 py-1.5 text-xs transition-colors flex items-center justify-between cursor-pointer ${isSelected
+                        className={`w-full text-left px-3.5 py-1.5 text-xs transition-colors flex items-center justify-between cursor-pointer group ${isSelected
                             ? "bg-[#EAF7F0] text-[#003D2B] font-bold"
                             : cat.isParent
                               ? "text-gray-900 font-semibold hover:bg-gray-50"
@@ -260,8 +260,14 @@ export function PublicHeader() {
                       >
                         <span className="truncate">{cat.label}</span>
                         {cat.count > 0 && (
-                          <span className="text-[10px] text-gray-400 font-normal ml-2">
-                            ({cat.count})
+                          <span
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2 ${
+                              isSelected
+                                ? "bg-[#003D2B] text-white"
+                                : "bg-[#F0F5F2] text-[#006B3C] group-hover:bg-[#e2ede6]"
+                            }`}
+                          >
+                            {cat.count}
                           </span>
                         )}
                       </button>
