@@ -229,12 +229,13 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
 
   // Issuer address under logo
   const issuerY = y + logoHeight + 4;
-  doc.fontSize(7.5).font("Helvetica").fillColor(C.slate500);
-  doc.text(COMPANY_INFO.legalName, MARGIN, issuerY);
-  doc.text(COMPANY_INFO.address, MARGIN, doc.y + 1);
-  doc.text(`${COMPANY_INFO.email}  •  ${COMPANY_INFO.phone}`, MARGIN, doc.y + 1);
-  doc.fontSize(7).font("Helvetica-Bold").fillColor(C.slate600);
-  doc.text(COMPANY_INFO.taxIds, MARGIN, doc.y + 2);
+  doc.fontSize(7.5).font("Helvetica-Bold").fillColor(C.navyDark);
+  doc.text(COMPANY_INFO.legalName, MARGIN, issuerY, { width: 315 });
+  doc.fontSize(7).font("Helvetica").fillColor(C.slate500);
+  doc.text(COMPANY_INFO.address, MARGIN, doc.y + 2, { width: 315 });
+  doc.text(`${COMPANY_INFO.email}   •   ${COMPANY_INFO.phone}`, MARGIN, doc.y + 2, { width: 315 });
+  doc.fontSize(6.8).font("Helvetica-Bold").fillColor(C.slate600);
+  doc.text(COMPANY_INFO.taxIds, MARGIN, doc.y + 2, { width: 315 });
 
   const leftBottom = doc.y;
 

@@ -280,19 +280,32 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
   }
 
   // Company details below logo
-  const compDetailsY = y + logoHeight + 5;
-  doc.fontSize(8).font("Helvetica-Bold").fillColor(T.inkHead).text(invoice.company.legalName, ML, compDetailsY, { width: 230, lineBreak: false });
-  doc.fontSize(6.8).font("Helvetica").fillColor(T.inkMuted).text(invoice.company.address, ML, compDetailsY + 11, { width: 230, lineBreak: false });
-  doc.fontSize(6.8).font("Helvetica").fillColor(T.inkFaint).text(`${invoice.company.email}  •  ${invoice.company.phone}`, ML, compDetailsY + 21, { width: 240, lineBreak: false });
-  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(T.inkMuted).text(invoice.company.taxIds, ML, compDetailsY + 31, { width: 240, lineBreak: false });
+  const compDetailsY = y + logoHeight + 4;
+  let compY = compDetailsY;
+
+  doc.fontSize(8.5).font("Helvetica-Bold").fillColor(T.inkHead);
+  doc.text(invoice.company.legalName, ML, compY, { width: 315, lineBreak: false });
+  compY = doc.y + 2;
+
+  doc.fontSize(6.8).font("Helvetica").fillColor(T.inkMuted);
+  doc.text(invoice.company.address, ML, compY, { width: 315, lineBreak: false });
+  compY = doc.y + 2;
+
+  doc.fontSize(6.5).font("Helvetica").fillColor(T.inkFaint);
+  doc.text(`${invoice.company.email}   •   ${invoice.company.phone}`, ML, compY, { width: 315, lineBreak: false });
+  compY = doc.y + 2;
+
+  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(T.inkMuted);
+  doc.text(invoice.company.taxIds, ML, compY, { width: 315, lineBreak: false });
+  compY = doc.y;
 
   // Right: Document Identification & Status Badge
-  const rightWidth = 220;
+  const rightWidth = 195;
   const rightX = PAGE_WIDTH - MR - rightWidth;
   const docTitle = invoice.invoiceType === "B2B" ? "COMMERCIAL TAX INVOICE" : "TAX INVOICE";
 
   doc.fontSize(14).font("Helvetica-Bold").fillColor(T.inkHead).text(docTitle, rightX, y, { width: rightWidth, align: "right", lineBreak: false });
-  doc.fontSize(12).font("Helvetica-Bold").fillColor(T.brandPrimary).text(invoice.invoiceNumber, rightX, y + 18, { width: rightWidth, align: "right", lineBreak: false });
+  doc.fontSize(12).font("Helvetica-Bold").fillColor(T.brandPrimary).text(invoice.invoiceNumber, rightX, y + 17, { width: rightWidth, align: "right", lineBreak: false });
 
   // Status Pill Badge
   const isPaid = invoice.paymentStatus.includes("PAID") || invoice.status === "COMPLETED";
@@ -304,17 +317,17 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
   const badgeW = Math.max(50, statusLabel.length * 6 + 14);
   const badgeH = 14;
   const badgeX = PAGE_WIDTH - MR - badgeW;
-  const badgeY = y + 36;
+  const badgeY = y + 35;
 
   doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 7).fillAndStroke(badgeBg, badgeBorder);
   doc.fontSize(6.5).font("Helvetica-Bold").fillColor(badgeText).text(statusLabel, badgeX, badgeY + 3.5, { width: badgeW, align: "center", lineBreak: false });
 
   // Metadata block (Dates & Order Ref)
   doc.fontSize(7).font("Helvetica").fillColor(T.inkMuted);
-  doc.text(`Order Ref: #${invoice.orderNumber}`, rightX, y + 54, { width: rightWidth, align: "right", lineBreak: false });
-  doc.text(`Issued: ${invoice.date}   •   Due: ${invoice.dueDate}`, rightX, y + 64, { width: rightWidth, align: "right", lineBreak: false });
+  doc.text(`Order Ref: #${invoice.orderNumber}`, rightX, y + 53, { width: rightWidth, align: "right", lineBreak: false });
+  doc.text(`Issued: ${invoice.date}   •   Due: ${invoice.dueDate}`, rightX, y + 63, { width: rightWidth, align: "right", lineBreak: false });
 
-  y = 104;
+  y = Math.max(compY + 8, y + 78);
   doc.moveTo(ML, y).lineTo(PAGE_WIDTH - MR, y).lineWidth(0.75).strokeColor(T.borderLight).stroke();
   y += 8;
 
@@ -324,51 +337,51 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
   const c1X = ML;
   const c2X = ML + colWidth + colGap;
   const c3X = c2X + colWidth + colGap;
-  const panelHeight = 74;
+  const panelHeight = 78;
 
   const drawInfoPanel = (x, title, accentColor) => {
     doc.roundedRect(x, y, colWidth, panelHeight, 4).fillAndStroke(T.surfaceCard, T.borderLight);
     doc.roundedRect(x, y, 3, panelHeight, 1.5).fill(accentColor);
-    doc.fontSize(6.5).font("Helvetica-Bold").fillColor(T.inkLight).text(title, x + 8, y + 6, { width: colWidth - 14, lineBreak: false });
+    doc.fontSize(6.5).font("Helvetica-Bold").fillColor(T.inkLight).text(title, x + 8, y + 6, { width: colWidth - 16, lineBreak: false });
   };
 
   // Card 1: Supplier / Issued By
   drawInfoPanel(c1X, "ISSUED BY (SUPPLIER)", T.brandPrimary);
-  doc.fontSize(8).font("Helvetica-Bold").fillColor(T.inkHead).text(invoice.company.brandName, c1X + 8, y + 17, { width: colWidth - 14, lineBreak: false });
+  doc.fontSize(8).font("Helvetica-Bold").fillColor(T.inkHead).text(invoice.company.brandName, c1X + 8, y + 17, { width: colWidth - 16, lineBreak: false });
   doc.fontSize(6.8).font("Helvetica").fillColor(T.inkMuted);
-  doc.text(invoice.company.legalName, c1X + 8, y + 27, { width: colWidth - 14, height: 9, ellipsis: true, lineBreak: false });
-  doc.text(invoice.company.address, c1X + 8, y + 37, { width: colWidth - 14, height: 18, ellipsis: true });
-  doc.text(invoice.company.email, c1X + 8, y + 58, { width: colWidth - 14, height: 9, ellipsis: true, lineBreak: false });
+  doc.text(invoice.company.legalName, c1X + 8, y + 28, { width: colWidth - 16, height: 9, ellipsis: true, lineBreak: false });
+  doc.text(invoice.company.address, c1X + 8, y + 38, { width: colWidth - 16, height: 18, ellipsis: true });
+  doc.text(invoice.company.email, c1X + 8, y + 59, { width: colWidth - 16, height: 9, ellipsis: true, lineBreak: false });
 
   // Card 2: Billed To / Recipient
   drawInfoPanel(c2X, "BILLED TO (RECIPIENT)", T.brandMuted);
   const custTitle = invoice.customer.companyName || invoice.customer.name;
-  doc.fontSize(8).font("Helvetica-Bold").fillColor(T.inkHead).text(custTitle, c2X + 8, y + 17, { width: colWidth - 14, height: 10, ellipsis: true, lineBreak: false });
+  doc.fontSize(8).font("Helvetica-Bold").fillColor(T.inkHead).text(custTitle, c2X + 8, y + 17, { width: colWidth - 16, height: 10, ellipsis: true, lineBreak: false });
   doc.fontSize(6.8).font("Helvetica").fillColor(T.inkMuted);
   if (invoice.customer.taxId) {
-    doc.text(`Tax ID: ${invoice.customer.taxId}`, c2X + 8, y + 27, { width: colWidth - 14, height: 9, ellipsis: true, lineBreak: false });
-    doc.text(invoice.customer.address || "Standard Registered Address", c2X + 8, y + 37, { width: colWidth - 14, height: 18, ellipsis: true });
+    doc.text(`Tax ID: ${invoice.customer.taxId}`, c2X + 8, y + 28, { width: colWidth - 16, height: 9, ellipsis: true, lineBreak: false });
+    doc.text(invoice.customer.address || "Standard Registered Address", c2X + 8, y + 38, { width: colWidth - 16, height: 18, ellipsis: true });
   } else {
-    doc.text(invoice.customer.email, c2X + 8, y + 27, { width: colWidth - 14, height: 9, ellipsis: true, lineBreak: false });
-    doc.text(invoice.customer.address || "Standard Registered Address", c2X + 8, y + 37, { width: colWidth - 14, height: 18, ellipsis: true });
+    doc.text(invoice.customer.email, c2X + 8, y + 28, { width: colWidth - 16, height: 9, ellipsis: true, lineBreak: false });
+    doc.text(invoice.customer.address || "Standard Registered Address", c2X + 8, y + 38, { width: colWidth - 16, height: 18, ellipsis: true });
   }
-  doc.text(invoice.customer.phone || invoice.customer.email, c2X + 8, y + 58, { width: colWidth - 14, height: 9, ellipsis: true, lineBreak: false });
+  doc.text(invoice.customer.phone || invoice.customer.email, c2X + 8, y + 59, { width: colWidth - 16, height: 9, ellipsis: true, lineBreak: false });
 
   // Card 3: Settlement Terms & Logistics
   drawInfoPanel(c3X, "TERMS & SETTLEMENT", T.inkHead);
   doc.fontSize(6.8).font("Helvetica").fillColor(T.inkMuted);
   
   doc.text("Payment Method:", c3X + 8, y + 18, { width: 70, lineBreak: false });
-  doc.font("Helvetica-Bold").fillColor(T.inkHead).text(invoice.paymentMethod, c3X + 78, y + 18, { width: colWidth - 84, lineBreak: false, ellipsis: true });
+  doc.font("Helvetica-Bold").fillColor(T.inkHead).text(invoice.paymentMethod, c3X + 76, y + 18, { width: colWidth - 82, lineBreak: false, ellipsis: true });
 
   doc.font("Helvetica").fillColor(T.inkMuted).text("Payment Terms:", c3X + 8, y + 29, { width: 70, lineBreak: false });
-  doc.font("Helvetica-Bold").fillColor(T.inkHead).text(invoice.paymentTerms, c3X + 78, y + 29, { width: colWidth - 84, lineBreak: false });
+  doc.font("Helvetica-Bold").fillColor(T.inkHead).text(invoice.paymentTerms, c3X + 76, y + 29, { width: colWidth - 82, lineBreak: false });
 
   doc.font("Helvetica").fillColor(T.inkMuted).text("Currency Snapshot:", c3X + 8, y + 40, { width: 70, lineBreak: false });
-  doc.font("Helvetica-Bold").fillColor(T.brandPrimary).text(invoice.currencyCode, c3X + 78, y + 40, { width: colWidth - 84, lineBreak: false });
+  doc.font("Helvetica-Bold").fillColor(T.brandPrimary).text(invoice.currencyCode, c3X + 76, y + 40, { width: colWidth - 82, lineBreak: false });
 
   doc.font("Helvetica").fillColor(T.inkMuted).text("Status Snapshot:", c3X + 8, y + 51, { width: 70, lineBreak: false });
-  doc.font("Helvetica-Bold").fillColor(T.inkHead).text(invoice.paymentStatus, c3X + 78, y + 51, { width: colWidth - 84, lineBreak: false, ellipsis: true });
+  doc.font("Helvetica-Bold").fillColor(T.inkHead).text(invoice.paymentStatus, c3X + 76, y + 51, { width: colWidth - 82, lineBreak: false, ellipsis: true });
 
   y += panelHeight + 10;
 
