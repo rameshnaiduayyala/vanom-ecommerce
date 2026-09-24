@@ -15,6 +15,7 @@ import { couponService } from "./coupon.service.js";
 import { brandService } from "./brand.service.js";
 import { uploadService } from "./upload.service.js";
 import { storeService } from "./store.service.js";
+import { contactService } from "./contact.service.js";
 
 export { authService } from "./auth.service.js";
 export { userService } from "./user.service.js";
@@ -33,6 +34,7 @@ export { couponService } from "./coupon.service.js";
 export { brandService } from "./brand.service.js";
 export { uploadService } from "./upload.service.js";
 export { storeService } from "./store.service.js";
+export { contactService } from "./contact.service.js";
 
 export const Api = {
   auth: authService,
@@ -52,4 +54,5 @@ export const Api = {
   brands: brandService,
   upload: uploadService,
   store: storeService,
+  contact: contactService,
 };

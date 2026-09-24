@@ -18,10 +18,12 @@ import {
 } from "lucide-react";
 import { VANOM_COMPANY_DETAILS } from "../../../constants/company.js";
 import { useStoreSettingsStore } from "../../../stores/store.store.js";
+import { contactService } from "../../../services/api/contact.service.js";
 
 export function ContactPage() {
   const { store, fetchPublicStore } = useStoreSettingsStore();
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -40,21 +42,32 @@ export function ContactPage() {
 
   const hasStoreAddress = Boolean(store?.addressLine1 || store?.city || store?.country);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
-    toast.success(
-      "Message Sent Successfully!",
-      "Our support team will respond within 24 hours."
-    );
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      subject: "Order Inquiry",
-      message: "",
-    });
-    setTimeout(() => setSubmitted(false), 5000);
+    try {
+      setSubmitting(true);
+      await contactService.submitContactForm(formData);
+      setSubmitted(true);
+      toast.success(
+        "Message Sent Successfully!",
+        "Our support team has received your inquiry and will respond within 24 hours."
+      );
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        subject: "Order Inquiry",
+        message: "",
+      });
+      setTimeout(() => setSubmitted(false), 6000);
+    } catch (err) {
+      toast.error(
+        "Submission Failed",
+        err?.message || "Could not send message. Please try again or reach us by direct email."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -253,10 +266,15 @@ export function ContactPage() {
                 <div className="flex items-center gap-4 pt-2">
                   <button
                     type="submit"
-                    disabled={submitted}
+                    disabled={submitting || submitted}
                     className="px-8 py-3.5 rounded-xl bg-[#074428] hover:bg-[#0a5634] disabled:bg-[#074428]/70 text-white font-bold text-sm transition-all duration-200 hover:shadow-lg hover:shadow-[#074428]/20 flex items-center gap-2.5 cursor-pointer"
                   >
-                    {submitted ? (
+                    {submitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Sending...</span>
+                      </>
+                    ) : submitted ? (
                       <>
                         <CheckCircle2 className="w-4 h-4 text-[#84CC16]" />
                         <span>Sent!</span>

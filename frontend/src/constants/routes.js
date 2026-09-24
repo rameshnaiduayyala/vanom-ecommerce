@@ -64,6 +64,7 @@ export const ROUTES = {
     REPORTS: "/admin/reports",
     AUDIT_LOGS: "/admin/audit-logs",
     STORE: "/admin/store",
+    MESSAGES: "/admin/messages",
   },
 };
 

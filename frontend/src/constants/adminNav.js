@@ -18,6 +18,7 @@ import {
   Tag,
   BadgePercent,
   Bookmark,
+  Mail,
 } from "lucide-react";
 import { ROUTES } from "./routes.js";
 
@@ -207,6 +208,12 @@ export const ADMIN_NAV_CONFIG = [
     label: "Audit & Security",
     icon: ShieldCheck,
     path: ROUTES.ADMIN.AUDIT_LOGS,
+  },
+  {
+    id: "customer-inquiries",
+    label: "Customer Inquiries",
+    icon: Mail,
+    path: ROUTES.ADMIN.MESSAGES,
   },
   {
     id: "store-settings",

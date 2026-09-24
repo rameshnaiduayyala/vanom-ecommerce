@@ -1167,3 +1167,36 @@ model StoreSetting {
   updatedAt           DateTime @updatedAt
 }
 
+// ============================================================
+// CONTACT MESSAGES (Storefront Inquiries & Support)
+// ============================================================
+
+enum ContactStatus {
+  PENDING
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String        @default("General Inquiry")
+  message   String
+  status    ContactStatus @default(PENDING)
+  ipAddress String?
+
+  adminNotes String?
+  repliedAt  DateTime?
+
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([status])
+  @@index([email])
+  @@index([createdAt])
+}
+
+
