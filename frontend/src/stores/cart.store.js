@@ -35,6 +35,34 @@ export const useCartStore = create(
         });
       },
 
+      syncCartFromApi: (data) => {
+        if (!data) return;
+        const rawItems = data.items || [];
+        const items = rawItems.map((item) => ({
+          id: item.id,
+          variantId: item.variantId,
+          productId: item.productId,
+          name: item.name || item.productName || item.variantName || item.product?.name || "Product",
+          slug: item.slug || item.product?.slug || "",
+          price: Number(item.price || item.unitPrice || item.product?.basePrice || 0),
+          quantity: item.quantity || 1,
+          maxStock: item.availableStock !== undefined ? item.availableStock : (item.maxStock ?? 100),
+          image: item.image || item.imageUrl || item.product?.images?.[0]?.url || null,
+          sku: item.sku || item.variant?.sku || item.product?.sku || null,
+        }));
+        const subtotal = Number(data.subtotal || items.reduce((sum, i) => sum + i.price * i.quantity, 0));
+        const itemCount = Number(data.itemCount || items.reduce((sum, i) => sum + i.quantity, 0));
+
+        set({
+          cart: {
+            id: data.id,
+            items,
+            itemCount,
+            subtotal,
+          },
+        });
+      },
+
       // Fetch cart directly from API (if logged in)
       fetchCart: async () => {
         const token = TokenStorage.getAccessToken();
@@ -42,32 +70,10 @@ export const useCartStore = create(
 
         try {
           set({ isLoading: true });
-          const data = await Api.cart.getCart();
+          const res = await Api.cart.getCart();
+          const data = res?.data || res;
           if (data) {
-            const rawItems = data.items || [];
-            const items = rawItems.map((item) => ({
-              id: item.id,
-              variantId: item.variantId,
-              productId: item.productId,
-              name: item.productName || item.variantName || item.name,
-              slug: item.slug,
-              price: Number(item.unitPrice || item.price || 0),
-              quantity: item.quantity,
-              maxStock: item.availableStock !== undefined ? item.availableStock : (item.maxStock ?? 100),
-              image: item.image || item.imageUrl || null,
-              sku: item.sku,
-            }));
-            const subtotal = Number(data.subtotal || items.reduce((sum, i) => sum + i.price * i.quantity, 0));
-            const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
-
-            set({
-              cart: {
-                id: data.id,
-                items,
-                itemCount,
-                subtotal,
-              },
-            });
+            get().syncCartFromApi(data);
           }
         } catch (err) {
           console.warn("Could not fetch backend cart:", err.message);
@@ -81,20 +87,30 @@ export const useCartStore = create(
         const { cart } = get();
         const token = TokenStorage.getAccessToken();
 
+        const productId = item.productId || item.id;
+        const variantId = (item.variantId && item.variantId !== productId) ? item.variantId : null;
+        const cleanItem = {
+          ...item,
+          productId,
+          variantId,
+          id: item.id || productId,
+          quantity: item.quantity || 1,
+        };
+
         // 1. Optimistic UI update
         const existingIndex = cart.items.findIndex(
-          (i) => i.id === item.id || (item.variantId && i.variantId === item.variantId)
+          (i) => i.id === cleanItem.id || (variantId && i.variantId === variantId) || (i.productId === productId && !variantId)
         );
 
         let updatedItems = [];
         if (existingIndex > -1) {
           updatedItems = cart.items.map((it, idx) =>
             idx === existingIndex
-              ? { ...it, quantity: it.quantity + (item.quantity || 1) }
+              ? { ...it, quantity: it.quantity + cleanItem.quantity }
               : it
           );
         } else {
-          updatedItems = [...cart.items, { ...item, quantity: item.quantity || 1 }];
+          updatedItems = [...cart.items, cleanItem];
         }
 
         const subtotal = updatedItems.reduce(
@@ -105,6 +121,7 @@ export const useCartStore = create(
 
         set({
           cart: {
+            ...cart,
             items: updatedItems,
             itemCount,
             subtotal,
@@ -114,11 +131,15 @@ export const useCartStore = create(
         // 2. Sync to Backend API if user is authenticated
         if (token) {
           try {
-            await Api.cart.addItem({
-              variantId: item.variantId || item.id,
-              productId: item.productId,
-              quantity: item.quantity || 1,
+            const res = await Api.cart.addItem({
+              productId,
+              variantId,
+              quantity: cleanItem.quantity,
             });
+            const data = res?.data || res;
+            if (data?.items) {
+              get().syncCartFromApi(data);
+            }
           } catch (err) {
             console.warn("Backend cart add error:", err.message);
           }
@@ -145,6 +166,7 @@ export const useCartStore = create(
 
         set({
           cart: {
+            ...cart,
             items: updatedItems,
             itemCount,
             subtotal,
@@ -153,7 +175,11 @@ export const useCartStore = create(
 
         if (token) {
           try {
-            await Api.cart.updateItem(id, { quantity });
+            const res = await Api.cart.updateItem(id, { quantity });
+            const data = res?.data || res;
+            if (data?.items) {
+              get().syncCartFromApi(data);
+            }
           } catch (err) {
             console.warn("Backend cart update error:", err.message);
           }
@@ -164,7 +190,7 @@ export const useCartStore = create(
       removeItem: async (id) => {
         const token = TokenStorage.getAccessToken();
         const { cart } = get();
-        const updatedItems = cart.items.filter((it) => it.id !== id);
+        const updatedItems = cart.items.filter((it) => it.id !== id && it.productId !== id);
         const subtotal = updatedItems.reduce(
           (sum, it) => sum + (Number(it.price || it.unitPrice || 0) * it.quantity),
           0
@@ -173,6 +199,7 @@ export const useCartStore = create(
 
         set({
           cart: {
+            ...cart,
             items: updatedItems,
             itemCount,
             subtotal,
@@ -181,7 +208,11 @@ export const useCartStore = create(
 
         if (token) {
           try {
-            await Api.cart.removeItem(id);
+            const res = await Api.cart.removeItem(id);
+            const data = res?.data || res;
+            if (data?.items) {
+              get().syncCartFromApi(data);
+            }
           } catch (err) {
             console.warn("Backend cart remove error:", err.message);
           }
