@@ -23,7 +23,7 @@ export async function download(request, reply) {
 
   const filename = `${invoice.invoiceNumber}.pdf`;
   reply.header("Content-Type", "application/pdf");
-  reply.header("Content-Disposition", `attachment; filename="${filename}"`);
+  reply.header("Content-Disposition", `inline; filename="${filename}"`);
   reply.header("Content-Length", buffer.length);
   return reply.send(buffer);
 }

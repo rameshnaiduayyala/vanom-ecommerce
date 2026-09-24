@@ -1,11 +1,6 @@
 import { prisma } from "../../config/prisma.js";
-import { env } from "../../config/env.js";
 import { getCompanyConfig } from "../../config/company.config.js";
 import { generateInvoiceBuffer, normalizeInvoiceSnapshot } from "./invoice.pdf.js";
-import { getFilePublicUrl } from "../../common/utils/file-upload.js";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { mkdir, writeFile } from "node:fs/promises";
-import { resolve, join } from "node:path";
 import { AppError } from "../../common/errors/app-error.js";
 import { HTTP_STATUS } from "../../constants/http-status.js";
 
@@ -31,49 +26,8 @@ export async function generateInvoiceNumber(prefix = "INV") {
 }
 
 /**
- * Uploads generated invoice PDF buffer to S3 / Local storage
- * Path: invoices/{organizationId}/{year}/{invoiceNumber}.pdf
- */
-async function uploadInvoicePdf({ buffer, organizationId = "default", invoiceNumber }) {
-  const year = new Date().getFullYear();
-  const storageKey = `invoices/${organizationId}/${year}/${invoiceNumber}.pdf`;
-
-  if (env.uploadProvider === "s3") {
-    if (!env.s3Bucket) throw new Error("S3_BUCKET is required when UPLOAD_PROVIDER=s3");
-    
-    const config = {
-      region: env.s3Region || "auto",
-      forcePathStyle: env.s3ForcePathStyle
-    };
-    if (env.s3Endpoint) config.endpoint = env.s3Endpoint;
-    if (env.s3AccessKeyId && env.s3SecretAccessKey) {
-      config.credentials = {
-        accessKeyId: env.s3AccessKeyId,
-        secretAccessKey: env.s3SecretAccessKey
-      };
-    }
-
-    const s3Client = new S3Client(config);
-    await s3Client.send(new PutObjectCommand({
-      Bucket: env.s3Bucket,
-      Key: storageKey,
-      Body: buffer,
-      ContentType: "application/pdf"
-    }));
-  } else {
-    const root = resolve(env.uploadDir);
-    const destination = resolve(root, storageKey);
-    await mkdir(resolve(destination, ".."), { recursive: true });
-    await writeFile(destination, buffer);
-  }
-
-  const fileUrl = getFilePublicUrl(storageKey);
-  return { storageKey, fileUrl };
-}
-
-/**
- * Idempotent Invoice Creation & PDF Storage Service.
- * If an invoice is already ISSUED for the order, it returns the existing record.
+ * Idempotent Invoice Creation & On-The-Fly PDF Generation Service.
+ * Does not store static PDF files in S3; streams dynamically on demand.
  */
 export async function issueInvoiceForOrder({ orderId, bulkOrderId, companyOverride = null, forceRegenerate = false }) {
   // 1. Check if invoice already exists
@@ -158,20 +112,6 @@ export async function issueInvoiceForOrder({ orderId, bulkOrderId, companyOverri
     company
   });
 
-  // Optional: Upload only if storage provider is explicitly configured, otherwise skip file upload
-  let storageKey = null;
-  let fileUrl = null;
-  try {
-    if (env.uploadProvider === "s3" && env.s3Bucket) {
-      const uploadRes = await uploadInvoicePdf({ buffer: pdfBuffer, organizationId, invoiceNumber });
-      storageKey = uploadRes.storageKey;
-      fileUrl = uploadRes.fileUrl;
-    }
-  } catch (err) {
-    // Non-blocking: continue without saving physical file
-    console.warn("Storage upload skipped or failed:", err.message);
-  }
-
   // 6. Save / Update Invoice metadata in database
   const subtotal = Number(orderData.subtotal || 0);
   const discount = Number(orderData.discount || 0);
@@ -185,8 +125,8 @@ export async function issueInvoiceForOrder({ orderId, bulkOrderId, companyOverri
     orderId: orderId || null,
     bulkOrderId: bulkOrderId || null,
     status: "ISSUED",
-    fileUrl,
-    storageKey,
+    fileUrl: null,
+    storageKey: null,
     currencyCode,
     subtotal,
     discount,
