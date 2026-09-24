@@ -25,21 +25,16 @@ function FeaturedSkeleton() {
 
 // ─── Main Section ──────────────────────────────────────────────────────────────
 export function FeaturedProductsSection({
-  products = [],
   featuredProducts = [],
   bestSellers = [],
   isLoading = false,
   className = "",
 }) {
-  // Resolve purely from live API data
+  // Priority: featured → best sellers
   const displayed = useMemo(() => {
-    const list = featuredProducts.length > 0
-      ? featuredProducts
-      : products.length > 0
-      ? products
-      : bestSellers;
+    const list = featuredProducts.length > 0 ? featuredProducts : bestSellers;
     return (Array.isArray(list) ? list : []).slice(0, 12);
-  }, [products, featuredProducts, bestSellers]);
+  }, [featuredProducts, bestSellers]);
 
   return (
     <section className={`py-8 sm:py-10 w-full max-w-full overflow-hidden ${className}`}>

@@ -41,22 +41,16 @@ import { NewsletterAppBanner } from "../components/home/NewsletterAppBanner.jsx"
 export function HomePage() {
   const { country } = useCountryStore();
 
-  // ── Data Fetching (parallel, non-blocking) ──────────────────────
-  const { data: productsData, isLoading: loadingProducts } = useQuery({
-    queryKey: ["home-products", country.code],
-    queryFn: () => Api.catalog.getProducts(),
-    staleTime: 2 * 60 * 1000,
-  });
-
-  const { data: featuredData } = useQuery({
+  // ── Data Fetching ──────────────────────────────────────────
+  const { data: featuredData, isLoading: loadingProducts } = useQuery({
     queryKey: ["featured-products", country.code],
-    queryFn: () => Api.catalog.getFeaturedProducts(),
+    queryFn: () => Api.catalog.getFeaturedProducts().catch(() => null),
     staleTime: 2 * 60 * 1000,
   });
 
   const { data: bestSellersData } = useQuery({
     queryKey: ["best-seller-products", country.code],
-    queryFn: () => Api.catalog.getBestSellers(),
+    queryFn: () => Api.catalog.getBestSellers().catch(() => null),
     staleTime: 2 * 60 * 1000,
   });
 
@@ -73,10 +67,16 @@ export function HomePage() {
   });
 
   // ── Data Normalization ──────────────────────────────────────────
-  const products = productsData?.items || (Array.isArray(productsData) ? productsData : []);
-  const featuredProducts = featuredData?.items || (Array.isArray(featuredData) ? featuredData : []);
-  const bestSellers = bestSellersData?.items || (Array.isArray(bestSellersData) ? bestSellersData : []);
-  const categoryList = Array.isArray(categories) ? categories : (categories?.items || []);
+  // API shape: { success, data: [], meta: {} }
+  const normalizeProducts = (raw) =>
+    Array.isArray(raw?.data) ? raw.data
+    : Array.isArray(raw?.items) ? raw.items
+    : Array.isArray(raw) ? raw
+    : [];
+
+  const featuredProducts = normalizeProducts(featuredData);
+  const bestSellers    = normalizeProducts(bestSellersData);
+  const categoryList   = Array.isArray(categories) ? categories : (categories?.items || []);
 
   return (
     <div className="min-h-screen bg-[#FFFDF7] flex flex-col">
@@ -106,11 +106,10 @@ export function HomePage() {
         <CategoryIconStrip className="bg-transparent" categories={categoryList} />
       </section>
 
-      {/* ── 3. Featured & Best Seller Products (Candy White Clean BG) ── */}
+      {/* ── 3. Featured & Best Seller Products ── */}
       <section className="bg-[#D5EBD5] border-b border-gray-100/90 py-4">
         <FeaturedProductsSection
           className="bg-transparent"
-          products={products}
           featuredProducts={featuredProducts}
           bestSellers={bestSellers}
           isLoading={loadingProducts}
