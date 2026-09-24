@@ -12,6 +12,12 @@ import {
   CheckCircle2,
   Video,
 } from "lucide-react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, FreeMode } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/free-mode";
+
 import { useCartStore } from "../../../../stores/cart.store.js";
 import { useCountryStore } from "../../../../stores/country.store.js";
 import { formatPrice } from "../../../../utils/formatters.js";
@@ -60,32 +66,32 @@ const USER_VIDEO_REELS = [
   },
   {
     id: "reel-3",
-    authorName: "Priya Sundaram",
-    authorRole: "Yoga Practitioner & Nutritionist",
-    authorAvatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80",
-    videoThumbnail: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80",
-    videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-pouring-milk-into-a-glass-bowl-with-muesli-42289-large.mp4",
-    title: "Why Himalayan Shilajit Gold is my non-negotiable daily fuel",
+    authorName: "Pooja & Kabir",
+    authorRole: "Home Chefs & Foodies",
+    authorAvatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80",
+    videoThumbnail: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80",
+    videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-woman-cutting-vegetables-42735-large.mp4",
+    title: "Cold pressed wood-churned oils vs refined supermarket oils",
     product: {
       id: "prod-vid-3",
-      name: "Pure Shilajit Gold Resin 20g Grade A+",
-      category: "Vitality & Strength",
-      price: 1499,
-      mrp: 2499,
-      discount: 40,
+      name: "Cold-Pressed Wood Churned Yellow Mustard Oil 1L",
+      category: "Pure Pantry",
+      price: 449,
+      mrp: 599,
+      discount: 25,
       rating: 4.9,
-      reviewsCount: 1240,
-      image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80",
+      reviewsCount: 1420,
+      image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=400&q=80",
     },
   },
   {
     id: "reel-4",
-    authorName: "Chef Kabir Sen",
-    authorRole: "Culinary Expert",
-    authorAvatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
-    videoThumbnail: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=600&q=80",
-    videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-cooking-with-a-cast-iron-skillet-42412-large.mp4",
-    title: "The aroma test: Bilona A2 Desi Cow Ghee cooked in copper",
+    authorName: "Meera Krishnan",
+    authorRole: "Certified Yoga Instructor",
+    authorAvatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80",
+    videoThumbnail: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80",
+    videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-close-up-of-herbal-tea-brewing-in-a-glass-cup-41712-large.mp4",
+    title: "My 3 essential morning Ayurvedic superfoods for all-day energy",
     product: {
       id: "prod-vid-4",
       name: "Vedic Bilona A2 Desi Gir Cow Cultured Ghee 1L",
@@ -101,17 +107,13 @@ const USER_VIDEO_REELS = [
 ];
 
 export function UserVideoReelsSection() {
-  const scrollRef = useRef(null);
+  const swiperRef = useRef(null);
   const [activeStory, setActiveStory] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
   const [addedItem, setAddedItem] = useState(null);
 
   const { addToCart } = useCartStore();
   const { country } = useCountryStore();
-
-  const scroll = (dir) => {
-    scrollRef.current?.scrollBy({ left: dir * 300, behavior: "smooth" });
-  };
 
   const handleAddToCart = (e, product) => {
     e.preventDefault();
@@ -148,15 +150,15 @@ export function UserVideoReelsSection() {
           {/* Navigation controls */}
           <div className="flex items-center gap-1.5 self-end sm:self-auto">
             <button
-              onClick={() => scroll(-1)}
-              aria-label="Scroll left"
+              onClick={() => swiperRef.current?.slidePrev()}
+              aria-label="Previous reels"
               className="w-8 h-8 rounded-full bg-white border border-[#ebdcb0] hover:bg-[#358B5B] hover:text-white text-gray-700 shadow-2xs flex items-center justify-center transition-all cursor-pointer hover:scale-105"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
-              onClick={() => scroll(1)}
-              aria-label="Scroll right"
+              onClick={() => swiperRef.current?.slideNext()}
+              aria-label="Next reels"
               className="w-8 h-8 rounded-full bg-white border border-[#ebdcb0] hover:bg-[#358B5B] hover:text-white text-gray-700 shadow-2xs flex items-center justify-center transition-all cursor-pointer hover:scale-105"
             >
               <ChevronRight className="w-4 h-4" />
@@ -164,125 +166,158 @@ export function UserVideoReelsSection() {
           </div>
         </div>
 
-        {/* Video Cards Reel */}
-        <div
-          ref={scrollRef}
-          className="flex items-stretch gap-4 sm:gap-5 overflow-x-auto scrollbar-none pb-4 pt-1 px-1 w-full min-w-0 touch-pan-x"
-        >
-          {USER_VIDEO_REELS.map((story) => (
-            <div
-              key={story.id}
-              className="w-[260px] sm:w-[290px] rounded-3xl overflow-hidden bg-white border border-[#ebdcb0] shadow-2xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group shrink-0"
-            >
-              {/* Top: Video Thumbnail & Play Trigger */}
-              <div
-                onClick={() => setActiveStory(story)}
-                className="relative h-60 sm:h-72 w-full overflow-hidden cursor-pointer bg-black/90"
-              >
-                <img
-                  src={story.videoThumbnail}
-                  alt={story.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
-                />
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30" />
-
-                {/* Top Author Badge */}
-                <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
-                  <div className="flex items-center gap-2 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 text-white text-[11px] font-medium">
+        {/* Video Cards Swiper Reel */}
+        <div className="w-full min-w-0 pb-4 pt-1">
+          <Swiper
+            onBeforeInit={(swiper) => {
+              swiperRef.current = swiper;
+            }}
+            modules={[Navigation, FreeMode]}
+            spaceBetween={16}
+            slidesPerView={1.2}
+            grabCursor={true}
+            freeMode={{
+              enabled: true,
+              sticky: false,
+            }}
+            breakpoints={{
+              480: {
+                slidesPerView: 1.6,
+                spaceBetween: 16,
+              },
+              640: {
+                slidesPerView: 2.2,
+                spaceBetween: 18,
+              },
+              768: {
+                slidesPerView: 2.8,
+                spaceBetween: 20,
+              },
+              1024: {
+                slidesPerView: 3.5,
+                spaceBetween: 22,
+              },
+              1280: {
+                slidesPerView: 4,
+                spaceBetween: 24,
+              },
+            }}
+            className="w-full !overflow-visible"
+          >
+            {USER_VIDEO_REELS.map((story) => (
+              <SwiperSlide key={story.id} className="!h-auto flex">
+                <div className="w-full rounded-3xl overflow-hidden bg-white border border-[#ebdcb0] shadow-2xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col group">
+                  {/* Top: Video Thumbnail & Play Trigger */}
+                  <div
+                    onClick={() => setActiveStory(story)}
+                    className="relative h-60 sm:h-72 w-full overflow-hidden cursor-pointer bg-black/90"
+                  >
                     <img
-                      src={story.authorAvatar}
-                      alt={story.authorName}
-                      className="w-5 h-5 rounded-full object-cover border border-white"
+                      src={story.videoThumbnail}
+                      alt={story.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
                     />
-                    <span className="truncate max-w-[120px]">{story.authorName}</span>
-                  </div>
-                </div>
 
-                {/* Center Play Button Pulse */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-md border border-white/60 flex items-center justify-center text-white group-hover:bg-[#358B5B] group-hover:scale-115 transition-all duration-300 shadow-xl">
-                    <Play className="w-5 h-5 fill-white ml-0.5" />
-                  </div>
-                </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30" />
 
-                {/* Bottom Story Title */}
-                <div className="absolute bottom-3 left-3 right-3 text-white z-10">
-                  <p className="text-xs font-bold leading-snug line-clamp-2 drop-shadow-sm">
-                    &ldquo;{story.title}&rdquo;
-                  </p>
-                  <div className="flex items-center gap-1.5 mt-1 text-[10px] text-white/80">
-                    <CheckCircle2 className="w-3 h-3 text-[#54BC8C]" />
-                    <span>{story.authorRole}</span>
-                  </div>
-                </div>
-              </div>
+                    {/* Top Author Badge */}
+                    <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
+                      <div className="flex items-center gap-2 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20 text-white text-[11px] font-medium">
+                        <img
+                          src={story.authorAvatar}
+                          alt={story.authorName}
+                          className="w-5 h-5 rounded-full object-cover border border-white"
+                        />
+                        <span className="truncate max-w-[120px]">{story.authorName}</span>
+                      </div>
+                    </div>
 
-              {/* Bottom: Attached Product Card */}
-              <div className="p-3.5 bg-gradient-to-b from-white to-[#FFFDF5] flex-1 flex flex-col justify-between border-t border-[#ebdcb0]/60">
-                <div className="flex gap-2.5 items-center">
-                  <img
-                    src={story.product.image}
-                    alt={story.product.name}
-                    className="w-12 h-12 sm:w-13 sm:h-13 rounded-xl object-cover border border-[#ebdcb0] shrink-0 bg-white p-0.5 shadow-2xs"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <span className="text-[9px] font-bold text-[#358B5B] uppercase tracking-wider">
-                      {story.product.category}
-                    </span>
-                    <h4 className="text-xs font-bold text-gray-900 truncate" title={story.product.name}>
-                      {story.product.name}
-                    </h4>
-                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                      <span className="text-xs font-black text-[#204B38]">
-                        {formatPrice(story.product.price, country.currency, country.symbol)}
-                      </span>
-                      {story.product.mrp && (
-                        <span className="text-[10px] text-gray-400 line-through">
-                          {formatPrice(story.product.mrp, country.currency, country.symbol)}
+                    {/* Center Play Button Pulse */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="w-12 h-12 rounded-full bg-white/30 backdrop-blur-md border border-white/60 flex items-center justify-center text-white group-hover:bg-[#358B5B] group-hover:scale-115 transition-all duration-300 shadow-xl">
+                        <Play className="w-5 h-5 fill-white ml-0.5" />
+                      </div>
+                    </div>
+
+                    {/* Bottom Story Title */}
+                    <div className="absolute bottom-3 left-3 right-3 text-white z-10">
+                      <p className="text-xs font-bold leading-snug line-clamp-2 drop-shadow-sm">
+                        &ldquo;{story.title}&rdquo;
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1 text-[10px] text-white/80">
+                        <CheckCircle2 className="w-3 h-3 text-[#54BC8C]" />
+                        <span>{story.authorRole}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom: Attached Product Card */}
+                  <div className="p-3.5 bg-gradient-to-b from-white to-[#FFFDF5] flex-1 flex flex-col justify-between border-t border-[#ebdcb0]/60">
+                    <div className="flex gap-2.5 items-center">
+                      <img
+                        src={story.product.image}
+                        alt={story.product.name}
+                        className="w-12 h-12 sm:w-13 sm:h-13 rounded-xl object-cover border border-[#ebdcb0] shrink-0 bg-white p-0.5 shadow-2xs"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[9px] font-bold text-[#358B5B] uppercase tracking-wider">
+                          {story.product.category}
                         </span>
-                      )}
-                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1 rounded">
-                        {story.product.discount}% off
-                      </span>
+                        <h4 className="text-xs font-bold text-gray-900 truncate" title={story.product.name}>
+                          {story.product.name}
+                        </h4>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          <span className="text-xs font-black text-[#204B38]">
+                            {formatPrice(story.product.price, country.currency, country.symbol)}
+                          </span>
+                          {story.product.mrp && (
+                            <span className="text-[10px] text-gray-400 line-through">
+                              {formatPrice(story.product.mrp, country.currency, country.symbol)}
+                            </span>
+                          )}
+                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1 rounded">
+                            {story.product.discount}% off
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="mt-3 flex items-center gap-2">
+                      <button
+                        onClick={(e) => handleAddToCart(e, story.product)}
+                        className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                          addedItem === story.product.id
+                            ? "bg-emerald-600 text-white"
+                            : "bg-[#358B5B] hover:bg-[#204B38] text-white hover:shadow-md"
+                        }`}
+                      >
+                        {addedItem === story.product.id ? (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Added!</span>
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingBag className="w-3.5 h-3.5" />
+                            <span>Add to Cart</span>
+                          </>
+                        )}
+                      </button>
+
+                      <Link
+                        to={`${ROUTES.PRODUCTS}/${story.product.id}`}
+                        className="p-2 rounded-xl border border-[#ebdcb0] hover:bg-white text-gray-700 hover:text-[#358B5B] transition-colors flex items-center justify-center cursor-pointer"
+                        title="View Product"
+                      >
+                        <ArrowUpRight className="w-4 h-4" />
+                      </Link>
                     </div>
                   </div>
                 </div>
-
-                {/* Action Buttons */}
-                <div className="mt-3 flex items-center gap-2">
-                  <button
-                    onClick={(e) => handleAddToCart(e, story.product)}
-                    className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs ${
-                      addedItem === story.product.id
-                        ? "bg-emerald-600 text-white"
-                        : "bg-[#358B5B] hover:bg-[#204B38] text-white hover:shadow-md"
-                    }`}
-                  >
-                    {addedItem === story.product.id ? (
-                      <>
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Added!</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingBag className="w-3.5 h-3.5" />
-                        <span>Add to Cart</span>
-                      </>
-                    )}
-                  </button>
-
-                  <Link
-                    to={`${ROUTES.PRODUCTS}/${story.product.id}`}
-                    className="p-2 rounded-xl border border-[#ebdcb0] hover:bg-white text-gray-700 hover:text-[#358B5B] transition-colors flex items-center justify-center cursor-pointer"
-                    title="View Product"
-                  >
-                    <ArrowUpRight className="w-4 h-4" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ))}
+              </SwiperSlide>
+            ))}
+          </Swiper>
         </div>
       </div>
 
