@@ -87,3 +87,18 @@ export async function updateOrderStatus(request, reply) {
   const data = await service.updateOrderStatus(request.params.id, request.body);
   return sendSuccess(reply, { message: "Bulk order updated", data });
 }
+
+export async function downloadOrderInvoice(request, reply) {
+  const order = await service.getOrder(request.user.sub, request.params.id);
+
+  const { generateInvoiceBuffer } = await import("../../../common/services/invoice-pdf.service.js");
+  const buffer = await generateInvoiceBuffer(order, { type: "B2B" });
+
+  const filename = `Invoice-${order.orderNumber || order.id.slice(0, 8).toUpperCase()}.pdf`;
+  reply.header("Content-Type", "application/pdf");
+  reply.header("Content-Disposition", `attachment; filename="${filename}"`);
+  reply.header("Content-Length", buffer.length);
+  return reply.send(buffer);
+}
+
+

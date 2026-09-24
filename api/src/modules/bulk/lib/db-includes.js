@@ -27,6 +27,19 @@ export const productInclude = {
 export const orderInclude = {
   items: true,
   business: {
-    select: { id: true, businessName: true, businessEmail: true }
+    select: {
+      id: true,
+      businessName: true,
+      businessEmail: true,
+      businessPhone: true,
+      taxRegistrationNumber: true,
+      registrationNumber: true,
+      countryCode: true,
+      address: true,
+      contactPersonName: true,
+      status: true,
+      isLocked: true
+    }
   }
 };
+

@@ -18,4 +18,10 @@ export async function orderRoutes(fastify) {
     preHandler: authenticate,
     schema: { params: idParams }
   }, controller.getById);
+
+  fastify.get("/bulk/orders/:id/invoice", {
+    preHandler: authenticate,
+    schema: { params: idParams }
+  }, controller.downloadInvoice);
 }
+

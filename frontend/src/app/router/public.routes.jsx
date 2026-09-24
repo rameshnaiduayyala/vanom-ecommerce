@@ -15,6 +15,7 @@ import { LoginPage } from "../../features/auth/pages/LoginPage.jsx";
 import { RegisterPage } from "../../features/auth/pages/RegisterPage.jsx";
 import { ForgotPasswordPage } from "../../features/auth/pages/ForgotPasswordPage.jsx";
 import { VerifyEmailPage } from "../../features/auth/pages/VerifyEmailPage.jsx";
+import { InvoiceVerificationPage } from "../../features/storefront/pages/InvoiceVerificationPage.jsx";
 import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
 
 export const publicRoutes = {
@@ -27,6 +28,7 @@ export const publicRoutes = {
     { path: "/categories/:slug", element: <ProductsPage /> },
     { path: "/search", element: <ProductsPage /> },
     { path: "/contact", element: <ContactPage /> },
+    { path: "/invoice/verify/:invoiceNumber", element: <InvoiceVerificationPage /> },
     { path: "/cart", element: <CartPage /> },
     { path: "/checkout", element: <CheckoutPage /> },
     { path: "/checkout/payment-processing", element: <PaymentProcessingPage /> },

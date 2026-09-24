@@ -63,8 +63,14 @@ export async function adminRoutes(fastify) {
     schema: { params: idParams }
   }, controller.getOrder);
 
+  fastify.get("/admin/bulk/orders/:id/invoice", {
+    preHandler: adminGuard,
+    schema: { params: idParams }
+  }, controller.downloadOrderInvoice);
+
   fastify.patch("/admin/bulk/orders/:id/status", {
     preHandler: adminGuard,
     schema: { params: idParams, body: updateOrderStatusBody }
   }, controller.updateOrderStatus);
 }
+

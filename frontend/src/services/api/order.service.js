@@ -12,4 +12,9 @@ export const orderService = {
   cancel: async (id, reason) => {
     return apiClient.post(`/orders/${id}/cancel`, { reason });
   },
+
+  getInvoicePdf: async (id) => {
+    return apiClient.get(`/orders/${id}/invoice`, { responseType: "blob" });
+  },
 };
+

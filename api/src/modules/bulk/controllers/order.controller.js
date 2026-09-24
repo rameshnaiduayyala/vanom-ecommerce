@@ -25,3 +25,10 @@ export async function getById(request, reply) {
   const data = await service.getById(request.user.sub, request.params.id);
   return sendSuccess(reply, { message: "Bulk order fetched", data });
 }
+
+export async function downloadInvoice(request, reply) {
+  const { getBulkOrderInvoice } = await import("../../invoice/invoice.controller.js");
+  return getBulkOrderInvoice(request, reply);
+}
+
+

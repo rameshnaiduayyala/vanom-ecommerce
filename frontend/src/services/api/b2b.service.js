@@ -134,4 +134,14 @@ export const b2bService = {
   createAddress: async (payload) => {
     return apiClient.post("/bulk/addresses", payload);
   },
+
+  // ── Invoices & PDFKit Exports ──
+  getBulkOrderInvoicePdf: async (orderId) => {
+    return apiClient.get(`/bulk/orders/${orderId}/invoice`, { responseType: "blob" });
+  },
+
+  getAdminBulkOrderInvoicePdf: async (orderId) => {
+    return apiClient.get(`/admin/bulk/orders/${orderId}/invoice`, { responseType: "blob" });
+  },
 };
+

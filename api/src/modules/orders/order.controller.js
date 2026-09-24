@@ -38,3 +38,10 @@ export async function remove(request, reply) {
   await orderService.deleteOrder(request.params.id);
   return sendSuccess(reply, { message: MESSAGES.ORDER_DELETED, data: null });
 }
+
+export async function downloadInvoice(request, reply) {
+  const { getOrderInvoice } = await import("../invoice/invoice.controller.js");
+  return getOrderInvoice(request, reply);
+}
+
+

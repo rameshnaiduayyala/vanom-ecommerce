@@ -65,6 +65,8 @@ export async function orderRoutes(fastify) {
 
   fastify.get("/orders/:id", { preHandler: authenticate, schema: { params: idParams } }, controller.getById);
 
+  fastify.get("/orders/:id/invoice", { preHandler: authenticate, schema: { params: idParams } }, controller.downloadInvoice);
+
   fastify.put("/orders/:id/status", {
     preHandler: superadminGuard,
     schema: {
@@ -80,3 +82,4 @@ export async function orderRoutes(fastify) {
 
   fastify.delete("/orders/:id", { preHandler: superadminGuard, schema: { params: idParams } }, controller.remove);
 }
+
