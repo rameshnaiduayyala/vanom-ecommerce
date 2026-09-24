@@ -2,7 +2,12 @@ import { env } from "../../config/env.js";
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import nodemailer from "nodemailer";
-import { renderPasswordResetEmail, renderVerifyEmail } from "../../emails/index.js";
+import {
+  renderPasswordResetEmail,
+  renderVerifyEmail,
+  renderContactInquiryAdminEmail,
+  renderContactInquiryCustomerEmail,
+} from "../../emails/index.js";
 
 function required(value, name) {
   if (!value) throw new Error(`${name} is required for email sending`);
@@ -116,3 +121,58 @@ export async function sendVerificationEmail(email, token, options = {}) {
   });
   return sendEmail({ to: email, ...template });
 }
+
+/**
+ * Sends contact inquiry emails using React Email templates:
+ * 1. Notification to Store Admin / Support Team
+ * 2. Confirmation acknowledgement to Customer
+ */
+export async function sendContactNotificationEmails({ name, email, phone, subject, message, store = null }) {
+  const storeName = store?.storeName || "Vanom";
+  const adminEmail = store?.supportEmail || store?.email || env.emailFrom || "corporate.billing@vanom-global.com";
+
+  const promises = [];
+
+  // 1. Render & Send Admin Notification via React Email
+  try {
+    const adminTemplate = await renderContactInquiryAdminEmail({
+      name,
+      email,
+      phone,
+      subject,
+      message,
+      storeName
+    });
+
+    promises.push(
+      sendEmail({
+        to: adminEmail,
+        ...adminTemplate
+      }).catch((err) => console.warn("[email:contact-admin-failed]", err.message))
+    );
+  } catch (err) {
+    console.error("[email:render-admin-template-failed]", err);
+  }
+
+  // 2. Render & Send Customer Acknowledgement via React Email
+  try {
+    const customerTemplate = await renderContactInquiryCustomerEmail({
+      name,
+      subject,
+      message,
+      storeName
+    });
+
+    promises.push(
+      sendEmail({
+        to: email,
+        ...customerTemplate
+      }).catch((err) => console.warn("[email:contact-customer-failed]", err.message))
+    );
+  } catch (err) {
+    console.error("[email:render-customer-template-failed]", err);
+  }
+
+  await Promise.all(promises);
+}
+

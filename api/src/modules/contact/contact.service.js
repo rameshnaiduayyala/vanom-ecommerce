@@ -1,6 +1,7 @@
 import { prisma } from "../../config/prisma.js";
 import { AppError } from "../../common/errors/app-error.js";
 import { HTTP_STATUS } from "../../constants/http-status.js";
+import { sendContactNotificationEmails } from "../../common/utils/email.js";
 
 /**
  * Create a new contact inquiry from the storefront
@@ -16,16 +17,42 @@ export async function createContactMessage(input, ipAddress = null) {
     throw new AppError("Invalid email address", HTTP_STATUS.BAD_REQUEST, "INVALID_EMAIL");
   }
 
-  return await prisma.contactMessage.create({
+  const name = input.name.trim();
+  const email = input.email.trim().toLowerCase();
+  const phone = input.phone ? String(input.phone).trim() : null;
+  const subject = input.subject ? String(input.subject).trim() : "General Inquiry";
+  const message = input.message.trim();
+
+  // 1. Save to Database
+  const created = await prisma.contactMessage.create({
     data: {
-      name: input.name.trim(),
-      email: input.email.trim().toLowerCase(),
-      phone: input.phone ? String(input.phone).trim() : null,
-      subject: input.subject ? String(input.subject).trim() : "General Inquiry",
-      message: input.message.trim(),
+      name,
+      email,
+      phone,
+      subject,
+      message,
       ipAddress: ipAddress || null
     }
   });
+
+  // 2. Fetch Store Settings for email branding
+  const store = await prisma.storeSetting.findFirst({
+    orderBy: { createdAt: "asc" }
+  }).catch(() => null);
+
+  // 3. Dispatch Emails Asynchronously (non-blocking)
+  sendContactNotificationEmails({
+    name,
+    email,
+    phone,
+    subject,
+    message,
+    store
+  }).catch((err) => {
+    console.error("[contact:email-dispatch-failed]", err?.message || err);
+  });
+
+  return created;
 }
 
 /**

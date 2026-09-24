@@ -6,6 +6,8 @@ import PasswordReset from "./templates/PasswordReset.jsx";
 import OrderConfirmation from "./templates/OrderConfirmation.jsx";
 import OrderShipped from "./templates/OrderShipped.jsx";
 import OrderDelivered from "./templates/OrderDelivered.jsx";
+import ContactInquiryAdmin from "./templates/ContactInquiryAdmin.jsx";
+import ContactInquiryCustomer from "./templates/ContactInquiryCustomer.jsx";
 
 async function renderTemplate(element, subject) {
   return { subject, html: await render(element), text: await render(element, { plainText: true }) };
@@ -17,3 +19,14 @@ export const renderPasswordResetEmail = (props) => renderTemplate(React.createEl
 export const renderOrderConfirmationEmail = (props) => renderTemplate(React.createElement(OrderConfirmation, props), "Your order is confirmed");
 export const renderOrderShippedEmail = (props) => renderTemplate(React.createElement(OrderShipped, props), "Your order has shipped");
 export const renderOrderDeliveredEmail = (props) => renderTemplate(React.createElement(OrderDelivered, props), "Your order was delivered");
+export const renderContactInquiryAdminEmail = (props) =>
+  renderTemplate(
+    React.createElement(ContactInquiryAdmin, props),
+    `[New Inquiry] ${props.subject || "Customer Inquiry"} - ${props.name || "Customer"}`
+  );
+export const renderContactInquiryCustomerEmail = (props) =>
+  renderTemplate(
+    React.createElement(ContactInquiryCustomer, props),
+    `We've received your message - ${props.storeName || "Vanom"}`
+  );
+
