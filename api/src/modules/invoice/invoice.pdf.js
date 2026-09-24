@@ -300,9 +300,12 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
   compY = doc.y;
 
   // Right: Document Identification & Status Badge
+  const isDev = process.env.NODE_ENV !== "production";
   const rightWidth = 195;
   const rightX = PAGE_WIDTH - MR - rightWidth;
-  const docTitle = invoice.invoiceType === "B2B" ? "COMMERCIAL TAX INVOICE" : "TAX INVOICE";
+  const docTitle = isDev
+    ? (invoice.invoiceType === "B2B" ? "SAMPLE COMMERCIAL INVOICE" : "SAMPLE TAX INVOICE")
+    : (invoice.invoiceType === "B2B" ? "COMMERCIAL TAX INVOICE" : "TAX INVOICE");
 
   doc.fontSize(14).font("Helvetica-Bold").fillColor(T.inkHead).text(docTitle, rightX, y, { width: rightWidth, align: "right", lineBreak: false });
   doc.fontSize(12).font("Helvetica-Bold").fillColor(T.brandPrimary).text(invoice.invoiceNumber, rightX, y + 17, { width: rightWidth, align: "right", lineBreak: false });
@@ -326,8 +329,12 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
   doc.fontSize(7).font("Helvetica").fillColor(T.inkMuted);
   doc.text(`Order Ref: #${invoice.orderNumber}`, rightX, y + 53, { width: rightWidth, align: "right", lineBreak: false });
   doc.text(`Issued: ${invoice.date}   •   Due: ${invoice.dueDate}`, rightX, y + 63, { width: rightWidth, align: "right", lineBreak: false });
+  if (isDev) {
+    doc.fontSize(6).font("Helvetica-Bold").fillColor(T.statusDueText);
+    doc.text("THIS IS SAMPLE NOT OFFICIAL (DEV)", rightX, y + 73, { width: rightWidth, align: "right", lineBreak: false });
+  }
 
-  y = Math.max(compY + 8, y + 78);
+  y = Math.max(compY + 8, isDev ? y + 84 : y + 78);
   doc.moveTo(ML, y).lineTo(PAGE_WIDTH - MR, y).lineWidth(0.75).strokeColor(T.borderLight).stroke();
   y += 8;
 
@@ -483,7 +490,10 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
   doc.fontSize(7.5).font("Helvetica-Bold").fillColor(T.brandPrimary).text("DIGITALLY VERIFIED INVOICE", qrTextX, y + 10, { width: qrTextW, lineBreak: false });
   doc.fontSize(6.8).font("Helvetica").fillColor(T.inkMuted).text("Scan this secure QR code to verify invoice authenticity, payment state, and cryptographic transaction snapshots.", qrTextX, y + 21, { width: qrTextW, height: 24 });
   doc.fontSize(6.5).font("Helvetica").fillColor(T.inkFaint).text(`Direct URL: ${invoice.verifyUrl}`, qrTextX, y + 47, { width: qrTextW, height: 16, ellipsis: true });
-  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(T.brandMuted).text(`Official Merchant Ledger  •  ${invoice.company.brandName}`, qrTextX, y + 66, { width: qrTextW, lineBreak: false });
+  const ledgerLabel = isDev
+    ? `Sample Merchant Ledger (Dev)  •  ${invoice.company.brandName}`
+    : `Official Merchant Ledger  •  ${invoice.company.brandName}`;
+  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(T.brandMuted).text(ledgerLabel, qrTextX, y + 66, { width: qrTextW, lineBreak: false });
 
   // Right: Grand Totals Breakdown Card
   doc.roundedRect(summaryBoxX, y, summaryBoxWidth, bottomCardHeight, 4).fillAndStroke(T.surfaceCard, T.borderLight);
@@ -531,7 +541,10 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
     // Bottom document footer
     const footerY = 806;
 
-    if (invoice.company.footerNote) {
+    if (isDev) {
+      doc.fontSize(6.5).font("Helvetica-Bold").fillColor(T.statusDueText);
+      doc.text("DEVELOPMENT ENVIRONMENT — THIS IS SAMPLE NOT OFFICIAL", ML, footerY - 10, { width: CW, align: "center", lineBreak: false });
+    } else if (invoice.company.footerNote) {
       doc.fontSize(6.5).font("Helvetica-Oblique").fillColor(T.inkFaint);
       doc.text(`Notice: ${invoice.company.footerNote}`, ML, footerY - 10, { width: CW, align: "center", lineBreak: false });
     }
@@ -547,9 +560,13 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
       { width: CW, align: "center", lineBreak: false }
     );
 
+    const footerDisclaimer = isDev
+      ? "This is a sample document for development environment use only, not an official tax invoice. Registered office: " + invoice.company.address
+      : "This is an official computer-generated commercial tax invoice. Registered office: " + invoice.company.address;
+
     doc.fontSize(6).font("Helvetica").fillColor(T.inkLight);
     doc.text(
-      "This is an official computer-generated commercial tax invoice. Registered office: " + invoice.company.address,
+      footerDisclaimer,
       ML,
       footerY + 13,
       { width: CW, align: "center", lineBreak: false }

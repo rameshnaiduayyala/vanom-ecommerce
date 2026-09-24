@@ -249,9 +249,12 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
   doc.roundedRect(boxX, headerTopY, boxWidth, 20, 6).fill(C.tableHeaderBg);
 
   // Card Header Tag
+  const isDev = process.env.NODE_ENV !== "production";
   doc.fontSize(8.5).font("Helvetica-Bold").fillColor(C.white);
   doc.text(
-    invoice.invoiceType === "B2B" ? "COMMERCIAL TAX INVOICE" : "OFFICIAL TAX INVOICE",
+    isDev
+      ? (invoice.invoiceType === "B2B" ? "SAMPLE COMMERCIAL INVOICE" : "SAMPLE TAX INVOICE")
+      : (invoice.invoiceType === "B2B" ? "COMMERCIAL TAX INVOICE" : "OFFICIAL TAX INVOICE"),
     boxX + 10,
     headerTopY + 5.5,
     { width: boxWidth - 20, align: "center" }
@@ -464,8 +467,13 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
   const footerY = PAGE_HEIGHT - 28;
   doc.moveTo(MARGIN, footerY - 4).lineTo(PAGE_WIDTH - MARGIN, footerY - 4).lineWidth(0.5).strokeColor(C.slate200).stroke();
   doc.fontSize(7).font("Helvetica").fillColor(C.slate400);
+  
+  const footerText = isDev
+    ? `DEVELOPMENT SAMPLE — THIS IS SAMPLE NOT OFFICIAL • Document Hash: ${invoice.orderId || invoice.orderNumber}`
+    : `${COMPANY_INFO.legalName} • Document Hash: ${invoice.orderId || invoice.orderNumber} • Generated at ${new Date().toUTCString()}`;
+
   doc.text(
-    `${COMPANY_INFO.legalName} • Document Hash: ${invoice.orderId || invoice.orderNumber} • Generated at ${new Date().toUTCString()}`,
+    footerText,
     MARGIN,
     footerY,
     { width: CONTENT_WIDTH, align: "center" }
