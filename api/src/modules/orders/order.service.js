@@ -24,10 +24,31 @@ const orderInclude = {
     }
   },
   addresses: true,
-  user: { select: { id: true, email: true, firstName: true, lastName: true } }
+  user: { select: { id: true, email: true, firstName: true, lastName: true } },
+  invoices: true
 };
 
-export async function createOrder(userId, { countryId, currencyCode, shippingAddress, billingAddress, items: directItems }) {
+function formatOrder(order) {
+  if (!order) return order;
+  const orderNumber = order.invoices?.[0]?.invoiceNumber 
+    ? `ORD-${order.invoices[0].invoiceNumber.replace(/^INV-/, "")}`
+    : `ORD-${order.id.slice(0, 8).toUpperCase()}`;
+  return {
+    ...order,
+    orderNumber
+  };
+}
+
+export async function createOrder(userId, {
+  countryId,
+  currencyCode,
+  shippingAddress,
+  billingAddress,
+  items: directItems,
+  shippingCharges = 0,
+  tax = 0,
+  discount = 0
+}) {
   if (!shippingAddress) {
     throw new AppError(MESSAGES.SHIPPING_ADDRESS_REQUIRED, HTTP_STATUS.BAD_REQUEST, "SHIPPING_ADDRESS_REQUIRED");
   }
@@ -59,7 +80,7 @@ export async function createOrder(userId, { countryId, currencyCode, shippingAdd
     countryCode: address.countryCode || targetCountry?.code || "US"
   });
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     let cart = await tx.cart.findUnique({
       where: { userId },
       include: {
@@ -149,12 +170,20 @@ export async function createOrder(userId, { countryId, currencyCode, shippingAdd
       });
     }
 
+    const numDiscount = new Prisma.Decimal(discount || 0);
+    const numShipping = new Prisma.Decimal(shippingCharges || 0);
+    const numTax = new Prisma.Decimal(tax || 0);
+    const total = subtotal.sub(numDiscount).add(numShipping).add(numTax);
+
     const order = await tx.order.create({
       data: {
         userId,
         currencyCode: resolvedCurrencyCode,
         subtotal,
-        total: subtotal,
+        discount: numDiscount,
+        shippingCharges: numShipping,
+        tax: numTax,
+        total,
         items: { create: items },
         addresses: {
           create: [addressData(shippingAddress, "SHIPPING"), addressData(billing, "BILLING")]
@@ -165,6 +194,15 @@ export async function createOrder(userId, { countryId, currencyCode, shippingAdd
     await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
     return order;
   });
+
+  try {
+    const { issueInvoiceForOrder } = await import("../invoice/invoice.service.js");
+    await issueInvoiceForOrder({ orderId: result.id });
+  } catch (err) {
+    console.warn("Auto-invoice generation on order creation deferred:", err.message);
+  }
+
+  return formatOrder(result);
 }
 
 export async function listOrders({ userId, page, limit, skip, status }) {
@@ -173,18 +211,19 @@ export async function listOrders({ userId, page, limit, skip, status }) {
     prisma.order.findMany({ where, skip, take: limit, orderBy: { createdAt: "desc" }, include: orderInclude }),
     prisma.order.count({ where })
   ]);
-  return { items, total };
+  return { items: items.map(formatOrder), total };
 }
 
 export async function getOrderById(id, userId = null) {
   const order = await prisma.order.findFirst({ where: { id, ...(userId ? { userId } : {}) }, include: orderInclude });
   if (!order) throw new AppError(MESSAGES.ORDER_NOT_FOUND, HTTP_STATUS.NOT_FOUND, "ORDER_NOT_FOUND");
-  return order;
+  return formatOrder(order);
 }
 
 export async function updateStatus(id, status) {
   await getOrderById(id);
-  return prisma.order.update({ where: { id }, data: { status }, include: orderInclude });
+  const updated = await prisma.order.update({ where: { id }, data: { status }, include: orderInclude });
+  return formatOrder(updated);
 }
 
 export async function deleteOrder(id) {

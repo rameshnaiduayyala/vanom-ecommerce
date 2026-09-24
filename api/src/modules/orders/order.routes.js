@@ -32,6 +32,9 @@ export async function orderRoutes(fastify) {
           currencyCode: { type: "string", minLength: 3, maxLength: 10 },
           shippingAddress: addressSchema,
           billingAddress: { ...addressSchema, required: addressSchema.required },
+          shippingCharges: { type: "number", minimum: 0 },
+          tax: { type: "number", minimum: 0 },
+          discount: { type: "number", minimum: 0 },
           items: {
             type: "array",
             items: {

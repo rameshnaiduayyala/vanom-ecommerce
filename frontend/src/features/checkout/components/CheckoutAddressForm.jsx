@@ -1,12 +1,12 @@
 import React from "react";
 import { Truck } from "lucide-react";
 import { Input } from "../../../components/ui/Input.jsx";
-import { US_STATES, CA_PROVINCES } from "../../../constants/countries.js";
+import { US_STATES, CA_PROVINCES, IN_STATES } from "../../../constants/countries.js";
 
 export function CheckoutAddressForm({ formData, setField, country }) {
-  const regions = country.code === "CA" ? CA_PROVINCES : US_STATES;
+  const regions = country.code === "CA" ? CA_PROVINCES : country.code === "IN" ? IN_STATES : US_STATES;
   const regionLabel = country.code === "CA" ? "Province" : "State";
-  const postalLabel = country.code === "CA" ? "Postal Code" : "ZIP Code";
+  const postalLabel = country.code === "CA" ? "Postal Code" : country.code === "IN" ? "PIN Code" : "ZIP Code";
 
   return (
     <div className="p-6 rounded-2xl bg-white border border-border shadow-xs space-y-4">

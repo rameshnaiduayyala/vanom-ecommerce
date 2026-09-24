@@ -47,6 +47,21 @@ export const CA_PROVINCES = [
   { code: "SK", name: "Saskatchewan (11% GST+PST)" },
 ];
 
+export const IN_STATES = [
+  { code: "MH", name: "Maharashtra (18% GST)" },
+  { code: "DL", name: "Delhi (18% GST)" },
+  { code: "KA", name: "Karnataka (18% GST)" },
+  { code: "TN", name: "Tamil Nadu (18% GST)" },
+  { code: "TG", name: "Telangana (18% GST)" },
+  { code: "AP", name: "Andhra Pradesh (18% GST)" },
+  { code: "GJ", name: "Gujarat (18% GST)" },
+  { code: "UP", name: "Uttar Pradesh (18% GST)" },
+  { code: "WB", name: "West Bengal (18% GST)" },
+  { code: "HR", name: "Haryana (18% GST)" },
+  { code: "RJ", name: "Rajasthan (18% GST)" },
+  { code: "KL", name: "Kerala (18% GST)" },
+];
+
 
 export const ORDER_STATUSES = {
   PENDING: { label: "Pending", color: "yellow" },

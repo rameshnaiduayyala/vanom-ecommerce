@@ -151,7 +151,7 @@ export function useProductCard(product) {
     addItem({
       id: productId,
       productId: productId,
-      variantId: product?.variants?.[0]?.id || productId,
+      variantId: product?.variants?.[0]?.id || null,
       name: product?.name,
       slug: product?.slug,
       price,

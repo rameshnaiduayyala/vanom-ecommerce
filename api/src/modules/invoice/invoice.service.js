@@ -105,19 +105,12 @@ export async function issueInvoiceForOrder({ orderId, bulkOrderId, companyOverri
   // 4. Generate unique invoice number if not already present
   const invoiceNumber = existingInvoice?.invoiceNumber || (await generateInvoiceNumber(prefix));
 
-  // 5. Generate PDF buffer on the fly using strict order snapshot
-  const pdfBuffer = await generateInvoiceBuffer(orderData, {
-    type: isB2B ? "B2B" : "RETAIL",
-    invoiceNumber,
-    company
-  });
-
-  // 6. Save / Update Invoice metadata in database
+  // 5. Calculate and persist financial snapshot in database
   const subtotal = Number(orderData.subtotal || 0);
   const discount = Number(orderData.discount || 0);
   const shippingAmount = Number(orderData.shippingCharges || 0);
   const taxAmount = Number(orderData.tax || 0);
-  const totalAmount = Number(orderData.total || 0);
+  const totalAmount = Number(orderData.total || (subtotal - discount + shippingAmount + taxAmount));
   const currencyCode = orderData.currencyCode || "USD";
 
   const invoiceData = {
@@ -151,6 +144,14 @@ export async function issueInvoiceForOrder({ orderId, bulkOrderId, companyOverri
     : await prisma.invoice.create({
         data: invoiceData
       });
+
+  // 6. Generate PDF buffer on the fly using strict order & invoice snapshot
+  const pdfBuffer = await generateInvoiceBuffer(orderData, {
+    type: isB2B ? "B2B" : "RETAIL",
+    invoiceNumber,
+    company,
+    invoice
+  });
 
   return {
     ...invoice,
@@ -199,6 +200,10 @@ export async function getPublicInvoiceVerification(invoiceNumber) {
     invoiceNumber: invoice.invoiceNumber,
     orderNumber: isB2B ? invoice.bulkOrder?.orderNumber : (invoice.order?.id ? `ORD-${invoice.order.id.slice(0, 8).toUpperCase()}` : null),
     invoiceDate: invoice.issuedAt,
+    subtotal: Number(invoice.subtotal),
+    discount: Number(invoice.discount),
+    shippingAmount: Number(invoice.shippingAmount),
+    taxAmount: Number(invoice.taxAmount),
     totalAmount: Number(invoice.totalAmount),
     currency: invoice.currencyCode,
     paymentStatus: isB2B ? (invoice.bulkOrder?.paymentStatus || "NET_15_INVOICED") : "PAID",

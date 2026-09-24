@@ -15,7 +15,7 @@ import { calculateCheckoutTax } from "../../../services/tax/taxEngine.js";
 const COUNTRY_DEFAULTS = {
   US: { city: "Los Angeles", state: "CA", postalCode: "90001", phone: "+1 213 000 0000" },
   CA: { city: "Toronto",     state: "ON", postalCode: "M5V 2T6", phone: "+1 416 000 0000" },
-  IN: { city: "Mumbai",      state: "Maharashtra", postalCode: "400001", phone: "+91 98765 43210" },
+  IN: { city: "Mumbai",      state: "MH", postalCode: "400001", phone: "+91 98765 43210" },
 };
 
 function getDefaultForm(user, countryCode) {
@@ -98,15 +98,18 @@ export function useCheckout() {
   const setField = (field, value) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-    const executeOrder = async (fd = formData) => {
+  const executeOrder = async (fd = formData) => {
     setLoading(true);
     try {
       const order = await Api.cart.placeOrder({
         countryId: country.id || country.code,
         currencyCode: country.currency || "USD",
+        shippingCharges: shipping,
+        tax: taxAmount,
+        discount: 0,
         items: (cart.items || []).map((item) => ({
           productId: item.productId || item.id,
-          variantId: item.variantId || null,
+          variantId: item.variantId && item.variantId !== (item.productId || item.id) ? item.variantId : null,
           quantity: item.quantity || 1,
         })),
         shippingAddress: {
@@ -121,33 +124,32 @@ export function useCheckout() {
       });
       clearLocalCart();
 
-      // Create payment intent
+      const displayOrderNumber = order?.orderNumber || (order?.id ? `ORD-${order.id.slice(0, 8).toUpperCase()}` : "ORD-001");
+
+      // Attempt payment intent for external gateways (Razorpay, PayPal)
       try {
         const paymentRes = await Api.payments.createPaymentIntent(order.id, fd.paymentMethod);
 
         // Handle Razorpay checkout modal
-        if (fd.paymentMethod === "RAZORPAY" || fd.paymentMethod === "AFTERPAY") {
-          setLoading(false); // Unblock UI while modal is open
-          
+        if ((fd.paymentMethod === "RAZORPAY" || fd.paymentMethod === "AFTERPAY") && paymentRes?.keyId) {
+          setLoading(false);
           return new Promise((resolve) => {
             openRazorpayCheckout(
               paymentRes,
               {
                 orderId: order.id,
-                orderNumber: order.orderNumber,
+                orderNumber: displayOrderNumber,
                 customerName: fd.fullName,
                 customerEmail: fd.email,
                 customerPhone: fd.phone,
               },
-              (result) => {
-                // Payment success
+              () => {
                 try { confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 }, colors: ["#008522", "#D9A000", "#5DBB68", "#FFD34D"] }); } catch {}
-                addToast({ title: "Payment Successful!", message: `Order #${order?.orderNumber || "ORD-001"} confirmed.`, type: "success" });
-                navigate(`${ROUTES.ORDERS}/${order?.id || "ord-101"}`);
+                addToast({ title: "Payment Successful!", message: `Order #${displayOrderNumber} confirmed.`, type: "success" });
+                navigate(`${ROUTES.ORDERS}/${order.id}`);
                 resolve();
               },
               (error) => {
-                // Payment failed
                 addToast({ 
                   title: "Payment Failed", 
                   description: error?.message || "Please try again or choose a different payment method.", 
@@ -164,22 +166,16 @@ export function useCheckout() {
           window.location.href = paymentRes.approvalUrl;
           return;
         }
-
-        // Handle other providers (card, etc.)
-        try { confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 }, colors: ["#008522", "#D9A000", "#5DBB68", "#FFD34D"] }); } catch {}
-        addToast({ title: "Order Placed!", message: `Order #${order?.orderNumber || "ORD-001"} confirmed.`, type: "success" });
-        navigate(`${ROUTES.ORDERS}/${order?.id || "ord-101"}`);
       } catch (err) {
-        // Non-fatal: payment intent creation failed, but order was placed
-        console.error("Payment intent error:", err);
-        addToast({ 
-          title: "Order Placed (Payment Pending)", 
-          description: "Your order has been created. You can complete payment later.", 
-          type: "warning" 
-        });
-        navigate(`${ROUTES.ORDERS}/${order?.id || "ord-101"}`);
+        console.warn("Payment intent gateway response:", err?.message || err);
       }
+
+      // Default order completion (Cards, Direct, Standard checkout)
+      try { confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 }, colors: ["#008522", "#D9A000", "#5DBB68", "#FFD34D"] }); } catch {}
+      addToast({ title: "Order Placed Successfully!", message: `Order #${displayOrderNumber} confirmed.`, type: "success" });
+      navigate(`${ROUTES.ORDERS}/${order.id}`);
     } catch (err) {
+      console.error("Checkout execution error:", err);
       addToast({ title: "Checkout Error", message: err.message || "Failed to place order.", type: "error" });
     } finally {
       setLoading(false);

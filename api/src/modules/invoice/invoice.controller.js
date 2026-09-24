@@ -18,7 +18,8 @@ export async function download(request, reply) {
 
   const buffer = await generateInvoiceBuffer(orderData, {
     type: isB2B ? "B2B" : "RETAIL",
-    invoiceNumber: invoice.invoiceNumber
+    invoiceNumber: invoice.invoiceNumber,
+    invoice
   });
 
   const filename = `${invoice.invoiceNumber}.pdf`;
@@ -52,7 +53,8 @@ export async function getOrderInvoice(request, reply) {
 
   const buffer = await generateInvoiceBuffer(invoice.order, {
     type: "RETAIL",
-    invoiceNumber: invoice.invoiceNumber
+    invoiceNumber: invoice.invoiceNumber,
+    invoice
   });
 
   const filename = `${invoice.invoiceNumber}.pdf`;
@@ -74,7 +76,8 @@ export async function getBulkOrderInvoice(request, reply) {
 
   const buffer = await generateInvoiceBuffer(invoice.bulkOrder, {
     type: "B2B",
-    invoiceNumber: invoice.invoiceNumber
+    invoiceNumber: invoice.invoiceNumber,
+    invoice
   });
 
   const filename = `${invoice.invoiceNumber}.pdf`;

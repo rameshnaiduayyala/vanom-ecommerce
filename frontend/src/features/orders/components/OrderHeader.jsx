@@ -18,7 +18,7 @@ export function OrderHeader({ order, statusConfig, onOpenInvoice, onPrint }) {
         </Link>
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-text-primary font-mono tracking-tight">
-            {order.orderNumber}
+            {order.orderNumber || (order.id ? (order.id.startsWith("ORD-") ? order.id : `ORD-${order.id.slice(0, 8).toUpperCase()}`) : "Order")}
           </h1>
           <Badge variant={statusConfig.color} size="md">
             {statusConfig.label}
