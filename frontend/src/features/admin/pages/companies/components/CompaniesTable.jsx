@@ -1,8 +1,30 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Building2, Globe, Clock, Ban, Edit2, Trash2, CheckCircle2, User, Phone, Mail, ShieldAlert, SlidersHorizontal } from "lucide-react";
+import {
+  Building2,
+  Globe,
+  Clock,
+  Ban,
+  Edit2,
+  Trash2,
+  CheckCircle2,
+  User,
+  Phone,
+  Mail,
+  ShieldAlert,
+  SlidersHorizontal,
+  Lock,
+  Unlock,
+} from "lucide-react";
 
-export function CompaniesTable({ companies, isLoading, onView, onEdit, onChangeStatus, onDelete }) {
+export function CompaniesTable({
+  companies,
+  isLoading,
+  onView,
+  onEdit,
+  onChangeStatus,
+  onDelete,
+}) {
   return (
     <div className="rounded-2xl bg-white border border-border overflow-hidden shadow-xs">
       <div className="overflow-x-auto">
@@ -46,6 +68,7 @@ export function CompaniesTable({ companies, isLoading, onView, onEdit, onChangeS
                 const taxId = c.taxRegistrationNumber || c.taxId;
                 const regNo = c.registrationNumber;
                 const countryCode = c.countryCode || c.country?.code || "US";
+                const isLocked = Boolean(c.isLocked);
 
                 return (
                   <tr
@@ -63,8 +86,19 @@ export function CompaniesTable({ companies, isLoading, onView, onEdit, onChangeS
                           <Building2 className="w-4 h-4" />
                         </div>
                         <div>
-                          <div className="font-bold text-[#0F2B1C] group-hover/name:text-[#00875A] group-hover/name:underline transition-colors">
-                            {businessName}
+                          <div className="font-bold text-[#0F2B1C] group-hover/name:text-[#00875A] group-hover/name:underline transition-colors flex items-center gap-1.5">
+                            <span>{businessName}</span>
+                            {isLocked ? (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                <Lock className="w-3 h-3" />
+                                <span>Locked</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                <Unlock className="w-3 h-3" />
+                                <span>Editable</span>
+                              </span>
+                            )}
                           </div>
                           {c.contactPersonName && (
                             <div className="text-[11px] text-text-muted truncate max-w-[200px]">
@@ -158,7 +192,7 @@ export function CompaniesTable({ companies, isLoading, onView, onEdit, onChangeS
                             ? "bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100"
                             : "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
                         }`}
-                        title="Click to change compliance status"
+                        title="Click to review status & lock settings"
                       >
                         {c.status === "APPROVED" ? (
                           <CheckCircle2 className="w-3 h-3 text-emerald-600" />
@@ -195,7 +229,7 @@ export function CompaniesTable({ companies, isLoading, onView, onEdit, onChangeS
                         <button
                           onClick={() => onChangeStatus && onChangeStatus(c)}
                           className="p-1.5 rounded-lg text-text-secondary hover:text-amber-700 hover:bg-amber-50 transition-colors cursor-pointer"
-                          title="Change Status & Reason"
+                          title="Change Status & Compliance Lock"
                         >
                           <SlidersHorizontal className="w-4 h-4" />
                         </button>

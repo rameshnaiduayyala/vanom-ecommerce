@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button.jsx";
 
 export function CompanyHeaderBanner({ company, onEditClick }) {
   const isApproved = company?.status === "APPROVED";
+  const isLocked = Boolean(company?.isLocked);
   const businessName =
     company?.businessName ||
     company?.legalName ||
@@ -16,7 +17,7 @@ export function CompanyHeaderBanner({ company, onEditClick }) {
           {isApproved ? (
             <>
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Verified Corporate Entity • Profile Locked</span>
+              <span>Verified Corporate Entity</span>
             </>
           ) : (
             <>
@@ -24,22 +25,28 @@ export function CompanyHeaderBanner({ company, onEditClick }) {
               <span>{company?.status || "Pending Verification"}</span>
             </>
           )}
+          {isLocked && (
+            <>
+              <span className="text-emerald-400/50">•</span>
+              <span className="text-emerald-200">Profile Locked</span>
+            </>
+          )}
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
           <span>{businessName}</span>
-          {isApproved && <Lock className="w-5 h-5 text-emerald-400/80" title="Profile verified & locked" />}
+          {isLocked && <Lock className="w-5 h-5 text-emerald-400/80" title="Profile verified & locked" />}
         </h1>
 
         <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-          {isApproved
-            ? "Your commercial entity credentials, GSTIN/tax identification, and credit facilities have been officially KYC-verified and locked for audit compliance."
+          {isLocked
+            ? "Your commercial entity credentials, GSTIN/tax identification, and credit facilities have been officially verified and locked for audit compliance."
             : "Manage your commercial entity credentials, credit terms, logistics addresses, and authorized procurement contacts."}
         </p>
       </div>
 
       <div className="flex items-center gap-3 shrink-0">
-        {isApproved ? (
+        {isLocked ? (
           <Button
             variant="outline"
             size="md"

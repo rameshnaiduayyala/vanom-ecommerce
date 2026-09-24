@@ -19,6 +19,7 @@ export function AdminCompaniesPage() {
     createMutation,
     updateMutation,
     changeStatusMutation,
+    toggleLockMutation,
     deleteMutation,
   } = useAdminCompanies();
 
@@ -164,8 +165,8 @@ export function AdminCompaniesPage() {
         isOpen={Boolean(changingStatusCompany)}
         company={changingStatusCompany}
         onClose={() => setChangingStatusCompany(null)}
-        onConfirm={async ({ id, status, reason }) => {
-          await changeStatusMutation.mutateAsync({ id, status, reason });
+        onConfirm={async ({ id, status, isLocked, reason }) => {
+          await changeStatusMutation.mutateAsync({ id, status, isLocked, reason });
           setChangingStatusCompany(null);
         }}
         isPending={changeStatusMutation.isPending}
@@ -177,6 +178,7 @@ export function AdminCompaniesPage() {
         company={viewingCompany}
         onClose={() => setViewingCompany(null)}
         onEdit={handleOpenEdit}
+        onChangeStatus={(comp) => setChangingStatusCompany(comp)}
       />
 
       {/* ─── Add / Edit Modal ─── */}

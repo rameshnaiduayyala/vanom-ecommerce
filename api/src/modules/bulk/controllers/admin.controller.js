@@ -63,6 +63,14 @@ export async function suspendBusiness(request, reply) {
   return sendSuccess(reply, { message: "Bulk business suspended", data });
 }
 
+export async function lockBusiness(request, reply) {
+  const data = await service.setBusinessLock(request.params.id, request.body?.isLocked !== false);
+  return sendSuccess(reply, {
+    message: `Bulk business ${request.body?.isLocked !== false ? "locked" : "unlocked"}`,
+    data
+  });
+}
+
 // ─── Order Management ─────────────────────────────────────────────────────────
 
 export async function listOrders(request, reply) {

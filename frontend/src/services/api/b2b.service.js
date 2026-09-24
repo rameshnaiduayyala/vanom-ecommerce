@@ -109,6 +109,10 @@ export const b2bService = {
     return apiClient.patch(`/admin/bulk/businesses/${id}/suspend`);
   },
 
+  lockAdminBusiness: async (id, isLocked = true) => {
+    return apiClient.patch(`/admin/bulk/businesses/${id}/lock`, { isLocked });
+  },
+
   listAdminBulkOrders: async (params = {}) => {
     return apiClient.get("/admin/bulk/orders", { params });
   },

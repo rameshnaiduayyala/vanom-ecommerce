@@ -15,13 +15,22 @@ import {
   Phone,
   Edit2,
   FileText,
+  Lock,
+  Unlock,
 } from "lucide-react";
 
-export function ViewCompanyModal({ company, isOpen, onClose, onEdit }) {
+export function ViewCompanyModal({
+  company,
+  isOpen,
+  onClose,
+  onEdit,
+  onChangeStatus,
+}) {
   if (!isOpen || !company) return null;
 
   const adminUser = company.user;
   const businessName = company.businessName || company.legalName || "Unnamed Business";
+  const isLocked = Boolean(company.isLocked);
 
   return (
     <Modal
@@ -42,14 +51,20 @@ export function ViewCompanyModal({ company, isOpen, onClose, onEdit }) {
               <Badge variant="warning" size="sm">
                 B2B Corporate Wholesale Partner
               </Badge>
-              <span
-                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onChangeStatus && onChangeStatus(company);
+                }}
+                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold cursor-pointer transition hover:opacity-85 ${
                   company.status === "APPROVED"
-                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
                     : company.status === "PENDING"
-                    ? "bg-amber-50 text-amber-700 border border-amber-200"
-                    : "bg-red-50 text-red-700 border border-red-200"
+                    ? "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"
+                    : "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
                 }`}
+                title="Click to change status or lock settings"
               >
                 {company.status === "APPROVED" ? (
                   <CheckCircle2 className="w-3 h-3 text-emerald-600" />
@@ -59,7 +74,33 @@ export function ViewCompanyModal({ company, isOpen, onClose, onEdit }) {
                   <Ban className="w-3 h-3 text-red-500" />
                 )}
                 {company.status || "PENDING"}
-              </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onChangeStatus && onChangeStatus(company);
+                }}
+                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold cursor-pointer transition hover:opacity-85 ${
+                  isLocked
+                    ? "bg-emerald-100 text-emerald-900 border border-emerald-300 hover:bg-emerald-200"
+                    : "bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200"
+                }`}
+                title="Click to modify lock settings in Status Modal"
+              >
+                {isLocked ? (
+                  <>
+                    <Lock className="w-3 h-3 text-emerald-700" />
+                    <span>Profile Locked</span>
+                  </>
+                ) : (
+                  <>
+                    <Unlock className="w-3 h-3 text-slate-500" />
+                    <span>Unlocked (Editable)</span>
+                  </>
+                )}
+              </button>
             </div>
 
             <h3 className="text-base sm:text-lg font-bold text-text-primary">
@@ -194,24 +235,42 @@ export function ViewCompanyModal({ company, isOpen, onClose, onEdit }) {
         )}
 
         {/* Footer Actions */}
-        <div className="pt-4 border-t border-border flex items-center justify-end gap-3">
-          {onEdit && (
-            <Button
-              variant="outline"
-              size="md"
-              icon={Edit2}
-              onClick={() => {
-                onClose();
-                onEdit(company);
-              }}
-              className="cursor-pointer"
-            >
-              Edit Business
+        <div className="pt-4 border-t border-border flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            {onChangeStatus && (
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => {
+                  onClose();
+                  onChangeStatus(company);
+                }}
+                className="border-amber-400 text-amber-900 hover:bg-amber-50"
+              >
+                Change Status & Lock Review
+              </Button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            {onEdit && (
+              <Button
+                variant="outline"
+                size="md"
+                icon={Edit2}
+                onClick={() => {
+                  onClose();
+                  onEdit(company);
+                }}
+                className="cursor-pointer"
+              >
+                Edit Business
+              </Button>
+            )}
+            <Button variant="secondary" size="md" onClick={onClose}>
+              Close Dossier
             </Button>
-          )}
-          <Button variant="secondary" size="md" onClick={onClose}>
-            Close Dossier
-          </Button>
+          </div>
         </div>
       </div>
     </Modal>

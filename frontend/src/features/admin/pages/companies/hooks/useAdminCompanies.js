@@ -41,20 +41,46 @@ export function useAdminCompanies() {
   });
 
   const changeStatusMutation = useMutation({
-    mutationFn: ({ id, status, reason }) => Api.admin.changeStatus(id, status, reason),
+    mutationFn: async ({ id, status, reason, isLocked }) => {
+      const statusRes = await Api.admin.changeStatus(id, status, reason);
+      if (isLocked !== undefined) {
+        await Api.b2b.lockAdminBusiness(id, isLocked);
+      }
+      return statusRes;
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-companies"] });
       queryClient.invalidateQueries({ queryKey: ["admin-applications"] });
       addToast({
-        title: "Status Updated",
-        message: `Business status changed to ${variables.status}.`,
-        type: variables.status === "APPROVED" ? "success" : variables.status === "REJECTED" ? "error" : "warning",
+        title: "Compliance Review Updated",
+        message: `Status set to ${variables.status} and profile is ${variables.isLocked ? "locked" : "unlocked"}.`,
+        type: variables.status === "APPROVED" ? "success" : variables.status === "REJECTED" ? "error" : "info",
       });
     },
     onError: (err) => {
       addToast({
         title: "Action Failed",
-        message: err.message || "Failed to update business status.",
+        message: err.message || "Failed to update business compliance review.",
+        type: "error",
+      });
+    },
+  });
+
+  const toggleLockMutation = useMutation({
+    mutationFn: ({ id, isLocked }) => Api.b2b.lockAdminBusiness(id, isLocked),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-companies"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-applications"] });
+      addToast({
+        title: variables.isLocked ? "Company Profile Locked" : "Company Profile Unlocked",
+        message: `Business profile is now ${variables.isLocked ? "locked from buyer modifications" : "unlocked for edits"}.`,
+        type: "success",
+      });
+    },
+    onError: (err) => {
+      addToast({
+        title: "Lock Toggle Failed",
+        message: err.message || "Failed to update lock status.",
         type: "error",
       });
     },
@@ -94,6 +120,7 @@ export function useAdminCompanies() {
     createMutation,
     updateMutation,
     changeStatusMutation,
+    toggleLockMutation,
     deleteMutation,
   };
 }

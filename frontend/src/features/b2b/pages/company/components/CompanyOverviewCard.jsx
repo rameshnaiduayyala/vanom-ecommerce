@@ -9,6 +9,7 @@ export function CompanyOverviewCard({ company }) {
   const cin = company?.registrationNumber || null;
   const country = company?.countryCode || company?.country?.name || company?.country || "Not specified";
   const isVerified = company?.status === "APPROVED";
+  const isLocked = Boolean(company?.isLocked);
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs hover:shadow-sm transition-shadow space-y-4">
@@ -17,24 +18,31 @@ export function CompanyOverviewCard({ company }) {
           <Building2 className="w-4 h-4 text-[#358B5B]" />
           <span>Entity Registration & Compliance Identifiers</span>
         </h3>
-        {isVerified ? (
-          <Badge variant="green" size="sm" className="gap-1 font-semibold">
-            <CheckCircle2 className="w-3 h-3" />
-            <span>KYC Verified</span>
-          </Badge>
-        ) : (
-          <Badge variant="yellow" size="sm" className="gap-1 font-semibold">
-            <AlertCircle className="w-3 h-3" />
-            <span>{company?.status || "In Review"}</span>
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {isVerified ? (
+            <Badge variant="green" size="sm" className="gap-1 font-semibold">
+              <CheckCircle2 className="w-3 h-3" />
+              <span>KYC Verified</span>
+            </Badge>
+          ) : (
+            <Badge variant="yellow" size="sm" className="gap-1 font-semibold">
+              <AlertCircle className="w-3 h-3" />
+              <span>{company?.status || "In Review"}</span>
+            </Badge>
+          )}
+          {isLocked && (
+            <Badge variant="default" size="sm" className="font-semibold bg-slate-800 text-slate-100 text-[10px]">
+              Locked
+            </Badge>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs">
         <div className="space-y-1">
           <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider flex items-center gap-1">
             <span>Legal Business Name</span>
-            {isVerified && <span className="text-emerald-700 font-bold text-[9px]">(Locked)</span>}
+            {isLocked && <span className="text-emerald-700 font-bold text-[9px]">(Locked)</span>}
           </span>
           <p className="text-sm font-bold text-slate-900 leading-snug">{legalName}</p>
         </div>
@@ -49,7 +57,7 @@ export function CompanyOverviewCard({ company }) {
         <div className="space-y-1 p-3 rounded-xl bg-slate-50 border border-slate-100">
           <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider flex items-center gap-1">
             <span>Tax Registration / GSTIN</span>
-            {isVerified && <span className="text-emerald-700 font-bold text-[9px]">(Locked)</span>}
+            {isLocked && <span className="text-emerald-700 font-bold text-[9px]">(Locked)</span>}
           </span>
           <div className="flex items-center gap-2 mt-0.5">
             {taxId ? (
@@ -70,7 +78,7 @@ export function CompanyOverviewCard({ company }) {
         <div className="space-y-1 p-3 rounded-xl bg-slate-50 border border-slate-100">
           <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider flex items-center gap-1">
             <span>Registration Number (CIN / Business ID)</span>
-            {isVerified && <span className="text-emerald-700 font-bold text-[9px]">(Locked)</span>}
+            {isLocked && <span className="text-emerald-700 font-bold text-[9px]">(Locked)</span>}
           </span>
           <div className="flex items-center gap-2 mt-0.5">
             {cin ? (

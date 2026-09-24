@@ -96,7 +96,8 @@ export function useCompanyProfile() {
     },
   });
 
-  const isLocked = company?.status === "APPROVED";
+  // Explicitly check isLocked column
+  const isLocked = Boolean(company?.isLocked);
 
   return {
     company,

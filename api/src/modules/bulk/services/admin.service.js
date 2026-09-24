@@ -102,6 +102,7 @@ export async function changeBusinessStatus(id, status, approvedBy, rejectionReas
     where: { id },
     data: {
       status,
+      isLocked: status === "APPROVED" ? true : undefined,
       approvedBy: status === "APPROVED" ? approvedBy : null,
       approvedAt: status === "APPROVED" ? new Date() : null,
       rejectionReason: status === "REJECTED" ? rejectionReason : null
@@ -123,6 +124,15 @@ export async function changeBusinessStatus(id, status, approvedBy, rejectionReas
   }
 
   return updatedBusiness;
+}
+
+export async function setBusinessLock(id, isLocked) {
+  await getBusiness(id);
+  return prisma.bulkBusiness.update({
+    where: { id },
+    data: { isLocked: Boolean(isLocked) },
+    include: businessInclude
+  });
 }
 
 export const approveBusiness = (id, adminId) =>

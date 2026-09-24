@@ -47,6 +47,11 @@ export async function adminRoutes(fastify) {
     schema: { params: idParams }
   }, controller.suspendBusiness);
 
+  fastify.patch("/admin/bulk/businesses/:id/lock", {
+    preHandler: adminGuard,
+    schema: { params: idParams }
+  }, controller.lockBusiness);
+
   // ─── Order Management ───────────────────────────────────────────────────────
   fastify.get("/admin/bulk/orders", {
     preHandler: adminGuard,

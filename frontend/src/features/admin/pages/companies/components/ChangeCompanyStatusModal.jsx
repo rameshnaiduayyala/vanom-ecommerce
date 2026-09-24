@@ -8,6 +8,8 @@ import {
   ShieldAlert,
   AlertCircle,
   Building2,
+  Lock,
+  Unlock,
 } from "lucide-react";
 
 export function ChangeCompanyStatusModal({
@@ -18,12 +20,15 @@ export function ChangeCompanyStatusModal({
   isPending,
 }) {
   const [selectedStatus, setSelectedStatus] = useState("APPROVED");
+  const [isLocked, setIsLocked] = useState(true);
   const [rejectionReason, setRejectionReason] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (company) {
-      setSelectedStatus(company.status || "APPROVED");
+      const currentStatus = company.status || "APPROVED";
+      setSelectedStatus(currentStatus);
+      setIsLocked(company.isLocked !== undefined ? Boolean(company.isLocked) : currentStatus === "APPROVED");
       setRejectionReason(company.rejectionReason || "");
       setError("");
     }
@@ -33,6 +38,13 @@ export function ChangeCompanyStatusModal({
 
   const businessName =
     company.businessName || company.legalName || "Wholesale Entity";
+
+  const handleStatusSelect = (status) => {
+    setSelectedStatus(status);
+    if (status === "APPROVED") {
+      setIsLocked(true);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -46,6 +58,7 @@ export function ChangeCompanyStatusModal({
     onConfirm({
       id: company.id,
       status: selectedStatus,
+      isLocked,
       reason: selectedStatus === "REJECTED" ? rejectionReason.trim() : null,
     });
   };
@@ -82,7 +95,7 @@ export function ChangeCompanyStatusModal({
             {/* APPROVED */}
             <button
               type="button"
-              onClick={() => setSelectedStatus("APPROVED")}
+              onClick={() => handleStatusSelect("APPROVED")}
               className={`p-3 rounded-xl border text-left flex items-start gap-2.5 transition cursor-pointer ${
                 selectedStatus === "APPROVED"
                   ? "bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-500/20 text-emerald-950"
@@ -107,7 +120,7 @@ export function ChangeCompanyStatusModal({
             {/* PENDING */}
             <button
               type="button"
-              onClick={() => setSelectedStatus("PENDING")}
+              onClick={() => handleStatusSelect("PENDING")}
               className={`p-3 rounded-xl border text-left flex items-start gap-2.5 transition cursor-pointer ${
                 selectedStatus === "PENDING"
                   ? "bg-amber-50/80 border-amber-500 ring-2 ring-amber-500/20 text-amber-950"
@@ -132,7 +145,7 @@ export function ChangeCompanyStatusModal({
             {/* SUSPENDED */}
             <button
               type="button"
-              onClick={() => setSelectedStatus("SUSPENDED")}
+              onClick={() => handleStatusSelect("SUSPENDED")}
               className={`p-3 rounded-xl border text-left flex items-start gap-2.5 transition cursor-pointer ${
                 selectedStatus === "SUSPENDED"
                   ? "bg-orange-50/80 border-orange-500 ring-2 ring-orange-500/20 text-orange-950"
@@ -157,7 +170,7 @@ export function ChangeCompanyStatusModal({
             {/* REJECTED */}
             <button
               type="button"
-              onClick={() => setSelectedStatus("REJECTED")}
+              onClick={() => handleStatusSelect("REJECTED")}
               className={`p-3 rounded-xl border text-left flex items-start gap-2.5 transition cursor-pointer ${
                 selectedStatus === "REJECTED"
                   ? "bg-rose-50/80 border-rose-500 ring-2 ring-rose-500/20 text-rose-950"
@@ -202,6 +215,51 @@ export function ChangeCompanyStatusModal({
           </div>
         )}
 
+        {/* Lock / Unlock Business Profile Card */}
+        <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 flex items-center justify-between gap-3">
+          <div className="flex items-start gap-2.5 min-w-0">
+            <div
+              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                isLocked
+                  ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                  : "bg-slate-200 text-slate-600"
+              }`}
+            >
+              {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+            </div>
+            <div className="min-w-0">
+              <label
+                htmlFor="lock-profile-toggle"
+                className="font-bold text-slate-900 text-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>Lock Profile & KYC Certificates</span>
+                {isLocked ? (
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/90 px-1.5 py-0.2 rounded">
+                    Locked
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold text-slate-500 bg-slate-200/80 px-1.5 py-0.2 rounded">
+                    Unlocked
+                  </span>
+                )}
+              </label>
+              <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                When locked, buyer cannot modify legal business details, tax ID, registration numbers, or delete certificates.
+              </p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+            <input
+              id="lock-profile-toggle"
+              type="checkbox"
+              checked={isLocked}
+              onChange={(e) => setIsLocked(e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+          </label>
+        </div>
+
         {/* General Error */}
         {error && (
           <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
@@ -235,10 +293,12 @@ export function ChangeCompanyStatusModal({
                 : "bg-slate-800 hover:bg-slate-900 text-white"
             }`}
           >
-            {isPending ? "Updating Status..." : `Apply Status: ${selectedStatus}`}
+            {isPending ? "Applying Changes..." : "Save Compliance Review"}
           </Button>
         </div>
       </form>
     </Modal>
   );
 }
+
+export default ChangeCompanyStatusModal;

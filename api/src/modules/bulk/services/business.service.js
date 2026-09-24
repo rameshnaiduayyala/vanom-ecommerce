@@ -212,9 +212,9 @@ export async function update(userId, input) {
   const current = await getBusinessForUser(userId);
   if (!current) fail("Bulk business not found");
 
-  // Prevent editing verified entity details and certificates once approved by admin
-  if (current.status === "APPROVED") {
-    const lockedKeys = ["businessName", "taxRegistrationNumber", "registrationNumber", "countryCode", "documents"];
+  // Prevent editing verified entity details and certificates if profile is locked
+  if (current.isLocked) {
+    const lockedKeys = ["businessName", "taxRegistrationNumber", "registrationNumber", "countryCode", "documents", "address"];
     const isAttemptingLockedEdit = lockedKeys.some((key) => {
       if (input[key] === undefined || input[key] === null) return false;
       if (typeof input[key] === "object") {
@@ -232,5 +232,8 @@ export async function update(userId, input) {
     }
   }
 
-  return prisma.bulkBusiness.update({ where: { id: current.id }, data: input });
+  // Prevent regular buyers from modifying system status or lock flags directly
+  const { isLocked, status, approvedBy, approvedAt, rejectionReason, ...safeInput } = input;
+
+  return prisma.bulkBusiness.update({ where: { id: current.id }, data: safeInput });
 }

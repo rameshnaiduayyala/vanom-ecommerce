@@ -843,6 +843,7 @@ model BulkBusiness {
   address               String
   contactPersonName     String
   status                BulkBusinessStatus  @default(PENDING)
+  isLocked              Boolean             @default(false)
   approvedBy            String?
   approvedAt            DateTime?
   rejectionReason       String?

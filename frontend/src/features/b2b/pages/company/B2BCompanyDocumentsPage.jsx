@@ -121,7 +121,7 @@ export function B2BCompanyDocumentsPage() {
     }
   };
 
-  const isLocked = company?.status === "APPROVED";
+  const isLocked = Boolean(company?.isLocked);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
