@@ -3,6 +3,7 @@ import { AppError } from "../../common/errors/app-error.js";
 import { HTTP_STATUS } from "../../constants/http-status.js";
 import { MESSAGES } from "../../constants/messages.js";
 import { slugify } from "../../common/utils/slug.js";
+import { deleteStoredFile } from "../../common/utils/file-upload.js";
 
 const variantInclude = { countries: { include: { country: { include: { currency: true } } } } };
 
@@ -122,6 +123,7 @@ export async function createProduct(input) {
 export async function listProducts({ page, limit, skip, search, categoryId, type, isActive, isNew, isFeatured, isTrending, isBestSeller }) {
   const where = {
     isActive: isActive !== undefined ? isActive : true,
+    deletedAt: null,
     ...(search ? {
       OR: [
         { name: { contains: search, mode: "insensitive" } },
@@ -258,14 +260,45 @@ export async function listHighlightedProducts(type, { page, limit, skip }) {
 }
 
 export async function deleteProduct(id) {
-  await getProductById(id);
-
-  return prisma.product.update({
-    where: { id },
-    data: {
-      isActive: false,
-      deletedAt: new Date()
+  // Find product by id or slug
+  const product = await prisma.product.findFirst({
+    where: {
+      OR: [{ id }, { slug: id }]
     }
+  });
+
+  if (!product) {
+    throw new AppError(
+      MESSAGES.PRODUCT_NOT_FOUND,
+      HTTP_STATUS.NOT_FOUND,
+      "PRODUCT_NOT_FOUND"
+    );
+  }
+
+  const productId = product.id;
+
+  // Soft-delete: Keep all records, images, and history intact,
+  // while deactivating the product and variants so they are removed from catalog & storefront.
+  return await prisma.$transaction(async (tx) => {
+    // Clear active cart items for this product
+    await tx.cartItem.deleteMany({ where: { productId } });
+
+    // Deactivate all product variants
+    await tx.productVariant.updateMany({
+      where: { productId },
+      data: {
+        isActive: false
+      }
+    });
+
+    // Mark product as inactive and archived
+    return await tx.product.update({
+      where: { id: productId },
+      data: {
+        isActive: false,
+        deletedAt: new Date()
+      }
+    });
   });
 }
 

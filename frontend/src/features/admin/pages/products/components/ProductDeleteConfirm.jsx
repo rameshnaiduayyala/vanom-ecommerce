@@ -11,9 +11,9 @@ export function ProductDeleteConfirm({
       isOpen={Boolean(deletingProduct)}
       onClose={onClose}
       onConfirm={() => onConfirm(deletingProduct?.id)}
-      title="Delete Master Product"
-      description={`Are you sure you want to permanently delete "${deletingProduct?.name}" (SKU: ${deletingProduct?.sku})? This product will immediately become unavailable on both B2C and B2B portals.`}
-      confirmText="Yes, Delete Product"
+      title="Delete / Archive Product"
+      description={`Are you sure you want to remove "${deletingProduct?.name}" (SKU: ${deletingProduct?.sku || "N/A"})? This will deactivate the product and variants from the storefront and catalog.`}
+      confirmText="Yes, Remove Product"
       variant="danger"
       isLoading={isLoading}
     />
