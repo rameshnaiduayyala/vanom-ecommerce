@@ -40,11 +40,24 @@ async function readFileStream(stream) {
 
 function createS3Client() {
   if (!env.s3Bucket) throw new Error("S3_BUCKET is required when UPLOAD_PROVIDER=s3");
-  return new S3Client({
-    region: env.s3Region,
-    endpoint: env.s3Endpoint,
+
+  const config = {
+    region: env.s3Region || "auto",
     forcePathStyle: env.s3ForcePathStyle
-  });
+  };
+
+  if (env.s3Endpoint) {
+    config.endpoint = env.s3Endpoint;
+  }
+
+  if (env.s3AccessKeyId && env.s3SecretAccessKey) {
+    config.credentials = {
+      accessKeyId: env.s3AccessKeyId,
+      secretAccessKey: env.s3SecretAccessKey
+    };
+  }
+
+  return new S3Client(config);
 }
 
 /**
@@ -60,10 +73,19 @@ export function getFilePublicUrl(storageKey) {
   }
 
   if (env.uploadProvider === "s3") {
+    // Custom Public CDN / R2 Domain URL (e.g. https://pub-xxx.r2.dev or https://cdn.vanom.com)
+    if (env.s3PublicUrl) {
+      const publicBase = env.s3PublicUrl.replace(/\/+$/, "");
+      return `${publicBase}/${storageKey}`;
+    }
+
+    // Direct endpoint URL
     if (env.s3Endpoint) {
       const endpoint = env.s3Endpoint.replace(/\/+$/, "");
       return `${endpoint}/${env.s3Bucket}/${storageKey}`;
     }
+
+    // Default AWS S3 public URL
     return `https://${env.s3Bucket}.s3.${env.s3Region}.amazonaws.com/${storageKey}`;
   }
 

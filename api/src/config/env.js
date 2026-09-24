@@ -31,7 +31,10 @@ export const env = {
   uploadAllowedMimeTypes: (process.env.UPLOAD_ALLOWED_MIME_TYPES || "image/jpeg,image/png,image/webp,application/pdf")
     .split(",").map((value) => value.trim()).filter(Boolean),
   s3Bucket: process.env.S3_BUCKET,
-  s3Region: process.env.S3_REGION || "us-east-1",
+  s3Region: process.env.S3_REGION || "auto",
   s3Endpoint: process.env.S3_ENDPOINT,
-  s3ForcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true"
+  s3ForcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
+  s3AccessKeyId: process.env.S3_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID,
+  s3SecretAccessKey: process.env.S3_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY,
+  s3PublicUrl: process.env.S3_PUBLIC_URL || process.env.R2_PUBLIC_URL
 };
