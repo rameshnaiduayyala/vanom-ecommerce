@@ -19,6 +19,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import TiptapViewer from "@/components/common/TiptapViewer";
 
 export function ViewProductModal({ productId, isOpen, onClose }) {
   const { data: rawProduct, isLoading, isError } = useQuery({
@@ -35,8 +36,8 @@ export function ViewProductModal({ productId, isOpen, onClose }) {
     typeof product?.category === "object"
       ? product?.category?.name
       : product?.category ||
-        (Array.isArray(product?.categories) && product?.categories[0]?.category?.name) ||
-        "General";
+      (Array.isArray(product?.categories) && product?.categories[0]?.category?.name) ||
+      "General";
 
   const brandName =
     typeof product?.brand === "object"
@@ -110,9 +111,20 @@ export function ViewProductModal({ productId, isOpen, onClose }) {
                 <span>Type: <strong className="text-text-primary font-semibold uppercase">{product.product_type || (variants.length > 1 ? "Variable" : "Simple")}</strong></span>
               </div>
 
-              <p className="text-text-secondary text-xs leading-relaxed pt-1">
-                {product.description || "No description provided for this catalog product."}
-              </p>
+              {product.description ? (
+                <div className="pt-2">
+                  <span className="text-[10px] uppercase font-bold text-text-muted block mb-1">
+                    Product Description
+                  </span>
+                  <div className="bg-white p-3.5 rounded-xl border border-border shadow-2xs">
+                    <TiptapViewer content={product.description} />
+                  </div>
+                </div>
+              ) : (
+                <p className="text-text-secondary text-xs leading-relaxed pt-1 italic">
+                  No description provided for this catalog product.
+                </p>
+              )}
             </div>
           </div>
 

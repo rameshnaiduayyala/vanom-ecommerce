@@ -351,9 +351,6 @@ export function ProductDetailsPage() {
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-snug">
                 {title}
               </h1>
-              <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                {subtitle}
-              </p>
             </div>
 
             {/* Ratings & Q&A */}
@@ -469,7 +466,11 @@ export function ProductDetailsPage() {
         <ProductHighlightsGrid highlights={highlights} />
 
         {/* ─── 4. About This Item & Specifications Table ─── */}
-        <ProductSpecifications features={features} specifications={specifications} />
+        <ProductSpecifications
+          description={product?.description || ""}
+          features={features}
+          specifications={specifications}
+        />
 
         {/* ─── 5. "You may also like" Product Carousel ─── */}
         <RelatedProductsSection relatedProducts={relatedList} />

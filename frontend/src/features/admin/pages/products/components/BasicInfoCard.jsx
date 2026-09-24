@@ -1,5 +1,6 @@
 import React from "react";
-import { Package, Layers, Sparkles, Tag, Boxes } from "lucide-react";
+import { Package, Layers, Sparkles, Tag, Boxes, FileText } from "lucide-react";
+import { TiptapEditor } from "@/components/common/TiptapEditor.jsx";
 
 export function BasicInfoCard({ formData, setFormData, categories = [], brands = [] }) {
   return (
@@ -27,18 +28,23 @@ export function BasicInfoCard({ formData, setFormData, categories = [], brands =
         />
       </div>
 
-      {/* Description */}
+      {/* Tiptap Rich Description */}
       <div className="space-y-1.5">
-        <label className="block text-xs font-bold text-slate-700">
-          Product Description <span className="text-rose-500">*</span>
-        </label>
-        <textarea
-          required
-          rows={4}
+        <div className="flex items-center justify-between">
+          <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
+            <FileText className="w-3.5 h-3.5 text-[#00875A]" />
+            <span>Product Description (Rich Text Editor)</span>
+            <span className="text-rose-500">*</span>
+          </label>
+          <span className="text-[10px] text-slate-400">
+            Supports Headings, Bullet Lists, Bold/Italics, Quotes, Links
+          </span>
+        </div>
+        <TiptapEditor
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Detailed commodity specifications, harvesting origin, organic certifications, storage recommendations..."
-          className="w-full px-3.5 py-2.5 text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#358B5B] focus:bg-white focus:ring-2 focus:ring-[#358B5B]/20 transition-all placeholder:text-slate-400 resize-y text-slate-800"
+          onChange={(html) => setFormData({ ...formData, description: html })}
+          placeholder="Write detailed product features, specifications, origin, organic certification, usage instructions..."
+          minHeight={200}
         />
       </div>
 
