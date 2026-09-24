@@ -1,5 +1,5 @@
 import React from "react";
-import { Check, ShoppingCart, Ban } from "lucide-react";
+import { Check, ShoppingCart, Ban, Plus } from "lucide-react";
 import { QuantityStepper } from "../QuantityStepper.jsx";
 
 export function ProductCardActions({
@@ -13,7 +13,7 @@ export function ProductCardActions({
   const isCompact = variant === "compact";
 
   return (
-    <div className={`flex items-center gap-1.5 w-full ${isCompact ? "pt-1" : "pt-2"}`}>
+    <div className={`flex items-center gap-2 w-full ${isCompact ? "pt-2" : "pt-2.5"}`}>
       {/* Quantity Stepper */}
       {!isOutOfStock && (
         <QuantityStepper
@@ -24,16 +24,16 @@ export function ProductCardActions({
         />
       )}
 
-      {/* Add To Cart Button */}
+      {/* Add To Cart / Out of Stock */}
       {isOutOfStock ? (
         <button
           type="button"
           disabled
-          className={`flex-1 rounded-xl font-bold uppercase tracking-wider bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed flex items-center justify-center gap-1.5 ${
-            isCompact ? "py-2 text-[10px]" : "py-2.5 px-3 text-xs"
+          className={`flex-1 rounded-xl font-semibold bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed flex items-center justify-center gap-1.5 ${
+            isCompact ? "py-1.5 text-[10px]" : "py-2 text-[11px]"
           }`}
         >
-          <Ban className="w-3.5 h-3.5 text-gray-400" />
+          <Ban className="w-3 h-3" />
           <span>Out of Stock</span>
         </button>
       ) : (
@@ -41,22 +41,27 @@ export function ProductCardActions({
           type="button"
           onClick={onAddToCart}
           disabled={addingToCart}
-          className={`flex-1 rounded-xl font-black uppercase tracking-wider transition-all duration-200 shadow-xs hover:shadow-md cursor-pointer flex items-center justify-center gap-1.5 border active:scale-95 ${
-            isCompact ? "py-2 px-2 text-[10px] sm:text-[11px]" : "py-2.5 px-3 text-xs sm:text-sm"
+          className={`flex-1 group/btn relative overflow-hidden rounded-xl font-bold tracking-wide transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 border active:scale-95 ${
+            isCompact ? "py-1.5 text-[10px]" : "py-2 text-[11px]"
           } ${
             addingToCart
-              ? "bg-[#00875A] text-white border-[#00875A]"
-              : "bg-[#00875A] hover:bg-[#00744D] text-white border-[#00875A] shadow-emerald-900/10"
+              ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+              : "bg-[#00875A] hover:bg-[#00744D] text-white border-[#00875A] hover:border-[#00744D] shadow-sm hover:shadow-emerald-800/30 hover:shadow-md"
           }`}
         >
+          {/* Ripple/shine on hover */}
+          {!addingToCart && (
+            <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/15 to-white/0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-500 ease-in-out pointer-events-none" />
+          )}
+
           {addingToCart ? (
             <>
-              <Check className="w-3.5 h-3.5 animate-in zoom-in" />
-              <span>Added</span>
+              <Check className="w-3 h-3 animate-in zoom-in duration-200" />
+              <span>Added!</span>
             </>
           ) : (
             <>
-              <ShoppingCart className={isCompact ? "w-3 h-3" : "w-3.5 h-3.5"} />
+              <ShoppingCart className="w-3 h-3 group-hover/btn:scale-110 transition-transform duration-200" />
               <span>Add to Cart</span>
             </>
           )}
