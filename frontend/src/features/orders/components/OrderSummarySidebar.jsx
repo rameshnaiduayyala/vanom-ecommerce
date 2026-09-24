@@ -4,8 +4,10 @@ import { Button } from "../../../components/ui/Button.jsx";
 import { formatPrice } from "../../../utils/formatters.js";
 
 export function OrderSummarySidebar({ order, currencyCode, currencySymbol, onOpenInvoice }) {
-  const shippingCost = Number(order.shippingCost || order.shippingAmount || 0);
-  const discountAmount = Number(order.discountAmount || 0);
+  const shippingCost = Number(order.shippingCharges || order.shippingCost || order.shippingAmount || 0);
+  const discountAmount = Number(order.discount || order.discountAmount || 0);
+  const taxAmount = Number(order.tax || order.taxAmount || 0);
+  const totalAmount = Number(order.total ?? order.totalAmount ?? 0);
 
   return (
     <div className="space-y-6">
@@ -22,12 +24,15 @@ export function OrderSummarySidebar({ order, currencyCode, currencySymbol, onOpe
               `${order.user?.firstName || "Customer"} ${order.user?.lastName || ""}`}
           </p>
           <p>
-            {order.shippingAddress?.streetAddress ||
+            {order.shippingAddress?.addressLine1 ||
+              order.shippingAddress?.streetAddress ||
               order.shippingAddress?.line1 ||
               order.shippingAddress?.address ||
               "Address Line 1"}
           </p>
-          {order.shippingAddress?.line2 && <p>{order.shippingAddress.line2}</p>}
+          {(order.shippingAddress?.addressLine2 || order.shippingAddress?.line2) && (
+            <p>{order.shippingAddress?.addressLine2 || order.shippingAddress?.line2}</p>
+          )}
           <p>
             {order.shippingAddress?.city || "City"},{" "}
             {order.shippingAddress?.state || "State"}{" "}
@@ -36,7 +41,7 @@ export function OrderSummarySidebar({ order, currencyCode, currencySymbol, onOpe
             </span>
           </p>
           <p className="font-semibold text-brand-700 pt-1">
-            {order.shippingAddress?.country || order.country?.name || "India"}
+            {order.shippingAddress?.countryCode || order.shippingAddress?.country || order.country?.name || "India"}
           </p>
           {order.shippingAddress?.phone && (
             <p className="text-text-muted pt-1">Contact: {order.shippingAddress.phone}</p>
@@ -54,7 +59,7 @@ export function OrderSummarySidebar({ order, currencyCode, currencySymbol, onOpe
           <div className="flex justify-between items-center">
             <span>Items Subtotal</span>
             <span className="font-semibold text-text-primary">
-              {formatPrice(order.subtotal, currencyCode, currencySymbol)}
+              {formatPrice(order.subtotal || 0, currencyCode, currencySymbol)}
             </span>
           </div>
 
@@ -65,12 +70,14 @@ export function OrderSummarySidebar({ order, currencyCode, currencySymbol, onOpe
             </div>
           )}
 
-          <div className="flex justify-between items-center">
-            <span>Tax (GST / VAT Included)</span>
-            <span className="font-semibold text-text-primary">
-              {formatPrice(order.taxAmount, currencyCode, currencySymbol)}
-            </span>
-          </div>
+          {taxAmount > 0 && (
+            <div className="flex justify-between items-center">
+              <span>Tax / VAT Included</span>
+              <span className="font-semibold text-text-primary">
+                {formatPrice(taxAmount, currencyCode, currencySymbol)}
+              </span>
+            </div>
+          )}
 
           <div className="flex justify-between items-center">
             <span>Shipping & Handling</span>
@@ -86,7 +93,7 @@ export function OrderSummarySidebar({ order, currencyCode, currencySymbol, onOpe
           <div className="border-t border-border pt-3 mt-2 flex justify-between items-baseline">
             <span className="font-bold text-sm text-text-primary">Grand Total</span>
             <span className="text-xl font-black text-brand-700">
-              {formatPrice(order.totalAmount, currencyCode, currencySymbol)}
+              {formatPrice(totalAmount, currencyCode, currencySymbol)}
             </span>
           </div>
         </div>

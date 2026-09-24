@@ -21,7 +21,7 @@ import {
   Printer,
   FileText,
 } from "lucide-react";
-import { EnterpriseInvoiceModal } from "@/components/common/EnterpriseInvoiceModal.jsx";
+import { openDirectInvoicePdf } from "@/utils/invoice.js";
 
 export function AdminRetailOrdersPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -237,8 +237,8 @@ export function AdminRetailOrdersPage() {
                         {itemCount} {itemCount === 1 ? "item" : "items"}
                       </span>
                     </td>
-                    <td className="p-4 font-black text-slate-900">
-                      {formatPrice(o.totalAmount || 0, o.currency?.code || "USD")}
+                    <td className="p-4 font-black text-slate-900 font-mono text-sm">
+                      {formatPrice(Number(o.total ?? o.totalAmount ?? 0), o.currencyCode || o.currency?.code || "USD")}
                     </td>
                     <td className="p-4">
                       <Badge
@@ -261,19 +261,19 @@ export function AdminRetailOrdersPage() {
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <select
-                          value={o.status || "PENDING_PAYMENT"}
+                          value={o.status || "PENDING"}
                           onChange={(e) => handleStatusChange(o.id, e.target.value)}
                           className="bg-white border border-slate-200 rounded-md px-2 py-1 text-[11px] font-semibold text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer shadow-2xs"
                         >
-                          <option value="PENDING_PAYMENT">PENDING PAYMENT</option>
-                          <option value="PAID">PAID</option>
+                          <option value="PENDING">PENDING</option>
+                          <option value="CONFIRMED">CONFIRMED</option>
                           <option value="PROCESSING">PROCESSING</option>
                           <option value="SHIPPED">SHIPPED</option>
                           <option value="DELIVERED">DELIVERED</option>
                           <option value="CANCELLED">CANCELLED</option>
                         </select>
                         <button
-                          onClick={() => setInvoiceOrder(o)}
+                          onClick={() => openDirectInvoicePdf(o.id, false, o.orderNumber)}
                           className="p-1.5 rounded-md hover:bg-emerald-50 text-emerald-700 hover:text-emerald-900 transition-colors border border-emerald-200"
                           title="Generate Official Invoice"
                         >
@@ -376,8 +376,8 @@ export function AdminRetailOrdersPage() {
 
               <div className="flex justify-between items-center pt-3 border-t border-slate-100 font-bold text-sm">
                 <span>Grand Total:</span>
-                <span className="text-base text-emerald-800 font-black">
-                  {formatPrice(selectedOrder.totalAmount || 0, selectedOrder.currency?.code || "USD")}
+                <span className="text-base text-emerald-800 font-black font-mono">
+                  {formatPrice(Number(selectedOrder.total ?? selectedOrder.totalAmount ?? 0), selectedOrder.currencyCode || selectedOrder.currency?.code || "USD")}
                 </span>
               </div>
             </div>
@@ -386,9 +386,7 @@ export function AdminRetailOrdersPage() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => {
-                  setInvoiceOrder(selectedOrder);
-                }}
+                onClick={() => openDirectInvoicePdf(selectedOrder.id, false, selectedOrder.orderNumber)}
                 className="gap-1.5 bg-emerald-800 text-white"
               >
                 <Printer className="w-3.5 h-3.5" />
@@ -401,14 +399,6 @@ export function AdminRetailOrdersPage() {
           </div>
         </div>
       )}
-
-      {/* Reusable Enterprise Invoice Modal */}
-      <EnterpriseInvoiceModal
-        isOpen={!!invoiceOrder}
-        onClose={() => setInvoiceOrder(null)}
-        order={invoiceOrder}
-        type="RETAIL"
-      />
     </div>
   );
 }

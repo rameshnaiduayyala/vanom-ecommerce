@@ -7,7 +7,7 @@ import { ORDER_STATUSES } from "../../../constants/countries.js";
 import { ArrowLeft, AlertCircle, FileText, Printer, Building2, PackageCheck } from "lucide-react";
 import { Button } from "../../../components/ui/Button.jsx";
 import { Spinner } from "../../../components/ui/Alert.jsx";
-import { EnterpriseInvoiceModal } from "../../../components/common/EnterpriseInvoiceModal.jsx";
+import { openDirectInvoicePdf } from "@/utils/invoice.js";
 
 import {
   OrderHeader,
@@ -115,8 +115,8 @@ export function OrderDetailsPage() {
       <OrderHeader
         order={order}
         statusConfig={statusConfig}
-        onOpenInvoice={() => setShowInvoiceModal(true)}
-        onPrint={handlePrint}
+        onOpenInvoice={() => openDirectInvoicePdf(order.id, isB2B, order.orderNumber)}
+        onPrint={() => openDirectInvoicePdf(order.id, isB2B, order.orderNumber)}
       />
 
       {/* Fulfillment Status Timeline */}
@@ -142,18 +142,10 @@ export function OrderDetailsPage() {
             order={order}
             currencyCode={currencyCode}
             currencySymbol={currencySymbol}
-            onOpenInvoice={() => setShowInvoiceModal(true)}
+            onOpenInvoice={() => openDirectInvoicePdf(order.id, isB2B, order.orderNumber)}
           />
         </div>
       </div>
-
-      {/* Unified Wide & Smart Enterprise Commercial / Retail Invoice Modal */}
-      <EnterpriseInvoiceModal
-        order={order}
-        isOpen={showInvoiceModal}
-        onClose={() => setShowInvoiceModal(false)}
-        type={isB2B ? "B2B" : "RETAIL"}
-      />
     </div>
   );
 }

@@ -23,7 +23,7 @@ import {
   Printer,
   FileText,
 } from "lucide-react";
-import { EnterpriseInvoiceModal } from "@/components/common/EnterpriseInvoiceModal.jsx";
+import { openDirectInvoicePdf } from "@/utils/invoice.js";
 
 export function AdminOrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -416,13 +416,17 @@ export function AdminOrdersPage() {
                               className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 bg-slate-50 hover:bg-white text-slate-700 cursor-pointer focus:outline-none focus:border-[#006B3C]"
                             >
                               <option value="PENDING">PENDING</option>
+                              <option value="CONFIRMED">CONFIRMED</option>
                               <option value="PROCESSING">PROCESSING</option>
                               <option value="SHIPPED">SHIPPED</option>
                               <option value="DELIVERED">DELIVERED</option>
                               <option value="CANCELLED">CANCELLED</option>
                             </select>
                             <button
-                              onClick={() => setInvoiceOrder(o)}
+                              onClick={() => {
+                                const isB2B = Boolean(o.bulkProduct || o.company || o.orderNumber?.startsWith("BULK") || o.business);
+                                openDirectInvoicePdf(o.id, isB2B, o.orderNumber);
+                              }}
                               className="p-1.5 rounded-md hover:bg-emerald-50 text-emerald-700 hover:text-emerald-900 transition-colors border border-emerald-200"
                               title="Generate Official Invoice"
                             >
@@ -439,14 +443,6 @@ export function AdminOrdersPage() {
           </div>
         </div>
       )}
-
-      {/* Reusable Enterprise Invoice Modal */}
-      <EnterpriseInvoiceModal
-        isOpen={!!invoiceOrder}
-        onClose={() => setInvoiceOrder(null)}
-        order={invoiceOrder}
-        type={invoiceOrder?.bulkProduct || invoiceOrder?.company ? "B2B" : "RETAIL"}
-      />
     </div>
   );
 }

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge.jsx";
 import { Button } from "@/components/ui/Button.jsx";
-import { EnterpriseInvoiceModal } from "@/components/common/EnterpriseInvoiceModal.jsx";
+import { openDirectInvoicePdf } from "@/utils/invoice.js";
 
 export function B2BOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -339,9 +339,7 @@ export function B2BOrdersPage() {
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => {
-                    setInvoiceOrder(selectedOrder);
-                  }}
+                  onClick={() => openDirectInvoicePdf(selectedOrder.id, true, selectedOrder.orderNumber)}
                   className="gap-1.5 bg-[#006B3C] text-white hover:bg-[#005530]"
                 >
                   <FileText className="w-4 h-4" />
@@ -355,14 +353,6 @@ export function B2BOrdersPage() {
           </div>
         </div>
       )}
-
-      {/* Commercial Invoice Modal */}
-      <EnterpriseInvoiceModal
-        isOpen={Boolean(invoiceOrder)}
-        onClose={() => setInvoiceOrder(null)}
-        order={invoiceOrder}
-        type="B2B"
-      />
     </div>
   );
 }

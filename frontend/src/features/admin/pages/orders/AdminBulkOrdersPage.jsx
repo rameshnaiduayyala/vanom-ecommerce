@@ -20,7 +20,7 @@ import {
   Printer,
   FileText,
 } from "lucide-react";
-import { EnterpriseInvoiceModal } from "@/components/common/EnterpriseInvoiceModal.jsx";
+import { openDirectInvoicePdf } from "@/utils/invoice.js";
 
 export function AdminBulkOrdersPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -291,7 +291,7 @@ export function AdminBulkOrdersPage() {
                           <option value="REJECTED">REJECTED</option>
                         </select>
                         <button
-                          onClick={() => setInvoiceOrder(b)}
+                          onClick={() => openDirectInvoicePdf(b.id, true, b.orderNumber)}
                           className="p-1.5 rounded-md hover:bg-amber-50 text-amber-700 hover:text-amber-900 transition-colors border border-amber-200"
                           title="Generate Commercial Invoice"
                         >
@@ -421,9 +421,7 @@ export function AdminBulkOrdersPage() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => {
-                  setInvoiceOrder(selectedBulkOrder);
-                }}
+                onClick={() => openDirectInvoicePdf(selectedBulkOrder.id, true, selectedBulkOrder.orderNumber)}
                 className="gap-1.5 bg-amber-700 hover:bg-amber-800 text-white"
               >
                 <Printer className="w-3.5 h-3.5" />
@@ -436,14 +434,6 @@ export function AdminBulkOrdersPage() {
           </div>
         </div>
       )}
-
-      {/* Reusable Enterprise Commercial Invoice Modal */}
-      <EnterpriseInvoiceModal
-        isOpen={!!invoiceOrder}
-        onClose={() => setInvoiceOrder(null)}
-        order={invoiceOrder}
-        type="B2B"
-      />
     </div>
   );
 }
