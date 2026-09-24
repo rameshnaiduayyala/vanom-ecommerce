@@ -24,6 +24,7 @@ import {
 import { storeService } from "@/services/api/store.service.js";
 import { uploadService } from "@/services/api/upload.service.js";
 import { toast } from "@/stores/ui.store.js";
+import { useStoreSettingsStore } from "@/stores/store.store.js";
 import { Button } from "@/components/ui/Button.jsx";
 import { Input, Textarea } from "@/components/ui/Input.jsx";
 import { Badge } from "@/components/ui/Badge.jsx";
@@ -143,6 +144,7 @@ export function AdminStoreSettingsPage() {
           ...prev,
           ...updated,
         }));
+        useStoreSettingsStore.getState().setStore(updated);
       }
       toast.success("Store Settings Saved", "Global store details and settings updated successfully.");
     } catch (err) {
@@ -158,6 +160,7 @@ export function AdminStoreSettingsPage() {
       await storeService.deleteStoreSettings();
       setShowDeleteModal(false);
       toast.success("Store Settings Reset", "Store details have been reset to system defaults.");
+      useStoreSettingsStore.getState().fetchPublicStore(true);
       await fetchStoreSettings();
     } catch (err) {
       toast.error("Action Failed", err?.message || "Could not reset store settings.");
@@ -598,23 +601,62 @@ export function AdminStoreSettingsPage() {
                     Top Announcement Bar
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Display a persistent banner on top of the storefront.
+                    Display an animated marquee scrolling banner on top of the storefront.
                   </p>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={formData.isAnnouncementActive || false}
-                  onChange={(e) => handleInputChange("isAnnouncementActive", e.target.checked)}
-                  className="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
-                />
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="text-xs font-semibold text-slate-600">
+                    {formData.isAnnouncementActive ? "Active" : "Disabled"}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={formData.isAnnouncementActive || false}
+                    onChange={(e) => handleInputChange("isAnnouncementActive", e.target.checked)}
+                    className="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                  />
+                </label>
               </div>
-              <Textarea
-                label="Announcement Text"
-                rows={2}
-                value={formData.announcementBarText || ""}
-                onChange={(e) => handleInputChange("announcementBarText", e.target.value)}
-                placeholder="e.g. Free shipping on all orders above $100!"
-              />
+
+              <div className="space-y-2">
+                <Textarea
+                  label="Announcement Messages (Press Enter or use | for multiple messages)"
+                  rows={4}
+                  value={formData.announcementBarText || ""}
+                  onChange={(e) => handleInputChange("announcementBarText", e.target.value)}
+                  placeholder={`Free shipping on orders above ₹999\nUse code VANOM10 for 10% off your first order\nNow delivering to 30+ countries worldwide`}
+                  helperText="💡 Write each announcement on a new line (or separate with |). They will scroll continuously in the top marquee."
+                />
+
+                {/* Live parsed messages preview */}
+                {formData.announcementBarText && (
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 mt-2">
+                    <p className="text-[11px] font-semibold text-slate-600 mb-1.5 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-emerald-600" />
+                      Active Scrolling Messages ({
+                        formData.announcementBarText
+                          .split(/\r?\n|\|/)
+                          .map((s) => s.trim())
+                          .filter(Boolean).length
+                      }):
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {formData.announcementBarText
+                        .split(/\r?\n|\|/)
+                        .map((s) => s.trim())
+                        .filter(Boolean)
+                        .map((msg, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 text-[11px] bg-emerald-100 text-emerald-900 px-2.5 py-1 rounded-md font-medium"
+                          >
+                            <span className="text-[10px] text-emerald-600 font-bold">#{idx + 1}</span>
+                            {msg}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

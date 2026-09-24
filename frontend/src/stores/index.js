@@ -3,3 +3,5 @@ export { useCartStore } from "./cart.store.js";
 export { useCountryStore } from "./country.store.js";
 export { useUIStore, toast } from "./ui.store.js";
 export { useWishlistStore } from "./wishlist.store.js";
+export { useStoreSettingsStore } from "./store.store.js";
+
