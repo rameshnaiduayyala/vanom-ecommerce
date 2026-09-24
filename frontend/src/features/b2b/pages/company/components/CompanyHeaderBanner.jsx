@@ -47,15 +47,10 @@ export function CompanyHeaderBanner({ company, onEditClick }) {
 
       <div className="flex items-center gap-3 shrink-0">
         {isLocked ? (
-          <Button
-            variant="outline"
-            size="md"
-            icon={Lock}
-            onClick={onEditClick}
-            className="font-bold border-emerald-500/50 bg-emerald-950/40 text-emerald-200 hover:bg-emerald-900/50 py-2.5 px-5 cursor-pointer"
-          >
-            View Locked Dossier
-          </Button>
+          <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-500/40 bg-emerald-950/60 text-emerald-200 font-bold text-xs shadow-inner select-none cursor-not-allowed">
+            <Lock className="w-4 h-4 text-emerald-400" />
+            <span>Profile Verified & Locked</span>
+          </div>
         ) : (
           <Button
             variant="primary"

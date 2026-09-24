@@ -110,7 +110,11 @@ export function useCompanyProfile() {
     setIsEditModalOpen,
     editFormData,
     setEditFormData,
-    openEditModal: () => setIsEditModalOpen(true),
+    openEditModal: () => {
+      if (!isLocked) {
+        setIsEditModalOpen(true);
+      }
+    },
     closeEditModal: () => setIsEditModalOpen(false),
     handleUpdateSubmit,
     isUpdating: updateMutation.isPending,
