@@ -336,6 +336,14 @@ export async function processCheckout({
     }
   });
 
+  // Pre-initialize draft invoice snapshot for audit integrity
+  try {
+    const { issueInvoiceForOrder } = await import("../invoice/invoice.service.js");
+    await issueInvoiceForOrder({ orderId: order.id });
+  } catch (invErr) {
+    console.warn("[Invoice] Pre-issuing draft invoice on checkout:", invErr.message);
+  }
+
   // ── 9. Return Stripe clientSecret & Order Reference ───────────────────────
   const orderNumber = `ORD-${order.id.slice(0, 8).toUpperCase()}`;
   const totalNum = Number(order.total || 0);

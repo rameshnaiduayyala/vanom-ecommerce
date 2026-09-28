@@ -26,6 +26,116 @@ export async function generateInvoiceNumber(prefix = "INV") {
 }
 
 /**
+ * Derive correct production invoice status based on order & payment states
+ */
+export function deriveInvoiceStatus({ orderStatus, paymentStatus, isB2B = false }) {
+  const normOrder = String(orderStatus || "").toUpperCase();
+  const normPayment = String(paymentStatus || "").toUpperCase();
+
+  if (normPayment === "REFUNDED") {
+    return "VOID";
+  }
+
+  if (normOrder === "CANCELLED" || normPayment === "FAILED") {
+    // Void if was previously paid/captured; otherwise mark cancelled
+    return normPayment === "PAID" ? "VOID" : "CANCELLED";
+  }
+
+  if (normOrder === "PENDING_PAYMENT" || normPayment === "PENDING" || normPayment === "UNPAID") {
+    return "DRAFT";
+  }
+
+  if (
+    normPayment === "PAID" ||
+    ["CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"].includes(normOrder) ||
+    (isB2B && (normPayment.includes("NET") || normPayment === "PAID"))
+  ) {
+    return "ISSUED";
+  }
+
+  return "DRAFT";
+}
+
+/**
+ * Idempotently synchronize invoice status whenever order or payment status changes
+ */
+export async function syncInvoiceStatus({ orderId, bulkOrderId, orderStatus = null, paymentStatus = null, metadata = {} }) {
+  const where = orderId ? { orderId } : { bulkOrderId };
+  let invoice = await prisma.invoice.findFirst({ where });
+
+  let resolvedOrderStatus = orderStatus;
+  let resolvedPaymentStatus = paymentStatus;
+  let isB2B = !!bulkOrderId;
+
+  if (orderId && (!resolvedOrderStatus || !resolvedPaymentStatus)) {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        status: true,
+        inventoryDeducted: true,
+        stripePaymentIntentId: true,
+        metadata: true
+      }
+    });
+    if (order) {
+      if (!resolvedOrderStatus) resolvedOrderStatus = order.status;
+      if (!resolvedPaymentStatus) {
+        if (order.status === "PENDING_PAYMENT") {
+          resolvedPaymentStatus = "PENDING_PAYMENT";
+        } else if (["CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"].includes(order.status)) {
+          resolvedPaymentStatus = "PAID";
+        } else if (order.status === "CANCELLED") {
+          resolvedPaymentStatus = order.inventoryDeducted ? "REFUNDED" : "CANCELLED";
+        }
+      }
+    }
+  } else if (bulkOrderId && (!resolvedOrderStatus || !resolvedPaymentStatus)) {
+    const bulkOrder = await prisma.bulkOrder.findUnique({
+      where: { id: bulkOrderId },
+      select: { id: true, status: true, paymentStatus: true }
+    });
+    if (bulkOrder) {
+      if (!resolvedOrderStatus) resolvedOrderStatus = bulkOrder.status;
+      if (!resolvedPaymentStatus) resolvedPaymentStatus = bulkOrder.paymentStatus;
+      isB2B = true;
+    }
+  }
+
+  const nextStatus = deriveInvoiceStatus({
+    orderStatus: resolvedOrderStatus,
+    paymentStatus: resolvedPaymentStatus,
+    isB2B
+  });
+
+  if (invoice) {
+    const updatedMeta = {
+      ...(typeof invoice.metadata === "object" ? invoice.metadata : {}),
+      ...metadata,
+      orderStatus: resolvedOrderStatus,
+      paymentStatus: resolvedPaymentStatus,
+      lastStatusSyncedAt: new Date().toISOString()
+    };
+
+    invoice = await prisma.invoice.update({
+      where: { id: invoice.id },
+      data: {
+        status: nextStatus,
+        metadata: updatedMeta
+      }
+    });
+    return invoice;
+  }
+
+  // If invoice does not exist yet, issue it
+  return issueInvoiceForOrder({
+    orderId,
+    bulkOrderId,
+    forceRegenerate: true
+  });
+}
+
+/**
  * Idempotent Invoice Creation & On-The-Fly PDF Generation Service.
  * Does not store static PDF files in S3; streams dynamically on demand.
  */
@@ -54,10 +164,6 @@ export async function issueInvoiceForOrder({ orderId, bulkOrderId, companyOverri
       }
     }
   });
-
-  if (existingInvoice && existingInvoice.status === "ISSUED" && !forceRegenerate) {
-    return existingInvoice;
-  }
 
   // 2. Load order snapshot
   let orderData = null;
@@ -113,11 +219,26 @@ export async function issueInvoiceForOrder({ orderId, bulkOrderId, companyOverri
   const totalAmount = Number(orderData.total || (subtotal - discount + shippingAmount + taxAmount));
   const currencyCode = orderData.currencyCode || "USD";
 
+  // Derive dynamic payment and invoice statuses
+  let paymentStatus = isB2B
+    ? (orderData.paymentStatus || "PENDING")
+    : (["CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"].includes(orderData.status) ? "PAID" : orderData.status);
+
+  if (!isB2B && orderData.status === "CANCELLED") {
+    paymentStatus = orderData.inventoryDeducted ? "REFUNDED" : "CANCELLED";
+  }
+
+  const invoiceStatus = deriveInvoiceStatus({
+    orderStatus: orderData.status,
+    paymentStatus,
+    isB2B
+  });
+
   const invoiceData = {
     invoiceNumber,
     orderId: orderId || null,
     bulkOrderId: bulkOrderId || null,
-    status: "ISSUED",
+    status: invoiceStatus,
     fileUrl: null,
     storageKey: null,
     currencyCode,
@@ -126,13 +247,18 @@ export async function issueInvoiceForOrder({ orderId, bulkOrderId, companyOverri
     shippingAmount,
     taxAmount,
     totalAmount,
-    issuedAt: new Date(),
+    issuedAt: existingInvoice?.issuedAt || new Date(),
     metadata: {
       isB2B,
+      orderStatus: orderData.status,
+      paymentStatus,
+      stripePaymentIntentId: orderData.stripePaymentIntentId || null,
+      stripeTaxCalculationId: orderData.stripeTaxCalculationId || null,
       company: {
         legalName: company.legalName,
         brandName: company.brandName
-      }
+      },
+      lastSyncedAt: new Date().toISOString()
     }
   };
 
@@ -150,7 +276,10 @@ export async function issueInvoiceForOrder({ orderId, bulkOrderId, companyOverri
     type: isB2B ? "B2B" : "RETAIL",
     invoiceNumber,
     company,
-    invoice
+    invoice,
+    orderStatus: orderData.status,
+    paymentStatus,
+    invoiceStatus
   });
 
   return {
@@ -170,6 +299,8 @@ export async function getPublicInvoiceVerification(invoiceNumber) {
         select: {
           id: true,
           status: true,
+          inventoryDeducted: true,
+          stripePaymentIntentId: true,
           createdAt: true
         }
       },
@@ -195,6 +326,15 @@ export async function getPublicInvoiceVerification(invoiceNumber) {
   const isB2B = !!invoice.bulkOrderId;
   const company = getCompanyConfig(invoice.metadata?.company || null);
 
+  const orderStatus = invoice.bulkOrder?.status || invoice.order?.status || invoice.metadata?.orderStatus || "UNKNOWN";
+  let paymentStatus = isB2B
+    ? (invoice.bulkOrder?.paymentStatus || "NET_15_INVOICED")
+    : (["CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"].includes(invoice.order?.status) ? "PAID" : invoice.order?.status);
+
+  if (!isB2B && invoice.order?.status === "CANCELLED") {
+    paymentStatus = invoice.order?.inventoryDeducted ? "REFUNDED" : "CANCELLED";
+  }
+
   return {
     verified: true,
     invoiceNumber: invoice.invoiceNumber,
@@ -206,7 +346,8 @@ export async function getPublicInvoiceVerification(invoiceNumber) {
     taxAmount: Number(invoice.taxAmount),
     totalAmount: Number(invoice.totalAmount),
     currency: invoice.currencyCode,
-    paymentStatus: isB2B ? (invoice.bulkOrder?.paymentStatus || "NET_15_INVOICED") : "PAID",
+    orderStatus,
+    paymentStatus,
     invoiceStatus: invoice.status,
     issuingCompany: company.legalName,
     brandName: company.brandName,

@@ -174,10 +174,19 @@ export function EnterpriseInvoiceModal({ isOpen, onClose, order, type = "RETAIL"
         return "bg-blue-100 text-blue-800 border-blue-300";
       case "CONFIRMED":
       case "APPROVED":
+      case "PAID":
+        return "bg-emerald-50 text-emerald-800 border-emerald-200";
       case "PROCESSING":
         return "bg-amber-100 text-amber-800 border-amber-300";
+      case "PENDING_PAYMENT":
+      case "PENDING":
+        return "bg-amber-50 text-amber-900 border-amber-300";
+      case "REFUNDED":
+      case "VOID":
+        return "bg-purple-100 text-purple-800 border-purple-300";
       case "CANCELLED":
       case "REJECTED":
+      case "FAILED":
         return "bg-rose-100 text-rose-800 border-rose-300";
       default:
         return "bg-slate-100 text-slate-800 border-slate-300";
@@ -206,6 +215,9 @@ export function EnterpriseInvoiceModal({ isOpen, onClose, order, type = "RETAIL"
                 </h3>
                 <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${isB2B ? "bg-amber-50 text-amber-800 border-amber-200" : "bg-emerald-50 text-emerald-800 border-emerald-200"}`}>
                   {isB2B ? "B2B WHOLESALE CONTRACT" : "B2C CONSUMER"}
+                </span>
+                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getStatusBadge(orderStatus)}`}>
+                  {orderStatus.replace(/_/g, " ")}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">

@@ -152,7 +152,7 @@ export const getOrder = (adminId, id) => orderService.getById(adminId, id, true)
 export async function updateOrderStatus(id, input) {
   await getOrder(null, id);
 
-  return prisma.bulkOrder.update({
+  const updated = await prisma.bulkOrder.update({
     where: { id },
     data: {
       ...(input.status ? { status: input.status } : {}),
@@ -161,4 +161,17 @@ export async function updateOrderStatus(id, input) {
     },
     include: orderInclude
   });
+
+  try {
+    const { syncInvoiceStatus } = await import("../../invoice/invoice.service.js");
+    await syncInvoiceStatus({
+      bulkOrderId: id,
+      orderStatus: input.status || updated.status,
+      paymentStatus: input.paymentStatus || updated.paymentStatus
+    });
+  } catch (invErr) {
+    console.warn("[Invoice] Bulk order invoice sync error:", invErr.message);
+  }
+
+  return updated;
 }

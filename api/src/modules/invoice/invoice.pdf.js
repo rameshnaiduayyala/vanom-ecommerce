@@ -41,6 +41,22 @@ const T = {
   statusDueText: "#92400E",
   statusDueBorder: "#FDE68A",
 
+  statusCancelledBg: "#FEF2F2",
+  statusCancelledText: "#991B1B",
+  statusCancelledBorder: "#FCA5A5",
+
+  statusVoidBg: "#FAF5FF",
+  statusVoidText: "#6B21A8",
+  statusVoidBorder: "#D8B4FE",
+
+  statusDraftBg: "#F1F5F9",
+  statusDraftText: "#475569",
+  statusDraftBorder: "#CBD5E1",
+
+  statusProcessingBg: "#EFF6FF",
+  statusProcessingText: "#1E40AF",
+  statusProcessingBorder: "#93C5FD",
+
   // Table Aesthetics
   tableHeaderBg: "#0B3020",
   tableHeaderColor: "#FFFFFF"
@@ -181,6 +197,24 @@ export function normalizeInvoiceSnapshot(order, options = {}) {
   const verifyBaseUrl = env.clientUrl || env.appUrl || "https://vanom-commerce.com";
   const verifyUrl = `${verifyBaseUrl.replace(/\/+$/, "")}/invoice/verify/${encodeURIComponent(invoiceNumber)}`;
 
+  const orderStatus = (options.orderStatus || order.status || options.invoice?.metadata?.orderStatus || "PENDING").toUpperCase();
+  let paymentStatus = (options.paymentStatus || order.paymentStatus || options.invoice?.metadata?.paymentStatus || "").toUpperCase();
+
+  if (!paymentStatus) {
+    if (orderStatus === "PENDING_PAYMENT") {
+      paymentStatus = "UNPAID";
+    } else if (["CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"].includes(orderStatus)) {
+      paymentStatus = "PAID";
+    } else if (orderStatus === "CANCELLED") {
+      paymentStatus = (order.inventoryDeducted || order.stripePaymentIntentId) ? "REFUNDED" : "CANCELLED";
+    } else {
+      paymentStatus = isB2B ? "INVOICED_NET15" : "PENDING";
+    }
+  }
+
+  const invoiceStatus = (options.invoiceStatus || options.invoice?.status || (paymentStatus === "PAID" ? "ISSUED" : (orderStatus === "CANCELLED" ? "CANCELLED" : "DRAFT"))).toUpperCase();
+  const stripePaymentIntentId = order.stripePaymentIntentId || options.invoice?.metadata?.stripePaymentIntentId || null;
+
   return {
     invoiceNumber,
     orderNumber,
@@ -190,8 +224,11 @@ export function normalizeInvoiceSnapshot(order, options = {}) {
     dueDate: formattedDueDate,
     paymentMethod,
     paymentTerms,
-    status: (order.status || "ISSUED").toUpperCase(),
-    paymentStatus: (order.paymentStatus || (isB2B ? "INVOICED_NET15" : "PAID")).toUpperCase(),
+    status: orderStatus,
+    orderStatus,
+    paymentStatus,
+    invoiceStatus,
+    stripePaymentIntentId,
     currencyCode,
     company,
     customer,
@@ -311,13 +348,47 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
   doc.fontSize(12).font("Helvetica-Bold").fillColor(T.brandPrimary).text(invoice.invoiceNumber, rightX, y + 17, { width: rightWidth, align: "right", lineBreak: false });
 
   // Status Pill Badge
-  const isPaid = invoice.paymentStatus.includes("PAID") || invoice.status === "COMPLETED";
-  const statusLabel = isPaid ? "PAID" : invoice.paymentStatus.replace(/_/g, " ");
-  const badgeBg = isPaid ? T.statusPaidBg : T.statusDueBg;
-  const badgeBorder = isPaid ? T.statusPaidBorder : T.statusDueBorder;
-  const badgeText = isPaid ? T.statusPaidText : T.statusDueText;
-  
-  const badgeW = Math.max(50, statusLabel.length * 6 + 14);
+  let statusLabel = "DRAFT";
+  let badgeBg = T.statusDraftBg;
+  let badgeBorder = T.statusDraftBorder;
+  let badgeText = T.statusDraftText;
+
+  if (invoice.invoiceStatus === "VOID" || invoice.paymentStatus === "REFUNDED") {
+    statusLabel = "REFUNDED / VOID";
+    badgeBg = T.statusVoidBg;
+    badgeBorder = T.statusVoidBorder;
+    badgeText = T.statusVoidText;
+  } else if (invoice.invoiceStatus === "CANCELLED" || invoice.orderStatus === "CANCELLED" || invoice.paymentStatus === "CANCELLED") {
+    statusLabel = "CANCELLED";
+    badgeBg = T.statusCancelledBg;
+    badgeBorder = T.statusCancelledBorder;
+    badgeText = T.statusCancelledText;
+  } else if (invoice.paymentStatus === "PAID" || invoice.invoiceStatus === "ISSUED") {
+    if (invoice.orderStatus === "DELIVERED") {
+      statusLabel = "PAID • DELIVERED";
+    } else if (invoice.orderStatus === "SHIPPED") {
+      statusLabel = "PAID • SHIPPED";
+    } else {
+      statusLabel = "PAID";
+    }
+    badgeBg = T.statusPaidBg;
+    badgeBorder = T.statusPaidBorder;
+    badgeText = T.statusPaidText;
+  } else if (invoice.paymentStatus.includes("NET")) {
+    statusLabel = invoice.paymentStatus.replace(/_/g, " ");
+    badgeBg = T.statusProcessingBg;
+    badgeBorder = T.statusProcessingBorder;
+    badgeText = T.statusProcessingText;
+  } else if (invoice.orderStatus === "PENDING_PAYMENT" || invoice.paymentStatus === "UNPAID" || invoice.invoiceStatus === "DRAFT") {
+    statusLabel = "PAYMENT PENDING";
+    badgeBg = T.statusDueBg;
+    badgeBorder = T.statusDueBorder;
+    badgeText = T.statusDueText;
+  } else {
+    statusLabel = invoice.paymentStatus.replace(/_/g, " ");
+  }
+
+  const badgeW = Math.max(54, statusLabel.length * 6.2 + 14);
   const badgeH = 14;
   const badgeX = PAGE_WIDTH - MR - badgeW;
   const badgeY = y + 35;
@@ -327,12 +398,10 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
 
   // Metadata block (Dates & Order Ref)
   doc.fontSize(7).font("Helvetica").fillColor(T.inkMuted);
-  doc.text(`Order Ref: #${invoice.orderNumber}`, rightX, y + 53, { width: rightWidth, align: "right", lineBreak: false });
-  doc.text(`Issued: ${invoice.date}   •   Due: ${invoice.dueDate}`, rightX, y + 63, { width: rightWidth, align: "right", lineBreak: false });
-  if (isDev) {
-    doc.fontSize(6).font("Helvetica-Bold").fillColor(T.statusDueText);
-    doc.text("THIS IS SAMPLE NOT OFFICIAL (DEV)", rightX, y + 73, { width: rightWidth, align: "right", lineBreak: false });
-  }
+  doc.text(`Order Ref: #${invoice.orderNumber}  •  Status: ${invoice.orderStatus}`, rightX, y + 53, { width: rightWidth, align: "right", lineBreak: false });
+  const payRef = invoice.stripePaymentIntentId ? ` (${invoice.stripePaymentIntentId.slice(0, 14)}...)` : "";
+  doc.text(`Payment: ${invoice.paymentStatus}${payRef}`, rightX, y + 63, { width: rightWidth, align: "right", lineBreak: false });
+  doc.text(`Issued: ${invoice.date}   •   Due: ${invoice.dueDate}`, rightX, y + 73, { width: rightWidth, align: "right", lineBreak: false });
 
   y = Math.max(compY + 8, isDev ? y + 84 : y + 78);
   doc.moveTo(ML, y).lineTo(PAGE_WIDTH - MR, y).lineWidth(0.75).strokeColor(T.borderLight).stroke();
@@ -526,8 +595,16 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
   tY += 6;
 
   // Grand Total Highlight
-  const totalLabel = isPaid ? "TOTAL PAID:" : "TOTAL DUE:";
-  doc.fontSize(8.5).font("Helvetica-Bold").fillColor(T.inkHead).text(totalLabel, summaryBoxX + 10, tY + 3, { width: 90, lineBreak: false });
+  const isPaid = invoice.paymentStatus === "PAID" || invoice.invoiceStatus === "ISSUED";
+  let totalLabel = "TOTAL DUE:";
+  if (invoice.paymentStatus === "REFUNDED" || invoice.invoiceStatus === "VOID") {
+    totalLabel = "TOTAL REFUNDED:";
+  } else if (invoice.paymentStatus === "CANCELLED" || invoice.invoiceStatus === "CANCELLED") {
+    totalLabel = "TOTAL (CANCELLED):";
+  } else if (isPaid) {
+    totalLabel = "TOTAL PAID:";
+  }
+  doc.fontSize(8.5).font("Helvetica-Bold").fillColor(T.inkHead).text(totalLabel, summaryBoxX + 10, tY + 3, { width: 110, lineBreak: false });
   doc.fontSize(12).font("Helvetica-Bold").fillColor(T.brandPrimary).text(formatCurrency(invoice.total, invoice.currencyCode), summaryBoxX + 10, tY, { width: summaryBoxWidth - 20, align: "right", lineBreak: false });
 
   // ── 6. Header/Footer Finalizer on All Pages ──────────────────────────────

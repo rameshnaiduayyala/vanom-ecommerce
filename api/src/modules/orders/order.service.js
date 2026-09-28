@@ -263,6 +263,18 @@ export async function updateStatus(id, status) {
     }
   }
 
+  // Synchronize invoice lifecycle status with the new order status
+  try {
+    const { syncInvoiceStatus } = await import("../invoice/invoice.service.js");
+    await syncInvoiceStatus({
+      orderId: id,
+      orderStatus: status,
+      paymentStatus: existingOrder.inventoryDeducted ? (status === "CANCELLED" ? "REFUNDED" : "PAID") : null
+    });
+  } catch (invErr) {
+    console.warn("[Invoice] Could not sync invoice status on order update:", invErr.message);
+  }
+
   return formatOrder(updated);
 }
 

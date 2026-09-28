@@ -181,6 +181,18 @@ export async function refundPayment(paymentId, { amount, reason = "Customer requ
       where: { id: orderId },
       data: { status: "CANCELLED" }
     });
+
+    try {
+      const { syncInvoiceStatus } = await import("../invoice/invoice.service.js");
+      await syncInvoiceStatus({
+        orderId,
+        orderStatus: "CANCELLED",
+        paymentStatus: "REFUNDED",
+        metadata: { refundId: stripeRefund.id, refundReason: reason }
+      });
+    } catch (invErr) {
+      console.warn("[Invoice] Sync invoice on refund error:", invErr.message);
+    }
   }
 
   return {
@@ -294,6 +306,17 @@ export async function processWebhook(payload, signature = null, rawBody = null) 
         where: { id: matchedOrder.id },
         data: { status: "CANCELLED" }
       });
+
+      try {
+        const { syncInvoiceStatus } = await import("../invoice/invoice.service.js");
+        await syncInvoiceStatus({
+          orderId: matchedOrder.id,
+          orderStatus: "CANCELLED",
+          paymentStatus: "FAILED"
+        });
+      } catch (invErr) {
+        console.warn("[Invoice] Webhook invoice sync on failure deferred:", invErr.message);
+      }
     }
   }
 
