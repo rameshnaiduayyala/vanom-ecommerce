@@ -306,7 +306,7 @@ export function ProductDetailsPage() {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 bg-[#FBFDFB]">
         <Spinner size="lg" />
-        <p className="text-sm font-semibold text-gray-600 animate-pulse">Loading authentic product details...</p>
+        <p className="text-sm font-semibold text-gray-500 animate-pulse">Loading product details...</p>
       </div>
     );
   }
@@ -315,7 +315,7 @@ export function ProductDetailsPage() {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 p-8 text-center bg-[#FBFDFB]">
         <h2 className="text-2xl font-bold text-gray-900">Product Not Found</h2>
-        <p className="text-sm text-gray-600 max-w-md">
+        <p className="text-sm text-gray-500 max-w-md">
           The requested product could not be found or has been removed from the catalog.
         </p>
         <Link
@@ -329,31 +329,29 @@ export function ProductDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FBFDFB] text-gray-800 pb-20">
+    <div className="min-h-screen bg-[#FBFDFB] text-gray-800 pb-24">
       <SEO
         title={`${title} - Buy Online | Vanom`}
         description={subtitle || `Buy ${title} online with best cross-border prices and free shipping.`}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-6 sm:space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
 
-        {/* ─── 1. Breadcrumbs ─── */}
-        <nav className="flex items-center gap-1.5 text-xs text-gray-500">
-          <Link to="/" className="hover:text-gray-900 transition-colors">Home</Link>
-          <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-          <Link to="/products" className="hover:text-gray-900 transition-colors">
-            {categoryName}
-          </Link>
-          <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-          <span className="text-gray-500">{brand}</span>
-          <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-          <span className="font-semibold text-gray-900 truncate max-w-xs">{title}</span>
+        {/* ─── Breadcrumbs ─── */}
+        <nav className="flex items-center gap-1.5 text-xs text-gray-400 mb-6">
+          <Link to="/" className="hover:text-gray-700 transition-colors">Home</Link>
+          <ChevronRight className="w-3 h-3 text-gray-300" />
+          <Link to="/products" className="hover:text-gray-700 transition-colors">{categoryName}</Link>
+          <ChevronRight className="w-3 h-3 text-gray-300" />
+          <span className="text-gray-400">{brand}</span>
+          <ChevronRight className="w-3 h-3 text-gray-300" />
+          <span className="font-semibold text-gray-700 truncate max-w-[180px] sm:max-w-xs">{title}</span>
         </nav>
 
-        {/* ─── 2. Top Product Showcase Section ─── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+        {/* ─── Main Product Section ─── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-14 items-start">
 
-          {/* ── LEFT: Product Gallery (Thumbnails + Main Image) ── */}
+          {/* ── LEFT: Gallery ── */}
           <ProductGallery
             gallery={gallery}
             selectedImage={selectedImage}
@@ -361,86 +359,86 @@ export function ProductDetailsPage() {
             title={title}
           />
 
-          {/* ── RIGHT: Product Info, Pricing & Actions ── */}
-          <div className="lg:col-span-6 space-y-4">
+          {/* ── RIGHT: Product Info Panel ── */}
+          <div className="lg:col-span-6 lg:sticky lg:top-6 space-y-5">
 
-            {/* Brand badge & Wishlist button */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-black tracking-wider uppercase bg-[#003D2B] text-white shadow-2xs">
+            {/* Brand + Wishlist row */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-black tracking-widest uppercase bg-[#003D2B] text-white shadow-sm">
                   {brandName}
                 </span>
-                <span className="text-xs font-semibold text-[#007185] hover:text-[#004d33] hover:underline cursor-pointer">
-                  Brand: {brandName}
-                </span>
+                {product?.isBestSeller && (
+                  <span className="inline-flex items-center gap-1 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">
+                    #1 Best Seller
+                  </span>
+                )}
+                {product?.isNew && (
+                  <span className="inline-flex items-center gap-1 bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">
+                    New Launch
+                  </span>
+                )}
+                {product?.isFeatured && !product?.isBestSeller && (
+                  <span className="inline-flex items-center gap-1 bg-violet-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">
+                    Featured
+                  </span>
+                )}
               </div>
               <button
                 type="button"
                 onClick={handleWishlist}
-                className="w-9 h-9 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-500 hover:text-rose-500 transition-colors cursor-pointer"
+                className={`shrink-0 w-9 h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
+                  wishlisted
+                    ? "bg-rose-50 border-rose-300 text-rose-500"
+                    : "bg-white border-gray-200 hover:border-rose-300 text-gray-400 hover:text-rose-500"
+                }`}
                 title="Save to wishlist"
               >
-                <Heart className={`w-4 h-4 ${wishlisted ? "fill-rose-500 text-rose-500" : ""}`} />
+                <Heart className={`w-4 h-4 ${wishlisted ? "fill-rose-500" : ""}`} />
               </button>
             </div>
 
-            {/* Title & Subtitle */}
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-snug">
-                {title}
-              </h1>
-            </div>
+            {/* Title */}
+            <h1 className="text-2xl sm:text-[28px] font-extrabold text-gray-900 leading-tight tracking-tight">
+              {title}
+            </h1>
 
-            {/* Ratings & Q&A */}
-            <div className="flex items-center gap-2 text-xs">
-              <span className="font-bold text-gray-900">{rating}</span>
-              <div className="flex items-center">
+            {/* Rating row */}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((s) => (
                   <Star key={s} className="w-3.5 h-3.5 fill-[#F9BC15] text-[#F9BC15]" />
                 ))}
               </div>
-              <span className="text-gray-500">({reviewsCount.toLocaleString()} ratings)</span>
-              <span className="text-gray-300">|</span>
-              <span className="text-gray-600">{answeredQuestions} answered questions</span>
+              <span className="text-sm font-bold text-gray-800">{rating}</span>
+              <span className="text-xs text-gray-400">({reviewsCount.toLocaleString()} ratings)</span>
+              <span className="w-px h-3 bg-gray-200 mx-0.5" />
+              <span className="text-xs text-gray-500">{answeredQuestions} answered questions</span>
+              <span className="text-xs text-gray-400">in <span className="font-semibold text-gray-600">{categoryName}</span></span>
             </div>
 
-            {/* Best Seller / New / Featured Tags */}
-            <div className="flex flex-wrap items-center gap-2">
-              {product?.isBestSeller && (
-                <span className="bg-[#003D2B] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-md shadow-2xs">
-                  #1 Best Seller
-                </span>
-              )}
-              {product?.isNew && (
-                <span className="bg-[#00875A] text-white text-[11px] font-bold px-2.5 py-0.5 rounded-md shadow-2xs">
-                  New Launch
-                </span>
-              )}
-              {product?.isFeatured && (
-                <span className="bg-amber-600 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-md shadow-2xs">
-                  Featured
-                </span>
-              )}
-              <span className="text-xs text-gray-500">in {categoryName}</span>
-            </div>
+            {/* Divider */}
+            <div className="h-px bg-gray-100" />
 
-            {/* Price Row */}
-            <div className="pt-2">
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl sm:text-4xl font-black text-gray-900">
+            {/* Price block */}
+            <div className="space-y-1">
+              <div className="flex items-baseline gap-3 flex-wrap">
+                <span className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight leading-none">
                   {formatPrice(price, country.currency, country.symbol)}
                 </span>
-                <span className="text-sm text-gray-400 line-through">
+                <span className="text-sm text-gray-400 line-through font-medium">
                   {formatPrice(mrp, country.currency, country.symbol)}
                 </span>
-                <span className="text-xs font-bold text-[#059669] bg-[#EAF7F0] px-2 py-0.5 rounded">
-                  {discount}% OFF
-                </span>
+                {discount > 0 && (
+                  <span className="text-sm font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">
+                    {discount}% OFF
+                  </span>
+                )}
               </div>
-              <p className="text-[11px] text-gray-500 mt-0.5">Inclusive of all taxes</p>
+              <p className="text-[11px] text-gray-400">Inclusive of all taxes. Free delivery available.</p>
             </div>
 
-            {/* Dynamic Variant Selector */}
+            {/* Variant Selector */}
             <VariantSelector
               variants={product?.variants}
               selectedVariantId={selectedVariantObj?.id}
@@ -449,30 +447,31 @@ export function ProductDetailsPage() {
               baseFallbackPrice={product.basePrice}
             />
 
-            {/* 3 Inline Trust / Delivery Pillars */}
+            {/* Delivery / Return / Warranty pillars */}
             <DeliveryTrustPillars
               deliveryInfo={deliveryInfoText}
               returnPolicy={returnPolicyText}
               warrantyInfo={warrantyInfoText}
             />
 
-            {/* Action Buttons: Add to Cart + Buy Now */}
-            <div className="grid grid-cols-2 gap-4 pt-2">
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-3 pt-1">
               <button
                 type="button"
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
-                className={`py-3 px-6 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${isOutOfStock
-                  ? "border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed"
-                  : "border-[rgb(60,170,130)] text-[rgb(60,170,130)] hover:bg-[rgb(60,170,130)]/10 active:scale-95"
-                  }`}
+                className={`py-3.5 px-4 rounded-2xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] ${
+                  isOutOfStock
+                    ? "border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed"
+                    : "border-[#006B3C] text-[#006B3C] hover:bg-[#006B3C]/8 hover:shadow-sm"
+                }`}
               >
                 {isOutOfStock ? (
                   <span>Sold Out</span>
                 ) : addingToCart ? (
                   <>
                     <Check className="w-4 h-4" />
-                    <span>Added</span>
+                    <span>Added!</span>
                   </>
                 ) : (
                   <>
@@ -486,10 +485,11 @@ export function ProductDetailsPage() {
                 type="button"
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
-                className={`py-3 px-6 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md ${isOutOfStock
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none"
-                  : "bg-[rgb(60,170,130)] hover:brightness-95 text-white active:scale-95 cursor-pointer"
-                  }`}
+                className={`py-3.5 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-sm ${
+                  isOutOfStock
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none"
+                    : "bg-[#006B3C] hover:bg-[#005230] text-white cursor-pointer hover:shadow-md hover:shadow-emerald-900/20"
+                }`}
               >
                 <Zap className="w-4 h-4 fill-white" />
                 <span>{isOutOfStock ? "Out of Stock" : "Buy Now"}</span>
@@ -497,28 +497,32 @@ export function ProductDetailsPage() {
             </div>
 
           </div>
-
         </div>
 
-        {/* ─── 3. Key Highlights (8 Card Pill Grid) ─── */}
-        <ProductHighlightsGrid highlights={highlights} />
+        {/* ─── Below-fold Sections ─── */}
+        <div className="mt-12 space-y-8">
 
-        {/* ─── 4. About This Item & Specifications Table ─── */}
-        <ProductSpecifications
-          description={product?.description || ""}
-          features={features}
-          specifications={specifications}
-        />
+          {/* Key Highlights */}
+          <ProductHighlightsGrid highlights={highlights} />
 
-        {/* ─── 5. "You may also like" Product Carousel ─── */}
-        <RelatedProductsSection relatedProducts={relatedList} />
+          {/* Description + Specs */}
+          <ProductSpecifications
+            description={product?.description || ""}
+            features={features}
+            specifications={specifications}
+          />
 
-        {/* ─── 6. Bottom Trust Feature Strip (5-items) ─── */}
-        <StoreTrustBadges />
+          {/* Related Products */}
+          <RelatedProductsSection relatedProducts={relatedList} />
 
+          {/* Store Trust Strip */}
+          <StoreTrustBadges />
+
+        </div>
       </div>
     </div>
   );
 }
 
 export default ProductDetailsPage;
+

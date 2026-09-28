@@ -36,20 +36,23 @@ export function ProductHighlightsGrid({ highlights = [] }) {
   if (!highlights || highlights.length === 0) return null;
 
   return (
-    <div className="space-y-3 pt-4">
-      <h3 className="text-base font-bold text-gray-900">Key Highlights</h3>
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <h3 className="text-base font-bold text-gray-900">Key Highlights</h3>
+        <div className="flex-1 h-px bg-gray-100" />
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
         {highlights.map((item, idx) => {
           const Icon = item.icon || getHighlightIcon(item.label);
           return (
             <div
               key={idx}
-              className="bg-white rounded-2xl p-3.5 border border-gray-200 text-center flex flex-col items-center justify-center shadow-2xs hover:border-[#006B3C]/50 transition-colors"
+              className="bg-white rounded-2xl p-3.5 border border-gray-100 text-center flex flex-col items-center justify-center shadow-sm hover:shadow-md hover:border-[#006B3C]/30 hover:-translate-y-0.5 transition-all duration-200"
             >
-              <div className="w-8 h-8 rounded-full bg-[#EAF7F0] text-[#006B3C] flex items-center justify-center mb-2">
+              <div className="w-9 h-9 rounded-xl bg-[#EAF7F0] text-[#006B3C] flex items-center justify-center mb-2 shadow-sm">
                 <Icon className="w-4 h-4" />
               </div>
-              <h4 className="text-[11px] font-bold text-gray-900">{item.label}</h4>
+              <h4 className="text-[11px] font-bold text-gray-800">{item.label}</h4>
               <p className="text-[10px] text-gray-500 mt-0.5 leading-tight">{item.value}</p>
             </div>
           );
