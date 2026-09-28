@@ -74,8 +74,17 @@ export function ProductDetailsPage() {
 
   const title = product?.name || "";
   const subtitle = product?.description || "";
-  const brand = typeof product?.brand === "object" ? product.brand?.name : product?.brand || "Vanom Choice";
-  const brandName = brand;
+  const brandName = useMemo(() => {
+    if (product?.brand) {
+      if (typeof product.brand === "object" && product.brand.name) return product.brand.name;
+      if (typeof product.brand === "string" && product.brand.trim()) return product.brand.trim();
+    }
+    if (product?.brandName && typeof product.brandName === "string" && product.brandName.trim()) {
+      return product.brandName.trim();
+    }
+    return "Vanom Organics";
+  }, [product]);
+  const brand = brandName;
   const categoryName = typeof product?.category === "object" ? product.category?.name : product?.category || "General";
 
   // Resolve country pricing entry from product.countries
@@ -357,13 +366,19 @@ export function ProductDetailsPage() {
 
             {/* Brand badge & Wishlist button */}
             <div className="flex items-center justify-between">
-              <span className="bg-[#E50914] text-white text-xs font-extrabold uppercase px-2.5 py-0.5 rounded">
-                {brand}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-black tracking-wider uppercase bg-[#003D2B] text-white shadow-2xs">
+                  {brandName}
+                </span>
+                <span className="text-xs font-semibold text-[#007185] hover:text-[#004d33] hover:underline cursor-pointer">
+                  Brand: {brandName}
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={handleWishlist}
                 className="w-9 h-9 rounded-full bg-gray-50 hover:bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-500 hover:text-rose-500 transition-colors cursor-pointer"
+                title="Save to wishlist"
               >
                 <Heart className={`w-4 h-4 ${wishlisted ? "fill-rose-500 text-rose-500" : ""}`} />
               </button>
