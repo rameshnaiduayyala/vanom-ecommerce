@@ -14,6 +14,10 @@ export function ProductCardInfo({
   originalPrice,
   country,
   variant = "default",
+  isVariable = false,
+  variants = [],
+  selectedVariantId = null,
+  onSelectVariant = () => {},
 }) {
   const isCompact = variant === "compact";
   const discountPercent =
@@ -57,18 +61,61 @@ export function ProductCardInfo({
             {productName}
           </h3>
         </Link>
-
-        {/* Subtitle */}
-        {subtitle && (
-          <p
-            className={`text-slate-400 line-clamp-1 font-normal leading-tight ${
-              isCompact ? "text-[10px]" : "text-xs"
-            }`}
-          >
-            {subtitle}
-          </p>
-        )}
       </div>
+
+      {/* Dynamic In-Card Variant Selector */}
+      {isVariable && Array.isArray(variants) && variants.length > 0 && (
+        <div className={`space-y-1 ${isCompact ? "pt-1" : "pt-1.5"}`}>
+          <div className="flex items-center justify-between text-[10.5px]">
+            <span className="text-slate-500 font-medium">Select Size:</span>
+            <span className="font-bold text-emerald-700 truncate max-w-[120px]">
+              {(() => {
+                const active = variants.find((v) => v.id === selectedVariantId) || variants[0];
+                return (
+                  active?.name ||
+                  active?.variant_name ||
+                  (active?.attributes && typeof active.attributes === "object"
+                    ? Object.values(active.attributes).filter(Boolean).join(" / ")
+                    : "Standard")
+                );
+              })()}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {variants.map((v) => {
+              const isSelected = (selectedVariantId || variants[0]?.id) === v.id;
+              const label =
+                v.name ||
+                v.variant_name ||
+                (v.attributes && typeof v.attributes === "object"
+                  ? Object.values(v.attributes).filter(Boolean).join(" / ")
+                  : "Option");
+
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSelectVariant(v.id);
+                  }}
+                  className={`rounded-lg font-bold border transition-all cursor-pointer ${
+                    isCompact ? "text-[9.5px] px-1.5 py-0.5" : "text-[10.5px] px-2 py-1"
+                  } ${
+                    isSelected
+                      ? "bg-emerald-50 border-emerald-600 text-emerald-800 shadow-2xs ring-1 ring-emerald-600"
+                      : "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Price Block */}
       <div className={`flex items-end gap-2 ${isCompact ? "mt-1" : "mt-1.5"}`}>

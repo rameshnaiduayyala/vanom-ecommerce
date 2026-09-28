@@ -125,7 +125,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialRole = "B2C" }) {
                   type="button"
                   onClick={() => {
                     setEmail("customer@vanom.com");
-                    setPassword("Password@123");
+                    setPassword("Customer@123456");
                   }}
                   className="px-2 py-0.5 text-[10px] font-semibold rounded bg-white text-emerald-800 border border-emerald-200 hover:bg-emerald-50 transition-colors cursor-pointer"
                 >
@@ -134,8 +134,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialRole = "B2C" }) {
                 <button
                   type="button"
                   onClick={() => {
-                    setEmail("b2b@acmecorp.com");
-                    setPassword("Password@123");
+                    setEmail("wholesale@demousawholesale.com");
+                    setPassword("Wholesale@123456");
                   }}
                   className="px-2 py-0.5 text-[10px] font-semibold rounded bg-white text-emerald-800 border border-emerald-200 hover:bg-emerald-50 transition-colors cursor-pointer"
                 >
@@ -145,7 +145,7 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialRole = "B2C" }) {
                   type="button"
                   onClick={() => {
                     setEmail("admin@vanom.com");
-                    setPassword("Password@123");
+                    setPassword("Admin@123456");
                   }}
                   className="px-2 py-0.5 text-[10px] font-semibold rounded bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
                 >

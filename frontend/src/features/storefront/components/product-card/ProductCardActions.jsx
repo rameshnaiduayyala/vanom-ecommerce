@@ -70,5 +70,4 @@ export function ProductCardActions({
     </div>
   );
 }
-
 export default ProductCardActions;

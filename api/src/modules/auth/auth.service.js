@@ -130,7 +130,7 @@ function tokenHash(token) {
 
 export async function requestPasswordReset(email) {
   const user = await prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
-  if (!user) return { message: MESSAGES.USER_NOT_FOUND };
+  if (!user) return { success: true };
 
   const token = randomBytes(32).toString("hex");
   await prisma.passwordResetToken.deleteMany({ where: { userId: user.id, usedAt: null } });
@@ -142,7 +142,7 @@ export async function requestPasswordReset(email) {
     }
   });
   await sendPasswordResetEmail(user.email, token);
-  return token;
+  return { success: true };
 }
 
 export async function resetPassword(token, password) {

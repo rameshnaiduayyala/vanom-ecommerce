@@ -1,7 +1,9 @@
 import * as uploadController from "./upload.controller.js";
+import { authenticate } from "../../common/guards/auth.guard.js";
 
 export async function uploadRoutes(fastify) {
   fastify.post("/uploads", {
+    preHandler: authenticate,
     schema: {
       tags: ["Uploads"],
       summary: "Upload a single file (returns direct public URL)",
@@ -19,6 +21,7 @@ export async function uploadRoutes(fastify) {
   }, uploadController.uploadSingle);
 
   fastify.post("/uploads/multiple", {
+    preHandler: authenticate,
     schema: {
       tags: ["Uploads"],
       summary: "Upload multiple files (returns array of direct public URLs)",

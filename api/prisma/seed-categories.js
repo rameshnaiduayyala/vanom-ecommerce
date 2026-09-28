@@ -4,14 +4,34 @@ const prisma = new PrismaClient();
 
 export const categoriesData = [
   {
-    name: "Electronics & Gadgets",
-    slug: "electronics-gadgets",
+    name: "Digital",
+    slug: "digital",
     imageUrl: "https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=600&q=80",
     subcategories: [
       { name: "Mobiles & Accessories", slug: "mobiles-accessories", imageUrl: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80" },
       { name: "Laptops & Computers", slug: "laptops-computers", imageUrl: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=600&q=80" },
       { name: "TVs & Home Entertainment", slug: "tvs-home-entertainment", imageUrl: "https://images.unsplash.com/photo-1593784991095-a205069470b6?auto=format&fit=crop&w=600&q=80" },
       { name: "Cameras & Drones", slug: "cameras-drones", imageUrl: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80" },
+    ]
+  },
+  {
+    name: "Glow Up",
+    slug: "glow-up",
+    imageUrl: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
+    subcategories: [
+      { name: "Skin & Hair Care", slug: "skin-hair-care", imageUrl: "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80" },
+      { name: "Makeup & Cosmetics", slug: "makeup-cosmetics", imageUrl: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=600&q=80" },
+      { name: "Grooming Appliances", slug: "grooming-appliances", imageUrl: "https://images.unsplash.com/photo-1621607512214-68297480165e?auto=format&fit=crop&w=600&q=80" },
+    ]
+  },
+  {
+    name: "Desk",
+    slug: "desk",
+    imageUrl: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&w=600&q=80",
+    subcategories: [
+      { name: "Notebooks & Planners", slug: "notebooks-planners", imageUrl: "https://images.unsplash.com/photo-1531346878377-a5be20888e57?auto=format&fit=crop&w=600&q=80" },
+      { name: "Pens & Writing Instruments", slug: "pens-writing-instruments", imageUrl: "https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?auto=format&fit=crop&w=600&q=80" },
+      { name: "Desk Organization & Setup", slug: "desk-organization-setup", imageUrl: "https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?auto=format&fit=crop&w=600&q=80" },
     ]
   },
   {
@@ -43,16 +63,6 @@ export const categoriesData = [
       { name: "Spices & Masalas", slug: "spices-masalas", imageUrl: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=600&q=80" },
       { name: "Snacks & Packaged Foods", slug: "snacks-packaged-foods", imageUrl: "https://images.unsplash.com/photo-1621996346565-e3d5d6281699?auto=format&fit=crop&w=600&q=80" },
       { name: "Beverages", slug: "beverages", imageUrl: "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=600&q=80" },
-    ]
-  },
-  {
-    name: "Beauty & Personal Care",
-    slug: "beauty-personal-care",
-    imageUrl: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
-    subcategories: [
-      { name: "Skin & Hair Care", slug: "skin-hair-care", imageUrl: "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80" },
-      { name: "Makeup & Cosmetics", slug: "makeup-cosmetics", imageUrl: "https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=600&q=80" },
-      { name: "Grooming Appliances", slug: "grooming-appliances", imageUrl: "https://images.unsplash.com/photo-1621607512214-68297480165e?auto=format&fit=crop&w=600&q=80" },
     ]
   },
   {
@@ -111,7 +121,7 @@ export async function seedCategories() {
     }
   }
 
-  console.log("✅ Successfully seeded 6 parent categories and 20 subcategories!");
+  console.log(`✅ Successfully seeded ${categoriesData.length} parent categories and subcategories!`);
 }
 
 async function run() {

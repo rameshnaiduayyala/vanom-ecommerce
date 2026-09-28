@@ -38,18 +38,33 @@ export const useCartStore = create(
       syncCartFromApi: (data) => {
         if (!data) return;
         const rawItems = data.items || [];
-        const items = rawItems.map((item) => ({
-          id: item.id,
-          variantId: item.variantId,
-          productId: item.productId,
-          name: item.name || item.productName || item.variantName || item.product?.name || "Product",
-          slug: item.slug || item.product?.slug || "",
-          price: Number(item.price || item.unitPrice || item.product?.basePrice || 0),
-          quantity: item.quantity || 1,
-          maxStock: item.availableStock !== undefined ? item.availableStock : (item.maxStock ?? 100),
-          image: item.image || item.imageUrl || item.product?.images?.[0]?.url || null,
-          sku: item.sku || item.variant?.sku || item.product?.sku || null,
-        }));
+        const items = rawItems.map((item) => {
+          const variantLabel =
+            item.variantName ||
+            item.variant?.name ||
+            (item.variant?.attributes && typeof item.variant.attributes === "object"
+              ? Object.values(item.variant.attributes).filter(Boolean).join(" / ")
+              : null);
+          const baseName = item.productName || item.product?.name || item.name || "Product";
+          const displayName =
+            variantLabel && !baseName.toLowerCase().includes(variantLabel.toLowerCase())
+              ? `${baseName} - ${variantLabel}`
+              : (item.name || baseName);
+
+          return {
+            id: item.id,
+            variantId: item.variantId || null,
+            productId: item.productId,
+            name: displayName,
+            variantName: variantLabel,
+            slug: item.slug || item.product?.slug || "",
+            price: Number(item.price || item.unitPrice || item.product?.basePrice || 0),
+            quantity: item.quantity || 1,
+            maxStock: item.availableStock !== undefined ? item.availableStock : (item.maxStock ?? 100),
+            image: item.image || item.imageUrl || item.product?.images?.[0]?.url || null,
+            sku: item.sku || item.variant?.sku || item.product?.sku || null,
+          };
+        });
         const subtotal = Number(data.subtotal || items.reduce((sum, i) => sum + i.price * i.quantity, 0));
         const itemCount = Number(data.itemCount || items.reduce((sum, i) => sum + i.quantity, 0));
 
@@ -89,18 +104,20 @@ export const useCartStore = create(
 
         const productId = item.productId || item.id;
         const variantId = (item.variantId && item.variantId !== productId) ? item.variantId : null;
+        const cartItemId = item.id || (variantId ? `${productId}_${variantId}` : productId);
         const cleanItem = {
           ...item,
           productId,
           variantId,
-          id: item.id || productId,
+          id: cartItemId,
           quantity: item.quantity || 1,
         };
 
-        // 1. Optimistic UI update
-        const existingIndex = cart.items.findIndex(
-          (i) => i.id === cleanItem.id || (variantId && i.variantId === variantId) || (i.productId === productId && !variantId)
-        );
+        // 1. Optimistic UI update (Match exact item id or same product + same variant)
+        const existingIndex = cart.items.findIndex((i) => {
+          if (cleanItem.id && i.id === cleanItem.id) return true;
+          return i.productId === productId && (i.variantId || null) === (variantId || null);
+        });
 
         let updatedItems = [];
         if (existingIndex > -1) {
@@ -190,7 +207,11 @@ export const useCartStore = create(
       removeItem: async (id) => {
         const token = TokenStorage.getAccessToken();
         const { cart } = get();
-        const updatedItems = cart.items.filter((it) => it.id !== id && it.productId !== id);
+        const hasDirectMatch = cart.items.some((it) => it.id === id);
+        const updatedItems = hasDirectMatch
+          ? cart.items.filter((it) => it.id !== id)
+          : cart.items.filter((it) => it.productId !== id);
+
         const subtotal = updatedItems.reduce(
           (sum, it) => sum + (Number(it.price || it.unitPrice || 0) * it.quantity),
           0

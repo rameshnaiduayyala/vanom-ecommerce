@@ -74,6 +74,11 @@ export async function downloadInvoice(request, reply) {
 }
 
 export async function getOrderShipment(request, reply) {
+  const userId = request.user.role === "SUPERADMIN" ? null : request.user.sub;
+  const order = await orderService.getOrderById(request.params.id, userId);
+  if (!order) {
+    return reply.status(HTTP_STATUS.NOT_FOUND).send({ success: false, message: MESSAGES.ORDER_NOT_FOUND });
+  }
   const { getShipmentTracking } = await import("../shipping/shipping.service.js");
   const tracking = await getShipmentTracking({ orderId: request.params.id });
   return sendSuccess(reply, { message: "Shipment details retrieved", data: tracking });

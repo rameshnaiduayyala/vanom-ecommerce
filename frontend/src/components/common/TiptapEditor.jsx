@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-import Link from "@tiptap/extension-link";
 import TextAlign from "@tiptap/extension-text-align";
 import Placeholder from "@tiptap/extension-placeholder";
 import { TextStyle, Color } from "@tiptap/extension-text-style";
@@ -84,8 +82,13 @@ export function TiptapEditor({
         heading: {
           levels: [1, 2, 3],
         },
+        link: {
+          openOnClick: false,
+          HTMLAttributes: {
+            class: "text-[#00875A] underline hover:text-[#00522E] cursor-pointer",
+          },
+        },
       }),
-      Underline,
       TextStyle,
       Color,
       Highlight.configure({
@@ -100,12 +103,6 @@ export function TiptapEditor({
       TableRow,
       TableHeader,
       TableCell,
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: "text-[#00875A] underline hover:text-[#00522E] cursor-pointer",
-        },
-      }),
       TextAlign.configure({
         types: ["heading", "paragraph"],
       }),
@@ -125,12 +122,16 @@ export function TiptapEditor({
 
   // Keep editor content in sync when value changes externally
   useEffect(() => {
-    if (editor && value !== undefined && value !== editor.getHTML()) {
-      if (value === "" || value === null) {
-        editor.commands.setContent("");
-      } else if (editor.getHTML() !== value) {
-        editor.commands.setContent(value);
+    if (!editor || editor.isDestroyed) return;
+    try {
+      if (value !== undefined) {
+        const currentHTML = editor.getHTML();
+        if (value !== currentHTML) {
+          editor.commands.setContent(value || "", false);
+        }
       }
+    } catch (err) {
+      console.warn("[Tiptap] Content sync notice:", err);
     }
   }, [value, editor]);
 

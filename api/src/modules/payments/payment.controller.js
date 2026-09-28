@@ -19,7 +19,7 @@ export async function create(request, reply) {
 export async function capture(request, reply) {
   const data = await paymentService.capturePayment(request.params.paymentId, {
     ...request.body,
-    userId: request.user?.sub
+    user: request.user
   });
   return sendSuccess(reply, {
     message: "Payment captured successfully",

@@ -30,6 +30,11 @@ export async function processCheckout({
   warehouseId = null,
   discount = 0
 }) {
+  // Reject negative financial parameters
+  if (Number(shippingCharges) < 0 || Number(discount) < 0) {
+    throw new AppError("Financial values cannot be negative", HTTP_STATUS.BAD_REQUEST, "INVALID_FINANCIAL_INPUT");
+  }
+
   // ── 1. Validate Customer ──────────────────────────────────────────────────
   if (!userId) {
     throw new AppError("Authentication required for checkout", HTTP_STATUS.UNAUTHORIZED, "AUTH_REQUIRED");

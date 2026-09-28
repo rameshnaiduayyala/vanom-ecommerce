@@ -514,13 +514,13 @@ export async function getShipmentTracking({ trackingNumber, orderId = null, carr
   if (trackingNumber) {
     shipment = await prisma.shipment.findFirst({
       where: { trackingNumber },
-      include: { order: { include: { user: true, addresses: true } }, warehouse: true }
+      include: { warehouse: true }
     });
   } else if (orderId) {
     shipment = await prisma.shipment.findFirst({
       where: { orderId },
       orderBy: { createdAt: "desc" },
-      include: { order: { include: { user: true, addresses: true } }, warehouse: true }
+      include: { warehouse: true }
     });
   }
 
@@ -558,12 +558,20 @@ export async function getShipmentTracking({ trackingNumber, orderId = null, carr
  * Updates Shipment & Order fulfillment status without modifying payment.
  */
 export async function processShippoWebhook({ payload, signature, rawBody }) {
-  // 1. Verify HMAC authenticity if configured
-  if (signature && rawBody) {
-    const isAuthentic = shippo.verifyShippoWebhook(rawBody, signature);
-    if (!isAuthentic) {
-      throw new AppError("Invalid Shippo webhook signature", HTTP_STATUS.BAD_REQUEST, "INVALID_WEBHOOK_SIGNATURE");
-    }
+  if (env.nodeEnv === "production" && (!env.shippoWebhookSecret || env.shippoWebhookSecret === "shippo_whsec_placeholder")) {
+    throw new AppError("Shippo webhook secret is not configured in production", HTTP_STATUS.INTERNAL_SERVER_ERROR, "CONFIG_ERROR");
+  }
+
+  if (!signature) {
+    throw new AppError("Missing Shippo webhook signature header", HTTP_STATUS.BAD_REQUEST, "MISSING_SIGNATURE");
+  }
+  if (!rawBody || (Buffer.isBuffer(rawBody) && rawBody.length === 0)) {
+    throw new AppError("Missing raw body for Shippo webhook verification", HTTP_STATUS.BAD_REQUEST, "MISSING_RAW_BODY");
+  }
+
+  const isAuthentic = shippo.verifyShippoWebhook(rawBody, signature);
+  if (!isAuthentic) {
+    throw new AppError("Invalid Shippo webhook signature", HTTP_STATUS.BAD_REQUEST, "INVALID_WEBHOOK_SIGNATURE");
   }
 
   const eventType = payload?.event || payload?.type || "unknown";

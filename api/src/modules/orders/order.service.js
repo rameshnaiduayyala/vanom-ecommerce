@@ -71,6 +71,11 @@ export async function createOrder(userId, {
     throw new AppError(MESSAGES.SHIPPING_ADDRESS_REQUIRED, HTTP_STATUS.BAD_REQUEST, "SHIPPING_ADDRESS_REQUIRED");
   }
 
+  // Reject negative financial parameters
+  if (Number(shippingCharges) < 0 || Number(tax) < 0 || Number(discount) < 0) {
+    throw new AppError("Financial values cannot be negative", HTTP_STATUS.BAD_REQUEST, "INVALID_FINANCIAL_INPUT");
+  }
+
   // Resolve country by ID or code
   const targetCountry = await prisma.country.findFirst({
     where: {

@@ -178,16 +178,11 @@ export function ComboProductCard({ combo, badge = null }) {
           </div>
 
           {/* Combo Title */}
-          <Link to={`/products/${combo.slug || combo.id}`} className="block group-hover:text-[#3e8e45] transition-colors">
+          <Link to={`/products/${combo.slug || combo.id}`} className="block group-hover:text-[#3e8e45] transition-colors mb-2.5">
             <h3 className="text-sm sm:text-base font-extrabold text-gray-900 line-clamp-1 leading-snug">
               {combo.name}
             </h3>
           </Link>
-
-          {/* Subtitle / Description */}
-          <p className="text-[11px] text-gray-500 line-clamp-1 mt-0.5 mb-2.5 font-normal">
-            {combo.subtitle || combo.description || "Curated synergistic combination for maximum wellness & value"}
-          </p>
 
           {/* ─── Included Items Mini Checklist ─── */}
           <div className="bg-[#FAFDF9] rounded-xl p-2.5 border border-[#E3EFE6] mb-3 space-y-1">

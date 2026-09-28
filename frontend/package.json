@@ -30,6 +30,7 @@
     "@tiptap/starter-kit": "^3.31.3",
     "axios": "^1.0.0",
     "canvas-confetti": "^1.9.4",
+    "dompurify": "^3.4.16",
     "framer-motion": "^13.1.1",
     "lucide-react": "^0.468.0",
     "qrcode.react": "^4.2.0",

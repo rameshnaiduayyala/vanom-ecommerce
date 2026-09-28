@@ -5,8 +5,11 @@ const rules = [
   { matches: (path) => path.endsWith("/auth/register"), max: 5 },
   { matches: (path) => path.endsWith("/forgot-password"), max: 5 },
   { matches: (path) => path.endsWith("/refresh"), max: 10 },
+  { matches: (path) => path.endsWith("/contact"), max: 5 },
+  { matches: (path) => /\/uploads(\/|$)/.test(path), max: 20 },
   { matches: (path) => /\/coupons?(\/|$)/.test(path), max: 20 },
-  { matches: (path) => /\/checkout(\/|$)/.test(path), max: 10 }
+  { matches: (path) => /\/checkout(\/|$)/.test(path), max: 15 },
+  { matches: (path) => /\/payments(\/|$)/.test(path) && !path.includes("/webhook"), max: 20 }
 ];
 
 export async function registerRateLimit(fastify) {
@@ -23,6 +26,12 @@ export async function registerRateLimit(fastify) {
 
   fastify.addHook("onRequest", async (request, reply) => {
     const path = request.url.split("?", 1)[0];
+
+    // Explicitly bypass automated provider webhooks from rate limiting
+    if (path.endsWith("/payments/webhook") || path.endsWith("/shipping/shippo/webhook")) {
+      return;
+    }
+
     const rule = rules.find(({ matches }) => matches(path));
     if (!rule) return;
 

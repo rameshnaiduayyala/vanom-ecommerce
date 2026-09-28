@@ -423,12 +423,13 @@ export async function createReturnLabel(transactionId) {
  * Validates HMAC signature for incoming Shippo webhook payloads if secret is set
  */
 export function verifyShippoWebhook(rawBody, signature, secret = env.shippoWebhookSecret) {
-  if (!secret || secret === "shippo_whsec_placeholder") {
-    // If webhook secret isn't configured in test mode, allow verification pass
-    return true;
-  }
   if (!signature || !rawBody) {
     return false;
+  }
+  if (!secret || secret === "shippo_whsec_placeholder") {
+    if (env.nodeEnv === "production") return false;
+    // In non-production test mode when secret is explicitly not set:
+    return true;
   }
 
   try {

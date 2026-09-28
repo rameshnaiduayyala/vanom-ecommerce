@@ -47,6 +47,7 @@ export function ProductDetailsPage() {
 
   useEffect(() => {
     setSelectedImage(0);
+    setSelectedVariantId(null);
     window.scrollTo(0, 0);
   }, [slug]);
 
@@ -54,6 +55,12 @@ export function ProductDetailsPage() {
     queryKey: ["product-detail", slug, country.code],
     queryFn: () => Api.catalog.getProductBySlug(slug),
   });
+
+  useEffect(() => {
+    if (product?.variants?.length > 0 && !selectedVariantId) {
+      setSelectedVariantId(product.variants[0].id);
+    }
+  }, [product, selectedVariantId]);
 
   const { data: allProducts = [] } = useQuery({
     queryKey: ["all-products-for-rel"],
@@ -79,9 +86,9 @@ export function ProductDetailsPage() {
         (c) =>
           c.country?.code === country.code ||
           c.currency === country.currency ||
-          c.country?.name?.toLowerCase() === country.name?.toLowerCase() ||
-          (country.code === "US" && c.country?.code === "US") ||
-          (country.code === "CA" && c.country?.code === "CA")
+          (typeof c.country === "string" && c.country.toLowerCase() === country.name?.toLowerCase()) ||
+          (country.code === "US" && (c.currency === "USD" || c.country === "United States" || c.country?.code === "US")) ||
+          (country.code === "CA" && (c.currency === "CAD" || c.country === "Canada" || c.country?.code === "CA"))
       ) || product.countries[0]
     );
   }, [product, country]);
@@ -94,8 +101,9 @@ export function ProductDetailsPage() {
         (c) =>
           c.country?.code === country.code ||
           c.currency === country.currency ||
-          (country.code === "US" && c.country?.code === "US") ||
-          (country.code === "CA" && c.country?.code === "CA")
+          (typeof c.country === "string" && c.country.toLowerCase() === country.name?.toLowerCase()) ||
+          (country.code === "US" && (c.currency === "USD" || c.country === "United States" || c.country?.code === "US")) ||
+          (country.code === "CA" && (c.currency === "CAD" || c.country === "Canada" || c.country?.code === "CA"))
       ) || selectedVariantObj.countries[0]
     );
   }, [selectedVariantObj, country]);
@@ -238,20 +246,35 @@ export function ProductDetailsPage() {
     }
 
     setAddingToCart(true);
-    const cartItemId = selectedVariantObj?.id || product?.id || slug;
+
+    const activeVariant = selectedVariantObj || (product?.variants?.length > 0 ? product.variants[0] : null);
+    const variantId = activeVariant?.id || null;
+    const variantLabel =
+      activeVariant?.name ||
+      activeVariant?.variant_name ||
+      (activeVariant?.attributes && typeof activeVariant.attributes === "object"
+        ? Object.values(activeVariant.attributes).filter(Boolean).join(" / ")
+        : null);
+
+    const itemName = variantLabel ? `${title} - ${variantLabel}` : title;
+    const resolvedProductId = product?.id || slug;
+    const cartItemId = variantId ? `${resolvedProductId}_${variantId}` : resolvedProductId;
+
     addItem({
       id: cartItemId,
-      productId: product?.id || slug,
-      variantId: selectedVariantObj?.id || null,
-      name: `${title}${selectedVariantObj ? ` - ${selectedVariantObj.variant_name || selectedVariantObj.name}` : ""}`,
+      productId: resolvedProductId,
+      variantId: variantId,
+      name: itemName,
+      slug: product?.slug || slug,
       price: price,
       image: gallery[0] || product?.image,
       quantity: 1,
+      sku: activeVariant?.sku || product?.sku,
     });
 
     addToast({
       title: "Added to Cart",
-      message: `${title} was added to your cart.`,
+      message: `${itemName} was added to your cart.`,
       type: "success",
     });
 

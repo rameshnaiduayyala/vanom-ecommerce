@@ -20,7 +20,13 @@ const cartInclude = {
           }
         }
       },
-      variant: true
+      variant: {
+        include: {
+          countries: {
+            include: { country: true }
+          }
+        }
+      }
     }
   }
 };
@@ -35,11 +41,18 @@ async function getOrCreateCart(userId, tx = prisma) {
 }
 
 async function validateItem(productId, variantId) {
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
+  const product = await prisma.product.findFirst({
+    where: {
+      OR: [
+        { id: productId },
+        { slug: productId }
+      ],
+      isActive: true,
+      deletedAt: null
+    },
     include: { variants: true }
   });
-  if (!product || !product.isActive) {
+  if (!product) {
     throw new AppError(MESSAGES.PRODUCT_NOT_AVAILABLE, HTTP_STATUS.UNPROCESSABLE_ENTITY, "PRODUCT_NOT_AVAILABLE");
   }
 
@@ -52,6 +65,8 @@ async function validateItem(productId, variantId) {
   } else if (variantId && variantId !== productId) {
     throw new AppError(MESSAGES.INVALID_PRODUCT_VARIANT, HTTP_STATUS.BAD_REQUEST, "INVALID_PRODUCT_VARIANT");
   }
+
+  return product;
 }
 
 function formatCart(cart) {
@@ -59,18 +74,20 @@ function formatCart(cart) {
   const items = (cart.items || []).map((item) => {
     const product = item.product;
     const variant = item.variant;
-    const name = variant?.name
-      ? `${product?.name || ""} - ${variant.name}`
+    const variantLabel = variant?.name || (variant?.attributes && typeof variant.attributes === "object" ? Object.values(variant.attributes).join(" / ") : null);
+    const name = variantLabel
+      ? `${product?.name || ""} - ${variantLabel}`
       : product?.name || "Product";
     const image = product?.images?.[0]?.url || null;
     const sku = variant?.sku || product?.sku || null;
-    const price = Number(variant?.price || product?.basePrice || 0);
+    const countryPrice = variant?.countries?.[0]?.price ?? product?.basePrice ?? 0;
+    const price = Number(countryPrice);
 
     return {
       ...item,
       name,
       productName: product?.name,
-      variantName: variant?.name,
+      variantName: variantLabel,
       slug: product?.slug,
       price,
       unitPrice: price,
@@ -117,7 +134,8 @@ export async function addItem(userId, { productId, variantId = null, quantity = 
   }
 
   const cleanVariantId = (targetVariantId && targetVariantId !== targetProductId) ? targetVariantId : null;
-  await validateItem(targetProductId, cleanVariantId);
+  const validatedProduct = await validateItem(targetProductId, cleanVariantId);
+  targetProductId = validatedProduct.id;
 
   const cart = await prisma.$transaction(async (tx) => {
     const userCart = await getOrCreateCart(userId, tx);

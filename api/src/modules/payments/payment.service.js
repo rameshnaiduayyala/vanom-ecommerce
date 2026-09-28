@@ -8,7 +8,8 @@ import {
   createStripePaymentIntent,
   recordStripeTaxTransaction,
   refundStripePayment,
-  verifyStripeWebhook
+  verifyStripeWebhook,
+  stripeClient
 } from "./stripe.service.js";
 
 /**
@@ -104,76 +105,128 @@ export async function createPaymentIntent({ orderId, provider = "STRIPE", userId
 /**
  * ─── CAPTURE & CONFIRM ORDER PAYMENT ─────────────────────────────────────
  * Converts inventory reservation to SALE, commits Stripe Tax, and generates invoice.
+ * Strictly verifies caller ownership and live Stripe payment state.
  */
-export async function capturePayment(paymentId, { amount, orderId = null, userId = null } = {}) {
-  let resolvedOrderId = orderId;
+export async function capturePayment(paymentId, { amount, orderId = null, user = null } = {}) {
+  if (!user) {
+    throw new AppError("Authentication required for payment capture", HTTP_STATUS.UNAUTHORIZED, "UNAUTHORIZED");
+  }
 
-  if (!resolvedOrderId && paymentId) {
-    const orderMatch = await prisma.order.findFirst({
+  let resolvedOrderId = orderId;
+  let orderMatch = null;
+
+  if (orderId) {
+    orderMatch = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true, user: true }
+    });
+  }
+
+  if (!orderMatch && paymentId) {
+    orderMatch = await prisma.order.findFirst({
       where: {
         OR: [
           { stripePaymentIntentId: paymentId },
           { id: paymentId }
         ]
-      }
-    });
-    if (orderMatch) resolvedOrderId = orderMatch.id;
-  }
-
-  if (resolvedOrderId) {
-    const order = await prisma.order.findUnique({
-      where: { id: resolvedOrderId },
+      },
       include: { items: true, user: true }
     });
+  }
 
-    if (order) {
-      // 1. Convert inventory reservation to SALE (idempotent)
-      if (!order.inventoryDeducted) {
-        await inventoryService.deductInventory(order.id, {
-          createdById: userId || order.userId || null,
-          notes: `Payment captured & verified (${paymentId})`
-        });
-      }
+  if (!orderMatch) {
+    throw new AppError("Order not found for payment capture", HTTP_STATUS.NOT_FOUND, "ORDER_NOT_FOUND");
+  }
 
-      // 2. Update order status to CONFIRMED
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          status: "CONFIRMED",
-          ...(paymentId && !order.stripePaymentIntentId ? { stripePaymentIntentId: paymentId } : {})
-        }
-      });
+  resolvedOrderId = orderMatch.id;
 
-      // 3. Commit Stripe Tax Transaction for audit & reporting
-      if (order.stripeTaxCalculationId) {
-        await recordStripeTaxTransaction({
-          calculationId: order.stripeTaxCalculationId,
-          reference: order.id
-        });
-      }
+  // Authorization: Caller must own the order or be SUPERADMIN
+  const isSuperAdmin = user.role === "SUPERADMIN";
+  if (!isSuperAdmin && orderMatch.userId !== user.sub) {
+    throw new AppError("Forbidden: You do not have permission to capture payment for this order", HTTP_STATUS.FORBIDDEN, "FORBIDDEN");
+  }
 
-      // 4. Generate & Store Official Financial Invoice with PDF
-      try {
-        await issueInvoiceForOrder({ orderId: order.id });
-      } catch (invErr) {
-        console.warn("[Invoice] Auto invoice creation on capture:", invErr.message);
-      }
+  // Verify PaymentIntent belongs to this order
+  const intentId = paymentId || orderMatch.stripePaymentIntentId;
 
-      // 5. Initialize Fulfillment Shipment & Label (Idempotent)
-      try {
-        const { createShipmentForOrder } = await import("../shipping/shipping.service.js");
-        await createShipmentForOrder({ orderId: order.id });
-      } catch (shipErr) {
-        console.warn("[Shipping] Shipment creation on capture:", shipErr.message);
-      }
+  // If live Stripe client is configured and intent is live:
+  if (stripeClient && intentId && intentId.startsWith("pi_") && !intentId.startsWith("pi_dev_") && !intentId.startsWith("pay_test_")) {
+    const paymentIntent = await stripeClient.paymentIntents.retrieve(intentId);
+    if (!paymentIntent) {
+      throw new AppError("Stripe PaymentIntent not found", HTTP_STATUS.NOT_FOUND, "PAYMENT_INTENT_NOT_FOUND");
+    }
+
+    if (paymentIntent.status !== "succeeded" && paymentIntent.status !== "requires_capture") {
+      throw new AppError(
+        `Cannot confirm order: Stripe payment state is "${paymentIntent.status}", expected "succeeded" or "requires_capture"`,
+        HTTP_STATUS.BAD_REQUEST,
+        "PAYMENT_NOT_CONFIRMED"
+      );
+    }
+
+    // Verify intent metadata matches order
+    if (paymentIntent.metadata?.orderId && paymentIntent.metadata.orderId !== orderMatch.id) {
+      throw new AppError("PaymentIntent does not match target order ID", HTTP_STATUS.FORBIDDEN, "PAYMENT_ORDER_MISMATCH");
     }
   }
 
+  // Idempotent: If order is already CONFIRMED and inventory already deducted, return gracefully
+  if (orderMatch.status === "CONFIRMED" && orderMatch.inventoryDeducted) {
+    return {
+      id: intentId || paymentId,
+      orderId: resolvedOrderId,
+      status: "captured",
+      amount: Number(orderMatch.total),
+      capturedAt: new Date().toISOString(),
+      idempotent: true
+    };
+  }
+
+  // 1. Convert inventory reservation to SALE (idempotent)
+  if (!orderMatch.inventoryDeducted) {
+    await inventoryService.deductInventory(orderMatch.id, {
+      createdById: user.sub || orderMatch.userId || null,
+      notes: `Payment captured & verified (${intentId || paymentId})`
+    });
+  }
+
+  // 2. Update order status to CONFIRMED
+  await prisma.order.update({
+    where: { id: orderMatch.id },
+    data: {
+      status: "CONFIRMED",
+      ...(intentId && !orderMatch.stripePaymentIntentId ? { stripePaymentIntentId: intentId } : {})
+    }
+  });
+
+  // 3. Commit Stripe Tax Transaction for audit & reporting
+  if (orderMatch.stripeTaxCalculationId) {
+    await recordStripeTaxTransaction({
+      calculationId: orderMatch.stripeTaxCalculationId,
+      reference: orderMatch.id
+    });
+  }
+
+  // 4. Generate & Store Official Financial Invoice with PDF
+  try {
+    await issueInvoiceForOrder({ orderId: orderMatch.id });
+  } catch (invErr) {
+    console.warn("[Invoice] Auto invoice creation on capture:", invErr.message);
+  }
+
+  // 5. Initialize Fulfillment Shipment & Label (Idempotent)
+  try {
+    const { createShipmentForOrder } = await import("../shipping/shipping.service.js");
+    await createShipmentForOrder({ orderId: orderMatch.id });
+  } catch (shipErr) {
+    console.warn("[Shipping] Shipment creation on capture:", shipErr.message);
+  }
+
   return {
-    id: paymentId,
+    id: intentId || paymentId,
     orderId: resolvedOrderId,
     status: "captured",
-    amount: amount || 0,
+    amount: amount || Number(orderMatch.total) || 0,
     capturedAt: new Date().toISOString()
   };
 }
@@ -218,17 +271,23 @@ export async function refundPayment(paymentId, { amount, reason = "Customer requ
  *   Payment Failed    -> Release inventory reservation -> Cancel order
  */
 export async function processWebhook(payload, signature = null, rawBody = null) {
-  let event = payload;
+  if (!signature) {
+    throw new AppError("Missing stripe-signature header", HTTP_STATUS.BAD_REQUEST, "MISSING_SIGNATURE");
+  }
+  if (!rawBody || (Buffer.isBuffer(rawBody) && rawBody.length === 0)) {
+    throw new AppError("Missing raw body for Stripe signature verification", HTTP_STATUS.BAD_REQUEST, "MISSING_RAW_BODY");
+  }
 
-  // Verify HMAC signature if signature header is provided
-  if (signature && rawBody) {
-    try {
-      const verified = verifyStripeWebhook(rawBody, signature);
-      if (verified) event = verified;
-    } catch (err) {
-      console.error("[Stripe Webhook] Signature verification failed:", err.message);
-      throw new AppError("Invalid webhook signature", HTTP_STATUS.BAD_REQUEST, "WEBHOOK_SIGNATURE_INVALID");
-    }
+  let event = null;
+  try {
+    event = verifyStripeWebhook(rawBody, signature);
+  } catch (err) {
+    console.error("[Stripe Webhook] Signature verification failed:", err.message);
+    throw new AppError(err.message || "Invalid webhook signature", err.statusCode || HTTP_STATUS.BAD_REQUEST, "WEBHOOK_SIGNATURE_INVALID");
+  }
+
+  if (!event) {
+    throw new AppError("Invalid webhook signature or payload", HTTP_STATUS.BAD_REQUEST, "WEBHOOK_SIGNATURE_INVALID");
   }
 
   const eventType = event?.type || event?.event || "unknown";

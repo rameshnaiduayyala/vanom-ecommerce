@@ -5,10 +5,14 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client
 import { prisma } from "../../config/prisma.js";
 import { env } from "../../config/env.js";
 import { optimizeImage } from "./image.js";
+import { AppError } from "../errors/app-error.js";
+import { HTTP_STATUS } from "../../constants/http-status.js";
+
+const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".pdf"]);
 
 function safeExtension(filename) {
   const extension = extname(filename || "").toLowerCase();
-  return /^[.][a-z0-9]{1,10}$/.test(extension) ? extension : "";
+  return ALLOWED_EXTENSIONS.has(extension) ? extension : "";
 }
 
 function safeName(filename) {
@@ -16,15 +20,58 @@ function safeName(filename) {
 }
 
 function validatePart(part) {
-  if (!part?.file || !part.filename) throw new Error("A file is required");
+  if (!part?.file || !part.filename) throw new AppError("A file is required", HTTP_STATUS.BAD_REQUEST, "FILE_REQUIRED");
   if (!env.uploadAllowedMimeTypes.includes(part.mimetype)) {
-    throw new Error(`Unsupported file type: ${part.mimetype}`);
+    throw new AppError(`Unsupported file type: ${part.mimetype}`, HTTP_STATUS.BAD_REQUEST, "UNSUPPORTED_MIME_TYPE");
+  }
+  const ext = safeExtension(part.filename);
+  if (!ext) {
+    throw new AppError(`Unsupported file extension for: ${part.filename}`, HTTP_STATUS.BAD_REQUEST, "UNSUPPORTED_EXTENSION");
+  }
+}
+
+function validateBufferMagicNumbers(buffer, mimeType) {
+  if (!buffer || buffer.length < 4) {
+    throw new AppError("Invalid or empty file content", HTTP_STATUS.BAD_REQUEST, "INVALID_FILE_CONTENT");
+  }
+
+  // PNG: 89 50 4E 47
+  const isPng = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47;
+  // JPEG: FF D8 FF
+  const isJpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  // WebP: RIFF ... WEBP
+  const isWebp =
+    buffer.length >= 12 &&
+    buffer.toString("ascii", 0, 4) === "RIFF" &&
+    buffer.toString("ascii", 8, 12) === "WEBP";
+  // PDF: %PDF-
+  const isPdf = buffer.toString("ascii", 0, 5).startsWith("%PDF-");
+
+  if (mimeType === "image/png" && !isPng) {
+    throw new AppError("File content signature does not match image/png", HTTP_STATUS.BAD_REQUEST, "FILE_SIGNATURE_MISMATCH");
+  }
+  if ((mimeType === "image/jpeg" || mimeType === "image/jpg") && !isJpeg) {
+    throw new AppError("File content signature does not match image/jpeg", HTTP_STATUS.BAD_REQUEST, "FILE_SIGNATURE_MISMATCH");
+  }
+  if (mimeType === "image/webp" && !isWebp) {
+    throw new AppError("File content signature does not match image/webp", HTTP_STATUS.BAD_REQUEST, "FILE_SIGNATURE_MISMATCH");
+  }
+  if (mimeType === "application/pdf" && !isPdf) {
+    throw new AppError("File content signature does not match application/pdf", HTTP_STATUS.BAD_REQUEST, "FILE_SIGNATURE_MISMATCH");
+  }
+
+  if (!isPng && !isJpeg && !isWebp && !isPdf) {
+    throw new AppError("File format not supported. Only verified JPEG, PNG, WebP, and PDF files are allowed.", HTTP_STATUS.BAD_REQUEST, "UNSUPPORTED_FILE_SIGNATURE");
   }
 }
 
 function buildKey(part, folder = "general", extension = null) {
-  const cleanFolder = String(folder).replace(/[^a-zA-Z0-9_-]/g, "") || "general";
-  return `${cleanFolder}/${randomUUID()}${extension || safeExtension(part.filename)}`;
+  const cleanFolder = String(folder).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 50) || "general";
+  const ext = extension || safeExtension(part.filename);
+  if (!ext) {
+    throw new AppError("Invalid or missing file extension", HTTP_STATUS.BAD_REQUEST, "INVALID_EXTENSION");
+  }
+  return `${cleanFolder}/${randomUUID()}${ext}`;
 }
 
 async function readFileStream(stream) {
@@ -32,7 +79,7 @@ async function readFileStream(stream) {
   let size = 0;
   for await (const chunk of stream) {
     size += chunk.length;
-    if (size > env.uploadMaxFileSize) throw new Error("File is too large");
+    if (size > env.uploadMaxFileSize) throw new AppError("File is too large", HTTP_STATUS.BAD_REQUEST, "FILE_TOO_LARGE");
     chunks.push(chunk);
   }
   return Buffer.concat(chunks);
@@ -126,6 +173,7 @@ export async function deleteStoredFile(storageKey) {
 export async function uploadFile(folder = "general", part) {
   validatePart(part);
   const inputBuffer = await readFileStream(part.file);
+  validateBufferMagicNumbers(inputBuffer, part.mimetype);
   const isImage = part.mimetype.startsWith("image/");
   const storedBuffer = isImage ? await optimizeImage(inputBuffer) : inputBuffer;
   const storedMimeType = isImage ? "image/webp" : part.mimetype;

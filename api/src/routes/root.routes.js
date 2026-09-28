@@ -385,47 +385,63 @@ function renderHtmlDetails(data) {
 }
 
 export async function registerRootRoutes(fastify) {
-  // Default Root Route GET /
+  // Public Root Route GET /
   fastify.get("/", async (request, reply) => {
-    const details = await getHealthDetails();
-    const acceptsHtml =
-      request.headers.accept && request.headers.accept.includes("text/html");
-    const forceJson = request.query && request.query.format === "json";
-
-    if (acceptsHtml && !forceJson) {
-      reply.type("text/html; charset=utf-8").send(renderHtmlDetails(details));
-      return;
+    if (env.nodeEnv !== "production") {
+      const acceptsHtml = request.headers.accept && request.headers.accept.includes("text/html");
+      const forceJson = request.query && request.query.format === "json";
+      if (acceptsHtml && !forceJson) {
+        const details = await getHealthDetails();
+        reply.type("text/html; charset=utf-8").send(renderHtmlDetails(details));
+        return;
+      }
     }
 
     return {
       success: true,
       message: "Vanom E-Commerce API is operational",
-      data: details
-    };
-  });
-
-  // Dedicated Health Route GET /health
-  fastify.get("/health", async (request, reply) => {
-    const details = await getHealthDetails();
-    const acceptsHtml =
-      request.headers.accept && request.headers.accept.includes("text/html");
-    const forceJson = request.query && request.query.format === "json";
-
-    if (acceptsHtml && !forceJson && request.query?.view === "html") {
-      reply.type("text/html; charset=utf-8").send(renderHtmlDetails(details));
-      return;
-    }
-
-    return {
-      success: details.status === "UP",
-      message: details.status === "UP" ? "API is healthy" : "API degraded",
       data: {
-        status: details.status,
-        timestamp: details.timestamp,
-        uptime: details.uptime,
-        environment: details.environment,
-        database: details.database
+        name: "Vanom E-Commerce API",
+        version: "1.0.0",
+        status: "UP",
+        timestamp: new Date().toISOString()
       }
     };
   });
+
+  // Minimal Public Health Route GET /health
+  fastify.get("/health", async (request, reply) => {
+    let dbStatus = "UP";
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch {
+      dbStatus = "DEGRADED";
+    }
+
+    return {
+      status: dbStatus === "UP" ? "ok" : "degraded",
+      timestamp: new Date().toISOString()
+    };
+  });
+
+  // Authenticated Diagnostics Route (SUPERADMIN only)
+  fastify.get("/admin/health", {
+    preHandler: async (req, reply) => {
+      try {
+        await req.jwtVerify();
+        if (req.user?.role !== "SUPERADMIN") {
+          return reply.code(403).send({ success: false, message: "Forbidden" });
+        }
+      } catch {
+        return reply.code(401).send({ success: false, message: "Unauthorized" });
+      }
+    }
+  }, async (request, reply) => {
+    const details = await getHealthDetails();
+    return {
+      success: true,
+      data: details
+    };
+  });
 }
+

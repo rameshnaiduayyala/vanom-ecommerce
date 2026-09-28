@@ -359,6 +359,10 @@ export async function getPublicInvoiceVerification(invoiceNumber) {
  * Fetch invoice by ID or Order with authorization check
  */
 export async function getInvoiceForDownload({ invoiceId, orderId, bulkOrderId, user }) {
+  if (!user) {
+    throw new AppError("Authentication required to download invoice", HTTP_STATUS.UNAUTHORIZED, "UNAUTHORIZED");
+  }
+
   const where = invoiceId
     ? { id: invoiceId }
     : orderId
@@ -384,9 +388,29 @@ export async function getInvoiceForDownload({ invoiceId, orderId, bulkOrderId, u
     }
   });
 
-  // If invoice record does not exist yet, auto-issue it dynamically
+  // If invoice record does not exist yet, verify authorization BEFORE dynamic issue
   if (!invoice) {
     if (orderId || bulkOrderId) {
+      if (user.role !== "SUPERADMIN") {
+        if (orderId) {
+          const ord = await prisma.order.findUnique({ where: { id: orderId } });
+          if (!ord || ord.userId !== user.sub) {
+            throw new AppError("Unauthorized access to order invoice", HTTP_STATUS.FORBIDDEN, "FORBIDDEN");
+          }
+        }
+        if (bulkOrderId) {
+          const bulkOrd = await prisma.bulkOrder.findUnique({ where: { id: bulkOrderId } });
+          const caller = await prisma.user.findUnique({
+            where: { id: user.sub },
+            select: { bulkBusinessId: true }
+          });
+          const userBusinessId = caller?.bulkBusinessId;
+          if (!bulkOrd || !userBusinessId || bulkOrd.businessId !== userBusinessId) {
+            throw new AppError("Unauthorized access to organization invoice", HTTP_STATUS.FORBIDDEN, "FORBIDDEN");
+          }
+        }
+      }
+
       invoice = await issueInvoiceForOrder({ orderId, bulkOrderId });
       // Reload with relations
       invoice = await prisma.invoice.findUnique({
@@ -412,13 +436,20 @@ export async function getInvoiceForDownload({ invoiceId, orderId, bulkOrderId, u
     }
   }
 
-  // Authorization check
-  if (user && user.role !== "SUPERADMIN") {
+  // Strict tenant and ownership authorization check
+  if (user.role !== "SUPERADMIN") {
     if (invoice.order && invoice.order.userId !== user.sub) {
       throw new AppError("Unauthorized access to invoice", HTTP_STATUS.FORBIDDEN, "FORBIDDEN");
     }
-    if (invoice.bulkOrder && user.bulkBusinessId && invoice.bulkOrder.businessId !== user.bulkBusinessId) {
-      throw new AppError("Unauthorized access to organization invoice", HTTP_STATUS.FORBIDDEN, "FORBIDDEN");
+    if (invoice.bulkOrder) {
+      const caller = await prisma.user.findUnique({
+        where: { id: user.sub },
+        select: { bulkBusinessId: true }
+      });
+      const userBusinessId = caller?.bulkBusinessId;
+      if (!userBusinessId || invoice.bulkOrder.businessId !== userBusinessId) {
+        throw new AppError("Unauthorized access to organization invoice", HTTP_STATUS.FORBIDDEN, "FORBIDDEN");
+      }
     }
   }
 

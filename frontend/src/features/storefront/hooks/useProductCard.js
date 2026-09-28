@@ -6,7 +6,7 @@ import { useUIStore } from "@/stores/ui.store.js";
 import { resolveProductImageUrl } from "@/utils/image.js";
 
 /** Resolves price from multiple possible API shapes and country-specific pricing */
-function resolvePrice(product, countryCode = "US") {
+function resolvePrice(product, countryCode = "US", activeVariant = null) {
   if (!product) return { price: 0, originalPrice: 0, discount: 0 };
 
   const isCanada = countryCode === "CA";
@@ -17,24 +17,25 @@ function resolvePrice(product, countryCode = "US") {
         (c) =>
           c.country?.code === countryCode ||
           c.currency === (isCanada ? "CAD" : "USD") ||
-          c.country?.name?.toLowerCase()?.includes(isCanada ? "canada" : "united states")
+          (typeof c.country === "string" && c.country.toLowerCase().includes(isCanada ? "canada" : "united states"))
       ) || product.countries[0]
     : null;
 
-  // 2. Check variant country table entry if variable product
-  const firstVariant =
-    Array.isArray(product.variants) && product.variants.length > 0
+  // 2. Check active variant or first variant country table entry
+  const targetVariant =
+    activeVariant ||
+    (Array.isArray(product.variants) && product.variants.length > 0
       ? product.variants[0]
-      : null;
+      : null);
 
   const variantCountryEntry =
-    firstVariant && Array.isArray(firstVariant.countries)
-      ? firstVariant.countries.find(
+    targetVariant && Array.isArray(targetVariant.countries)
+      ? targetVariant.countries.find(
           (c) =>
             c.country?.code === countryCode ||
             c.currency === (isCanada ? "CAD" : "USD") ||
-            c.country?.name?.toLowerCase()?.includes(isCanada ? "canada" : "united states")
-        ) || firstVariant.countries[0]
+            (typeof c.country === "string" && c.country.toLowerCase().includes(isCanada ? "canada" : "united states"))
+        ) || targetVariant.countries[0]
       : null;
 
   let resolvedUnit = 0;
@@ -44,7 +45,7 @@ function resolvePrice(product, countryCode = "US") {
     resolvedUnit =
       variantCountryEntry?.price ??
       countryEntry?.price ??
-      firstVariant?.price_cad ??
+      targetVariant?.price_cad ??
       product.price_cad ??
       product.priceCA ??
       product.pricing?.CA?.retailPrice ??
@@ -52,14 +53,14 @@ function resolvePrice(product, countryCode = "US") {
         ? Number(product.basePrice) * 1.35
         : product.price
         ? Number(product.price) * 1.35
-        : firstVariant?.price_usd
-        ? Number(firstVariant.price_usd) * 1.35
+        : targetVariant?.price_usd
+        ? Number(targetVariant.price_usd) * 1.35
         : 0);
 
     resolvedOld =
       variantCountryEntry?.oldPrice ??
       countryEntry?.oldPrice ??
-      firstVariant?.old_price_cad ??
+      targetVariant?.old_price_cad ??
       product.old_price_cad ??
       (product.oldPrice ? Number(product.oldPrice) * 1.35 : 0);
   } else {
@@ -67,18 +68,18 @@ function resolvePrice(product, countryCode = "US") {
     resolvedUnit =
       variantCountryEntry?.price ??
       countryEntry?.price ??
-      firstVariant?.price_usd ??
+      targetVariant?.price_usd ??
       product.basePrice ??
       product.price_usd ??
       product.priceUS ??
       product.price ??
       product.pricing?.US?.retailPrice ??
-      (firstVariant?.price ? Number(firstVariant.price) : 0);
+      (targetVariant?.price ? Number(targetVariant.price) : 0);
 
     resolvedOld =
       variantCountryEntry?.oldPrice ??
       countryEntry?.oldPrice ??
-      firstVariant?.old_price_usd ??
+      targetVariant?.old_price_usd ??
       product.old_price_usd ??
       product.oldPrice ??
       product.pricing?.US?.mrp ??
@@ -113,20 +114,61 @@ export function useProductCard(product) {
 
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState(
+    product?.variants?.[0]?.id || null
+  );
 
   const productId = product?.id || product?._id;
   const wishlisted = useMemo(() => isInWishlist(productId), [isInWishlist, productId]);
 
-  const { price, originalPrice, discount } = resolvePrice(product, country.code);
+  const isVariable =
+    product?.type === "VARIABLE" ||
+    (Array.isArray(product?.variants) && product.variants.length > 1);
+
+  const selectedVariantObj = useMemo(() => {
+    if (!product?.variants || product.variants.length === 0) return null;
+    return (
+      product.variants.find((v) => v.id === selectedVariantId) ||
+      product.variants[0]
+    );
+  }, [product, selectedVariantId]);
+
+  const { price, originalPrice, discount } = resolvePrice(
+    product,
+    country.code,
+    selectedVariantObj
+  );
   const productImage = resolveProductImageUrl(product);
   const effectiveBadge = product?.badge || null;
 
-  // Real inventory & stock resolution (no dummy quantities)
-  const stockCount =
-    product?.stockQuantity ??
-    product?.stock ??
-    product?.inventoryCount ??
-    (product?.variants?.[0]?.stockQuantity ?? null);
+  // Real inventory & stock resolution
+  const stockCount = useMemo(() => {
+    if (selectedVariantObj) {
+      const vCountryEntry = Array.isArray(selectedVariantObj.countries)
+        ? selectedVariantObj.countries.find(
+            (c) =>
+              c.country?.code === country.code ||
+              c.currency === country.currency ||
+              (typeof c.country === "string" && c.country.toLowerCase().includes(country.name?.toLowerCase()))
+          ) || selectedVariantObj.countries[0]
+        : null;
+
+      return (
+        vCountryEntry?.stock ??
+        selectedVariantObj.stock_quantity ??
+        selectedVariantObj.stock ??
+        product?.stockQuantity ??
+        product?.stock ??
+        100
+      );
+    }
+    return (
+      product?.stockQuantity ??
+      product?.stock ??
+      product?.inventoryCount ??
+      100
+    );
+  }, [selectedVariantObj, country, product]);
 
   const isOutOfStock = stockCount !== null && stockCount <= 0;
 
@@ -148,22 +190,33 @@ export function useProductCard(product) {
 
     setAddingToCart(true);
 
+    const variantId = selectedVariantObj?.id || null;
+    const variantLabel =
+      selectedVariantObj?.name ||
+      selectedVariantObj?.variant_name ||
+      (selectedVariantObj?.attributes && typeof selectedVariantObj.attributes === "object"
+        ? Object.values(selectedVariantObj.attributes).filter(Boolean).join(" / ")
+        : null);
+
+    const itemName = variantLabel ? `${product?.name} - ${variantLabel}` : product?.name;
+    const cartItemId = variantId ? `${productId}_${variantId}` : productId;
+
     addItem({
-      id: productId,
+      id: cartItemId,
       productId: productId,
-      variantId: product?.variants?.[0]?.id || null,
-      name: product?.name,
+      variantId: variantId,
+      name: itemName,
       slug: product?.slug,
       price,
       mrp: originalPrice,
       quantity,
       image: productImage,
-      sku: product?.sku || product?.variants?.[0]?.sku,
+      sku: selectedVariantObj?.sku || product?.sku,
     });
 
     addToast({
       title: "Added to Cart",
-      message: `${quantity}× ${product?.name} added to cart.`,
+      message: `${quantity}× ${itemName} added to cart.`,
       type: "success",
     });
 
@@ -203,6 +256,10 @@ export function useProductCard(product) {
     addingToCart,
     wishlisted,
     isOutOfStock,
+    isVariable,
+    selectedVariantObj,
+    selectedVariantId: selectedVariantObj?.id || null,
+    setSelectedVariantId,
     rating,
     reviewCount,
     subtitle,

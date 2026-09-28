@@ -21,6 +21,9 @@ export function ProductCard({
     addingToCart,
     wishlisted,
     isOutOfStock,
+    isVariable,
+    selectedVariantId,
+    setSelectedVariantId,
     rating,
     reviewCount,
     subtitle,
@@ -77,6 +80,10 @@ export function ProductCard({
           originalPrice={originalPrice}
           country={country}
           variant={variant}
+          isVariable={isVariable}
+          variants={product?.variants}
+          selectedVariantId={selectedVariantId}
+          onSelectVariant={setSelectedVariantId}
         />
 
         <ProductCardActions

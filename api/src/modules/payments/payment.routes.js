@@ -1,4 +1,5 @@
 import * as controller from "./payment.controller.js";
+import { authenticate, authorize } from "../../common/guards/auth.guard.js";
 
 async function optionalAuth(request) {
   try {
@@ -25,7 +26,7 @@ export async function paymentRoutes(fastify) {
   }, controller.create);
 
   fastify.post("/payments/:paymentId/capture", {
-    preHandler: optionalAuth,
+    preHandler: authenticate,
     schema: {
       params: {
         type: "object",
@@ -38,7 +39,7 @@ export async function paymentRoutes(fastify) {
   }, controller.capture);
 
   fastify.post("/payments/:paymentId/refund", {
-    preHandler: optionalAuth,
+    preHandler: [authenticate, authorize("SUPERADMIN")],
     schema: {
       params: {
         type: "object",

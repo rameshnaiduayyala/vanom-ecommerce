@@ -35,6 +35,16 @@ export async function buildApp() {
 
   await registerCors(fastify);
 
+  // Standard HTTP Security Headers (Defense in depth)
+  fastify.addHook("onSend", async (request, reply) => {
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("X-Frame-Options", "DENY");
+    reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
+    if (env.nodeEnv === "production") {
+      reply.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    }
+  });
+
   await registerRootRoutes(fastify);
 
   await registerRoutes(fastify);

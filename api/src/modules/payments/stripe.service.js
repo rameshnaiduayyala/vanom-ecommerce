@@ -219,24 +219,37 @@ export async function refundStripePayment(paymentIntentId, { amount = null, reas
  * ─── STRIPE WEBHOOK: Verify Cryptographic Signature ──────────────────────
  */
 export function verifyStripeWebhook(rawBody, signature) {
-  if (!stripeClient || !env.stripeWebhookSecret || env.stripeWebhookSecret === "whsec_placeholder") {
-    // If webhook secret is not set, parse payload directly for development
-    try {
-      if (Buffer.isBuffer(rawBody)) {
-        return JSON.parse(rawBody.toString("utf8"));
-      }
-      if (typeof rawBody === "string") {
-        return JSON.parse(rawBody);
-      }
-      return rawBody;
-    } catch {
-      return null;
+  if (!signature) {
+    throw new AppError("Missing stripe-signature header", HTTP_STATUS.BAD_REQUEST, "MISSING_SIGNATURE");
+  }
+  if (!rawBody || (Buffer.isBuffer(rawBody) && rawBody.length === 0)) {
+    throw new AppError("Missing raw body for Stripe signature verification", HTTP_STATUS.BAD_REQUEST, "MISSING_RAW_BODY");
+  }
+
+  if (env.nodeEnv === "production") {
+    if (!stripeClient || !env.stripeWebhookSecret || env.stripeWebhookSecret === "whsec_placeholder") {
+      throw new AppError("Stripe webhook secret is not configured in production", HTTP_STATUS.INTERNAL_SERVER_ERROR, "CONFIG_ERROR");
     }
   }
 
-  return stripeClient.webhooks.constructEvent(
-    rawBody,
-    signature,
-    env.stripeWebhookSecret
-  );
+  if (stripeClient && env.stripeWebhookSecret && env.stripeWebhookSecret !== "whsec_placeholder") {
+    return stripeClient.webhooks.constructEvent(
+      rawBody,
+      signature,
+      env.stripeWebhookSecret
+    );
+  }
+
+  // Non-production test fallback ONLY when secret is explicitly unconfigured in dev
+  try {
+    if (Buffer.isBuffer(rawBody)) {
+      return JSON.parse(rawBody.toString("utf8"));
+    }
+    if (typeof rawBody === "string") {
+      return JSON.parse(rawBody);
+    }
+    return rawBody;
+  } catch {
+    return null;
+  }
 }

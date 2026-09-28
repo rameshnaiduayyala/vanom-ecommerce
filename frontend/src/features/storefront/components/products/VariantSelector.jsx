@@ -13,6 +13,17 @@ export function VariantSelector({
   const selectedVariantObj =
     variants.find((v) => v.id === selectedVariantId) || variants[0];
 
+  const getVariantLabel = (v) => {
+    if (!v) return "Option";
+    if (v.name) return v.name;
+    if (v.variant_name) return v.variant_name;
+    if (v.attributes && typeof v.attributes === "object") {
+      const vals = Object.values(v.attributes).filter(Boolean);
+      if (vals.length > 0) return vals.join(" / ");
+    }
+    return "Standard";
+  };
+
   return (
     <div className="pt-2 pb-1 space-y-2">
       <div className="flex items-center justify-between">
@@ -20,9 +31,7 @@ export function VariantSelector({
           Select Option / Size:
         </span>
         <span className="text-[11px] font-semibold text-emerald-700">
-          {selectedVariantObj
-            ? selectedVariantObj.variant_name || selectedVariantObj.name
-            : "Standard"}
+          {selectedVariantObj ? getVariantLabel(selectedVariantObj) : "Standard"}
         </span>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -35,9 +44,9 @@ export function VariantSelector({
                 (c) =>
                   c.country?.code === country.code ||
                   c.currency === country.currency ||
-                  c.country?.name?.toLowerCase() === country.name?.toLowerCase() ||
-                  (country.code === "US" && (c.currency === "USD" || c.country?.code === "US")) ||
-                  (country.code === "CA" && (c.currency === "CAD" || c.country?.code === "CA"))
+                  (typeof c.country === "string" && c.country.toLowerCase() === country.name?.toLowerCase()) ||
+                  (country.code === "US" && (c.currency === "USD" || c.country === "United States" || c.country?.code === "US")) ||
+                  (country.code === "CA" && (c.currency === "CAD" || c.country === "Canada" || c.country?.code === "CA"))
               ) || v.countries[0]
             : null;
 
@@ -71,7 +80,7 @@ export function VariantSelector({
                   : "bg-white border-gray-200 text-gray-700 hover:border-gray-400"
               }`}
             >
-              <span>{v.variant_name || v.name}</span>
+              <span>{getVariantLabel(v)}</span>
               <span className="text-[10px] font-normal text-gray-500">
                 {formatPrice(vPrice, country.currency, country.symbol)}{" "}
                 {vStock > 0 ? `• ${vStock} left` : "• Out of stock"}

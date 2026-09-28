@@ -1,9 +1,19 @@
 import "dotenv/config";
+const nodeEnv = process.env.NODE_ENV || "development";
+const jwtSecret = process.env.JWT_SECRET || (nodeEnv === "production" ? "" : "development-secret");
+
+if (nodeEnv === "production") {
+  if (!jwtSecret || jwtSecret === "development-secret" || jwtSecret.length < 32) {
+    throw new Error(
+      "FATAL SECURITY CONFIGURATION: In production, JWT_SECRET must be explicitly set with a cryptographically secure key of at least 32 characters."
+    );
+  }
+}
 
 export const env = {
   port: Number(process.env.PORT || 3000),
   databaseUrl: process.env.DATABASE_URL,
-  jwtSecret: process.env.JWT_SECRET || "development-secret",
+  jwtSecret,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
   passwordResetExpiresMinutes: Number(process.env.PASSWORD_RESET_EXPIRES_MINUTES) || 30,
   emailVerificationExpiresMinutes: Number(process.env.EMAIL_VERIFICATION_EXPIRES_MINUTES) || 60,
@@ -12,6 +22,10 @@ export const env = {
   resendApiKey: process.env.RESEND_API_KEY,
   appUrl: process.env.APP_URL || "http://localhost:3000",
   clientUrl: process.env.CLIENT_URL || "http://localhost:5173",
+  allowedOrigins: (process.env.ALLOWED_ORIGINS || process.env.CLIENT_URL || "http://localhost:5173")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean),
   awsRegion: process.env.AWS_REGION || "us-east-1",
   smsProvider: process.env.SMS_PROVIDER || "console",
   smtpHost: process.env.SMTP_HOST,
@@ -19,7 +33,7 @@ export const env = {
   smtpSecure: process.env.SMTP_SECURE === "true",
   smtpUser: process.env.SMTP_USER,
   smtpPassword: process.env.SMTP_PASSWORD,
-  nodeEnv: process.env.NODE_ENV || "development",
+  nodeEnv,
   uploadProvider: process.env.UPLOAD_PROVIDER || "local",
   uploadDir: process.env.UPLOAD_DIR || "uploads",
   assetDir: process.env.ASSET_DIR || "assets",

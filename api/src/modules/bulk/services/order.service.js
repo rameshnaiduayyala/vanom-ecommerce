@@ -13,6 +13,15 @@ function generateOrderNumber() {
 }
 
 export async function create(userId, input) {
+  // Validate and reject negative financial inputs upfront
+  if (
+    (input.shippingCharges !== undefined && Number(input.shippingCharges) < 0) ||
+    (input.tax !== undefined && Number(input.tax) < 0) ||
+    (input.discount !== undefined && Number(input.discount) < 0)
+  ) {
+    fail("Financial values cannot be negative", "INVALID_FINANCIAL_INPUT", HTTP_STATUS.BAD_REQUEST);
+  }
+
   const business = await getBusinessForUser(userId, { approved: true });
 
   // Resolve line items — from explicit input or from the business cart
@@ -39,12 +48,22 @@ export async function create(userId, input) {
     });
   }
 
-  // Calculate totals
-  const subtotal = resolved.reduce((sum, r) => sum + r.total, 0);
+  // Calculate totals authoritatively on the server
+  const subtotal = Math.round(resolved.reduce((sum, r) => sum + r.total, 0) * 100) / 100;
   const discount = 0;
-  const shippingCharges = money(input.shippingCharges);
-  const tax = money(input.tax);
-  const total = subtotal - discount + shippingCharges + tax;
+
+  // Server-side shipping calculation:
+  // For wholesale bulk orders, orders over 2000 in subtotal qualify for complimentary commercial freight.
+  // Otherwise standard commercial freight rate ($150) applies.
+  const shippingCharges = subtotal >= 2000 ? 0 : 150;
+
+  // Server-side tax calculation:
+  // Verified business entities with valid tax registration / VAT number operate on standard B2B reverse-charge (0%).
+  // Otherwise apply standard regional sales tax (8.25%).
+  const hasTaxExemption = Boolean(business.taxRegistrationNumber || business.registrationNumber);
+  const tax = hasTaxExemption ? 0 : Math.round(subtotal * 0.0825 * 100) / 100;
+
+  const total = Math.round((subtotal - discount + shippingCharges + tax) * 100) / 100;
 
   const order = await prisma.$transaction(async (tx) => {
     // Verify and decrement stock inside a serialised transaction

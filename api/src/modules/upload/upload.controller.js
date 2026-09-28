@@ -3,6 +3,15 @@ import { sendSuccess } from "../../common/response/api-response.js";
 import { HTTP_STATUS } from "../../constants/http-status.js";
 import { AppError } from "../../common/errors/app-error.js";
 
+const ADMIN_FOLDERS = new Set(["products", "categories", "banners", "brands"]);
+
+function checkFolderAuthorization(folder, user) {
+  const isPrivileged = user?.role === "SUPERADMIN" || user?.role === "COMPANY_ADMIN";
+  if (ADMIN_FOLDERS.has(folder) && !isPrivileged) {
+    throw new AppError("Forbidden: Administrator privileges required to upload to this directory", HTTP_STATUS.FORBIDDEN, "FORBIDDEN");
+  }
+}
+
 /**
  * Handle single file upload and return public URL + file metadata.
  * POST /api/v1/uploads?folder=products
@@ -13,6 +22,8 @@ export async function uploadSingle(request, reply) {
   }
 
   const folder = request.query?.folder || "general";
+  checkFolderAuthorization(folder, request.user);
+
   const part = await request.file();
 
   if (!part) {
@@ -45,6 +56,8 @@ export async function uploadMultiple(request, reply) {
   }
 
   const folder = request.query?.folder || "general";
+  checkFolderAuthorization(folder, request.user);
+
   const uploadedFiles = [];
 
   for await (const part of request.parts()) {
