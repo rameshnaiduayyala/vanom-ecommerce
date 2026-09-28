@@ -382,14 +382,30 @@ export async function createShipmentForOrder({
   const effectiveRateId = rateId || order.shippingRateId || order.rateSnapshots?.[0]?.shippoRateId;
 
   let transactionResult = null;
-  if (effectiveRateId && !effectiveRateId.startsWith("manual")) {
+
+  // In test mode, Shippo rate IDs expire quickly and real label purchase against test
+  // addresses causes carrier validation errors ("Address not found").
+  // Only attempt real label purchase in live production mode with a valid API key.
+  const isLiveShippoMode = (() => {
+    const key = env.shippoApiKey || "";
+    return key.startsWith("shippo_live_") && key.length > 20;
+  })();
+
+  if (effectiveRateId && !effectiveRateId.startsWith("manual") && !effectiveRateId.startsWith("rate_standard") && !effectiveRateId.startsWith("rate_priority") && isLiveShippoMode) {
     try {
       transactionResult = await shippo.createTransaction({
         rateId: effectiveRateId,
         metadata: { orderId: order.id, orderNumber: `ORD-${order.id.slice(0, 8).toUpperCase()}` }
       });
+      // If Shippo returned an error status, discard and fall through to mock
+      if (transactionResult && transactionResult.status === "ERROR") {
+        const errMsg = transactionResult.messages?.map(m => m?.text || m)?.join(", ") || "Carrier rejected label";
+        console.warn("[Shippo] Label purchase carrier error, using mock:", errMsg);
+        transactionResult = null;
+      }
     } catch (err) {
-      console.warn("[Shippo] Label purchase from rate ID deferred/mocked:", err.message);
+      console.warn("[Shippo] Label purchase error, falling back to mock:", err.message);
+      transactionResult = null;
     }
   }
 

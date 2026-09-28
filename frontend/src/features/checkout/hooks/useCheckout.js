@@ -9,11 +9,11 @@ import { Api } from "@/services/api/api-client.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { openRazorpayCheckout } from "../../../services/payment/razorpay.handler.js";
 
-// Default address per country
+// Default phone per country (city/state/postal left blank so user fills them correctly)
 const COUNTRY_DEFAULTS = {
-  US: { city: "Los Angeles", state: "CA", postalCode: "90001", phone: "+1 213 000 0000" },
-  CA: { city: "Toronto",     state: "ON", postalCode: "M5V 2T6", phone: "+1 416 000 0000" },
-  IN: { city: "Mumbai",      state: "MH", postalCode: "400001", phone: "+91 98765 43210" },
+  US: { phone: "+1 213 000 0000" },
+  CA: { phone: "+1 416 000 0000" },
+  IN: { phone: "+91 98765 43210" },
 };
 
 function getDefaultForm(user, countryCode) {
@@ -24,9 +24,9 @@ function getDefaultForm(user, countryCode) {
     email:        user?.email   || "",
     phone:        user?.phone   || geo.phone,
     addressLine1: "",
-    city:         geo.city,
-    state:        geo.state,
-    postalCode:   geo.postalCode,
+    city:         "",
+    state:        "",
+    postalCode:   "",
     paymentMethod,
   };
 }
@@ -68,12 +68,19 @@ export function useCheckout() {
   // ── Validation Readiness for Place Order ──
   const isShippingReady = selectedRate !== null && shipping !== null && !isLoadingRates;
   const isTaxReady      = taxData !== null && !isCalculatingTax;
+  const isAddressComplete = !!(
+    formData.addressLine1?.trim() &&
+    formData.city?.trim() &&
+    formData.postalCode?.trim()
+  );
 
   let disabledReason = null;
   if (!cart?.items || cart.items.length === 0) {
     disabledReason = "Your shopping cart is empty.";
   } else if (!formData.addressLine1?.trim()) {
     disabledReason = "Please enter your delivery street address.";
+  } else if (!formData.city?.trim() || !formData.postalCode?.trim()) {
+    disabledReason = "Please complete your city and postal code to calculate shipping.";
   } else if (isLoadingRates) {
     disabledReason = "Calculating live carrier shipping rates via Shippo...";
   } else if (!isShippingReady) {
@@ -98,15 +105,22 @@ export function useCheckout() {
     }
   }, [user]);
 
-  // Re-set geo defaults when country changes
+  // When country changes reset address fields so old city/postal don't persist with new country
   useEffect(() => {
     const geo = COUNTRY_DEFAULTS[country.code] || COUNTRY_DEFAULTS.US;
     setFormData((prev) => ({
       ...prev,
-      city:       prev.city       || geo.city,
-      state:      prev.state      || geo.state,
-      postalCode: prev.postalCode || geo.postalCode,
+      phone:        prev.phone || geo.phone,
+      // Clear address fields so user fills them correctly for the new country
+      addressLine1: "",
+      city:         "",
+      state:        "",
+      postalCode:   "",
     }));
+    // Also clear shipping rates on country change
+    setShippingRates([]);
+    setSelectedRate(null);
+    setAddressValidation(null);
   }, [country.code]);
 
   // ── Stripe Tax Calculation via Backend API ──
