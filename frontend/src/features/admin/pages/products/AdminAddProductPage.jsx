@@ -16,6 +16,7 @@ export function AdminAddProductPage() {
     setFormData,
     categories,
     brands,
+    warehouses,
     isPending,
     addVariantRow,
     removeVariantRow,
@@ -71,6 +72,7 @@ export function AdminAddProductPage() {
               setFormData={setFormData}
               categories={categories}
               brands={brands}
+              warehouses={warehouses}
             />
 
             {formData.product_type === "simple" ? (

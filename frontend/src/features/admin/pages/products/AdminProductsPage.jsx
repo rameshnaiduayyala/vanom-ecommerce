@@ -31,6 +31,7 @@ export function AdminProductsPage() {
     openEditProduct,
     handleProductSubmit,
     deleteProductMutation,
+    warehouses,
     isSubmitting,
   } = useProducts();
 
@@ -88,6 +89,7 @@ export function AdminProductsPage() {
         productForm={productForm}
         setProductForm={setProductForm}
         categories={categories}
+        warehouses={warehouses}
         onSubmit={handleProductSubmit}
         isSubmitting={isSubmitting}
       />

@@ -194,25 +194,48 @@ export async function getPayments() {
 }
 
 export async function getInventory() {
+  const warehouses = await prisma.warehouse.findMany({
+    include: {
+      inventories: {
+        select: {
+          quantity: true,
+          reservedQuantity: true
+        }
+      }
+    }
+  });
+
+  if (warehouses.length > 0) {
+    return warehouses.map((w) => {
+      const stock = w.inventories.reduce((sum, inv) => sum + inv.quantity, 0);
+      const reserved = w.inventories.reduce((sum, inv) => sum + inv.reservedQuantity, 0);
+      return {
+        id: w.id,
+        name: w.name,
+        code: w.code,
+        country: w.country || "Global Fulfillment Hub",
+        city: w.city,
+        stock,
+        reserved,
+        available: Math.max(0, stock - reserved)
+      };
+    });
+  }
+
   const products = await prisma.product.findMany({
     where: { isActive: true },
-    select: {
-      id: true,
-      name: true,
-      sku: true,
-      stock: true
-    }
+    select: { id: true, name: true, sku: true, stock: true }
   });
 
   const totalStock = products.reduce((sum, p) => sum + (p.stock || 0), 0);
 
   return [
     {
-      name: "Main Vanom Central Depot",
+      name: "Main Central Depot",
       country: "Global Fulfillment Hub",
-      stock: totalStock || 4500,
-      reserved: 120,
-      available: Math.max(0, (totalStock || 4500) - 120)
+      stock: totalStock || 0,
+      reserved: 0,
+      available: totalStock || 0
     }
   ];
 }

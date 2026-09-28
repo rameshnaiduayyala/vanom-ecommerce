@@ -42,6 +42,10 @@ enum UserRole {
   USER
   B2B_USER
   SUPERADMIN
+  COMPANY_ADMIN
+  INVENTORY_MANAGER
+  WAREHOUSE_MANAGER
+  EMPLOYEE
 }
 
 enum OrderAddressType {
@@ -112,14 +116,20 @@ model User {
   bulkBusinessId String?
   bulkBusiness   BulkBusiness? @relation(fields: [bulkBusinessId], references: [id], onDelete: SetNull)
 
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
   carts  Cart[]
   orders Order[]
   reviews Review[]
   passwordResetTokens PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
+  inventoryTransactions  InventoryTransaction[]
+  inventoryTransfers    InventoryTransfer[]
 
   @@index([countryId])
   @@index([bulkBusinessId])
+  @@index([organizationId])
   @@index([isActive])
 }
 
@@ -305,6 +315,7 @@ model Product {
   orderItems OrderItem[]
 
   reviews Review[]
+  inventories Inventory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -449,6 +460,7 @@ model ProductVariant {
   cartItems CartItem[]
 
   orderItems OrderItem[]
+  inventories Inventory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -653,6 +665,12 @@ model Order {
 
   user User @relation(fields: [userId], references: [id])
 
+  organizationId    String?
+  organization      Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  warehouseId       String?
+  inventoryReserved Boolean       @default(false)
+  inventoryDeducted Boolean       @default(false)
+
   items OrderItem[]
   addresses OrderAddress[]
   invoices Invoice[]
@@ -661,6 +679,8 @@ model Order {
   updatedAt DateTime @updatedAt
 
   @@index([userId])
+  @@index([organizationId])
+  @@index([warehouseId])
   @@index([status])
   @@index([createdAt])
 }
@@ -1201,6 +1221,172 @@ model ContactMessage {
   @@index([status])
   @@index([email])
   @@index([createdAt])
+}
+
+// ============================================================
+// INVENTORY & WAREHOUSE MANAGEMENT SYSTEM
+// ============================================================
+
+enum InventoryTransactionType {
+  PURCHASE
+  SALE
+  RESERVATION
+  RELEASE
+  RETURN
+  RESTOCK
+  ADJUSTMENT
+  DAMAGE
+  LOSS
+  TRANSFER_IN
+  TRANSFER_OUT
+}
+
+enum TransferStatus {
+  PENDING
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  code      String?  @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users                 User[]
+  warehouses            Warehouse[]
+  inventories           Inventory[]
+  inventoryTransactions InventoryTransaction[]
+  inventoryTransfers    InventoryTransfer[]
+  orders                Order[]
+
+  @@index([isActive])
+}
+
+model Warehouse {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  code           String
+  address        String?
+  city           String?
+  state          String?
+  country        String?
+  postalCode     String?
+  isActive       Boolean  @default(true)
+  isDefault      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization         Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inventories          Inventory[]
+  sourceTransfers      InventoryTransfer[] @relation("SourceWarehouse")
+  destinationTransfers InventoryTransfer[] @relation("DestinationWarehouse")
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+model Inventory {
+  id               String   @id @default(cuid())
+  organizationId   String
+  warehouseId      String
+  productId        String?
+  variantId        String?
+  quantity         Int      @default(0)
+  reservedQuantity Int      @default(0)
+  reorderLevel     Int      @default(10)
+  reorderQuantity  Int      @default(20)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization     Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  warehouse        Warehouse       @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  product          Product?        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant          ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  transactions     InventoryTransaction[]
+  transferItems    InventoryTransferItem[]
+
+  @@unique([warehouseId, variantId])
+  @@unique([warehouseId, productId])
+  @@index([organizationId])
+  @@index([warehouseId])
+  @@index([productId])
+  @@index([variantId])
+  @@index([organizationId, warehouseId])
+  @@index([organizationId, productId])
+  @@index([organizationId, variantId])
+}
+
+model InventoryTransaction {
+  id                       String                   @id @default(cuid())
+  organizationId           String
+  inventoryId              String
+  type                     InventoryTransactionType
+  quantity                 Int
+  previousQuantity         Int
+  newQuantity              Int
+  previousReservedQuantity Int                      @default(0)
+  newReservedQuantity      Int                      @default(0)
+  referenceId              String?
+  referenceType            String?                  // ORDER, PURCHASE_ORDER, TRANSFER, RETURN, MANUAL, STRIPE_PAYMENT
+  reason                   String?
+  notes                    String?
+  createdById              String?
+  createdAt                DateTime                 @default(now())
+
+  organization             Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inventory                Inventory                @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  createdBy                User?                    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([inventoryId])
+  @@index([type])
+  @@index([referenceId, referenceType])
+  @@index([organizationId, createdAt])
+  @@index([inventoryId, createdAt])
+}
+
+model InventoryTransfer {
+  id                     String         @id @default(cuid())
+  organizationId         String
+  transferNumber         String         @unique
+  sourceWarehouseId      String
+  destinationWarehouseId String
+  status                 TransferStatus @default(PENDING)
+  notes                  String?
+  createdById            String?
+  createdAt              DateTime       @default(now())
+  completedAt            DateTime?
+
+  organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sourceWarehouse        Warehouse               @relation("SourceWarehouse", fields: [sourceWarehouseId], references: [id])
+  destinationWarehouse   Warehouse               @relation("DestinationWarehouse", fields: [destinationWarehouseId], references: [id])
+  createdBy              User?                   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  items                  InventoryTransferItem[]
+
+  @@index([organizationId])
+  @@index([sourceWarehouseId])
+  @@index([destinationWarehouseId])
+  @@index([status])
+}
+
+model InventoryTransferItem {
+  id          String            @id @default(cuid())
+  transferId  String
+  inventoryId String
+  quantity    Int
+
+  transfer    InventoryTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  inventory   Inventory         @relation(fields: [inventoryId], references: [id])
+
+  @@index([transferId])
+  @@index([inventoryId])
 }
 
 

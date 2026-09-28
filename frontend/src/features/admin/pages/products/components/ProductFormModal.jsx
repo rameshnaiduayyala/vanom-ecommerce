@@ -11,6 +11,7 @@ export function ProductFormModal({
   productForm,
   setProductForm,
   categories = [],
+  warehouses = [],
   onSubmit,
   isSubmitting,
 }) {
@@ -53,6 +54,19 @@ export function ProductFormModal({
                 });
               }}
               options={categories.map((c) => ({ label: c.name, value: c.id }))}
+            />
+            <Select
+              label="Target Fulfillment Warehouse"
+              value={productForm.warehouseId || ""}
+              onChange={(e) => setProductForm({ ...productForm, warehouseId: e.target.value })}
+              options={
+                warehouses.length > 0
+                  ? warehouses.map((w) => ({
+                      label: `${w.name} (${w.code})${w.isDefault ? " — Default Hub" : ""}`,
+                      value: w.id,
+                    }))
+                  : [{ label: "Default Warehouse (Auto)", value: "" }]
+              }
             />
             <Input
               label="Stock Quantity"

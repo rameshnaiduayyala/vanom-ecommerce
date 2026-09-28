@@ -2,6 +2,7 @@ import { prisma } from "../../config/prisma.js";
 import { AppError } from "../../common/errors/app-error.js";
 import { HTTP_STATUS } from "../../constants/http-status.js";
 import { MESSAGES } from "../../constants/messages.js";
+import * as inventoryService from "../inventory/inventory.service.js";
 
 export async function createPaymentIntent({ orderId, provider = "STRIPE", userId = null }) {
   if (!orderId) {
@@ -79,21 +80,38 @@ export async function createPaymentIntent({ orderId, provider = "STRIPE", userId
   }
 }
 
-export async function capturePayment(paymentId, { amount, orderId = null } = {}) {
-  if (orderId) {
+export async function capturePayment(paymentId, { amount, orderId = null, userId = null } = {}) {
+  let resolvedOrderId = orderId;
+
+  if (resolvedOrderId) {
     try {
-      await prisma.order.update({
-        where: { id: orderId },
-        data: { status: "CONFIRMED" }
+      const order = await prisma.order.findUnique({
+        where: { id: resolvedOrderId }
       });
+
+      if (order) {
+        // Idempotent inventory deduction: confirm reservation & create SALE transaction
+        if (!order.inventoryDeducted) {
+          await inventoryService.deductInventory(resolvedOrderId, {
+            createdById: userId || order.userId || null,
+            notes: `Payment captured (${paymentId})`
+          });
+        }
+
+        await prisma.order.update({
+          where: { id: resolvedOrderId },
+          data: { status: "CONFIRMED" }
+        });
+      }
     } catch (err) {
-      console.warn("Could not update order status on capture:", err.message);
+      console.warn("Could not deduct inventory or update order on capture:", err.message);
+      throw err;
     }
   }
 
   return {
     id: paymentId,
-    orderId,
+    orderId: resolvedOrderId,
     status: "captured",
     amount: amount || 0,
     capturedAt: new Date().toISOString()
@@ -112,9 +130,71 @@ export async function refundPayment(paymentId, { amount, reason = "Customer requ
 }
 
 export async function processWebhook(payload) {
+  const eventType = payload?.event || payload?.type || "unknown";
+  const dataObject = payload?.data?.object || {};
+  const orderId =
+    dataObject?.metadata?.orderId ||
+    dataObject?.client_reference_id ||
+    payload?.orderId ||
+    payload?.data?.orderId ||
+    null;
+
+  let inventoryAction = "none";
+
+  if (orderId) {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId }
+    });
+
+    if (order) {
+      // Payment success events -> Deduct stock idempotently
+      if (
+        eventType === "payment_intent.succeeded" ||
+        eventType === "checkout.session.completed" ||
+        eventType === "charge.succeeded"
+      ) {
+        if (!order.inventoryDeducted) {
+          await inventoryService.deductInventory(order.id, {
+            notes: `Stripe webhook ${eventType}`
+          });
+          inventoryAction = "deducted";
+        } else {
+          inventoryAction = "already_deducted";
+        }
+
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { status: "CONFIRMED" }
+        });
+      }
+      // Payment failure/cancellation events -> Release stock reservation idempotently
+      else if (
+        eventType === "payment_intent.payment_failed" ||
+        eventType === "payment_intent.canceled" ||
+        eventType === "charge.failed"
+      ) {
+        if (order.inventoryReserved && !order.inventoryDeducted) {
+          await inventoryService.releaseInventory(order.id, {
+            reason: `Stripe webhook ${eventType}`
+          });
+          inventoryAction = "released";
+        } else {
+          inventoryAction = "reservation_already_handled";
+        }
+
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { status: "CANCELLED" }
+        });
+      }
+    }
+  }
+
   return {
     received: true,
-    eventType: payload?.event || payload?.type || "unknown",
+    eventType,
+    orderId,
+    inventoryAction,
     processedAt: new Date().toISOString()
   };
 }

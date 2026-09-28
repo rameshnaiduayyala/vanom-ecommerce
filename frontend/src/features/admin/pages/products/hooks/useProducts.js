@@ -17,6 +17,7 @@ export const DEFAULT_PRODUCT_FORM = {
   isFeatured: false,
   stock: 100,
   sku: "",
+  warehouseId: "",
   attributes: [],
 };
 
@@ -44,6 +45,12 @@ export function useProducts() {
     queryKey: ["admin-countries"],
     queryFn: () => Api.geography.getCountries(),
   });
+
+  const { data: warehousesRes = [] } = useQuery({
+    queryKey: ["admin-warehouses"],
+    queryFn: () => Api.admin.getWarehouses(),
+  });
+  const warehouses = Array.isArray(warehousesRes) ? warehousesRes : warehousesRes?.data || [];
 
   const createProductMutation = useMutation({
     mutationFn: (newProd) => Api.admin.createProduct(newProd),
@@ -82,9 +89,11 @@ export function useProducts() {
 
   const openAddProduct = () => {
     setEditingProduct(null);
+    const defaultWh = warehouses.find((w) => w.isDefault) || warehouses[0];
     setProductForm({
       ...DEFAULT_PRODUCT_FORM,
       categoryId: categories[0]?.id || "",
+      warehouseId: defaultWh?.id || "",
     });
     setIsProductModalOpen(true);
   };
@@ -149,6 +158,7 @@ export function useProducts() {
       basePrice: baseUsdPrice,
       stock: totalStock,
       sku: productForm.sku?.trim() || `VAN-${Date.now().toString().slice(-6)}`,
+      warehouseId: productForm.warehouseId || null,
       isFeatured: Boolean(productForm.isFeatured),
       isNew: Boolean(productForm.isNewProduct),
       isBestSeller: Boolean(productForm.isBestSeller),
@@ -207,6 +217,7 @@ export function useProducts() {
     openEditProduct,
     handleProductSubmit,
     deleteProductMutation,
+    warehouses,
     isSubmitting: createProductMutation.isPending || updateProductMutation.isPending,
   };
 }

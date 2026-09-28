@@ -107,6 +107,91 @@ export async function createProduct(input) {
       },
       include: productInclude
     });
+
+    // Automatically initialize inventory in selected or default warehouse
+    try {
+      let targetWarehouse = null;
+      const requestedWarehouseId = input.warehouseId || input.warehouse_id;
+      if (requestedWarehouseId) {
+        targetWarehouse = await prisma.warehouse.findFirst({
+          where: { id: requestedWarehouseId, isActive: true }
+        });
+      }
+
+      if (!targetWarehouse) {
+        targetWarehouse = await prisma.warehouse.findFirst({
+          where: { isActive: true },
+          orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }]
+        });
+      }
+
+      if (targetWarehouse) {
+        if (product.type === "VARIABLE" && product.variants?.length) {
+          for (const variant of product.variants) {
+            const initialQty = Math.max(0, Number(variant.stock) || 0);
+            const inv = await prisma.inventory.create({
+              data: {
+                organizationId: targetWarehouse.organizationId,
+                warehouseId: targetWarehouse.id,
+                variantId: variant.id,
+                quantity: initialQty,
+                reservedQuantity: 0,
+                reorderLevel: 10,
+                reorderQuantity: 20
+              }
+            });
+            if (initialQty > 0) {
+              await prisma.inventoryTransaction.create({
+                data: {
+                  organizationId: targetWarehouse.organizationId,
+                  inventoryId: inv.id,
+                  type: "RESTOCK",
+                  quantity: initialQty,
+                  previousQuantity: 0,
+                  newQuantity: initialQty,
+                  previousReservedQuantity: 0,
+                  newReservedQuantity: 0,
+                  referenceType: "MANUAL",
+                  reason: "Initial stock upon product creation"
+                }
+              });
+            }
+          }
+        } else {
+          const initialQty = Math.max(0, Number(product.stock) || 0);
+          const inv = await prisma.inventory.create({
+            data: {
+              organizationId: targetWarehouse.organizationId,
+              warehouseId: targetWarehouse.id,
+              productId: product.id,
+              quantity: initialQty,
+              reservedQuantity: 0,
+              reorderLevel: 10,
+              reorderQuantity: 20
+            }
+          });
+          if (initialQty > 0) {
+            await prisma.inventoryTransaction.create({
+              data: {
+                organizationId: targetWarehouse.organizationId,
+                inventoryId: inv.id,
+                type: "RESTOCK",
+                quantity: initialQty,
+                previousQuantity: 0,
+                newQuantity: initialQty,
+                previousReservedQuantity: 0,
+                newReservedQuantity: 0,
+                referenceType: "MANUAL",
+                reason: "Initial stock upon product creation"
+              }
+            });
+          }
+        }
+      }
+    } catch (invErr) {
+      console.warn("Auto inventory initialization note:", invErr.message);
+    }
+
     return serializeProduct(product);
   } catch (error) {
     if (error.code === "P2002" && error.meta?.target?.includes("slug")) {

@@ -11,6 +11,7 @@ export const INITIAL_PRODUCT_FORM_DATA = {
   description: "",
   category_id: "",
   brand_id: "",
+  warehouse_id: "",
   product_type: "simple", // simple | variable
   is_featured: false,
   is_new: true,
@@ -90,6 +91,15 @@ export function useAddProductForm() {
     queryKey: ["admin-countries"],
     queryFn: () => Api.geography.getCountries(),
   });
+
+  // Load Warehouses for Fulfillment Allocation
+  const { data: warehousesRes, isLoading: loadingWarehouses } = useQuery({
+    queryKey: ["admin-warehouses"],
+    queryFn: () => Api.admin.getWarehouses(),
+  });
+  const warehouses = Array.isArray(warehousesRes)
+    ? warehousesRes
+    : warehousesRes?.data || [];
 
   // Load Product Data if in Edit Mode
   const { data: existingProduct, isLoading: loadingProduct } = useQuery({
@@ -291,6 +301,16 @@ export function useAddProductForm() {
       setFormData((prev) => ({ ...prev, category_id: categories[0].id }));
     }
   }, [categories, isEditMode]);
+
+  // Set default warehouse
+  useEffect(() => {
+    if (warehouses.length > 0 && !formData.warehouse_id && !isEditMode) {
+      const defaultWh = warehouses.find((w) => w.isDefault) || warehouses[0];
+      if (defaultWh) {
+        setFormData((prev) => ({ ...prev, warehouse_id: defaultWh.id }));
+      }
+    }
+  }, [warehouses, isEditMode]);
 
   // Create Product Mutation
   const createMutation = useMutation({
@@ -596,6 +616,7 @@ export function useAddProductForm() {
       basePrice: baseUsdPrice,
       stock: totalStock,
       sku: mainSku,
+      warehouseId: formData.warehouse_id || null,
       ...(productCountries.length > 0 ? { countries: productCountries } : {}),
       ...(isVariable && processedVariants.length > 0 ? { variants: processedVariants } : {}),
     };
@@ -614,6 +635,8 @@ export function useAddProductForm() {
     categories,
     brands,
     countries,
+    warehouses,
+    loadingWarehouses,
     loadingCategories,
     loadingBrands,
     loadingProduct,

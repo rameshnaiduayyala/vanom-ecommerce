@@ -175,9 +175,15 @@ export async function createOrder(userId, {
     const numTax = new Prisma.Decimal(tax || 0);
     const total = subtotal.sub(numDiscount).add(numShipping).add(numTax);
 
+    const { resolveUserOrganization } = await import("../inventory/organization.service.js");
+    const { reserveInventory } = await import("../inventory/inventory.service.js");
+    const userRecord = await tx.user.findUnique({ where: { id: userId } });
+    const org = await resolveUserOrganization(userRecord, tx);
+
     const order = await tx.order.create({
       data: {
         userId,
+        organizationId: org.id,
         currencyCode: resolvedCurrencyCode,
         subtotal,
         discount: numDiscount,
@@ -191,6 +197,16 @@ export async function createOrder(userId, {
       },
       include: orderInclude
     });
+
+    // Reserve stock atomically for the order
+    await reserveInventory({
+      organizationId: org.id,
+      items: items.map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
+      orderId: order.id,
+      userId,
+      tx
+    });
+
     await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
     return order;
   });
@@ -221,8 +237,24 @@ export async function getOrderById(id, userId = null) {
 }
 
 export async function updateStatus(id, status) {
-  await getOrderById(id);
+  const existingOrder = await getOrderById(id);
   const updated = await prisma.order.update({ where: { id }, data: { status }, include: orderInclude });
+
+  if (status === "CANCELLED" && existingOrder.inventoryReserved && !existingOrder.inventoryDeducted) {
+    try {
+      const { releaseInventory } = await import("../inventory/inventory.service.js");
+      const { resolveUserOrganization } = await import("../inventory/organization.service.js");
+      const org = await resolveUserOrganization(existingOrder.user);
+      await releaseInventory({
+        organizationId: existingOrder.organizationId || org.id,
+        orderId: id,
+        reason: "Order status updated to CANCELLED"
+      });
+    } catch (err) {
+      console.warn("Could not release inventory reservation for cancelled order:", err.message);
+    }
+  }
+
   return formatOrder(updated);
 }
 

@@ -17,8 +17,12 @@ import { invoiceRoutes } from "../modules/invoice/invoice.routes.js";
 import { storeRoutes } from "../modules/store/store.routes.js";
 import { contactRoutes } from "../modules/contact/contact.routes.js";
 import { paymentRoutes } from "../modules/payments/payment.routes.js";
+import { inventoryRoutes } from "../modules/inventory/inventory.routes.js";
 
 export async function registerRoutes(fastify) {
+  await fastify.register(inventoryRoutes, {
+    prefix: "/api/v1"
+  });
   await fastify.register(paymentRoutes, {
     prefix: "/api/v1"
   });

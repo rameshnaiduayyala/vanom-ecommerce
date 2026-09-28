@@ -30,12 +30,57 @@ export const adminService = {
   },
 
   // Inventory
-  getInventory: async () => {
-    return apiClient.get("/admin/inventory");
+  getInventory: async (params = {}) => {
+    return apiClient.get("/inventory", { params });
+  },
+
+  getInventorySummary: async () => {
+    return apiClient.get("/inventory/summary");
+  },
+
+  getLowStock: async () => {
+    return apiClient.get("/inventory/low-stock");
+  },
+
+  getOutOfStock: async () => {
+    return apiClient.get("/inventory/out-of-stock");
+  },
+
+  getInventoryTransactions: async (params = {}) => {
+    return apiClient.get("/inventory/transactions", { params });
+  },
+
+  receiveStock: async (payload) => {
+    return apiClient.post("/inventory/receive", payload);
   },
 
   adjustInventory: async (payload) => {
-    return apiClient.post("/admin/inventory/adjust", payload);
+    return apiClient.post("/inventory/adjust", payload);
+  },
+
+  transferStock: async (payload) => {
+    return apiClient.post("/inventory/transfer", payload);
+  },
+
+  returnStock: async (payload) => {
+    return apiClient.post("/inventory/return", payload);
+  },
+
+  // Warehouses
+  getWarehouses: async () => {
+    return apiClient.get("/warehouses");
+  },
+
+  createWarehouse: async (data) => {
+    return apiClient.post("/warehouses", data);
+  },
+
+  updateWarehouse: async (id, data) => {
+    return apiClient.put(`/warehouses/${id}`, data);
+  },
+
+  deleteWarehouse: async (id) => {
+    return apiClient.delete(`/warehouses/${id}`);
   },
 
   // Quotes

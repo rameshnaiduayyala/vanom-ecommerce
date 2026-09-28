@@ -1,8 +1,8 @@
 import React from "react";
-import { Package, Layers, Sparkles, Tag, Boxes, FileText } from "lucide-react";
+import { Package, Layers, Sparkles, Tag, Boxes, FileText, Warehouse } from "lucide-react";
 import { TiptapEditor } from "@/components/common/TiptapEditor.jsx";
 
-export function BasicInfoCard({ formData, setFormData, categories = [], brands = [] }) {
+export function BasicInfoCard({ formData, setFormData, categories = [], brands = [], warehouses = [] }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs hover:shadow-sm transition-shadow space-y-5">
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -48,8 +48,8 @@ export function BasicInfoCard({ formData, setFormData, categories = [], brands =
         />
       </div>
 
-      {/* Category, Brand & SKU */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Category, Brand, SKU & Target Warehouse */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-slate-700">
             Category <span className="text-rose-500">*</span>
@@ -110,6 +110,35 @@ export function BasicInfoCard({ formData, setFormData, categories = [], brands =
             placeholder="e.g. VAN-SAF-001"
             className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#358B5B] focus:bg-white font-mono uppercase text-slate-900"
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Warehouse className="w-3.5 h-3.5 text-[#358B5B]" />
+              <span>Target Warehouse</span>
+            </span>
+            {warehouses.find((w) => w.id === formData.warehouse_id)?.isDefault && (
+              <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded">
+                Default
+              </span>
+            )}
+          </label>
+          <select
+            value={formData.warehouse_id || ""}
+            onChange={(e) => setFormData({ ...formData, warehouse_id: e.target.value })}
+            className="w-full px-3 py-2 text-xs sm:text-sm bg-emerald-50/30 border border-emerald-300/80 rounded-xl focus:outline-none focus:border-[#358B5B] focus:bg-white cursor-pointer text-slate-900 font-medium"
+          >
+            {warehouses.length > 0 ? (
+              warehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name} ({w.code}){w.isDefault ? " ★ Default" : ""}
+                </option>
+              ))
+            ) : (
+              <option value="">Default Warehouse</option>
+            )}
+          </select>
         </div>
       </div>
 
