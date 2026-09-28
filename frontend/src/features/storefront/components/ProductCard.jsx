@@ -40,15 +40,16 @@ export function ProductCard({
 
   return (
     <div
-      className={`group relative bg-white flex flex-col justify-between overflow-hidden w-full min-w-0 transition-all duration-300
-        border border-slate-100 hover:border-slate-200
-        shadow-sm hover:shadow-xl hover:shadow-slate-200/80
-        hover:-translate-y-1
+      className={`group relative bg-white flex flex-col overflow-hidden w-full min-w-0
+        transition-all duration-300 ease-out
+        border border-slate-100 hover:border-slate-200/80
+        shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)]
+        hover:-translate-y-1.5
         ${isCompact ? "rounded-2xl" : "rounded-2xl sm:rounded-3xl"}
         ${className}`}
     >
-      {/* Subtle top accent line that appears on hover */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30 rounded-t-3xl" />
+      {/* Hover accent line */}
+      <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30 rounded-t-3xl" />
 
       {/* ── Image & Badges ── */}
       <ProductCardImage
@@ -65,8 +66,8 @@ export function ProductCard({
 
       {/* ── Info & Actions Container ── */}
       <div
-        className={`flex-1 flex flex-col justify-between min-w-0 ${
-          isCompact ? "p-3 sm:p-3.5" : "p-4 sm:p-5"
+        className={`flex flex-col flex-1 min-w-0 ${
+          isCompact ? "p-3 gap-2.5" : "p-4 sm:p-5 gap-3"
         }`}
       >
         <ProductCardInfo

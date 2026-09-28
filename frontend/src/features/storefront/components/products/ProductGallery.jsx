@@ -152,18 +152,18 @@ export function ProductGallery({
         )}
 
         {/* Central Main Image Container */}
-        <div className="flex-1 bg-white rounded-3xl border border-gray-200/80 p-6 sm:p-8 relative flex items-center justify-center min-h-[380px] sm:min-h-[460px] shadow-xs group">
+        <div className="flex-1 bg-white rounded-3xl border border-gray-200/80 relative min-h-[380px] sm:min-h-[460px] shadow-xs group overflow-hidden">
           {currentImage ? (
             <>
               <div
                 onClick={() => openViewer(selectedImage)}
-                className="w-full h-full flex items-center justify-center cursor-zoom-in"
+                className="absolute inset-0 flex items-center justify-center cursor-zoom-in p-6 sm:p-10"
                 title="Click to open full-screen viewer"
               >
                 <img
                   src={currentImage}
                   alt={title}
-                  className="max-h-[340px] sm:max-h-[400px] w-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105"
+                  className="w-full h-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-[1.04]"
                 />
               </div>
 
@@ -171,7 +171,7 @@ export function ProductGallery({
               <button
                 type="button"
                 onClick={() => openViewer(selectedImage)}
-                className="absolute right-4 bottom-4 p-2.5 rounded-xl bg-white/95 hover:bg-white text-gray-700 hover:text-emerald-700 border border-gray-200 shadow-md transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold hover:shadow-lg active:scale-95"
+                className="absolute right-4 bottom-4 z-10 p-2.5 rounded-xl bg-white/95 hover:bg-white text-gray-700 hover:text-emerald-700 border border-gray-200 shadow-md transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold hover:shadow-lg active:scale-95"
                 title="Open full-screen image viewer"
               >
                 <Maximize2 className="w-4 h-4 text-emerald-700" />
@@ -179,7 +179,7 @@ export function ProductGallery({
               </button>
             </>
           ) : (
-            <div className="w-full h-full min-h-[320px] flex items-center justify-center text-center p-8 bg-emerald-50/70 rounded-2xl border-2 border-dashed border-emerald-300">
+            <div className="absolute inset-0 flex items-center justify-center text-center p-8 bg-emerald-50/70 rounded-2xl border-2 border-dashed border-emerald-300">
               <span className="font-extrabold text-2xl text-[#1a3c2e] leading-snug max-w-sm">
                 {title}
               </span>

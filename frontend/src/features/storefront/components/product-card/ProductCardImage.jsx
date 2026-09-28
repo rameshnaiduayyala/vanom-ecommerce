@@ -17,7 +17,7 @@ export function ProductCardImage({
   const isCompact = variant === "compact";
 
   return (
-    <div className="relative w-full aspect-square overflow-hidden bg-gradient-to-br from-slate-50 via-gray-50 to-stone-100 flex items-center justify-center">
+    <div className="relative w-full aspect-square overflow-hidden bg-gradient-to-br from-slate-50 via-gray-50 to-stone-100">
       {/* Background shine effect */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-transparent to-transparent pointer-events-none z-0" />
 
@@ -25,15 +25,13 @@ export function ProductCardImage({
       <Link
         to={productUrl}
         aria-label={productName}
-        className={`relative z-10 w-full h-full flex items-center justify-center ${
-          isCompact ? "p-3 sm:p-4" : "p-5 sm:p-6"
-        }`}
+        className="absolute inset-0 z-10 flex items-center justify-center p-4 sm:p-5"
       >
         {productImage ? (
           <img
             src={productImage}
             alt={productName}
-            className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-700 ease-out will-change-transform drop-shadow-sm"
+            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out will-change-transform drop-shadow-sm"
             loading="lazy"
           />
         ) : (
