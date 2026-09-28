@@ -63,6 +63,7 @@ export const ROUTES = {
     PAYMENTS: "/admin/payments",
     REPORTS: "/admin/reports",
     AUDIT_LOGS: "/admin/audit-logs",
+    SHIPMENTS: "/admin/shipments",
     STORE: "/admin/store",
     MESSAGES: "/admin/messages",
   },

@@ -19,6 +19,7 @@ import {
   BadgePercent,
   Bookmark,
   Mail,
+  Truck,
 } from "lucide-react";
 import { ROUTES } from "./routes.js";
 
@@ -166,6 +167,12 @@ export const ADMIN_NAV_CONFIG = [
     label: "Inventory & Stock",
     icon: Boxes,
     path: ROUTES.ADMIN.INVENTORY,
+  },
+  {
+    id: "shipments",
+    label: "Shipments & Logistics",
+    icon: Truck,
+    path: ROUTES.ADMIN.SHIPMENTS,
   },
   {
     id: "customers-group",

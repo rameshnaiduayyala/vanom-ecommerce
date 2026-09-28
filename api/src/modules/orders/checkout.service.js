@@ -6,13 +6,14 @@ import { MESSAGES } from "../../constants/messages.js";
 import { calculateStripeTax, createStripePaymentIntent } from "../payments/stripe.service.js";
 import { resolveUserOrganization } from "../inventory/organization.service.js";
 import { reserveInventory } from "../inventory/inventory.service.js";
+import { getShippingRates, saveOrderRateSnapshot } from "../shipping/shipping.service.js";
 
 /**
  * ─── STRIPE CHECKOUT API SERVICE ──────────────────────────────────────────
  * Executes the secure enterprise checkout flow:
  *   Validate customer/cart -> Load products -> Validate prices -> Validate stock
- *   -> Get shipping address -> Calculate Stripe Tax -> Order with PENDING_PAYMENT
- *   -> Reserve stock -> Create Stripe PaymentIntent -> Return clientSecret
+ *   -> Get shipping address -> Calculate Shippo Shipping -> Calculate Stripe Tax
+ *   -> Order with PENDING_PAYMENT -> Reserve stock -> Stripe PaymentIntent
  */
 
 export async function processCheckout({
@@ -23,6 +24,10 @@ export async function processCheckout({
   billingAddress,
   items: directItems = null,
   shippingCharges = 0,
+  shippingRateId = null,
+  shippingMethod = null,
+  shippingCarrier = null,
+  warehouseId = null,
   discount = 0
 }) {
   // ── 1. Validate Customer ──────────────────────────────────────────────────
@@ -230,8 +235,42 @@ export async function processCheckout({
       });
     }
 
+    // ── 4.5. Validate Shippo Shipping Rate & Calculate Shipping Fee ──
+    let validatedShippingCharges = Number(shippingCharges || 0);
+    let resolvedCarrier = shippingCarrier || null;
+    let resolvedMethod = shippingMethod || null;
+    let selectedRateSnapshot = null;
+
+    try {
+      const ratesResult = await getShippingRates({
+        organizationId: userRecord?.organizationId || null,
+        warehouseId,
+        shippingAddress,
+        items: validatedItems,
+        subtotal: Number(subtotal)
+      });
+
+      if (shippingRateId && ratesResult?.rates?.length) {
+        const matched = ratesResult.rates.find(r => r.id === shippingRateId || r.rateId === shippingRateId);
+        if (matched) {
+          validatedShippingCharges = Number(matched.amount);
+          resolvedCarrier = matched.carrier;
+          resolvedMethod = matched.service;
+          selectedRateSnapshot = matched;
+        }
+      } else if (ratesResult?.rates?.length && !shippingRateId && !shippingCharges) {
+        const defaultRate = ratesResult.rates[0];
+        validatedShippingCharges = Number(defaultRate.amount);
+        resolvedCarrier = defaultRate.carrier;
+        resolvedMethod = defaultRate.service;
+        selectedRateSnapshot = defaultRate;
+      }
+    } catch (rateErr) {
+      console.warn("[Shippo] Shipping rate calculation note:", rateErr.message);
+    }
+
     // ── 5. Calculate Real-Time Stripe Sales Tax (Outside DB Transaction) ─────
-    const shippingNum = Number(shippingCharges || 0);
+    const shippingNum = validatedShippingCharges;
     const discountNum = new Prisma.Decimal(discount || 0);
 
     const stripeTaxRes = await calculateStripeTax({
@@ -262,17 +301,22 @@ export async function processCheckout({
         data: {
           userId,
           organizationId: org.id,
+          warehouseId: warehouseId || null,
           status: "PENDING_PAYMENT",
           currencyCode: resolvedCurrency,
           subtotal,
           discount: discountNum,
           shippingCharges: shippingDecimal,
+          shippingRateId: shippingRateId || selectedRateSnapshot?.id || null,
+          shippingCarrier: resolvedCarrier,
+          shippingMethod: resolvedMethod,
           tax: taxDecimal,
           total: finalTotal,
           stripeTaxCalculationId: stripeTaxRes.taxCalculationId || null,
           metadata: {
             taxBreakdown: stripeTaxRes.taxBreakdown || [],
-            isCalculatedViaStripe: stripeTaxRes.isCalculatedViaStripe
+            isCalculatedViaStripe: stripeTaxRes.isCalculatedViaStripe,
+            shippoRateSnapshot: selectedRateSnapshot || null
           },
           items: {
             create: validatedItems
@@ -290,6 +334,15 @@ export async function processCheckout({
           user: { select: { id: true, email: true, firstName: true, lastName: true } }
         }
       });
+
+      // Persist historical shipping rate snapshot
+      if (selectedRateSnapshot) {
+        await saveOrderRateSnapshot({
+          orderId: order.id,
+          selectedRate: selectedRateSnapshot,
+          tx
+        });
+      }
 
       // Reserve Inventory Atomically
       await reserveInventory({
@@ -356,7 +409,10 @@ export async function processCheckout({
     subtotal: Number(order.subtotal || 0),
     tax: Number(order.tax || 0),
     shippingCharges: Number(order.shippingCharges || 0),
-    discount: Number(order.discount || 0)
+    discount: Number(order.discount || 0),
+    shippingMethod: order.shippingMethod || null,
+    shippingCarrier: order.shippingCarrier || null,
+    shippingRateId: order.shippingRateId || null
   };
 
   return {
@@ -375,6 +431,9 @@ export async function processCheckout({
     tax: Number(order.tax || 0),
     shippingCharges: Number(order.shippingCharges || 0),
     discount: Number(order.discount || 0),
+    shippingMethod: order.shippingMethod || null,
+    shippingCarrier: order.shippingCarrier || null,
+    shippingRateId: order.shippingRateId || null,
     taxCalculation: {
       id: stripeTaxRes.taxCalculationId,
       amount: stripeTaxRes.taxAmount,

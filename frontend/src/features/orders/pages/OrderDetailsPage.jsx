@@ -15,6 +15,7 @@ import {
   OrderItemsList,
   OrderMetaCards,
   OrderSummarySidebar,
+  OrderShipmentCard,
 } from "../components/index.js";
 
 export function OrderDetailsPage() {
@@ -130,6 +131,8 @@ export function OrderDetailsPage() {
             currencyCode={currencyCode}
             currencySymbol={currencySymbol}
           />
+          {/* Shippo Carrier Tracking & Delivery Card */}
+          <OrderShipmentCard order={order} />
           <OrderMetaCards
             user={order.user || order.requestedBy}
             payments={order.payments}

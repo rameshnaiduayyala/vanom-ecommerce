@@ -72,3 +72,10 @@ export async function downloadInvoice(request, reply) {
   const { getOrderInvoice } = await import("../invoice/invoice.controller.js");
   return getOrderInvoice(request, reply);
 }
+
+export async function getOrderShipment(request, reply) {
+  const { getShipmentTracking } = await import("../shipping/shipping.service.js");
+  const tracking = await getShipmentTracking({ orderId: request.params.id });
+  return sendSuccess(reply, { message: "Shipment details retrieved", data: tracking });
+}
+

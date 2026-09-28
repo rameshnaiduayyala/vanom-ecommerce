@@ -44,13 +44,23 @@ export function useCheckout() {
   const [taxData, setTaxData]             = useState(null);
   const [isCalculatingTax, setIsCalc]     = useState(false);
 
+  // Shippo Live Carrier Rates & Address Verification State
+  const [shippingRates, setShippingRates]         = useState([]);
+  const [selectedRate, setSelectedRate]           = useState(null);
+  const [isLoadingRates, setIsLoadingRates]       = useState(false);
+  const [addressValidation, setAddressValidation] = useState(null);
+  const [originWarehouse, setOriginWarehouse]     = useState(null);
+  const [freeShippingEligible, setFreeEligible]   = useState(false);
+
   // Stripe Payment Element Modal state
   const [isStripeModalOpen, setIsStripeModalOpen] = useState(false);
   const [stripeSession, setStripeSession]         = useState(null);
 
   // ── Derived totals ──
   const subtotal   = cart.subtotal || 0;
-  const shipping   = subtotal >= 500 ? 0 : country.code === "CA" ? 6.99 : 4.99;
+  const shipping   = selectedRate !== null && selectedRate?.amount !== undefined
+    ? parseFloat(selectedRate.amount || 0)
+    : (subtotal >= 500 ? 0 : country.code === "CA" ? 6.99 : 4.99);
   const taxAmount  = taxData?.totalTax !== undefined ? Number(taxData.totalTax) : 0;
   const grandTotal = subtotal + taxAmount + shipping;
 
@@ -140,6 +150,81 @@ export function useCheckout() {
     };
   }, [country?.code, country?.currency, formData.state, formData.postalCode, subtotal, shipping, cart.items]);
 
+  // ── Shippo Address Validation & Real-Time Carrier Rates ───────────────
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function fetchShippoRates() {
+      if (!formData.addressLine1 || !formData.city || !formData.postalCode) {
+        return;
+      }
+
+      setIsLoadingRates(true);
+      try {
+        // 1. Validate Address
+        const valRes = await Api.shipping.validateAddress({
+          fullName: formData.fullName,
+          addressLine1: formData.addressLine1,
+          city: formData.city,
+          state: formData.state,
+          postalCode: formData.postalCode,
+          countryCode: country.code || "US",
+          phone: formData.phone
+        });
+
+        if (!isCancelled && valRes?.data) {
+          setAddressValidation(valRes.data);
+        }
+
+        // 2. Fetch Live Carrier Rates
+        const ratesRes = await Api.shipping.getShippingRates({
+          shippingAddress: {
+            fullName: formData.fullName,
+            addressLine1: formData.addressLine1,
+            city: formData.city,
+            state: formData.state,
+            postalCode: formData.postalCode,
+            countryCode: country.code || "US",
+            phone: formData.phone
+          },
+          items: (cart.items || []).map(i => ({
+            productId: i.productId || i.id,
+            variantId: i.variantId && i.variantId !== (i.productId || i.id) ? i.variantId : null,
+            quantity: i.quantity || 1
+          })),
+          subtotal
+        });
+
+        if (!isCancelled && ratesRes?.success) {
+          const rates = ratesRes.data || [];
+          setShippingRates(rates);
+          setOriginWarehouse(ratesRes.originWarehouse || null);
+          setFreeEligible(!!ratesRes.freeShippingEligible);
+
+          // Auto-select lowest/first rate if not yet chosen or rate is no longer valid
+          setSelectedRate(prev => {
+            if (prev && rates.some(r => r.id === prev.id)) return prev;
+            return rates[0] || null;
+          });
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          console.warn("[Shippo] Rate query note:", err?.message || err);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingRates(false);
+        }
+      }
+    }
+
+    const timer = setTimeout(fetchShippoRates, 350);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [formData.addressLine1, formData.city, formData.state, formData.postalCode, country.code, subtotal, cart.items]);
+
   // ── Handlers ─────────────────────────────────────────────────────
   const setField = (field, value) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -151,6 +236,9 @@ export function useCheckout() {
         countryId: country.id || country.code,
         currencyCode: country.currency || "USD",
         shippingCharges: shipping,
+        shippingRateId: selectedRate?.id || null,
+        shippingCarrier: selectedRate?.carrier || null,
+        shippingMethod: selectedRate?.service || null,
         tax: taxAmount,
         discount: 0,
         paymentMethod: fd.paymentMethod,
@@ -333,6 +421,9 @@ export function useCheckout() {
     // state
     formData, setField, loading, showAuthModal, setShowAuthModal,
     taxData, isCalculatingTax,
+    // Shippo Shipping
+    shippingRates, selectedRate, setSelectedRate, isLoadingRates,
+    addressValidation, originWarehouse, freeShippingEligible,
     // Stripe Modal
     isStripeModalOpen, stripeSession, handleStripeSuccess, closeStripeModal,
     // totals

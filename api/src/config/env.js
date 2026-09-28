@@ -39,5 +39,7 @@ export const env = {
   s3PublicUrl: process.env.S3_PUBLIC_URL || process.env.R2_PUBLIC_URL,
   stripeSecretKey: process.env.STRIPE_SECRET_KEY,
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
-  stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY
+  stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY,
+  shippoApiKey: process.env.SHIPPO_API_KEY || "",
+  shippoWebhookSecret: process.env.SHIPPO_WEBHOOK_SECRET || ""
 };

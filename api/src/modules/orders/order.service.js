@@ -25,7 +25,14 @@ const orderInclude = {
   },
   addresses: true,
   user: { select: { id: true, email: true, firstName: true, lastName: true } },
-  invoices: true
+  invoices: true,
+  shipments: {
+    include: {
+      warehouse: true,
+      items: true
+    }
+  },
+  rateSnapshots: true
 };
 
 function formatOrder(order) {
@@ -42,7 +49,11 @@ function formatOrder(order) {
     subtotal: Number(order.subtotal || 0),
     tax: Number(order.tax || 0),
     shippingCharges: Number(order.shippingCharges || 0),
-    discount: Number(order.discount || 0)
+    discount: Number(order.discount || 0),
+    shippingMethod: order.shippingMethod || null,
+    shippingCarrier: order.shippingCarrier || null,
+    shippingRateId: order.shippingRateId || null,
+    shipments: order.shipments || []
   };
 }
 

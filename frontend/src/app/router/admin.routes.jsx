@@ -23,6 +23,7 @@ import { AdminBrandsPage } from "../../features/admin/pages/brands/AdminBrandsPa
 import { AdminBulkCategoriesPage } from "../../features/admin/pages/categories/AdminBulkCategoriesPage.jsx";
 import { AdminStoreSettingsPage } from "../../features/admin/pages/store/AdminStoreSettingsPage.jsx";
 import { AdminContactMessagesPage } from "../../features/admin/pages/messages/AdminContactMessagesPage.jsx";
+import { AdminShipmentsPage } from "../../features/admin/pages/shipping/AdminShipmentsPage.jsx";
 import { AdminRoute } from "../guards/ProtectedRoute.jsx";
 import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
 
@@ -56,6 +57,7 @@ export const adminRoutes = {
     { path: "payments", element: <AdminPaymentsPage /> },
     { path: "reports", element: <AdminReportsPage /> },
     { path: "audit-logs", element: <AdminAuditLogsPage /> },
+    { path: "shipments", element: <AdminShipmentsPage /> },
     { path: "store", element: <AdminStoreSettingsPage /> },
     { path: "messages", element: <AdminContactMessagesPage /> },
   ],

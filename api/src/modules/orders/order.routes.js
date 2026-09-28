@@ -151,6 +151,11 @@ export async function orderRoutes(fastify) {
     schema: { params: idParams }
   }, controller.downloadInvoice);
 
+  fastify.get("/orders/:id/shipment", {
+    preHandler: authenticate,
+    schema: { params: idParams }
+  }, controller.getOrderShipment);
+
   fastify.put("/orders/:id/status", {
     preHandler: superadminGuard,
     schema: {

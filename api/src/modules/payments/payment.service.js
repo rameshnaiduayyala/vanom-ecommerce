@@ -158,6 +158,14 @@ export async function capturePayment(paymentId, { amount, orderId = null, userId
       } catch (invErr) {
         console.warn("[Invoice] Auto invoice creation on capture:", invErr.message);
       }
+
+      // 5. Initialize Fulfillment Shipment & Label (Idempotent)
+      try {
+        const { createShipmentForOrder } = await import("../shipping/shipping.service.js");
+        await createShipmentForOrder({ orderId: order.id });
+      } catch (shipErr) {
+        console.warn("[Shipping] Shipment creation on capture:", shipErr.message);
+      }
     }
   }
 
@@ -286,6 +294,14 @@ export async function processWebhook(payload, signature = null, rawBody = null) 
         invoiceGenerated = true;
       } catch (invErr) {
         console.warn("[Invoice] Webhook invoice creation deferred:", invErr.message);
+      }
+
+      // 5. Initialize Fulfillment Shipment & Label
+      try {
+        const { createShipmentForOrder } = await import("../shipping/shipping.service.js");
+        await createShipmentForOrder({ orderId: matchedOrder.id });
+      } catch (shipErr) {
+        console.warn("[Shipping] Shipment creation on payment succeeded:", shipErr.message);
       }
     }
     // ── PAYMENT FAILURE OR CANCELLATION ──────────────────────────────────
