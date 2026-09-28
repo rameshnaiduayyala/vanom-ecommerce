@@ -885,6 +885,7 @@ export async function listInventory(organizationId, {
       { product: { sku: { contains: search, mode: "insensitive" } } },
       { variant: { name: { contains: search, mode: "insensitive" } } },
       { variant: { sku: { contains: search, mode: "insensitive" } } },
+      { variant: { product: { name: { contains: search, mode: "insensitive" } } } },
       { warehouse: { name: { contains: search, mode: "insensitive" } } }
     ];
   }
@@ -896,8 +897,16 @@ export async function listInventory(organizationId, {
       take,
       include: {
         warehouse: { select: { id: true, name: true, code: true, city: true, country: true } },
-        product: { select: { id: true, name: true, sku: true, basePrice: true, type: true, category: { select: { name: true } } } },
-        variant: { select: { id: true, name: true, sku: true, attributes: true } }
+        product: { select: { id: true, name: true, sku: true, basePrice: true, type: true, category: { select: { name: true } }, brand: { select: { name: true } } } },
+        variant: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            attributes: true,
+            product: { select: { id: true, name: true, sku: true, type: true, category: { select: { name: true } }, brand: { select: { name: true } } } }
+          }
+        }
       },
       orderBy: [{ updatedAt: "desc" }]
     }),
@@ -905,6 +914,7 @@ export async function listInventory(organizationId, {
   ]);
 
   const items = rawItems.map((inv) => {
+    const parentProduct = inv.product || inv.variant?.product || null;
     const availableQuantity = Math.max(0, inv.quantity - inv.reservedQuantity);
     let status = "IN_STOCK";
     if (availableQuantity <= 0) {
@@ -915,6 +925,7 @@ export async function listInventory(organizationId, {
 
     return {
       ...inv,
+      product: parentProduct,
       availableQuantity,
       status
     };

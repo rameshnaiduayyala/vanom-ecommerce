@@ -49,7 +49,7 @@ export function useAdminInventory() {
     queryFn: () => Api.admin.getProducts(),
   });
 
-  const inventoryItems = Array.isArray(rawInventory)
+  const rawItems = Array.isArray(rawInventory)
     ? rawInventory
     : Array.isArray(rawInventory?.items)
     ? rawInventory.items
@@ -60,6 +60,41 @@ export function useAdminInventory() {
     : Array.isArray(rawWarehouses?.data)
     ? rawWarehouses.data
     : [];
+
+  // Index catalog products to guarantee parent product resolution for any variant
+  const { productById, productByVariantId } = useMemo(() => {
+    const pById = new Map();
+    const pByVarId = new Map();
+    const prods = Array.isArray(rawProducts) ? rawProducts : (rawProducts?.items || []);
+    prods.forEach((p) => {
+      pById.set(p.id, p);
+      if (Array.isArray(p.variants)) {
+        p.variants.forEach((v) => {
+          pByVarId.set(v.id, p);
+        });
+      }
+    });
+    return { productById: pById, productByVariantId: pByVarId };
+  }, [rawProducts]);
+
+  // Normalized inventory items with guaranteed parent product
+  const inventoryItems = useMemo(() => {
+    return rawItems.map((inv) => {
+      let resolvedProduct = inv.product || inv.variant?.product;
+      if (!resolvedProduct || !resolvedProduct.name) {
+        if (inv.variantId && productByVariantId.has(inv.variantId)) {
+          resolvedProduct = productByVariantId.get(inv.variantId);
+        } else if (inv.productId && productById.has(inv.productId)) {
+          resolvedProduct = productById.get(inv.productId);
+        }
+      }
+
+      return {
+        ...inv,
+        product: resolvedProduct || inv.product || null,
+      };
+    });
+  }, [rawItems, productById, productByVariantId]);
 
   const refetch = () => {
     refetchInventory();

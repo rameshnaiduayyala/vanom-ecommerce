@@ -1,8 +1,13 @@
 import React from "react";
-import { Package, QrCode, ArrowDownToLine, ArrowRightLeft, History, Sliders, AlertTriangle } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import {
+  Package,
+  QrCode,
+  ArrowDownToLine,
+  ArrowRightLeft,
+  History,
+  Sliders,
+} from "lucide-react";
 import { Badge } from "@/components/ui/Badge.jsx";
-import { Button } from "@/components/ui/Button.jsx";
 
 export function InventoryTable({
   items = [],
@@ -20,7 +25,7 @@ export function InventoryTable({
           <thead className="bg-surface-muted text-text-secondary text-[11px] uppercase font-semibold border-b border-border">
             <tr>
               <th className="p-3.5">Product & SKU</th>
-              <th className="p-3.5">Variant</th>
+              <th className="p-3.5">Variant & SKU</th>
               <th className="p-3.5">Depot Warehouse</th>
               <th className="p-3.5 text-right">Physical Stock</th>
               <th className="p-3.5 text-right">Reserved</th>
@@ -45,7 +50,7 @@ export function InventoryTable({
               </tr>
             ) : (
               items.map((row) => {
-                const prod = row.product || row;
+                const prod = row.product || row.variant?.product || row;
                 const variant = row.variant;
                 const wh = row.warehouse;
                 const stock = row.quantity !== undefined ? row.quantity : (row.stock || 0);
@@ -61,13 +66,6 @@ export function InventoryTable({
                   statusBadge = { label: "Low Stock", variant: "warning" };
                 }
 
-                const qrValue = JSON.stringify({
-                  id: row.id,
-                  sku: variant?.sku || prod.sku,
-                  name: prod.name,
-                  wh: wh?.code || "DEFAULT",
-                });
-
                 return (
                   <tr
                     key={row.id}
@@ -80,25 +78,29 @@ export function InventoryTable({
                           <Package className="w-4 h-4 text-text-muted" />
                         </div>
                         <div>
-                          <p className="font-bold text-text-primary">{prod.name}</p>
-                          <span className="font-mono text-[10px] text-text-muted">
-                            {variant?.sku || prod.sku || "SKU-N/A"}
+                          <p className="font-bold text-text-primary text-xs">
+                            {prod.name || "Unknown Product"}
+                          </p>
+                          <span className="font-mono text-[11px] text-text-muted">
+                            {prod.sku || "-"}
                           </span>
                         </div>
                       </div>
                     </td>
 
-                    {/* Variant */}
+                    {/* Variant & SKU */}
                     <td className="p-3.5">
                       {variant ? (
                         <div>
-                          <span className="font-semibold text-slate-800">{variant.name || "Variant"}</span>
-                          {variant.sku && variant.sku !== prod.sku && (
-                            <span className="font-mono text-[10px] text-text-muted block">{variant.sku}</span>
-                          )}
+                          <p className="font-semibold text-text-primary text-xs">
+                            {variant.name || "Variant"}
+                          </p>
+                          <span className="font-mono text-[11px] text-text-muted">
+                            {variant.sku || "--"}
+                          </span>
                         </div>
                       ) : (
-                        <span className="text-text-muted text-[11px] italic">Simple Product</span>
+                        <span className="text-text-muted text-xs">--</span>
                       )}
                     </td>
 
@@ -210,4 +212,3 @@ export function InventoryTable({
 }
 
 export default InventoryTable;
-
