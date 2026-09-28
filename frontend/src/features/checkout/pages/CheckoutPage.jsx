@@ -54,6 +54,7 @@ export function CheckoutPage() {
             originWarehouse={checkout.originWarehouse}
             freeShippingEligible={checkout.freeShippingEligible}
             currencySymbol={checkout.country.symbol || "$"}
+            onRefreshRates={checkout.recalculateRates}
           />
 
           {/* Secure Payment Assurance */}
@@ -82,10 +83,16 @@ export function CheckoutPage() {
           taxAmount={checkout.taxAmount}
           taxData={checkout.taxData}
           isCalculatingTax={checkout.isCalculatingTax}
+          isTaxReady={checkout.isTaxReady}
           shipping={checkout.shipping}
+          selectedRate={checkout.selectedRate}
+          isLoadingRates={checkout.isLoadingRates}
+          isShippingReady={checkout.isShippingReady}
           grandTotal={checkout.grandTotal}
           country={checkout.country}
           loading={checkout.loading}
+          canPlaceOrder={checkout.canPlaceOrder}
+          disabledReason={checkout.disabledReason}
         />
       </form>
 

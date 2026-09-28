@@ -18,15 +18,14 @@ export async function shippingRoutes(fastify) {
     schema: {
       body: {
         type: "object",
-        required: ["addressLine1", "city", "postalCode"],
         properties: {
           fullName: { type: "string" },
           company: { type: ["string", "null"] },
-          addressLine1: { type: "string" },
+          addressLine1: { type: ["string", "null"] },
           addressLine2: { type: ["string", "null"] },
-          city: { type: "string" },
+          city: { type: ["string", "null"] },
           state: { type: ["string", "null"] },
-          postalCode: { type: "string" },
+          postalCode: { type: ["string", "null"] },
           countryCode: { type: "string" },
           phone: { type: ["string", "null"] },
           email: { type: ["string", "null"] }
@@ -41,20 +40,18 @@ export async function shippingRoutes(fastify) {
     schema: {
       body: {
         type: "object",
-        required: ["shippingAddress"],
         properties: {
           warehouseId: { type: ["string", "null"] },
           subtotal: { type: "number" },
           shippingAddress: {
             type: "object",
-            required: ["addressLine1", "city", "postalCode"],
             properties: {
               fullName: { type: "string" },
-              addressLine1: { type: "string" },
+              addressLine1: { type: ["string", "null"] },
               addressLine2: { type: ["string", "null"] },
-              city: { type: "string" },
+              city: { type: ["string", "null"] },
               state: { type: ["string", "null"] },
-              postalCode: { type: "string" },
+              postalCode: { type: ["string", "null"] },
               countryCode: { type: "string" },
               phone: { type: ["string", "null"] }
             }

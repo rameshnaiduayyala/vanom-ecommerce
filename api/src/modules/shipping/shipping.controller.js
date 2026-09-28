@@ -21,10 +21,12 @@ export async function getRates(request, reply) {
 
   return reply.status(HTTP_STATUS.OK).send({
     success: true,
-    data: result.rates,
-    originWarehouse: result.originWarehouse,
-    freeShippingEligible: result.freeShippingEligible,
-    freeShippingThreshold: result.freeShippingThreshold
+    data: {
+      rates: result.rates,
+      originWarehouse: result.originWarehouse,
+      freeShippingEligible: result.freeShippingEligible,
+      freeShippingThreshold: result.freeShippingThreshold
+    }
   });
 }
 
