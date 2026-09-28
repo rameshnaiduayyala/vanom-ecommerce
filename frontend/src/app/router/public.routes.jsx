@@ -62,6 +62,16 @@ const ContactPage = lazy(() =>
     default: m.ContactPage || m.default,
   }))
 );
+const CareersPage = lazy(() =>
+  import("../../features/storefront/pages/CareersPage.jsx").then((m) => ({
+    default: m.CareersPage || m.default,
+  }))
+);
+const OurStoryPage = lazy(() =>
+  import("../../features/storefront/pages/OurStoryPage.jsx").then((m) => ({
+    default: m.OurStoryPage || m.default,
+  }))
+);
 const ConsumerAccountPage = lazy(() =>
   import("../../features/account/pages/ConsumerAccountPage.jsx").then((m) => ({
     default: m.ConsumerAccountPage || m.default,
@@ -103,6 +113,9 @@ export const publicRoutes = {
     { path: "/categories/:slug", element: <ProductsPage /> },
     { path: "/search", element: <ProductsPage /> },
     { path: "/contact", element: <ContactPage /> },
+    { path: "/careers", element: <CareersPage /> },
+    { path: "/about", element: <OurStoryPage /> },
+    { path: "/our-story", element: <OurStoryPage /> },
     { path: "/invoice/verify/:invoiceNumber", element: <InvoiceVerificationPage /> },
     { path: "/cart", element: <CartPage /> },
     { path: "/checkout", element: <CheckoutPage /> },

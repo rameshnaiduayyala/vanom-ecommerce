@@ -20,6 +20,9 @@ export const ROUTES = {
   VERIFY_EMAIL: "/verify-email",
   FORGOT_PASSWORD: "/forgot-password",
   CONTACT: "/contact",
+  CAREERS: "/careers",
+  ABOUT: "/about",
+  OUR_STORY: "/our-story",
 
 
   // B2B Wholesale Portal
