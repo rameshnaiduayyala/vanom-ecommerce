@@ -33,9 +33,16 @@ function formatOrder(order) {
   const orderNumber = order.invoices?.[0]?.invoiceNumber 
     ? `ORD-${order.invoices[0].invoiceNumber.replace(/^INV-/, "")}`
     : `ORD-${order.id.slice(0, 8).toUpperCase()}`;
+  const totalNum = Number(order.total || 0);
   return {
     ...order,
-    orderNumber
+    orderNumber,
+    total: totalNum,
+    totalAmount: totalNum,
+    subtotal: Number(order.subtotal || 0),
+    tax: Number(order.tax || 0),
+    shippingCharges: Number(order.shippingCharges || 0),
+    discount: Number(order.discount || 0)
   };
 }
 
@@ -183,6 +190,7 @@ export async function createOrder(userId, {
     const order = await tx.order.create({
       data: {
         userId,
+        status: "PENDING_PAYMENT",
         organizationId: org.id,
         currencyCode: resolvedCurrencyCode,
         subtotal,

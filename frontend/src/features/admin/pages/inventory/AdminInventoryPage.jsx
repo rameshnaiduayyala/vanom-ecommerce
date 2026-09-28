@@ -70,11 +70,8 @@ export function AdminInventoryPage() {
         <div>
           <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2.5">
             <Boxes className="w-6 h-6 text-[#00875A]" />
-            Enterprise Multi-Depot Inventory Hub
+            Inventory Management
           </h1>
-          <p className="text-xs text-text-muted mt-1">
-            Real-time stock balance matrix, dual-ledger movements, atomic checkout reservations, and immutable audit logs.
-          </p>
         </div>
 
         {/* Global Toolbar */}

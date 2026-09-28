@@ -74,10 +74,10 @@ export function AdminRetailOrdersPage() {
 
   const totalRevenue = rawOrders
     .filter((o) => o.status !== "CANCELLED")
-    .reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+    .reduce((sum, o) => sum + Number(o.total ?? o.totalAmount ?? 0), 0);
 
   const pendingCount = rawOrders.filter(
-    (o) => o.status === "PENDING" || o.status === "PROCESSING" || o.status === "PAYMENT_CONFIRMED"
+    (o) => o.status === "PENDING" || o.status === "PENDING_PAYMENT" || o.status === "PROCESSING" || o.status === "CONFIRMED"
   ).length;
 
   return (

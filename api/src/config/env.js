@@ -36,5 +36,8 @@ export const env = {
   s3ForcePathStyle: process.env.S3_FORCE_PATH_STYLE === "true",
   s3AccessKeyId: process.env.S3_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID,
   s3SecretAccessKey: process.env.S3_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY,
-  s3PublicUrl: process.env.S3_PUBLIC_URL || process.env.R2_PUBLIC_URL
+  s3PublicUrl: process.env.S3_PUBLIC_URL || process.env.R2_PUBLIC_URL,
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY,
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+  stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY || process.env.VITE_STRIPE_PUBLISHABLE_KEY
 };

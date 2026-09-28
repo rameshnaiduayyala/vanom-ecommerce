@@ -57,7 +57,8 @@ export function AuthModal({ isOpen, onClose, onSuccess, initialRole = "B2C" }) {
       }
 
       const user = data?.user || data;
-      const tokens = data?.tokens;
+      const token = data?.token || data?.tokens?.accessToken || data?.accessToken;
+      const tokens = typeof data?.tokens === "object" ? data.tokens : { accessToken: token };
 
       if (!user) {
         throw new Error("Invalid response from server. User payload missing.");

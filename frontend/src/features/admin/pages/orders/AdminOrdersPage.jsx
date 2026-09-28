@@ -401,7 +401,7 @@ export function AdminOrdersPage() {
                           {formatDate(o.createdAt)}
                         </td>
                         <td className="p-4 font-bold text-slate-900 text-sm">
-                          {formatPrice(o.totalAmount || 0, o.currency?.code || "USD")}
+                          {formatPrice(Number(o.total ?? o.totalAmount ?? 0), o.currencyCode || o.currency?.code || "USD")}
                         </td>
                         <td className="p-4">
                           <Badge variant={statusConfig.color} size="sm">

@@ -7,9 +7,7 @@ import { useAuthStore } from "../../../stores/auth.store.js";
 import { useUIStore } from "../../../stores/ui.store.js";
 import { Api } from "@/services/api/api-client.js";
 import { ROUTES } from "../../../constants/routes.js";
-import { getBackendProvider } from "../config/paymentProviders.config.js";
 import { openRazorpayCheckout } from "../../../services/payment/razorpay.handler.js";
-import { calculateCheckoutTax } from "../../../services/tax/taxEngine.js";
 
 // Default address per country
 const COUNTRY_DEFAULTS = {
@@ -46,10 +44,14 @@ export function useCheckout() {
   const [taxData, setTaxData]             = useState(null);
   const [isCalculatingTax, setIsCalc]     = useState(false);
 
-  // ── Derived totals (declared before the tax effect that depends on subtotal) ──
+  // Stripe Payment Element Modal state
+  const [isStripeModalOpen, setIsStripeModalOpen] = useState(false);
+  const [stripeSession, setStripeSession]         = useState(null);
+
+  // ── Derived totals ──
   const subtotal   = cart.subtotal || 0;
-  const taxAmount  = taxData?.totalTax ? Number(taxData.totalTax) : Number((subtotal * 0.0882).toFixed(2));
   const shipping   = subtotal >= 500 ? 0 : country.code === "CA" ? 6.99 : 4.99;
+  const taxAmount  = taxData?.totalTax !== undefined ? Number(taxData.totalTax) : 0;
   const grandTotal = subtotal + taxAmount + shipping;
 
   // Sync user fields when auth state changes
@@ -75,24 +77,68 @@ export function useCheckout() {
     }));
   }, [country.code]);
 
-  // Self-maintained local tax calculation using autonomous dataset
+  // ── Stripe Tax Calculation via Backend API ──
   useEffect(() => {
-    setIsCalc(true);
-    try {
-      const calculated = calculateCheckoutTax({
-        countryCode: country?.code || "US",
-        stateCode: formData.state || "",
-        postalCode: formData.postalCode || "",
-        subtotal,
-        items: cart.items || [],
-      });
-      setTaxData(calculated);
-    } catch (err) {
-      console.error("Tax calculation error:", err);
-    } finally {
-      setIsCalc(false);
+    let isCancelled = false;
+
+    async function fetchStripeTax() {
+      if (!cart.items || cart.items.length === 0) {
+        setTaxData(null);
+        return;
+      }
+
+      setIsCalc(true);
+      try {
+        const response = await Api.checkout.calculateStripeTax({
+          currencyCode: country.currency || "USD",
+          shippingCost: shipping,
+          shippingAddress: {
+            countryCode: country.code || "US",
+            state: formData.state || "",
+            postalCode: formData.postalCode || "",
+            city: formData.city || "",
+            addressLine1: formData.addressLine1 || "",
+          },
+          items: cart.items.map((item) => ({
+            productId: item.productId || item.id,
+            variantId: item.variantId && item.variantId !== (item.productId || item.id) ? item.variantId : null,
+            quantity: item.quantity || 1,
+            unitPrice: item.price || item.unitPrice || 0,
+            name: item.name || "Product",
+          })),
+        });
+
+        if (!isCancelled && response) {
+          const rawRate = parseFloat(response.rate || 0);
+          const normalizedRate = rawRate > 1 ? rawRate / 100 : rawRate;
+          setTaxData({
+            totalTax: response.taxAmount ?? 0,
+            effectiveRate: normalizedRate,
+            calculationId: response.calculationId || response.taxCalculationId || null,
+            breakdown: response.breakdown || response.taxBreakdown || [],
+            isStripeTax: response.isCalculatedViaStripe !== false,
+          });
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          console.warn("Stripe Tax calculation warning:", err?.message || err);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsCalc(false);
+        }
+      }
     }
-  }, [country?.code, formData.state, formData.postalCode, subtotal, cart.items]);
+
+    const timer = setTimeout(() => {
+      fetchStripeTax();
+    }, 350);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [country?.code, country?.currency, formData.state, formData.postalCode, subtotal, shipping, cart.items]);
 
   // ── Handlers ─────────────────────────────────────────────────────
   const setField = (field, value) =>
@@ -101,12 +147,13 @@ export function useCheckout() {
   const executeOrder = async (fd = formData) => {
     setLoading(true);
     try {
-      const order = await Api.cart.placeOrder({
+      const checkoutPayload = {
         countryId: country.id || country.code,
         currencyCode: country.currency || "USD",
         shippingCharges: shipping,
         tax: taxAmount,
         discount: 0,
+        paymentMethod: fd.paymentMethod,
         items: (cart.items || []).map((item) => ({
           productId: item.productId || item.id,
           variantId: item.variantId && item.variantId !== (item.productId || item.id) ? item.variantId : null,
@@ -121,56 +168,100 @@ export function useCheckout() {
           postalCode:   fd.postalCode || "90001",
           countryCode:  country.code || "US",
         },
-      });
-      clearLocalCart();
+      };
 
-      const displayOrderNumber = order?.orderNumber || (order?.id ? `ORD-${order.id.slice(0, 8).toUpperCase()}` : "ORD-001");
+      const checkoutRes = await Api.checkout.processCheckout(checkoutPayload);
+      const order = checkoutRes?.order || {
+        id: checkoutRes?.orderId || checkoutRes?.id,
+        orderNumber: checkoutRes?.orderNumber || (checkoutRes?.orderId ? `ORD-${checkoutRes.orderId.slice(0, 8).toUpperCase()}` : null),
+        total: Number(checkoutRes?.total || checkoutRes?.totalAmount || checkoutRes?.amount || grandTotal),
+        totalAmount: Number(checkoutRes?.total || checkoutRes?.totalAmount || checkoutRes?.amount || grandTotal),
+        currencyCode: checkoutRes?.currency || country.currency || "USD",
+        status: checkoutRes?.status || "PENDING_PAYMENT",
+      };
 
-      // Attempt payment intent for external gateways (Razorpay, PayPal)
-      try {
-        const paymentRes = await Api.payments.createPaymentIntent(order.id, fd.paymentMethod);
-
-        // Handle Razorpay checkout modal
-        if ((fd.paymentMethod === "RAZORPAY" || fd.paymentMethod === "AFTERPAY") && paymentRes?.keyId) {
-          setLoading(false);
-          return new Promise((resolve) => {
-            openRazorpayCheckout(
-              paymentRes,
-              {
-                orderId: order.id,
-                orderNumber: displayOrderNumber,
-                customerName: fd.fullName,
-                customerEmail: fd.email,
-                customerPhone: fd.phone,
-              },
-              () => {
-                try { confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 }, colors: ["#008522", "#D9A000", "#5DBB68", "#FFD34D"] }); } catch {}
-                addToast({ title: "Payment Successful!", message: `Order #${displayOrderNumber} confirmed.`, type: "success" });
-                navigate(`${ROUTES.ORDERS}/${order.id}`);
-                resolve();
-              },
-              (error) => {
-                addToast({ 
-                  title: "Payment Failed", 
-                  description: error?.message || "Please try again or choose a different payment method.", 
-                  type: "error" 
-                });
-                resolve();
-              }
-            );
-          });
-        }
-
-        // Handle PayPal redirect
-        if (paymentRes?.approvalUrl) {
-          window.location.href = paymentRes.approvalUrl;
-          return;
-        }
-      } catch (err) {
-        console.warn("Payment intent gateway response:", err?.message || err);
+      if (!order?.id) {
+        throw new Error("Unable to create checkout order session.");
       }
 
-      // Default order completion (Cards, Direct, Standard checkout)
+      const displayOrderNumber = order?.orderNumber || `ORD-${order.id.slice(0, 8).toUpperCase()}`;
+      const clientSecret = checkoutRes?.clientSecret || order?.clientSecret;
+      const publishableKey = checkoutRes?.publishableKey || order?.publishableKey;
+
+      // 1. Stripe Payment Element (Cards, Apple Pay, Google Pay, Wallets, BNPL)
+      if (clientSecret) {
+        setStripeSession({
+          clientSecret,
+          publishableKey,
+          order,
+          amount: Number(order.total || order.totalAmount || checkoutRes?.amount || grandTotal),
+          currency: order.currencyCode || country.currency || "USD",
+          symbol: country.symbol || "$",
+        });
+        setIsStripeModalOpen(true);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Razorpay external gateway
+      if (fd.paymentMethod === "RAZORPAY" || fd.paymentMethod === "AFTERPAY") {
+        try {
+          const paymentRes = await Api.payments.createPaymentIntent(order.id, fd.paymentMethod);
+          if (paymentRes?.keyId) {
+            setLoading(false);
+            return new Promise((resolve) => {
+              openRazorpayCheckout(
+                paymentRes,
+                {
+                  orderId: order.id,
+                  orderNumber: displayOrderNumber,
+                  customerName: fd.fullName,
+                  customerEmail: fd.email,
+                  customerPhone: fd.phone,
+                },
+                async () => {
+                  try {
+                    await Api.payments.capturePayment(paymentRes.id, { orderId: order.id });
+                  } catch (e) {
+                    console.warn("Capture callback:", e);
+                  }
+                  clearLocalCart();
+                  try { confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 }, colors: ["#008522", "#D9A000", "#5DBB68", "#FFD34D"] }); } catch {}
+                  addToast({ title: "Payment Successful!", message: `Order #${displayOrderNumber} confirmed.`, type: "success" });
+                  navigate(`${ROUTES.ORDERS}/${order.id}`);
+                  resolve();
+                },
+                (error) => {
+                  addToast({ 
+                    title: "Payment Failed", 
+                    description: error?.message || "Please try again or choose a different payment method.", 
+                    type: "error" 
+                  });
+                  resolve();
+                }
+              );
+            });
+          }
+        } catch (err) {
+          console.warn("Payment intent gateway response:", err?.message || err);
+        }
+      }
+
+      // 3. PayPal redirect
+      if (fd.paymentMethod === "PAYPAL") {
+        try {
+          const paymentRes = await Api.payments.createPaymentIntent(order.id, "PAYPAL");
+          if (paymentRes?.approvalUrl) {
+            window.location.href = paymentRes.approvalUrl;
+            return;
+          }
+        } catch (err) {
+          console.warn("Payment intent gateway response:", err?.message || err);
+        }
+      }
+
+      // 4. Default order completion
+      clearLocalCart();
       try { confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 }, colors: ["#008522", "#D9A000", "#5DBB68", "#FFD34D"] }); } catch {}
       addToast({ title: "Order Placed Successfully!", message: `Order #${displayOrderNumber} confirmed.`, type: "success" });
       navigate(`${ROUTES.ORDERS}/${order.id}`);
@@ -180,6 +271,50 @@ export function useCheckout() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleStripeSuccess = async (paymentIntent) => {
+    const order = stripeSession?.order;
+    const displayOrderNumber = order?.orderNumber || (order?.id ? `ORD-${order.id.slice(0, 8).toUpperCase()}` : "—");
+
+    try {
+      // Capture payment, convert stock reservation to SALE, commit tax, generate invoice
+      await Api.payments.capturePayment(paymentIntent.id, {
+        orderId: order?.id,
+        amount: stripeSession?.amount
+      });
+    } catch (err) {
+      console.warn("Capture confirmation notice:", err?.message || err);
+    }
+
+    clearLocalCart();
+    setIsStripeModalOpen(false);
+    setStripeSession(null);
+
+    try {
+      confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 }, colors: ["#008522", "#D9A000", "#5DBB68", "#FFD34D"] });
+    } catch {}
+
+    addToast({
+      title: "Payment Successful!",
+      message: `Order #${displayOrderNumber} confirmed. Your invoice has been generated.`,
+      type: "success"
+    });
+
+    if (order?.id) {
+      navigate(`${ROUTES.ORDERS}/${order.id}`);
+    } else {
+      navigate(ROUTES.ORDERS);
+    }
+  };
+
+  const closeStripeModal = () => {
+    setIsStripeModalOpen(false);
+    addToast({
+      title: "Payment Pending",
+      message: "Your order is pending payment. You can complete payment at any time from your orders page.",
+      type: "info"
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -198,6 +333,8 @@ export function useCheckout() {
     // state
     formData, setField, loading, showAuthModal, setShowAuthModal,
     taxData, isCalculatingTax,
+    // Stripe Modal
+    isStripeModalOpen, stripeSession, handleStripeSuccess, closeStripeModal,
     // totals
     subtotal, taxAmount, shipping, grandTotal,
     // country

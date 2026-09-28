@@ -13,6 +13,22 @@ export async function buildApp() {
     logger: true
   });
 
+  // Preserve raw body buffer for Stripe HMAC webhook verification
+  fastify.addContentTypeParser(
+    "application/json",
+    { parseAs: "buffer" },
+    (req, body, done) => {
+      try {
+        req.rawBody = body;
+        const json = body && body.length > 0 ? JSON.parse(body.toString("utf8")) : {};
+        done(null, json);
+      } catch (err) {
+        err.statusCode = 400;
+        done(err, undefined);
+      }
+    }
+  );
+
   await fastify.register(fastifyJwt, { secret: env.jwtSecret });
   await registerRateLimit(fastify);
   await registerUploadPlugin(fastify);

@@ -17,7 +17,10 @@ export async function create(request, reply) {
 }
 
 export async function capture(request, reply) {
-  const data = await paymentService.capturePayment(request.params.paymentId, request.body);
+  const data = await paymentService.capturePayment(request.params.paymentId, {
+    ...request.body,
+    userId: request.user?.sub
+  });
   return sendSuccess(reply, {
     message: "Payment captured successfully",
     data
@@ -33,7 +36,9 @@ export async function refund(request, reply) {
 }
 
 export async function webhook(request, reply) {
-  const data = await paymentService.processWebhook(request.body);
+  const signature = request.headers["stripe-signature"] || null;
+  const rawBody = request.rawBody || null;
+  const data = await paymentService.processWebhook(request.body, signature, rawBody);
   return sendSuccess(reply, {
     message: "Webhook processed successfully",
     data

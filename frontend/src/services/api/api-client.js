@@ -16,6 +16,7 @@ import { brandService } from "./brand.service.js";
 import { uploadService } from "./upload.service.js";
 import { storeService } from "./store.service.js";
 import { contactService } from "./contact.service.js";
+import { checkoutService } from "./checkout.service.js";
 
 export { authService } from "./auth.service.js";
 export { userService } from "./user.service.js";
@@ -23,6 +24,7 @@ export { companyService } from "./company.service.js";
 export { catalogService } from "./catalog.service.js";
 export { cartService } from "./cart.service.js";
 export { orderService } from "./order.service.js";
+export { checkoutService } from "./checkout.service.js";
 export { b2bService } from "./b2b.service.js";
 export { adminService } from "./admin.service.js";
 export { bannerService } from "./banner.service.js";
@@ -43,6 +45,7 @@ export const Api = {
   catalog: catalogService,
   cart: cartService,
   orders: orderService,
+  checkout: checkoutService,
   b2b: b2bService,
   admin: adminService,
   banners: bannerService,

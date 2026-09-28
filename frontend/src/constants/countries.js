@@ -64,6 +64,7 @@ export const IN_STATES = [
 
 
 export const ORDER_STATUSES = {
+  PENDING_PAYMENT: { label: "Pending Payment", color: "amber" },
   PENDING: { label: "Pending", color: "yellow" },
   CONFIRMED: { label: "Confirmed", color: "blue" },
   PROCESSING: { label: "Processing", color: "indigo" },

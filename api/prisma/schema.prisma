@@ -19,6 +19,7 @@ enum ProductType {
 
 enum OrderStatus {
   PENDING
+  PENDING_PAYMENT
   CONFIRMED
   PROCESSING
   SHIPPED
@@ -665,11 +666,14 @@ model Order {
 
   user User @relation(fields: [userId], references: [id])
 
-  organizationId    String?
-  organization      Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  warehouseId       String?
-  inventoryReserved Boolean       @default(false)
-  inventoryDeducted Boolean       @default(false)
+  organizationId         String?
+  organization           Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  warehouseId            String?
+  inventoryReserved      Boolean       @default(false)
+  inventoryDeducted      Boolean       @default(false)
+  stripePaymentIntentId  String?
+  stripeTaxCalculationId String?
+  metadata               Json?
 
   items OrderItem[]
   addresses OrderAddress[]
@@ -682,6 +686,7 @@ model Order {
   @@index([organizationId])
   @@index([warehouseId])
   @@index([status])
+  @@index([stripePaymentIntentId])
   @@index([createdAt])
 }
 
