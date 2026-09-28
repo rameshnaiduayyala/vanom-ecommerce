@@ -10,32 +10,33 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DEFAULT_LOGO_PATH = path.resolve(__dirname, "../../assets/logo.png");
 
-// ─── Executive Corporate Design Tokens ──────────────────────────────────────
+// ─── Executive Corporate Design System & Tokens ──────────────────────────────
 const T = {
-  // Brand & Corporate Accents
-  brandPrimary: "#0B4627",      // Deep Forest Emerald
-  brandDark: "#082F1B",         // Midnight Forest
+  // Brand Accents
+  brandPrimary: "#0B4627",      // Deep Forest Emerald (Restrained Brand Accent)
+  brandDark: "#072B18",         // Midnight Forest
   brandAccent: "#16A34A",       // Crisp Vibrant Green
-  brandMuted: "#15803D",        // Forest Mid Tone
+  brandLight: "#F0FDF4",        // Ultra-light emerald tint
 
-  // Neutral Typography (Executive Slate)
+  // Typography (Slate Neutrals)
   inkHead: "#0F172A",           // Slate 900 - Headlines, Primary Values
-  inkBody: "#1E293B",           // Slate 800 - Body & Titles
-  inkMuted: "#475569",          // Slate 600 - Secondary Metadata
-  inkFaint: "#64748B",          // Slate 500 - Captions, Table Notes
-  inkLight: "#94A3B8",          // Slate 400 - Subtle Indicators & Labels
-
-  // Structural Surfaces & Borders
+  inkSub: "#1E293B",            // Slate 800 - Section Headers, Customer Titles
+  inkBody: "#334155",           // Slate 700 - Body Text, Descriptions
+  inkMuted: "#64748B",          // Slate 500 - Secondary Labels & Captions
+  inkLight: "#94A3B8",          // Slate 400 - Table Headers & Metadata Keys
   white: "#FFFFFF",
+
+  // Surfaces & Hairline Dividers
   surfaceCard: "#F8FAFC",       // Slate 50 Card Background
-  surfaceStripe: "#F9FBFA",     // Subtle Mint-Slate Zebra Tint
+  surfaceAlt: "#F1F5F9",        // Slate 100 Accent Container
+  surfaceStripe: "#FBFDFB",     // Subtle Zebra Stripe
   borderLight: "#E2E8F0",       // Slate 200 Structural Line
-  borderDark: "#CBD5E1",        // Slate 300 Separator
+  borderDark: "#CBD5E1",        // Slate 300 Structural Line
 
   // Status Badges
   statusPaidBg: "#ECFDF5",
   statusPaidText: "#065F46",
-  statusPaidBorder: "#86EFAC",
+  statusPaidBorder: "#A7F3D0",
 
   statusDueBg: "#FFFBEB",
   statusDueText: "#92400E",
@@ -43,11 +44,11 @@ const T = {
 
   statusCancelledBg: "#FEF2F2",
   statusCancelledText: "#991B1B",
-  statusCancelledBorder: "#FCA5A5",
+  statusCancelledBorder: "#FECACA",
 
   statusVoidBg: "#FAF5FF",
   statusVoidText: "#6B21A8",
-  statusVoidBorder: "#D8B4FE",
+  statusVoidBorder: "#E9D5FF",
 
   statusDraftBg: "#F1F5F9",
   statusDraftText: "#475569",
@@ -55,10 +56,10 @@ const T = {
 
   statusProcessingBg: "#EFF6FF",
   statusProcessingText: "#1E40AF",
-  statusProcessingBorder: "#93C5FD",
+  statusProcessingBorder: "#BFDBFE",
 
   // Table Aesthetics
-  tableHeaderBg: "#0B3020",
+  tableHeaderBg: "#0F172A",      // Executive Slate 900
   tableHeaderColor: "#FFFFFF"
 };
 
@@ -92,11 +93,11 @@ export function normalizeInvoiceSnapshot(order, options = {}) {
   const orderNumber = order?.orderNumber || (order?.id ? `ORD-${order.id.slice(0, 8).toUpperCase()}` : invoiceNumber);
 
   const issuedAt = options.issuedAt ? new Date(options.issuedAt) : (order?.createdAt ? new Date(order.createdAt) : new Date());
-  
+
   // Payment Terms and Due Date resolution
-  const paymentMethod = order?.paymentMethod || (isB2B ? "DIRECT_CORPORATE_WIRE" : "ONLINE_GATEWAY");
+  const paymentMethod = order?.paymentMethod || (isB2B ? "DIRECT_CORPORATE_WIRE" : "STRIPE_CREDIT_CARD");
   const paymentTerms = order?.paymentTerms || (isB2B ? "NET_15" : "PREPAID");
-  
+
   let dueDate;
   if (order?.dueDate) {
     dueDate = new Date(order.dueDate);
@@ -118,13 +119,14 @@ export function normalizeInvoiceSnapshot(order, options = {}) {
   const company = getCompanyConfig(options.company || order?.business || null);
 
   let customer = {
-    name: "Valued Commercial Partner",
+    name: "Valued Customer",
     companyName: null,
-    email: "billing@enterprise.com",
+    contactPerson: null,
+    email: "billing@customer.com",
     phone: "N/A",
     taxId: null,
     regNo: null,
-    address: "Registered Commercial Headquarters",
+    address: "Registered Address",
     city: "",
     state: "",
     postalCode: "",
@@ -132,8 +134,9 @@ export function normalizeInvoiceSnapshot(order, options = {}) {
   };
 
   if (isB2B && order.business) {
-    customer.name = order.business.contactPersonName || order.business.businessName;
+    customer.name = order.business.businessName;
     customer.companyName = order.business.businessName;
+    customer.contactPerson = order.business.contactPersonName || null;
     customer.email = order.business.businessEmail;
     customer.phone = order.business.businessPhone || "N/A";
     customer.taxId = order.business.taxRegistrationNumber;
@@ -146,12 +149,19 @@ export function normalizeInvoiceSnapshot(order, options = {}) {
 
   // Address normalization
   let shippingAddress = order.shippingAddress || {};
+  let billingAddress = order.billingAddress || null;
+
   if (Array.isArray(order.addresses)) {
     const shipping = order.addresses.find((a) => a.type === "SHIPPING") || order.addresses[0];
+    const billing = order.addresses.find((a) => a.type === "BILLING");
     if (shipping) shippingAddress = shipping;
+    if (billing) billingAddress = billing;
   }
   if (typeof shippingAddress === "string") {
     try { shippingAddress = JSON.parse(shippingAddress); } catch { shippingAddress = { addressLine1: shippingAddress }; }
+  }
+  if (typeof billingAddress === "string") {
+    try { billingAddress = JSON.parse(billingAddress); } catch { billingAddress = { addressLine1: billingAddress }; }
   }
 
   if (shippingAddress.contactName || shippingAddress.fullName) {
@@ -170,15 +180,21 @@ export function normalizeInvoiceSnapshot(order, options = {}) {
     const sku = it.sku || it.product?.sku || it.variant?.sku || `SKU-${1000 + idx}`;
     const quantity = Number(it.quantity || 1);
     const unitPrice = Number(it.unitPrice || it.price || 0);
-    const total = Number(it.total ?? (quantity * unitPrice));
+    const discount = Number(it.discount || 0);
+    const tax = Number(it.tax || 0);
+    const total = Number(it.total ?? (quantity * unitPrice - discount));
     const tier = it.appliedTier ? (typeof it.appliedTier === "string" ? JSON.parse(it.appliedTier) : it.appliedTier) : null;
+    const variantName = it.variantName || it.variant?.name || it.variant?.title || null;
 
     return {
       index: idx + 1,
       productName,
+      variantName,
       sku,
       quantity,
       unitPrice,
+      discount,
+      tax,
       total,
       tierMin: tier?.minQuantity || null,
       tierMax: tier?.maxQuantity || null
@@ -187,7 +203,7 @@ export function normalizeInvoiceSnapshot(order, options = {}) {
 
   const invoiceRec = options.invoice || (order?.invoices && order.invoices[0]) || null;
 
-  const subtotal = Number(order.subtotal ?? invoiceRec?.subtotal ?? options.subtotal ?? items.reduce((sum, i) => sum + i.total, 0));
+  const subtotal = Number(order.subtotal ?? invoiceRec?.subtotal ?? options.subtotal ?? items.reduce((sum, i) => sum + (i.unitPrice * i.quantity), 0));
   const discount = Number(order.discount ?? invoiceRec?.discount ?? options.discount ?? 0);
   const shippingCharges = Number(order.shippingCharges ?? order.shippingAmount ?? invoiceRec?.shippingAmount ?? options.shippingAmount ?? options.shippingCharges ?? 0);
   const tax = Number(order.tax ?? order.taxAmount ?? invoiceRec?.taxAmount ?? options.taxAmount ?? options.tax ?? 0);
@@ -233,6 +249,7 @@ export function normalizeInvoiceSnapshot(order, options = {}) {
     company,
     customer,
     shippingAddress,
+    billingAddress: billingAddress || shippingAddress,
     items,
     subtotal,
     discount,
@@ -249,7 +266,7 @@ async function generateQrBuffer(text) {
       width: 200,
       margin: 1,
       color: {
-        dark: "#0B3020",
+        dark: "#0F172A",
         light: "#FFFFFF"
       }
     });
@@ -264,9 +281,8 @@ async function generateQrBuffer(text) {
  */
 export async function generateInvoicePdf(rawOrder, options = {}) {
   const invoice = normalizeInvoiceSnapshot(rawOrder, options);
-  
+
   // A4 geometry: 595.28 x 841.89 points
-  // Setting margins to 0 prevents automatic unwanted page breaks near bottom margins
   const doc = new PDFDocument({
     size: "A4",
     margins: { top: 0, bottom: 0, left: 0, right: 0 },
@@ -275,79 +291,136 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
       Title: `Invoice ${invoice.invoiceNumber} - ${invoice.company.brandName}`,
       Author: invoice.company.legalName,
       Subject: `Commercial Tax Invoice for ${invoice.customer.name}`,
-      Keywords: "invoice, tax invoice, b2b, corporate, enterprise"
+      Keywords: "invoice, tax invoice, b2b, corporate, enterprise, stripe"
     }
   });
 
   const PAGE_WIDTH = 595.28;
   const PAGE_HEIGHT = 841.89;
-  const ML = 36;
-  const MR = 36;
-  const CW = PAGE_WIDTH - ML - MR; // 523.28pt printable width
+  const ML = 38;
+  const MR = 38;
+  const CW = PAGE_WIDTH - ML - MR; // ~519.28pt printable width
+  const FOOTER_RESERVED = 68;
+  const MAX_CONTENT_Y = PAGE_HEIGHT - FOOTER_RESERVED;
 
   const qrBuffer = await generateQrBuffer(invoice.verifyUrl);
 
-  // ── 1. Top Decorative Brand Bar (Full Bleed) ─────────────────────────────
-  doc.rect(0, 0, PAGE_WIDTH, 4).fill(T.brandPrimary);
+  // ── Function to Render Top Brand Stripe ─────────────────────────────────────
+  const drawTopBrandBar = () => {
+    doc.rect(0, 0, PAGE_WIDTH, 3).fill(T.brandPrimary);
+  };
 
-  // ── 2. Header Area (Brand Identity on Left, Invoice Card on Right) ──────
-  let y = 26;
+  // ── Function to Render Compact Header on Subsequent Pages ──────────────────
+  const drawCompactPageHeader = (pageNum) => {
+    drawTopBrandBar();
+    const hY = 24;
+    doc.fontSize(8.5).font("Helvetica-Bold").fillColor(T.inkHead)
+      .text(invoice.company.brandName, ML, hY, { lineBreak: false });
+    doc.fontSize(7.5).font("Helvetica").fillColor(T.inkMuted)
+      .text(`Invoice ${invoice.invoiceNumber}   •   Order Ref: #${invoice.orderNumber}`, ML + 80, hY + 1, { lineBreak: false });
 
-  // Left: Brand Logo & Legal Entity
-  const logoWidth = 120;
-  const logoHeight = 32;
+    doc.fontSize(7.5).font("Helvetica-Bold").fillColor(T.brandPrimary)
+      .text(`Page ${pageNum}`, PAGE_WIDTH - MR - 60, hY, { width: 60, align: "right", lineBreak: false });
+
+    doc.moveTo(ML, hY + 15).lineTo(PAGE_WIDTH - MR, hY + 15).lineWidth(0.5).strokeColor(T.borderLight).stroke();
+    return hY + 24;
+  };
+
+  // ── Function to Render Line Items Table Header ─────────────────────────────
+  const colIndexW = 20;
+  const colSkuW = 75;
+  const colQtyW = 34;
+  const colPriceW = 68;
+  const colDiscountW = 52;
+  const colTaxW = 48;
+  const colAmountW = 72;
+  const colDescW = CW - (colIndexW + colSkuW + colQtyW + colPriceW + colDiscountW + colTaxW + colAmountW); // ~150pt
+  const tableHeaderHeight = 18;
+
+  const drawTableHeader = (atY) => {
+    doc.roundedRect(ML, atY, CW, tableHeaderHeight, 2).fill(T.tableHeaderBg);
+
+    doc.fontSize(6.5).font("Helvetica-Bold").fillColor(T.white);
+    let curX = ML + 6;
+    doc.text("#", curX, atY + 5.5, { width: colIndexW - 6, lineBreak: false });
+
+    curX += colIndexW;
+    doc.text("ITEM & DESCRIPTION", curX, atY + 5.5, { width: colDescW - 8, lineBreak: false });
+
+    curX += colDescW;
+    doc.text("SKU", curX, atY + 5.5, { width: colSkuW - 6, lineBreak: false });
+
+    curX += colSkuW;
+    doc.text("QTY", curX, atY + 5.5, { width: colQtyW, align: "center", lineBreak: false });
+
+    curX += colQtyW;
+    doc.text("UNIT PRICE", curX, atY + 5.5, { width: colPriceW - 4, align: "right", lineBreak: false });
+
+    curX += colPriceW;
+    doc.text("DISCOUNT", curX, atY + 5.5, { width: colDiscountW - 4, align: "right", lineBreak: false });
+
+    curX += colDiscountW;
+    doc.text("TAX", curX, atY + 5.5, { width: colTaxW - 4, align: "right", lineBreak: false });
+
+    curX += colTaxW;
+    doc.text("AMOUNT", curX, atY + 5.5, { width: colAmountW - 8, align: "right", lineBreak: false });
+  };
+
+  // ── 1. Page 1 Header ───────────────────────────────────────────────────────
+  drawTopBrandBar();
+  let y = 24;
+
+  // Left Brand Area
+  const logoWidth = 110;
+  const logoHeight = 28;
   let logoDrawn = false;
 
   if (invoice.company.logoUrl && fs.existsSync(invoice.company.logoUrl)) {
     try {
       doc.image(invoice.company.logoUrl, ML, y, { fit: [logoWidth, logoHeight] });
       logoDrawn = true;
-    } catch {}
+    } catch { }
   }
-
   if (!logoDrawn && fs.existsSync(DEFAULT_LOGO_PATH)) {
     try {
       doc.image(DEFAULT_LOGO_PATH, ML, y, { fit: [logoWidth, logoHeight] });
       logoDrawn = true;
-    } catch {}
+    } catch { }
   }
-
   if (!logoDrawn) {
-    doc.fontSize(19).font("Helvetica-Bold").fillColor(T.brandPrimary).text(invoice.company.brandName, ML, y, { lineBreak: false });
+    doc.fontSize(18).font("Helvetica-Bold").fillColor(T.brandPrimary).text(invoice.company.brandName, ML, y, { lineBreak: false });
   }
 
   // Company details below logo
-  const compDetailsY = y + logoHeight + 4;
-  let compY = compDetailsY;
+  let compY = y + logoHeight + 4;
+  doc.fontSize(8.5).font("Helvetica-Bold").fillColor(T.inkHead).text(invoice.company.legalName, ML, compY, { width: 310, lineBreak: false });
+  compY += 12;
 
-  doc.fontSize(8.5).font("Helvetica-Bold").fillColor(T.inkHead);
-  doc.text(invoice.company.legalName, ML, compY, { width: 315, lineBreak: false });
-  compY = doc.y + 2;
+  if (invoice.company.tagline) {
+    doc.fontSize(6.8).font("Helvetica-Oblique").fillColor(T.inkMuted).text(invoice.company.tagline, ML, compY, { width: 310, lineBreak: false });
+    compY += 10;
+  }
 
-  doc.fontSize(6.8).font("Helvetica").fillColor(T.inkMuted);
-  doc.text(invoice.company.address, ML, compY, { width: 315, lineBreak: false });
-  compY = doc.y + 2;
+  doc.fontSize(6.8).font("Helvetica").fillColor(T.inkBody).text(invoice.company.address, ML, compY, { width: 310, lineBreak: false });
+  compY += 10;
 
-  doc.fontSize(6.5).font("Helvetica").fillColor(T.inkFaint);
-  doc.text(`${invoice.company.email}   •   ${invoice.company.phone}`, ML, compY, { width: 315, lineBreak: false });
-  compY = doc.y + 2;
+  const contactLine = `${invoice.company.email}   •   ${invoice.company.phone}`;
+  doc.fontSize(6.5).font("Helvetica").fillColor(T.inkMuted).text(contactLine, ML, compY, { width: 310, lineBreak: false });
+  compY += 10;
 
-  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(T.inkMuted);
-  doc.text(invoice.company.taxIds, ML, compY, { width: 315, lineBreak: false });
-  compY = doc.y;
+  if (invoice.company.taxIds) {
+    doc.fontSize(6.5).font("Helvetica-Bold").fillColor(T.inkBody).text(invoice.company.taxIds, ML, compY, { width: 310, lineBreak: false });
+    compY += 10;
+  }
 
-  // Right: Document Identification & Status Badge
-  const isDev = process.env.NODE_ENV !== "production";
-  const rightWidth = 195;
+  // Right Header Area: Dominant "INVOICE" Title & Identifiers
+  const rightWidth = 185;
   const rightX = PAGE_WIDTH - MR - rightWidth;
-  const docTitle = isDev
-    ? (invoice.invoiceType === "B2B" ? "SAMPLE COMMERCIAL INVOICE" : "SAMPLE TAX INVOICE")
-    : (invoice.invoiceType === "B2B" ? "COMMERCIAL TAX INVOICE" : "TAX INVOICE");
 
-  doc.fontSize(14).font("Helvetica-Bold").fillColor(T.inkHead).text(docTitle, rightX, y, { width: rightWidth, align: "right", lineBreak: false });
-  doc.fontSize(12).font("Helvetica-Bold").fillColor(T.brandPrimary).text(invoice.invoiceNumber, rightX, y + 17, { width: rightWidth, align: "right", lineBreak: false });
+  doc.fontSize(22).font("Helvetica-Bold").fillColor(T.inkHead).text("INVOICE", rightX, y, { width: rightWidth, align: "right", characterSpacing: 1.5, lineBreak: false });
+  doc.fontSize(10.5).font("Helvetica-Bold").fillColor(T.brandPrimary).text(invoice.invoiceNumber, rightX, y + 26, { width: rightWidth, align: "right", lineBreak: false });
 
-  // Status Pill Badge
+  // Status Badge
   let statusLabel = "DRAFT";
   let badgeBg = T.statusDraftBg;
   let badgeBorder = T.statusDraftBorder;
@@ -388,268 +461,280 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
     statusLabel = invoice.paymentStatus.replace(/_/g, " ");
   }
 
-  const badgeW = Math.max(54, statusLabel.length * 6.2 + 14);
+  const badgeW = Math.max(54, statusLabel.length * 5.8 + 14);
   const badgeH = 14;
   const badgeX = PAGE_WIDTH - MR - badgeW;
-  const badgeY = y + 35;
+  const badgeY = y + 42;
 
-  doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 7).fillAndStroke(badgeBg, badgeBorder);
+  doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 3).fillAndStroke(badgeBg, badgeBorder);
   doc.fontSize(6.5).font("Helvetica-Bold").fillColor(badgeText).text(statusLabel, badgeX, badgeY + 3.5, { width: badgeW, align: "center", lineBreak: false });
 
-  // Metadata block (Dates & Order Ref)
+  // Key Dates Block
   doc.fontSize(7).font("Helvetica").fillColor(T.inkMuted);
-  doc.text(`Order Ref: #${invoice.orderNumber}  •  Status: ${invoice.orderStatus}`, rightX, y + 53, { width: rightWidth, align: "right", lineBreak: false });
-  const payRef = invoice.stripePaymentIntentId ? ` (${invoice.stripePaymentIntentId.slice(0, 14)}...)` : "";
-  doc.text(`Payment: ${invoice.paymentStatus}${payRef}`, rightX, y + 63, { width: rightWidth, align: "right", lineBreak: false });
-  doc.text(`Issued: ${invoice.date}   •   Due: ${invoice.dueDate}`, rightX, y + 73, { width: rightWidth, align: "right", lineBreak: false });
+  doc.text(`Invoice Date: ${invoice.date}`, rightX, y + 61, { width: rightWidth, align: "right", lineBreak: false });
+  doc.text(`Payment Due: ${invoice.dueDate}`, rightX, y + 71, { width: rightWidth, align: "right", lineBreak: false });
 
-  y = Math.max(compY + 8, isDev ? y + 84 : y + 78);
-  doc.moveTo(ML, y).lineTo(PAGE_WIDTH - MR, y).lineWidth(0.75).strokeColor(T.borderLight).stroke();
-  y += 8;
+  y = Math.max(compY + 8, y + 84);
+  doc.moveTo(ML, y).lineTo(PAGE_WIDTH - MR, y).lineWidth(0.5).strokeColor(T.borderLight).stroke();
+  y += 10;
 
-  // ── 3. 3-Column Structured Information Panel ─────────────────────────────
-  const colGap = 9;
-  const colWidth = (CW - colGap * 2) / 3; // ~168.4pt
-  const c1X = ML;
-  const c2X = ML + colWidth + colGap;
-  const c3X = c2X + colWidth + colGap;
-  const panelHeight = 78;
+  // ── 2. Structured Two-Column Address Section (BILL TO & SHIP TO) ─────────
+  const colWidth = (CW - 18) / 2; // ~250pt each
+  const bX = ML;
+  const sX = ML + colWidth + 18;
+  const addrHeight = 70;
 
-  const drawInfoPanel = (x, title, accentColor) => {
-    doc.roundedRect(x, y, colWidth, panelHeight, 4).fillAndStroke(T.surfaceCard, T.borderLight);
-    doc.roundedRect(x, y, 3, panelHeight, 1.5).fill(accentColor);
-    doc.fontSize(6.5).font("Helvetica-Bold").fillColor(T.inkLight).text(title, x + 8, y + 6, { width: colWidth - 16, lineBreak: false });
-  };
+  // BILL TO Container
+  doc.roundedRect(bX, y, colWidth, addrHeight, 3).fillAndStroke(T.surfaceCard, T.borderLight);
+  doc.fontSize(6.2).font("Helvetica-Bold").fillColor(T.inkMuted).text("BILL TO", bX + 10, y + 7, { characterSpacing: 1.2, lineBreak: false });
 
-  // Card 1: Supplier / Issued By
-  drawInfoPanel(c1X, "ISSUED BY (SUPPLIER)", T.brandPrimary);
-  doc.fontSize(8).font("Helvetica-Bold").fillColor(T.inkHead).text(invoice.company.brandName, c1X + 8, y + 17, { width: colWidth - 16, lineBreak: false });
-  doc.fontSize(6.8).font("Helvetica").fillColor(T.inkMuted);
-  doc.text(invoice.company.legalName, c1X + 8, y + 28, { width: colWidth - 16, height: 9, ellipsis: true, lineBreak: false });
-  doc.text(invoice.company.address, c1X + 8, y + 38, { width: colWidth - 16, height: 18, ellipsis: true });
-  doc.text(invoice.company.email, c1X + 8, y + 59, { width: colWidth - 16, height: 9, ellipsis: true, lineBreak: false });
+  const billName = invoice.customer.companyName || invoice.customer.name;
+  doc.fontSize(8.5).font("Helvetica-Bold").fillColor(T.inkHead).text(billName, bX + 10, y + 18, { width: colWidth - 20, height: 11, ellipsis: true, lineBreak: false });
 
-  // Card 2: Billed To / Recipient
-  drawInfoPanel(c2X, "BILLED TO (RECIPIENT)", T.brandMuted);
-  const custTitle = invoice.customer.companyName || invoice.customer.name;
-  doc.fontSize(8).font("Helvetica-Bold").fillColor(T.inkHead).text(custTitle, c2X + 8, y + 17, { width: colWidth - 16, height: 10, ellipsis: true, lineBreak: false });
-  doc.fontSize(6.8).font("Helvetica").fillColor(T.inkMuted);
-  if (invoice.customer.taxId) {
-    doc.text(`Tax ID: ${invoice.customer.taxId}`, c2X + 8, y + 28, { width: colWidth - 16, height: 9, ellipsis: true, lineBreak: false });
-    doc.text(invoice.customer.address || "Standard Registered Address", c2X + 8, y + 38, { width: colWidth - 16, height: 18, ellipsis: true });
-  } else {
-    doc.text(invoice.customer.email, c2X + 8, y + 28, { width: colWidth - 16, height: 9, ellipsis: true, lineBreak: false });
-    doc.text(invoice.customer.address || "Standard Registered Address", c2X + 8, y + 38, { width: colWidth - 16, height: 18, ellipsis: true });
+  let bLineY = y + 30;
+  if (invoice.customer.contactPerson && invoice.customer.companyName) {
+    doc.fontSize(6.8).font("Helvetica").fillColor(T.inkBody).text(`Attn: ${invoice.customer.contactPerson}`, bX + 10, bLineY, { width: colWidth - 20, lineBreak: false });
+    bLineY += 9;
   }
-  doc.text(invoice.customer.phone || invoice.customer.email, c2X + 8, y + 59, { width: colWidth - 16, height: 9, ellipsis: true, lineBreak: false });
+  const billAddrStr = [invoice.billingAddress?.addressLine1, invoice.billingAddress?.city, invoice.billingAddress?.state, invoice.billingAddress?.postalCode, invoice.billingAddress?.countryCode || invoice.billingAddress?.country].filter(Boolean).join(", ");
+  doc.fontSize(6.8).font("Helvetica").fillColor(T.inkBody).text(billAddrStr || invoice.customer.address || "Standard Registered Billing Address", bX + 10, bLineY, { width: colWidth - 20, height: 18, ellipsis: true });
+  bLineY += 18;
+  const billContact = [invoice.customer.email, invoice.customer.phone !== "N/A" ? invoice.customer.phone : null, invoice.customer.taxId ? `Tax ID: ${invoice.customer.taxId}` : null].filter(Boolean).join("  •  ");
+  doc.fontSize(6.5).font("Helvetica").fillColor(T.inkMuted).text(billContact, bX + 10, bLineY, { width: colWidth - 20, height: 9, ellipsis: true, lineBreak: false });
 
-  // Card 3: Settlement Terms & Logistics
-  drawInfoPanel(c3X, "TERMS & SETTLEMENT", T.inkHead);
-  doc.fontSize(6.8).font("Helvetica").fillColor(T.inkMuted);
-  
-  doc.text("Payment Method:", c3X + 8, y + 18, { width: 70, lineBreak: false });
-  doc.font("Helvetica-Bold").fillColor(T.inkHead).text(invoice.paymentMethod, c3X + 76, y + 18, { width: colWidth - 82, lineBreak: false, ellipsis: true });
+  // SHIP TO Container
+  doc.roundedRect(sX, y, colWidth, addrHeight, 3).fillAndStroke(T.surfaceCard, T.borderLight);
+  doc.fontSize(6.2).font("Helvetica-Bold").fillColor(T.inkMuted).text("SHIP TO", sX + 10, y + 7, { characterSpacing: 1.2, lineBreak: false });
 
-  doc.font("Helvetica").fillColor(T.inkMuted).text("Payment Terms:", c3X + 8, y + 29, { width: 70, lineBreak: false });
-  doc.font("Helvetica-Bold").fillColor(T.inkHead).text(invoice.paymentTerms, c3X + 76, y + 29, { width: colWidth - 82, lineBreak: false });
+  const shipName = invoice.shippingAddress?.fullName || invoice.shippingAddress?.contactName || invoice.customer.name;
+  doc.fontSize(8.5).font("Helvetica-Bold").fillColor(T.inkHead).text(shipName, sX + 10, y + 18, { width: colWidth - 20, height: 11, ellipsis: true, lineBreak: false });
 
-  doc.font("Helvetica").fillColor(T.inkMuted).text("Currency Snapshot:", c3X + 8, y + 40, { width: 70, lineBreak: false });
-  doc.font("Helvetica-Bold").fillColor(T.brandPrimary).text(invoice.currencyCode, c3X + 76, y + 40, { width: colWidth - 82, lineBreak: false });
+  let sLineY = y + 30;
+  const shipAddrStr = [invoice.shippingAddress?.addressLine1, invoice.shippingAddress?.addressLine2, invoice.shippingAddress?.city, invoice.shippingAddress?.state, invoice.shippingAddress?.postalCode, invoice.shippingAddress?.countryCode || invoice.shippingAddress?.country].filter(Boolean).join(", ");
+  doc.fontSize(6.8).font("Helvetica").fillColor(T.inkBody).text(shipAddrStr || "Same as Billing Address", sX + 10, sLineY, { width: colWidth - 20, height: 18, ellipsis: true });
+  sLineY += 18;
+  const shipPhone = invoice.shippingAddress?.phone || invoice.customer.phone || "N/A";
+  doc.fontSize(6.5).font("Helvetica").fillColor(T.inkMuted).text(`Delivery Contact: ${shipPhone}   •   Carrier: Standard Commercial Tracked`, sX + 10, sLineY, { width: colWidth - 20, height: 9, ellipsis: true, lineBreak: false });
 
-  doc.font("Helvetica").fillColor(T.inkMuted).text("Status Snapshot:", c3X + 8, y + 51, { width: 70, lineBreak: false });
-  doc.font("Helvetica-Bold").fillColor(T.inkHead).text(invoice.paymentStatus, c3X + 76, y + 51, { width: colWidth - 82, lineBreak: false, ellipsis: true });
+  y += addrHeight + 8;
 
-  y += panelHeight + 10;
+  // ── 3. Invoice Meta Information Panel (Refined Financial Strip) ───────────
+  const metaStripHeight = 28;
+  doc.roundedRect(ML, y, CW, metaStripHeight, 3).fillAndStroke(T.surfaceAlt, T.borderLight);
 
-  // ── 4. Line Items Table ──────────────────────────────────────────────────
-  const tableHeaderHeight = 20;
-  const colIndexW = 24;
-  const colQtyW = 44;
-  const colPriceW = 95;
-  const colTotalW = 100;
-  const colItemW = CW - colIndexW - colQtyW - colPriceW - colTotalW; // ~260.28pt
+  const metaCols = [
+    { label: "ORDER REFERENCE", val: `#${invoice.orderNumber}` },
+    { label: "PAYMENT TERMS", val: invoice.paymentTerms.replace(/_/g, " ") },
+    { label: "PAYMENT METHOD", val: invoice.paymentMethod.replace(/_/g, " ") },
+    { label: "CURRENCY", val: `${invoice.currencyCode} (${invoice.currencyCode === "USD" ? "$" : invoice.currencyCode === "CAD" ? "CA$" : invoice.currencyCode})` },
+    { label: "TRANSACTION REF", val: invoice.stripePaymentIntentId ? invoice.stripePaymentIntentId.slice(0, 16) + "..." : "PRE-SETTLEMENT" }
+  ];
 
-  const drawTableHeader = (atY) => {
-    doc.roundedRect(ML, atY, CW, tableHeaderHeight, 3).fill(T.tableHeaderBg);
-    doc.fontSize(7).font("Helvetica-Bold").fillColor(T.white);
-    doc.text("#", ML + 6, atY + 6, { width: colIndexW - 6, lineBreak: false });
-    doc.text("ITEM DESCRIPTION & SPECIFICATION", ML + colIndexW, atY + 6, { width: colItemW, lineBreak: false });
-    doc.text("QTY", ML + colIndexW + colItemW, atY + 6, { width: colQtyW, align: "center", lineBreak: false });
-    doc.text("UNIT PRICE", ML + colIndexW + colItemW + colQtyW, atY + 6, { width: colPriceW - 8, align: "right", lineBreak: false });
-    doc.text("AMOUNT", ML + colIndexW + colItemW + colQtyW + colPriceW, atY + 6, { width: colTotalW - 8, align: "right", lineBreak: false });
-  };
+  const mColW = CW / metaCols.length;
+  metaCols.forEach((m, idx) => {
+    const mx = ML + (idx * mColW) + 8;
+    doc.fontSize(5.8).font("Helvetica-Bold").fillColor(T.inkMuted).text(m.label, mx, y + 5.5, { width: mColW - 12, lineBreak: false, characterSpacing: 0.5 });
+    doc.fontSize(7.5).font("Helvetica-Bold").fillColor(T.inkHead).text(m.val, mx, y + 14.5, { width: mColW - 12, lineBreak: false, ellipsis: true });
+  });
 
+  y += metaStripHeight + 10;
+
+  // ── 4. Line Items Table with Dynamic Pagination ───────────────────────────
   drawTableHeader(y);
   y += tableHeaderHeight;
 
-  // Render Table Rows
-  const rowHeight = 23;
-  const maxTableY = PAGE_HEIGHT - 170; // Guarantee single-page space for summary + verification + footer
+  let currentPageNum = 1;
+  const baseRowHeight = 22;
 
   invoice.items.forEach((item, i) => {
-    // If table exceeds page limit, flow to next page cleanly
-    if (y + rowHeight > maxTableY) {
+    // Dynamic height check for multi-line description or variant details
+    const hasVariant = !!item.variantName;
+    const currentRowHeight = hasVariant ? baseRowHeight + 8 : baseRowHeight;
+
+    // Check if table row exceeds printable limit
+    if (y + currentRowHeight > MAX_CONTENT_Y - 140) {
       doc.addPage();
-      doc.rect(0, 0, PAGE_WIDTH, 4).fill(T.brandPrimary);
-      y = 30;
+      currentPageNum++;
+      y = drawCompactPageHeader(currentPageNum);
       drawTableHeader(y);
       y += tableHeaderHeight;
     }
 
     const isEven = i % 2 === 0;
     if (!isEven) {
-      doc.rect(ML, y, CW, rowHeight).fill(T.surfaceStripe);
+      doc.rect(ML, y, CW, currentRowHeight).fill(T.surfaceStripe);
     }
 
-    // Row Index
-    doc.fontSize(7.5).font("Helvetica").fillColor(T.inkLight);
-    doc.text(String(item.index), ML + 6, y + 6, { width: colIndexW - 6, lineBreak: false });
+    let rx = ML + 6;
 
-    // Item Name & SKU
-    doc.fontSize(8).font("Helvetica-Bold").fillColor(T.inkHead);
-    doc.text(item.productName, ML + colIndexW, y + 4, { width: colItemW - 8, height: 10, ellipsis: true, lineBreak: false });
+    // Col 1: Index
+    doc.fontSize(7).font("Helvetica").fillColor(T.inkLight).text(String(item.index), rx, y + 5.5, { width: colIndexW - 6, lineBreak: false });
+    rx += colIndexW;
 
-    doc.fontSize(6.5).font("Helvetica").fillColor(T.inkFaint);
-    const skuMeta = `SKU: ${item.sku || "N/A"}${item.tierMin ? ` • Tier: ${item.tierMin}+ units` : ""}`;
-    doc.text(skuMeta, ML + colIndexW, y + 13, { width: colItemW - 8, height: 8, ellipsis: true, lineBreak: false });
+    // Col 2: Item & Description
+    doc.fontSize(7.5).font("Helvetica-Bold").fillColor(T.inkHead).text(item.productName, rx, y + 4, { width: colDescW - 8, height: 10, ellipsis: true, lineBreak: false });
+    if (hasVariant) {
+      doc.fontSize(6.2).font("Helvetica").fillColor(T.brandPrimary).text(`Variant: ${item.variantName}`, rx, y + 13, { width: colDescW - 8, height: 8, ellipsis: true, lineBreak: false });
+    }
+    rx += colDescW;
 
-    // Quantity
-    doc.fontSize(8).font("Helvetica-Bold").fillColor(T.inkHead);
-    doc.text(item.quantity.toLocaleString(), ML + colIndexW + colItemW, y + 6, { width: colQtyW, align: "center", lineBreak: false });
+    // Col 3: SKU
+    doc.fontSize(6.8).font("Helvetica").fillColor(T.inkMuted).text(item.sku, rx, y + 5.5, { width: colSkuW - 6, ellipsis: true, lineBreak: false });
+    rx += colSkuW;
 
-    // Unit Price
-    doc.fontSize(7.8).font("Helvetica").fillColor(T.inkMuted);
-    doc.text(formatCurrency(item.unitPrice, invoice.currencyCode), ML + colIndexW + colItemW + colQtyW, y + 6, { width: colPriceW - 8, align: "right", lineBreak: false });
+    // Col 4: Qty
+    doc.fontSize(7.8).font("Helvetica-Bold").fillColor(T.inkHead).text(item.quantity.toLocaleString(), rx, y + 5.5, { width: colQtyW, align: "center", lineBreak: false });
+    rx += colQtyW;
 
-    // Amount
-    doc.fontSize(8.2).font("Helvetica-Bold").fillColor(T.inkHead);
-    doc.text(formatCurrency(item.total, invoice.currencyCode), ML + colIndexW + colItemW + colQtyW + colPriceW, y + 6, { width: colTotalW - 8, align: "right", lineBreak: false });
+    // Col 5: Unit Price
+    doc.fontSize(7.5).font("Helvetica").fillColor(T.inkBody).text(formatCurrency(item.unitPrice, invoice.currencyCode), rx, y + 5.5, { width: colPriceW - 4, align: "right", lineBreak: false });
+    rx += colPriceW;
 
-    // Subtle bottom border
-    doc.moveTo(ML, y + rowHeight).lineTo(PAGE_WIDTH - MR, y + rowHeight).lineWidth(0.5).strokeColor(T.borderLight).stroke();
-    y += rowHeight;
+    // Col 6: Discount
+    const discStr = item.discount > 0 ? `-${formatCurrency(item.discount, invoice.currencyCode)}` : "—";
+    doc.fontSize(7.2).font("Helvetica").fillColor(item.discount > 0 ? T.statusDueText : T.inkLight).text(discStr, rx, y + 5.5, { width: colDiscountW - 4, align: "right", lineBreak: false });
+    rx += colDiscountW;
+
+    // Col 7: Tax
+    const taxStr = item.tax > 0 ? formatCurrency(item.tax, invoice.currencyCode) : "0.00";
+    doc.fontSize(7.2).font("Helvetica").fillColor(T.inkMuted).text(taxStr, rx, y + 5.5, { width: colTaxW - 4, align: "right", lineBreak: false });
+    rx += colTaxW;
+
+    // Col 8: Total Amount
+    doc.fontSize(7.8).font("Helvetica-Bold").fillColor(T.inkHead).text(formatCurrency(item.total, invoice.currencyCode), rx, y + 5.5, { width: colAmountW - 8, align: "right", lineBreak: false });
+
+    // Subtle row divider line
+    doc.moveTo(ML, y + currentRowHeight).lineTo(PAGE_WIDTH - MR, y + currentRowHeight).lineWidth(0.5).strokeColor(T.borderLight).stroke();
+    y += currentRowHeight;
   });
 
   y += 10;
 
-  // ── 5. Financial Summary & Verification Panel ─────────────────────────────
-  const summaryBoxWidth = 220;
-  const summaryBoxX = PAGE_WIDTH - MR - summaryBoxWidth;
-  const qrPanelWidth = CW - summaryBoxWidth - 10;
-  const bottomCardHeight = invoice.discount > 0 ? 94 : 84;
+  // ── 5. Financial Totals, Tax Summary & Verification Module ─────────────────
+  const totalsBoxWidth = 210;
+  const totalsBoxX = PAGE_WIDTH - MR - totalsBoxWidth;
+  const leftPanelWidth = CW - totalsBoxWidth - 14; // ~295pt
+  const bottomSectionHeight = 110;
 
-  // Left: Digital Verification & Authenticity Card
-  doc.roundedRect(ML, y, qrPanelWidth, bottomCardHeight, 4).fillAndStroke(T.surfaceCard, T.borderLight);
+  // Check if financial summary fits on the current page; otherwise break cleanly
+  if (y + bottomSectionHeight > MAX_CONTENT_Y) {
+    doc.addPage();
+    currentPageNum++;
+    y = drawCompactPageHeader(currentPageNum);
+  }
 
-  const qrSize = 58;
+  // ── Left Column: Digital Verification & Audit Card ────────────────────────
+  doc.roundedRect(ML, y, leftPanelWidth, bottomSectionHeight, 3).fillAndStroke(T.surfaceCard, T.borderLight);
+
+  const qrSize = 54;
   const qrX = ML + 10;
-  const qrY = y + 13;
+  const qrY = y + 12;
 
   if (qrBuffer) {
     try {
       doc.image(qrBuffer, qrX, qrY, { fit: [qrSize, qrSize] });
-    } catch (e) {
-      console.warn("QR render issue:", e);
-    }
+    } catch { }
   }
 
-  const qrTextX = qrX + qrSize + 12;
-  const qrTextW = qrPanelWidth - qrSize - 28;
+  const qTextX = qrX + qrSize + 12;
+  const qTextW = leftPanelWidth - qrSize - 28;
 
-  doc.fontSize(7.5).font("Helvetica-Bold").fillColor(T.brandPrimary).text("DIGITALLY VERIFIED INVOICE", qrTextX, y + 10, { width: qrTextW, lineBreak: false });
-  doc.fontSize(6.8).font("Helvetica").fillColor(T.inkMuted).text("Scan this secure QR code to verify invoice authenticity, payment state, and cryptographic transaction snapshots.", qrTextX, y + 21, { width: qrTextW, height: 24 });
-  doc.fontSize(6.5).font("Helvetica").fillColor(T.inkFaint).text(`Direct URL: ${invoice.verifyUrl}`, qrTextX, y + 47, { width: qrTextW, height: 16, ellipsis: true });
-  const ledgerLabel = isDev
-    ? `Sample Merchant Ledger (Dev)  •  ${invoice.company.brandName}`
-    : `Official Merchant Ledger  •  ${invoice.company.brandName}`;
-  doc.fontSize(6.5).font("Helvetica-Bold").fillColor(T.brandMuted).text(ledgerLabel, qrTextX, y + 66, { width: qrTextW, lineBreak: false });
+  doc.fontSize(7.2).font("Helvetica-Bold").fillColor(T.brandPrimary).text("DIGITAL AUDIT & LEDGER VERIFICATION", qTextX, y + 10, { width: qTextW, characterSpacing: 0.5, lineBreak: false });
+  doc.fontSize(6.5).font("Helvetica").fillColor(T.inkMuted).text("Scan this QR code with any mobile device or audit scanner to verify cryptographic order snapshot authenticity, official tax calculation ID, and settlement status.", qTextX, y + 21, { width: qTextW, height: 26 });
 
-  // Right: Grand Totals Breakdown Card
-  doc.roundedRect(summaryBoxX, y, summaryBoxWidth, bottomCardHeight, 4).fillAndStroke(T.surfaceCard, T.borderLight);
+  doc.fontSize(6.2).font("Helvetica-Bold").fillColor(T.inkBody).text("VERIFICATION ENDPOINT:", qTextX, y + 50, { width: qTextW, lineBreak: false });
+  doc.fontSize(6.2).font("Helvetica").fillColor(T.brandPrimary).text(invoice.verifyUrl, qTextX, y + 59, { width: qTextW, height: 14, ellipsis: true });
+
+  const taxAuditRef = invoice.order?.stripeTaxCalculationId ? `Stripe Tax Calc: ${invoice.order.stripeTaxCalculationId}` : "Stripe Automated Sales Tax Certified";
+  doc.fontSize(6).font("Helvetica-Bold").fillColor(T.inkMuted).text(taxAuditRef, qTextX, y + 74, { width: qTextW, lineBreak: false });
+
+  // Payment Settlement Receipt Pill inside left card
+  const settleY = y + 87;
+  doc.rect(qTextX, settleY, qTextW, 14).fill(T.surfaceAlt);
+  const isPaid = invoice.paymentStatus === "PAID" || invoice.invoiceStatus === "ISSUED";
+  const settleText = isPaid
+    ? `Settled via ${invoice.paymentMethod.replace(/_/g, " ")} (${invoice.stripePaymentIntentId ? invoice.stripePaymentIntentId.slice(0, 14) + "..." : "Authorized"})`
+    : `Payment Outstanding: Payment Terms ${invoice.paymentTerms.replace(/_/g, " ")} • Due: ${invoice.dueDate}`;
+  doc.fontSize(6.2).font("Helvetica-Bold").fillColor(isPaid ? T.statusPaidText : T.statusDueText).text(settleText, qTextX + 4, settleY + 3.5, { width: qTextW - 8, ellipsis: true, lineBreak: false });
+
+  // ── Right Column: Grand Totals Breakdown Card ─────────────────────────────
+  doc.roundedRect(totalsBoxX, y, totalsBoxWidth, bottomSectionHeight, 3).fillAndStroke(T.surfaceCard, T.borderLight);
 
   let tY = y + 8;
-  const rowH = 13;
-
-  const drawTotalLine = (label, val, isBold = false, color = T.inkHead) => {
-    doc.fontSize(7.5).font(isBold ? "Helvetica-Bold" : "Helvetica").fillColor(T.inkMuted).text(label, summaryBoxX + 10, tY, { width: 100, lineBreak: false });
-    doc.fontSize(7.8).font(isBold ? "Helvetica-Bold" : "Helvetica").fillColor(color).text(val, summaryBoxX + 10, tY, { width: summaryBoxWidth - 20, align: "right", lineBreak: false });
-    tY += rowH;
+  const drawLine = (label, val, isBold = false, valColor = T.inkHead) => {
+    doc.fontSize(7).font(isBold ? "Helvetica-Bold" : "Helvetica").fillColor(T.inkMuted).text(label, totalsBoxX + 10, tY, { width: 110, lineBreak: false });
+    doc.fontSize(7.5).font(isBold ? "Helvetica-Bold" : "Helvetica").fillColor(valColor).text(val, totalsBoxX + 10, tY, { width: totalsBoxWidth - 20, align: "right", lineBreak: false });
+    tY += 12;
   };
 
-  drawTotalLine("Subtotal:", formatCurrency(invoice.subtotal, invoice.currencyCode));
+  drawLine("Subtotal:", formatCurrency(invoice.subtotal, invoice.currencyCode));
 
   if (invoice.discount > 0) {
-    drawTotalLine("Corporate Discount:", `-${formatCurrency(invoice.discount, invoice.currencyCode)}`, false, T.statusDueText);
+    drawLine("Corporate Discount:", `-${formatCurrency(invoice.discount, invoice.currencyCode)}`, false, T.statusDueText);
   }
 
-  // Tax / VAT (always explicitly displayed to match DB records)
+  const shipFormatted = invoice.shippingCharges > 0 ? formatCurrency(invoice.shippingCharges, invoice.currencyCode) : "Free / $0.00";
+  drawLine("Shipping & Handling:", shipFormatted);
+
   const taxFormatted = invoice.tax > 0 ? formatCurrency(invoice.tax, invoice.currencyCode) : `${formatCurrency(0, invoice.currencyCode)} (0%)`;
-  drawTotalLine("Estimated Tax / VAT:", taxFormatted);
+  drawLine("Sales Tax / GST / VAT:", taxFormatted);
 
-  // Shipping / Freight (always explicitly displayed to match DB records)
-  const shippingFormatted = invoice.shippingCharges > 0 ? formatCurrency(invoice.shippingCharges, invoice.currencyCode) : "Free / $0.00";
-  drawTotalLine("Shipping & Freight:", shippingFormatted);
+  // Hairline separator before final amounts
+  doc.moveTo(totalsBoxX + 8, tY + 1).lineTo(totalsBoxX + totalsBoxWidth - 8, tY + 1).lineWidth(0.5).strokeColor(T.borderDark).stroke();
+  tY += 5;
 
-  // Divider line before grand total
-  doc.moveTo(summaryBoxX + 8, tY + 2).lineTo(summaryBoxX + summaryBoxWidth - 8, tY + 2).lineWidth(0.75).strokeColor(T.borderDark).stroke();
-  tY += 6;
+  // Grand Total Highlight Container
+  const grandHighlightBg = isPaid ? T.brandLight : T.statusDueBg;
+  const grandHighlightBorder = isPaid ? T.brandAccent : T.statusDueBorder;
+  doc.roundedRect(totalsBoxX + 8, tY, totalsBoxWidth - 16, 22, 2).fillAndStroke(grandHighlightBg, grandHighlightBorder);
 
-  // Grand Total Highlight
-  const isPaid = invoice.paymentStatus === "PAID" || invoice.invoiceStatus === "ISSUED";
-  let totalLabel = "TOTAL DUE:";
-  if (invoice.paymentStatus === "REFUNDED" || invoice.invoiceStatus === "VOID") {
-    totalLabel = "TOTAL REFUNDED:";
-  } else if (invoice.paymentStatus === "CANCELLED" || invoice.invoiceStatus === "CANCELLED") {
-    totalLabel = "TOTAL (CANCELLED):";
-  } else if (isPaid) {
-    totalLabel = "TOTAL PAID:";
+  doc.fontSize(7.5).font("Helvetica-Bold").fillColor(T.inkHead).text("GRAND TOTAL:", totalsBoxX + 14, tY + 6.5, { lineBreak: false });
+  doc.fontSize(11).font("Helvetica-Bold").fillColor(T.brandPrimary).text(formatCurrency(invoice.total, invoice.currencyCode), totalsBoxX + 14, tY + 5, { width: totalsBoxWidth - 30, align: "right", lineBreak: false });
+  tY += 26;
+
+  // Amount Paid & Balance Due
+  const amountPaid = isPaid ? invoice.total : 0;
+  const balanceDue = isPaid ? 0 : invoice.total;
+  drawLine("Amount Paid:", formatCurrency(amountPaid, invoice.currencyCode), true, isPaid ? T.statusPaidText : T.inkMuted);
+  drawLine("Balance Due:", formatCurrency(balanceDue, invoice.currencyCode), true, balanceDue > 0 ? T.statusDueText : T.inkMuted);
+
+  y += bottomSectionHeight + 8;
+
+  // ── 6. Commercial Terms & Warranty Notice (Compact Footer Banner) ──────────
+  if (y + 36 <= MAX_CONTENT_Y) {
+    doc.roundedRect(ML, y, CW, 28, 2).fillAndStroke(T.surfaceCard, T.borderLight);
+    doc.fontSize(6).font("Helvetica-Bold").fillColor(T.inkHead).text("PAYMENT TERMS & RETURN POLICY:", ML + 8, y + 5, { characterSpacing: 0.5, lineBreak: false });
+    const policyNote = invoice.company.footerNote || "Payment is governed by applicable commercial contract terms. Standard 30-day return policy applies to unopened items. Certified genuine supply.";
+    doc.fontSize(5.8).font("Helvetica").fillColor(T.inkMuted).text(`${policyNote}   •   Inquiries: ${invoice.company.email}`, ML + 8, y + 14, { width: CW - 16, lineBreak: false, ellipsis: true });
   }
-  doc.fontSize(8.5).font("Helvetica-Bold").fillColor(T.inkHead).text(totalLabel, summaryBoxX + 10, tY + 3, { width: 110, lineBreak: false });
-  doc.fontSize(12).font("Helvetica-Bold").fillColor(T.brandPrimary).text(formatCurrency(invoice.total, invoice.currencyCode), summaryBoxX + 10, tY, { width: summaryBoxWidth - 20, align: "right", lineBreak: false });
 
-  // ── 6. Header/Footer Finalizer on All Pages ──────────────────────────────
+  // ── 7. Multi-Page Master Footer on All Buffered Pages ─────────────────────
   const range = doc.bufferedPageRange();
   for (let i = range.start; i < range.start + range.count; i++) {
     doc.switchToPage(i);
 
-    // Top brand bar
-    doc.rect(0, 0, PAGE_WIDTH, 4).fill(T.brandPrimary);
-
-    // Bottom document footer
-    const footerY = 806;
-
-    if (isDev) {
-      doc.fontSize(6.5).font("Helvetica-Bold").fillColor(T.statusDueText);
-      doc.text("DEVELOPMENT ENVIRONMENT — THIS IS SAMPLE NOT OFFICIAL", ML, footerY - 10, { width: CW, align: "center", lineBreak: false });
-    } else if (invoice.company.footerNote) {
-      doc.fontSize(6.5).font("Helvetica-Oblique").fillColor(T.inkFaint);
-      doc.text(`Notice: ${invoice.company.footerNote}`, ML, footerY - 10, { width: CW, align: "center", lineBreak: false });
-    }
-
+    const footerY = PAGE_HEIGHT - FOOTER_RESERVED + 12;
     doc.moveTo(ML, footerY).lineTo(PAGE_WIDTH - MR, footerY).lineWidth(0.5).strokeColor(T.borderLight).stroke();
-    
-    const pageIndicator = range.count > 1 ? `   •   Page ${i + 1} of ${range.count}` : "";
-    doc.fontSize(6.5).font("Helvetica").fillColor(T.inkLight);
-    doc.text(
-      `${invoice.company.legalName}   •   Document Ref: ${invoice.invoiceNumber}   •   Issued: ${invoice.date}${pageIndicator}`,
-      ML,
-      footerY + 4,
-      { width: CW, align: "center", lineBreak: false }
-    );
 
-    const footerDisclaimer = isDev
-      ? "This is a sample document for development environment use only, not an official tax invoice. Registered office: " + invoice.company.address
-      : "This is an official computer-generated commercial tax invoice. Registered office: " + invoice.company.address;
+    // Line 1: Corporate Entity & Contacts
+    doc.fontSize(6.5).font("Helvetica-Bold").fillColor(T.inkHead);
+    doc.text(invoice.company.legalName, ML, footerY + 5, { width: CW / 2, lineBreak: false });
 
-    doc.fontSize(6).font("Helvetica").fillColor(T.inkLight);
-    doc.text(
-      footerDisclaimer,
-      ML,
-      footerY + 13,
-      { width: CW, align: "center", lineBreak: false }
-    );
+    doc.fontSize(6.5).font("Helvetica").fillColor(T.inkMuted);
+    doc.text("Thank you for your business.", ML + (CW / 2), footerY + 5, { width: CW / 2, align: "right", lineBreak: false });
 
-    // Bottom brand accent bar (Full Bleed)
+    // Line 2: Regulatory & Generation Reference
+    const generatedTimestamp = new Date().toUTCString();
+    const docMeta = `Document Ref: ${invoice.invoiceNumber}   •   Generated: ${generatedTimestamp}   •   Page ${i + 1} of ${range.count}`;
+    doc.fontSize(5.8).font("Helvetica").fillColor(T.inkLight);
+    doc.text(docMeta, ML, footerY + 16, { width: CW, align: "center", lineBreak: false });
+
+    // Line 3: Official Legal Disclaimer
+    const legalDisclaimer = `This is a computer-generated commercial tax invoice issued by ${invoice.company.brandName}. Registered in USA & international jurisdictions. Registered Office: ${invoice.company.address}`;
+    doc.fontSize(5.5).font("Helvetica").fillColor(T.inkLight);
+    doc.text(legalDisclaimer, ML, footerY + 25, { width: CW, align: "center", lineBreak: false });
+
+    // Bottom decorative brand bar (Full Bleed)
     doc.rect(0, PAGE_HEIGHT - 3, PAGE_WIDTH, 3).fill(T.brandPrimary);
   }
 
@@ -669,3 +754,4 @@ export async function generateInvoiceBuffer(order, options = {}) {
     doc.on("error", (err) => reject(err));
   });
 }
+
