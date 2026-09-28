@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { Outlet } from "react-router-dom";
 import { Store } from "lucide-react";
 import { useAuthStore } from "../../stores/auth.store.js";
@@ -8,6 +8,8 @@ import { ADMIN_NAV_CONFIG } from "../../constants/adminNav.js";
 import { EnterpriseSidebar } from "../../components/common/EnterpriseSidebar.jsx";
 import vanomLogo from "../../assets/logo.png";
 import { AdminTopbar } from "./AdminTopbar.jsx";
+import { PageLoader } from "../../components/common/PageLoader.jsx";
+
 
 export function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false);
@@ -67,7 +69,9 @@ export function AdminLayout() {
 
         {/* Dynamic Page Content */}
         <main className="flex-1 overflow-y-auto bg-[#F4F6F8] p-4 sm:p-6 lg:p-8">
-          <Outlet />
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

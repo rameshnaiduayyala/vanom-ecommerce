@@ -1,4 +1,4 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { Lock } from "lucide-react";
 import { SEO } from "../../../components/common/SEO.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";
@@ -7,7 +7,13 @@ import { useCheckout } from "../hooks/useCheckout.js";
 import { CheckoutAddressForm } from "../components/CheckoutAddressForm.jsx";
 import { CheckoutShippingSelector } from "../components/CheckoutShippingSelector.jsx";
 import { CheckoutOrderSummary } from "../components/CheckoutOrderSummary.jsx";
-import { StripePaymentModal } from "../components/StripePaymentModal.jsx";
+
+const StripePaymentModal = lazy(() =>
+  import("../components/StripePaymentModal.jsx").then((m) => ({
+    default: m.StripePaymentModal || m.default,
+  }))
+);
+
 
 export function CheckoutPage() {
   const checkout = useCheckout();
@@ -96,18 +102,22 @@ export function CheckoutPage() {
         />
       </form>
 
-      {/* Stripe Payment Element Modal */}
-      <StripePaymentModal
-        isOpen={checkout.isStripeModalOpen}
-        onClose={checkout.closeStripeModal}
-        clientSecret={checkout.stripeSession?.clientSecret}
-        publishableKey={checkout.stripeSession?.publishableKey}
-        order={checkout.stripeSession?.order}
-        amount={checkout.stripeSession?.amount}
-        currency={checkout.stripeSession?.currency}
-        symbol={checkout.stripeSession?.symbol}
-        onSuccess={checkout.handleStripeSuccess}
-      />
+      {/* Stripe Payment Element Modal (Lazy loaded when opened) */}
+      {checkout.isStripeModalOpen && (
+        <Suspense fallback={null}>
+          <StripePaymentModal
+            isOpen={checkout.isStripeModalOpen}
+            onClose={checkout.closeStripeModal}
+            clientSecret={checkout.stripeSession?.clientSecret}
+            publishableKey={checkout.stripeSession?.publishableKey}
+            order={checkout.stripeSession?.order}
+            amount={checkout.stripeSession?.amount}
+            currency={checkout.stripeSession?.currency}
+            symbol={checkout.stripeSession?.symbol}
+            onSuccess={checkout.handleStripeSuccess}
+          />
+        </Suspense>
+      )}
 
       {/* Auth modal for guest checkout */}
       <AuthModal

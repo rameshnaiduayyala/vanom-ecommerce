@@ -1,23 +1,70 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { Navigate } from "react-router-dom";
-import { B2BLayout } from "../../layouts/b2b/B2BLayout.jsx";
-import { B2BDashboard } from "../../features/b2b/pages/B2BDashboard.jsx";
-import { B2BCatalog } from "../../features/b2b/pages/B2BCatalog.jsx";
-import { B2BProductDetails } from "../../features/b2b/pages/B2BProductDetails.jsx";
-import { BulkOrder } from "../../features/b2b/pages/BulkOrder.jsx";
-import { Quotes, QuoteDetails } from "../../features/b2b/pages/Quotes.jsx";
-import { B2BOrdersPage as B2BOrders } from "../../features/b2b/pages/orders/B2BOrdersPage.jsx";
-import { B2BCompanyProfilePage as CompanyProfile } from "../../features/b2b/pages/company/B2BCompanyProfilePage.jsx";
-import { B2BCompanyDocumentsPage as CompanyDocuments } from "../../features/b2b/pages/company/B2BCompanyDocumentsPage.jsx";
-import { B2BCompanyMembersPage as CompanyMembers } from "../../features/b2b/pages/company/B2BCompanyMembersPage.jsx";
 import { B2BRoute } from "../guards/ProtectedRoute.jsx";
 import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
+import { PageLoader } from "../../components/common/PageLoader.jsx";
+
+const B2BLayout = lazy(() => import("../../layouts/b2b/B2BLayout.jsx"));
+
+
+const B2BDashboard = lazy(() =>
+  import("../../features/b2b/pages/B2BDashboard.jsx").then((m) => ({
+    default: m.B2BDashboard || m.default,
+  }))
+);
+const B2BCatalog = lazy(() =>
+  import("../../features/b2b/pages/B2BCatalog.jsx").then((m) => ({
+    default: m.B2BCatalog || m.default,
+  }))
+);
+const B2BProductDetails = lazy(() =>
+  import("../../features/b2b/pages/B2BProductDetails.jsx").then((m) => ({
+    default: m.B2BProductDetails || m.default,
+  }))
+);
+const BulkOrder = lazy(() =>
+  import("../../features/b2b/pages/BulkOrder.jsx").then((m) => ({
+    default: m.BulkOrder || m.default,
+  }))
+);
+const Quotes = lazy(() =>
+  import("../../features/b2b/pages/Quotes.jsx").then((m) => ({
+    default: m.Quotes,
+  }))
+);
+const QuoteDetails = lazy(() =>
+  import("../../features/b2b/pages/Quotes.jsx").then((m) => ({
+    default: m.QuoteDetails,
+  }))
+);
+const B2BOrders = lazy(() =>
+  import("../../features/b2b/pages/orders/B2BOrdersPage.jsx").then((m) => ({
+    default: m.B2BOrdersPage || m.default,
+  }))
+);
+const CompanyProfile = lazy(() =>
+  import("../../features/b2b/pages/company/B2BCompanyProfilePage.jsx").then((m) => ({
+    default: m.B2BCompanyProfilePage || m.default,
+  }))
+);
+const CompanyDocuments = lazy(() =>
+  import("../../features/b2b/pages/company/B2BCompanyDocumentsPage.jsx").then((m) => ({
+    default: m.B2BCompanyDocumentsPage || m.default,
+  }))
+);
+const CompanyMembers = lazy(() =>
+  import("../../features/b2b/pages/company/B2BCompanyMembersPage.jsx").then((m) => ({
+    default: m.B2BCompanyMembersPage || m.default,
+  }))
+);
 
 export const b2bRoutes = {
   path: "/b2b",
   element: (
     <B2BRoute>
-      <B2BLayout />
+      <Suspense fallback={<PageLoader />}>
+        <B2BLayout />
+      </Suspense>
     </B2BRoute>
   ),
   errorElement: <RouteErrorBoundary />,

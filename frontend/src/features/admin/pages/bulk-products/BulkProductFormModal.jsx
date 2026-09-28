@@ -1,11 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { Modal } from "@/components/ui/Modal.jsx";
 import { Button } from "@/components/ui/Button.jsx";
 import { Input, Textarea, Select } from "@/components/ui/Input.jsx";
 import { Layers, Plus, Trash2, Globe2, Image as ImageIcon, FileText } from "lucide-react";
 import { FileUploadDropzone } from "@/components/common/FileUploadDropzone.jsx";
-import { TiptapEditor } from "@/components/common/TiptapEditor.jsx";
 import { DEFAULT_BULK_FORM } from "./constants.js";
+
+const TiptapEditor = lazy(() =>
+  import("@/components/common/TiptapEditor.jsx").then((m) => ({
+    default: m.TiptapEditor || m.default,
+  }))
+);
+
 
 export function BulkProductFormModal({
   isOpen,
@@ -262,12 +268,21 @@ export function BulkProductFormModal({
                   Supports Headings, Lists, Bold, Tables & Specs
                 </span>
               </div>
-              <TiptapEditor
-                value={form.description || ""}
-                onChange={(html) => setForm({ ...form, description: html })}
-                placeholder="Enter detailed bulk packaging, moisture specs, purity certifications, grading..."
-                minHeight={160}
-              />
+              <Suspense
+                fallback={
+                  <div className="h-[160px] rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center gap-2 text-slate-400">
+                    <div className="w-5 h-5 rounded-full border-2 border-[#358B5B]/30 border-t-[#358B5B] animate-spin" />
+                    <span className="text-xs font-medium">Loading Rich Text Editor...</span>
+                  </div>
+                }
+              >
+                <TiptapEditor
+                  value={form.description || ""}
+                  onChange={(html) => setForm({ ...form, description: html })}
+                  placeholder="Enter detailed bulk packaging, moisture specs, purity certifications, grading..."
+                  minHeight={160}
+                />
+              </Suspense>
             </div>
 
             {/* Wholesale Commodity Media / Image Upload */}

@@ -1,6 +1,12 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { Package, Layers, Sparkles, Tag, Boxes, FileText, Warehouse } from "lucide-react";
-import { TiptapEditor } from "@/components/common/TiptapEditor.jsx";
+
+const TiptapEditor = lazy(() =>
+  import("@/components/common/TiptapEditor.jsx").then((m) => ({
+    default: m.TiptapEditor || m.default,
+  }))
+);
+
 
 export function BasicInfoCard({ formData, setFormData, categories = [], brands = [], warehouses = [] }) {
   return (
@@ -40,12 +46,21 @@ export function BasicInfoCard({ formData, setFormData, categories = [], brands =
             Supports Headings, Bullet Lists, Bold/Italics, Quotes, Links
           </span>
         </div>
-        <TiptapEditor
-          value={formData.description}
-          onChange={(html) => setFormData({ ...formData, description: html })}
-          placeholder="Write detailed product features, specifications, origin, organic certification, usage instructions..."
-          minHeight={200}
-        />
+        <Suspense
+          fallback={
+            <div className="h-[200px] rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center gap-2 text-slate-400">
+              <div className="w-5 h-5 rounded-full border-2 border-[#358B5B]/30 border-t-[#358B5B] animate-spin" />
+              <span className="text-xs font-medium">Loading Rich Text Editor...</span>
+            </div>
+          }
+        >
+          <TiptapEditor
+            value={formData.description}
+            onChange={(html) => setFormData({ ...formData, description: html })}
+            placeholder="Write detailed product features, specifications, origin, organic certification, usage instructions..."
+            minHeight={200}
+          />
+        </Suspense>
       </div>
 
       {/* Category, Brand, SKU & Target Warehouse */}

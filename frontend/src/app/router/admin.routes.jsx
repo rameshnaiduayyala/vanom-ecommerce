@@ -1,37 +1,135 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { Navigate } from "react-router-dom";
-import { AdminLayout } from "../../layouts/admin/AdminLayout.jsx";
-import { AdminDashboardPage } from "../../features/admin/pages/dashboard/AdminDashboardPage.jsx";
-import { BusinessApplications } from "../../features/admin/pages/BusinessApplications.jsx";
-import { CompanyReviewPage } from "../../features/admin/pages/CompanyReviewPage.jsx";
-import { AdminProductsPage } from "../../features/admin/pages/products/AdminProductsPage.jsx";
-import { AdminAddProductPage } from "../../features/admin/pages/products/AdminAddProductPage.jsx";
-import { AdminOrdersPage } from "../../features/admin/pages/orders/AdminOrdersPage.jsx";
-import { AdminRetailOrdersPage } from "../../features/admin/pages/orders/AdminRetailOrdersPage.jsx";
-import { AdminBulkOrdersPage } from "../../features/admin/pages/orders/AdminBulkOrdersPage.jsx";
-import { AdminQuotesPage } from "../../features/admin/pages/quotes/AdminQuotesPage.jsx";
-import { AdminPaymentsPage } from "../../features/admin/pages/payments/AdminPaymentsPage.jsx";
-import { AdminReportsPage } from "../../features/admin/pages/reports/AdminReportsPage.jsx";
-import { AdminUsersPage } from "../../features/admin/pages/users/AdminUsersPage.jsx";
-import { AdminCompaniesPage } from "../../features/admin/pages/companies/AdminCompaniesPage.jsx";
-import { AdminCategoriesPage } from "../../features/admin/pages/categories/AdminCategoriesPage.jsx";
-import { AdminAuditLogsPage } from "../../features/admin/pages/audit/AdminAuditLogsPage.jsx";
-import { AdminInventoryPage } from "../../features/admin/pages/inventory/AdminInventoryPage.jsx";
-import { AdminInventoryPrintPage } from "../../features/admin/pages/inventory/AdminInventoryPrintPage.jsx";
-import { AdminBulkProductsPage } from "../../features/admin/pages/bulk-products/AdminBulkProductsPage.jsx";
-import { AdminBrandsPage } from "../../features/admin/pages/brands/AdminBrandsPage.jsx";
-import { AdminBulkCategoriesPage } from "../../features/admin/pages/categories/AdminBulkCategoriesPage.jsx";
-import { AdminStoreSettingsPage } from "../../features/admin/pages/store/AdminStoreSettingsPage.jsx";
-import { AdminContactMessagesPage } from "../../features/admin/pages/messages/AdminContactMessagesPage.jsx";
-import { AdminShipmentsPage } from "../../features/admin/pages/shipping/AdminShipmentsPage.jsx";
 import { AdminRoute } from "../guards/ProtectedRoute.jsx";
 import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
+import { PageLoader } from "../../components/common/PageLoader.jsx";
+
+const AdminLayout = lazy(() => import("../../layouts/admin/AdminLayout.jsx"));
+
+
+const AdminDashboardPage = lazy(() =>
+  import("../../features/admin/pages/dashboard/AdminDashboardPage.jsx").then((m) => ({
+    default: m.AdminDashboardPage || m.default,
+  }))
+);
+const BusinessApplications = lazy(() =>
+  import("../../features/admin/pages/BusinessApplications.jsx").then((m) => ({
+    default: m.BusinessApplications || m.default,
+  }))
+);
+const CompanyReviewPage = lazy(() =>
+  import("../../features/admin/pages/CompanyReviewPage.jsx").then((m) => ({
+    default: m.CompanyReviewPage || m.default,
+  }))
+);
+const AdminProductsPage = lazy(() =>
+  import("../../features/admin/pages/products/AdminProductsPage.jsx").then((m) => ({
+    default: m.AdminProductsPage || m.default,
+  }))
+);
+const AdminAddProductPage = lazy(() =>
+  import("../../features/admin/pages/products/AdminAddProductPage.jsx").then((m) => ({
+    default: m.AdminAddProductPage || m.default,
+  }))
+);
+const AdminOrdersPage = lazy(() =>
+  import("../../features/admin/pages/orders/AdminOrdersPage.jsx").then((m) => ({
+    default: m.AdminOrdersPage || m.default,
+  }))
+);
+const AdminRetailOrdersPage = lazy(() =>
+  import("../../features/admin/pages/orders/AdminRetailOrdersPage.jsx").then((m) => ({
+    default: m.AdminRetailOrdersPage || m.default,
+  }))
+);
+const AdminBulkOrdersPage = lazy(() =>
+  import("../../features/admin/pages/orders/AdminBulkOrdersPage.jsx").then((m) => ({
+    default: m.AdminBulkOrdersPage || m.default,
+  }))
+);
+const AdminQuotesPage = lazy(() =>
+  import("../../features/admin/pages/quotes/AdminQuotesPage.jsx").then((m) => ({
+    default: m.AdminQuotesPage || m.default,
+  }))
+);
+const AdminPaymentsPage = lazy(() =>
+  import("../../features/admin/pages/payments/AdminPaymentsPage.jsx").then((m) => ({
+    default: m.AdminPaymentsPage || m.default,
+  }))
+);
+const AdminReportsPage = lazy(() =>
+  import("../../features/admin/pages/reports/AdminReportsPage.jsx").then((m) => ({
+    default: m.AdminReportsPage || m.default,
+  }))
+);
+const AdminUsersPage = lazy(() =>
+  import("../../features/admin/pages/users/AdminUsersPage.jsx").then((m) => ({
+    default: m.AdminUsersPage || m.default,
+  }))
+);
+const AdminCompaniesPage = lazy(() =>
+  import("../../features/admin/pages/companies/AdminCompaniesPage.jsx").then((m) => ({
+    default: m.AdminCompaniesPage || m.default,
+  }))
+);
+const AdminCategoriesPage = lazy(() =>
+  import("../../features/admin/pages/categories/AdminCategoriesPage.jsx").then((m) => ({
+    default: m.AdminCategoriesPage || m.default,
+  }))
+);
+const AdminAuditLogsPage = lazy(() =>
+  import("../../features/admin/pages/audit/AdminAuditLogsPage.jsx").then((m) => ({
+    default: m.AdminAuditLogsPage || m.default,
+  }))
+);
+const AdminInventoryPage = lazy(() =>
+  import("../../features/admin/pages/inventory/AdminInventoryPage.jsx").then((m) => ({
+    default: m.AdminInventoryPage || m.default,
+  }))
+);
+const AdminInventoryPrintPage = lazy(() =>
+  import("../../features/admin/pages/inventory/AdminInventoryPrintPage.jsx").then((m) => ({
+    default: m.AdminInventoryPrintPage || m.default,
+  }))
+);
+const AdminBulkProductsPage = lazy(() =>
+  import("../../features/admin/pages/bulk-products/AdminBulkProductsPage.jsx").then((m) => ({
+    default: m.AdminBulkProductsPage || m.default,
+  }))
+);
+const AdminBrandsPage = lazy(() =>
+  import("../../features/admin/pages/brands/AdminBrandsPage.jsx").then((m) => ({
+    default: m.AdminBrandsPage || m.default,
+  }))
+);
+const AdminBulkCategoriesPage = lazy(() =>
+  import("../../features/admin/pages/categories/AdminBulkCategoriesPage.jsx").then((m) => ({
+    default: m.AdminBulkCategoriesPage || m.default,
+  }))
+);
+const AdminStoreSettingsPage = lazy(() =>
+  import("../../features/admin/pages/store/AdminStoreSettingsPage.jsx").then((m) => ({
+    default: m.AdminStoreSettingsPage || m.default,
+  }))
+);
+const AdminContactMessagesPage = lazy(() =>
+  import("../../features/admin/pages/messages/AdminContactMessagesPage.jsx").then((m) => ({
+    default: m.AdminContactMessagesPage || m.default,
+  }))
+);
+const AdminShipmentsPage = lazy(() =>
+  import("../../features/admin/pages/shipping/AdminShipmentsPage.jsx").then((m) => ({
+    default: m.AdminShipmentsPage || m.default,
+  }))
+);
 
 export const adminRoutes = {
   path: "/admin",
   element: (
     <AdminRoute>
-      <AdminLayout />
+      <Suspense fallback={<PageLoader />}>
+        <AdminLayout />
+      </Suspense>
     </AdminRoute>
   ),
   errorElement: <RouteErrorBoundary />,

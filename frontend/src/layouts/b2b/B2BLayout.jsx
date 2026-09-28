@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { Outlet } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth.store.js";
 import { EnterpriseSidebar } from "@/components/common/EnterpriseSidebar.jsx";
@@ -9,6 +9,8 @@ import { ROUTES } from "@/constants/routes.js";
 import vanomLogo from "@/assets/logo.png";
 import { B2BHeader } from "./B2BHeader.jsx";
 import { B2BSidebarFooter } from "./B2BSidebarFooter.jsx";
+import { PageLoader } from "@/components/common/PageLoader.jsx";
+
 
 export function B2BLayout() {
   const [collapsed, setCollapsed] = useState(false);
@@ -49,7 +51,9 @@ export function B2BLayout() {
           onToggleSidebar={() => setCollapsed((prev) => !prev)}
         />
         <main className="flex-1 overflow-y-auto bg-[#F4F6F8] p-4 sm:p-6 lg:p-8">
-          <Outlet />
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>
