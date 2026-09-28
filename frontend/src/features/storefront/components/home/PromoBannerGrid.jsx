@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import Marquee from "react-fast-marquee";
 import { ROUTES } from "../../../../constants/routes.js";
 import { ArrowRight } from "lucide-react";
 
@@ -44,7 +45,6 @@ const DEFAULT_BANNERS = [
 
 export function PromoBannerGrid({ banners = [] }) {
   const [isVisible, setIsVisible] = useState(false);
-  const [paused, setPaused] = useState(false);
   const sectionRef = useRef(null);
 
   useEffect(() => {
@@ -55,7 +55,6 @@ export function PromoBannerGrid({ banners = [] }) {
       setIsVisible(true);
       return;
     }
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -65,7 +64,6 @@ export function PromoBannerGrid({ banners = [] }) {
       },
       { threshold: 0.1 }
     );
-
     const el = sectionRef.current;
     if (el) observer.observe(el);
     return () => observer.disconnect();
@@ -82,100 +80,75 @@ export function PromoBannerGrid({ banners = [] }) {
       }))
       : DEFAULT_BANNERS;
 
-  // Duplicate items for seamless infinite loop
-  const track = [...items, ...items, ...items];
-
   return (
     <div ref={sectionRef} className="w-full overflow-hidden">
-      {/* Inline keyframes */}
-      <style>{`
-        @keyframes promo-marquee {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-33.333%); }
-        }
-        .promo-track {
-          display: flex;
-          animation: promo-marquee 15s linear infinite;
-          will-change: transform;
-        }
-        .promo-track.paused {
-          animation-play-state: paused;
-        }
-      `}</style>
-
-      <div
-        className={`promo-track${paused ? " paused" : ""}`}
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
+      <Marquee
+        speed={40}
+        pauseOnHover={true}
+        gradient={false}
+        loop={0}
       >
-        {track.map((item, index) => (
-          <div
-            key={`${item.id}-${index}`}
-            style={{
-              opacity: isVisible ? 1 : 0,
-              transition: "opacity 0.5s ease",
-            }}
-            className={`relative rounded-2xl overflow-hidden p-6 min-h-[200px] sm:min-h-[220px]
-              w-[82vw] sm:w-[360px] lg:w-[400px] shrink-0 mx-2
-              flex flex-col justify-between
-              ${item.bg}
-              border border-white/60 shadow-sm
-              group cursor-pointer
-            `}
-          >
-            {/* Hover overlay */}
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/[0.025] transition-colors duration-400 pointer-events-none rounded-2xl" />
-
-            {/* Floating image — right side, faded edge */}
-            <img
-              src={item.image}
-              alt={item.title}
-              draggable={false}
-              className="absolute right-0 bottom-0 w-[45%] h-[88%] object-cover object-center
-                group-hover:scale-[1.06] transition-transform duration-700 ease-out
-                pointer-events-none rounded-tl-2xl select-none"
-              style={{
-                maskImage: "linear-gradient(to left, black 65%, transparent 100%)",
-                WebkitMaskImage: "linear-gradient(to left, black 65%, transparent 100%)",
-              }}
-            />
-
-            {/* Left text */}
-            <div className="relative z-10 max-w-[58%]">
-              <h3
-                className={`text-xl font-black leading-[1.15] tracking-tight ${item.dark ? "text-white" : "text-gray-900"
-                  }`}
-              >
-                {item.badge}
-                <br />
-                <span className={item.dark ? "text-emerald-100" : "text-gray-700"}>
-                  {item.badgeSub}
-                </span>
-              </h3>
-
-              <p
-                className={`text-xs mt-2 leading-snug font-medium ${item.dark ? "text-yellow-200 font-bold" : "text-gray-600"
-                  }`}
-              >
-                {item.title}
-              </p>
-            </div>
-
-            {/* CTA */}
-            <div className="relative z-10 mt-4">
-              <Link
-                to={item.link}
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1.5 bg-[#F9BC15] hover:bg-[#e6ab0f]
-                  text-[#003D2B] text-[11px] font-bold px-4 py-2 rounded-full shadow-xs
-                  hover:shadow-sm transition-all duration-200 active:scale-95 group/btn"
-              >
-                <span>{item.cta}</span>
-                <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-1.5 transition-transform duration-300 ease-out" />
-              </Link>
-            </div>
-          </div>
+        {[...items, ...items, ...items, ...items, ...items, ...items].map((item, idx) => (
+          <BannerCard key={`${item.id}-${idx}`} item={item} isVisible={isVisible} />
         ))}
+      </Marquee>
+    </div>
+  );
+}
+
+function BannerCard({ item, isVisible }) {
+  return (
+    <div
+      style={{ opacity: isVisible ? 1 : 0, transition: "opacity 0.5s ease" }}
+      className={`relative rounded-2xl overflow-hidden p-6
+        min-h-[200px] sm:min-h-[220px]
+        w-[82vw] sm:w-[360px] lg:w-[400px]
+        mx-2 shrink-0 flex flex-col justify-between
+        ${item.bg} border border-white/60 shadow-sm group cursor-pointer`}
+    >
+      {/* Hover overlay */}
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/[0.025] transition-colors duration-300 pointer-events-none rounded-2xl" />
+
+      {/* Right floating image */}
+      <img
+        src={item.image}
+        alt={item.title}
+        draggable={false}
+        className="absolute right-0 bottom-0 w-[45%] h-[88%] object-cover object-center
+          group-hover:scale-[1.06] transition-transform duration-700 ease-out
+          pointer-events-none rounded-tl-2xl select-none"
+        style={{
+          maskImage: "linear-gradient(to left, black 65%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to left, black 65%, transparent 100%)",
+        }}
+      />
+
+      {/* Left text */}
+      <div className="relative z-10 max-w-[58%]">
+        <h3 className={`text-xl font-black leading-[1.15] tracking-tight ${item.dark ? "text-white" : "text-gray-900"}`}>
+          {item.badge}
+          <br />
+          <span className={item.dark ? "text-emerald-100" : "text-gray-700"}>
+            {item.badgeSub}
+          </span>
+        </h3>
+        <p className={`text-xs mt-2 leading-snug font-medium ${item.dark ? "text-yellow-200 font-bold" : "text-gray-600"}`}>
+          {item.title}
+        </p>
+      </div>
+
+      {/* CTA */}
+      <div className="relative z-10 mt-4">
+        <Link
+          to={item.link}
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-1.5 bg-[#F9BC15] hover:bg-[#e6ab0f]
+            text-[#003D2B] text-[11px] font-bold px-4 py-2 rounded-full shadow-xs
+            hover:shadow-sm transition-all duration-200 active:scale-95 group/btn"
+        >
+          <span>{item.cta}</span>
+          <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-1.5 transition-transform duration-300 ease-out" />
+        </Link>
       </div>
     </div>
   );

@@ -36,7 +36,7 @@ export function CategoryIconStrip({ categories = [], activeCategory = null, clas
         {/* Scrollable Pill Container */}
         <div
           ref={scrollRef}
-          className="flex items-center justify-start lg:justify-center overflow-x-auto scrollbar-none gap-2 sm:gap-2.5 px-4 sm:px-2 py-1 w-full min-w-0 touch-pan-x"
+          className="flex items-center justify-start lg:justify-center overflow-x-auto scrollbar-none gap-2 sm:gap-2.5 px-4 sm:px-2 py-1 w-full min-w-0 overscroll-x-contain"
         >
           {items.map((cat, idx) => {
             const isFirst = idx === 0 && !activeCategory;

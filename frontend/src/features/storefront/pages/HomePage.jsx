@@ -79,7 +79,7 @@ export function HomePage() {
   const categoryList   = Array.isArray(categories) ? categories : (categories?.items || []);
 
   return (
-    <div className="min-h-screen bg-[#FFFDF7] flex flex-col">
+    <div className="min-h-screen bg-[#FFFDF7] flex flex-col overscroll-y-none">
       <SEO
         title="Vanom E-Commerce | Global Organic Essentials, Value Combos & Superstore"
         description="Discover 100% certified organic groceries, health staples, value combo packs, and wholesale deals. Fast worldwide delivery and 100% purchase guarantee."
