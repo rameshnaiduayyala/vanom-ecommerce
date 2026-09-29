@@ -3,6 +3,7 @@ import { AppError } from "../../common/errors/app-error.js";
 import { HTTP_STATUS } from "../../constants/http-status.js";
 import { MESSAGES } from "../../constants/messages.js";
 import { slugify } from "../../common/utils/slug.js";
+import { deleteStoredFile } from "../../common/utils/file-upload.js";
 
 const variantInclude = { countries: { include: { country: { include: { currency: true } } } } };
 
@@ -50,6 +51,19 @@ function countryData(countries = []) {
   }));
 }
 
+function imageData(images = []) {
+  return images.map((img, idx) => {
+    if (typeof img === "string") {
+      return { url: img, sortOrder: idx };
+    }
+    return {
+      url: img.url,
+      fileId: img.fileId ?? null,
+      sortOrder: img.sortOrder ?? idx
+    };
+  });
+}
+
 function variantCreateData(variant) {
   return {
     sku: variant.sku,
@@ -83,12 +97,101 @@ export async function createProduct(input) {
         isFeatured: input.isFeatured ?? false,
         isTrending: input.isTrending ?? false,
         isBestSeller: input.isBestSeller ?? false,
+        deliveryInfo: input.deliveryInfo ?? null,
+        returnPolicy: input.returnPolicy ?? null,
+        warrantyInfo: input.warrantyInfo ?? null,
+        keyHighlights: input.keyHighlights ?? null,
         ...(input.countries ? { countries: { create: countryData(input.countries) } } : {}),
-        ...(input.images ? { images: { create: input.images } } : {}),
+        ...(input.images ? { images: { create: imageData(input.images) } } : {}),
         ...(input.variants ? { variants: { create: input.variants.map(variantCreateData) } } : {})
       },
       include: productInclude
     });
+
+    // Automatically initialize inventory in selected or default warehouse
+    try {
+      let targetWarehouse = null;
+      const requestedWarehouseId = input.warehouseId || input.warehouse_id;
+      if (requestedWarehouseId) {
+        targetWarehouse = await prisma.warehouse.findFirst({
+          where: { id: requestedWarehouseId, isActive: true }
+        });
+      }
+
+      if (!targetWarehouse) {
+        targetWarehouse = await prisma.warehouse.findFirst({
+          where: { isActive: true },
+          orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }]
+        });
+      }
+
+      if (targetWarehouse) {
+        if (product.type === "VARIABLE" && product.variants?.length) {
+          for (const variant of product.variants) {
+            const initialQty = Math.max(0, Number(variant.stock) || 0);
+            const inv = await prisma.inventory.create({
+              data: {
+                organizationId: targetWarehouse.organizationId,
+                warehouseId: targetWarehouse.id,
+                variantId: variant.id,
+                quantity: initialQty,
+                reservedQuantity: 0,
+                reorderLevel: 10,
+                reorderQuantity: 20
+              }
+            });
+            if (initialQty > 0) {
+              await prisma.inventoryTransaction.create({
+                data: {
+                  organizationId: targetWarehouse.organizationId,
+                  inventoryId: inv.id,
+                  type: "RESTOCK",
+                  quantity: initialQty,
+                  previousQuantity: 0,
+                  newQuantity: initialQty,
+                  previousReservedQuantity: 0,
+                  newReservedQuantity: 0,
+                  referenceType: "MANUAL",
+                  reason: "Initial stock upon product creation"
+                }
+              });
+            }
+          }
+        } else {
+          const initialQty = Math.max(0, Number(product.stock) || 0);
+          const inv = await prisma.inventory.create({
+            data: {
+              organizationId: targetWarehouse.organizationId,
+              warehouseId: targetWarehouse.id,
+              productId: product.id,
+              quantity: initialQty,
+              reservedQuantity: 0,
+              reorderLevel: 10,
+              reorderQuantity: 20
+            }
+          });
+          if (initialQty > 0) {
+            await prisma.inventoryTransaction.create({
+              data: {
+                organizationId: targetWarehouse.organizationId,
+                inventoryId: inv.id,
+                type: "RESTOCK",
+                quantity: initialQty,
+                previousQuantity: 0,
+                newQuantity: initialQty,
+                previousReservedQuantity: 0,
+                newReservedQuantity: 0,
+                referenceType: "MANUAL",
+                reason: "Initial stock upon product creation"
+              }
+            });
+          }
+        }
+      }
+    } catch (invErr) {
+      console.warn("Auto inventory initialization note:", invErr.message);
+    }
+
     return serializeProduct(product);
   } catch (error) {
     if (error.code === "P2002" && error.meta?.target?.includes("slug")) {
@@ -102,14 +205,23 @@ export async function createProduct(input) {
   }
 }
 
-export async function listProducts({ page, limit, skip, search, type, isActive, isNew, isFeatured, isTrending, isBestSeller }) {
+export async function listProducts({ page, limit, skip, search, categoryId, type, isActive, isNew, isFeatured, isTrending, isBestSeller }) {
   const where = {
     isActive: isActive !== undefined ? isActive : true,
+    deletedAt: null,
     ...(search ? {
       OR: [
         { name: { contains: search, mode: "insensitive" } },
         { slug: { contains: search, mode: "insensitive" } },
         { sku: { contains: search, mode: "insensitive" } }
+      ]
+    } : {}),
+    ...(categoryId ? {
+      OR: [
+        { categoryId: categoryId },
+        { category: { slug: categoryId } },
+        { category: { parentId: categoryId } },
+        { category: { parent: { slug: categoryId } } }
       ]
     } : {}),
     ...(type ? { type } : {}),
@@ -133,9 +245,16 @@ export async function listProducts({ page, limit, skip, search, type, isActive, 
   return { items: items.map(serializeProduct), total };
 }
 
-export async function getProductById(id) {
-  const product = await prisma.product.findUnique({
-    where: { id, isActive: true },
+export async function getProductById(idOrSlug) {
+  const product = await prisma.product.findFirst({
+    where: {
+      OR: [
+        { id: idOrSlug },
+        { slug: idOrSlug }
+      ],
+      isActive: true,
+      deletedAt: null,
+    },
     include: productInclude
   });
 
@@ -182,8 +301,12 @@ export async function updateProduct(id, input) {
           ...(input.isFeatured !== undefined && { isFeatured: input.isFeatured }),
           ...(input.isTrending !== undefined && { isTrending: input.isTrending }),
           ...(input.isBestSeller !== undefined && { isBestSeller: input.isBestSeller }),
+          ...(input.deliveryInfo !== undefined && { deliveryInfo: input.deliveryInfo }),
+          ...(input.returnPolicy !== undefined && { returnPolicy: input.returnPolicy }),
+          ...(input.warrantyInfo !== undefined && { warrantyInfo: input.warrantyInfo }),
+          ...(input.keyHighlights !== undefined && { keyHighlights: input.keyHighlights }),
           ...(input.countries ? { countries: { deleteMany: {}, create: countryData(input.countries) } } : {}),
-          ...(input.images ? { images: { deleteMany: {}, create: input.images } } : {}),
+          ...(input.images ? { images: { deleteMany: {}, create: imageData(input.images) } } : {}),
           ...(input.variants ? { variants: { deleteMany: {}, create: input.variants.map(variantCreateData) } } : {})
         },
         include: productInclude
@@ -224,14 +347,45 @@ export async function listHighlightedProducts(type, { page, limit, skip }) {
 }
 
 export async function deleteProduct(id) {
-  await getProductById(id);
-
-  return prisma.product.update({
-    where: { id },
-    data: {
-      isActive: false,
-      deletedAt: new Date()
+  // Find product by id or slug
+  const product = await prisma.product.findFirst({
+    where: {
+      OR: [{ id }, { slug: id }]
     }
+  });
+
+  if (!product) {
+    throw new AppError(
+      MESSAGES.PRODUCT_NOT_FOUND,
+      HTTP_STATUS.NOT_FOUND,
+      "PRODUCT_NOT_FOUND"
+    );
+  }
+
+  const productId = product.id;
+
+  // Soft-delete: Keep all records, images, and history intact,
+  // while deactivating the product and variants so they are removed from catalog & storefront.
+  return await prisma.$transaction(async (tx) => {
+    // Clear active cart items for this product
+    await tx.cartItem.deleteMany({ where: { productId } });
+
+    // Deactivate all product variants
+    await tx.productVariant.updateMany({
+      where: { productId },
+      data: {
+        isActive: false
+      }
+    });
+
+    // Mark product as inactive and archived
+    return await tx.product.update({
+      where: { id: productId },
+      data: {
+        isActive: false,
+        deletedAt: new Date()
+      }
+    });
   });
 }
 

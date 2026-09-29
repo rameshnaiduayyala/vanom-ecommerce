@@ -7,7 +7,10 @@ import { sendPasswordResetEmail, sendVerificationEmail } from "../../common/util
 import { HTTP_STATUS } from "../../constants/http-status.js";
 import { MESSAGES } from "../../constants/messages.js";
 
-const userInclude = { country: { include: { currency: true } } };
+const userInclude = {
+  country: { include: { currency: true } },
+  bulkBusiness: { include: { addresses: true } }
+};
 
 function publicUser(user) {
   const { passwordHash, ...safeUser } = user;
@@ -31,11 +34,11 @@ export async function register(input) {
     const user = await prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
         data: {
-        email: normalizeEmail(input.email),
-        passwordHash: await hashPassword(input.password),
-        firstName: input.firstName ?? null,
-        lastName: input.lastName ?? null,
-        countryId: input.countryId ?? null
+          email: normalizeEmail(input.email),
+          passwordHash: await hashPassword(input.password),
+          firstName: input.firstName ?? null,
+          lastName: input.lastName ?? null,
+          countryId: input.countryId ?? null
         },
         include: userInclude
       });
@@ -50,7 +53,16 @@ export async function register(input) {
       return createdUser;
     });
 
-    await sendVerificationEmail(user.email, token);
+    await sendVerificationEmail(user.email, token, {
+      firstName: user.firstName,
+      isB2B: user.role === "B2B_USER" || !!user.bulkBusiness,
+      businessName: user.bulkBusiness?.businessName,
+      businessEmail: user.bulkBusiness?.businessEmail,
+      businessPhone: user.bulkBusiness?.businessPhone,
+      taxRegistrationNumber: user.bulkBusiness?.taxRegistrationNumber,
+      registrationNumber: user.bulkBusiness?.registrationNumber,
+      address: user.bulkBusiness?.address,
+    });
     return { user: publicUser(user), verificationToken: token };
   } catch (error) {
     handleUniqueError(error);
@@ -78,9 +90,20 @@ export async function login(input, signToken) {
 
 export async function verifyEmail(token) {
   const verificationToken = await prisma.emailVerificationToken.findUnique({
-    where: { tokenHash: tokenHash(token) }
+    where: { tokenHash: tokenHash(token) },
+    include: { user: true }
   });
-  if (!verificationToken || verificationToken.usedAt || verificationToken.expiresAt <= new Date()) {
+
+  if (!verificationToken) {
+    throw new AppError(MESSAGES.EMAIL_VERIFICATION_INVALID, HTTP_STATUS.BAD_REQUEST, "EMAIL_VERIFICATION_INVALID");
+  }
+
+  // Idempotent: If this token was already used or the user is already verified, succeed gracefully
+  if (verificationToken.usedAt || verificationToken.user?.emailVerifiedAt) {
+    return { verified: true, alreadyVerified: true };
+  }
+
+  if (verificationToken.expiresAt <= new Date()) {
     throw new AppError(MESSAGES.EMAIL_VERIFICATION_INVALID, HTTP_STATUS.BAD_REQUEST, "EMAIL_VERIFICATION_INVALID");
   }
 
@@ -89,6 +112,8 @@ export async function verifyEmail(token) {
     prisma.emailVerificationToken.update({ where: { id: verificationToken.id }, data: { usedAt: new Date() } }),
     prisma.emailVerificationToken.deleteMany({ where: { userId: verificationToken.userId, id: { not: verificationToken.id } } })
   ]);
+
+  return { verified: true };
 }
 
 export async function getCurrentUser(id) {
@@ -105,7 +130,7 @@ function tokenHash(token) {
 
 export async function requestPasswordReset(email) {
   const user = await prisma.user.findUnique({ where: { email: normalizeEmail(email) } });
-  if (!user) return { message: MESSAGES.USER_NOT_FOUND };
+  if (!user) return { success: true };
 
   const token = randomBytes(32).toString("hex");
   await prisma.passwordResetToken.deleteMany({ where: { userId: user.id, usedAt: null } });
@@ -117,7 +142,7 @@ export async function requestPasswordReset(email) {
     }
   });
   await sendPasswordResetEmail(user.email, token);
-  return token;
+  return { success: true };
 }
 
 export async function resetPassword(token, password) {

@@ -29,9 +29,11 @@ export async function me(request, reply) {
 }
 
 export async function forgotPassword(request, reply) {
-  const token = await authService.requestPasswordReset(request.body.email);
-  const data = !process.env.NODE_ENV || process.env.NODE_ENV !== "production" ? { resetToken: token } : null;
-  return sendSuccess(reply, { message: MESSAGES.PASSWORD_RESET_REQUESTED, data });
+  await authService.requestPasswordReset(request.body.email);
+  return sendSuccess(reply, {
+    message: "If your email is registered with us, a password reset link has been dispatched.",
+    data: null
+  });
 }
 
 export async function resetPassword(request, reply) {

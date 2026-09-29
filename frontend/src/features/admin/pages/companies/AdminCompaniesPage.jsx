@@ -8,6 +8,7 @@ import { CompaniesFilter } from "./components/CompaniesFilter.jsx";
 import { CompanyFormModal } from "./components/CompanyFormModal.jsx";
 import { ViewCompanyModal } from "./components/ViewCompanyModal.jsx";
 import { DeleteCompanyModal } from "./components/DeleteCompanyModal.jsx";
+import { ChangeCompanyStatusModal } from "./components/ChangeCompanyStatusModal.jsx";
 
 export function AdminCompaniesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -17,6 +18,8 @@ export function AdminCompaniesPage() {
     isLoading,
     createMutation,
     updateMutation,
+    changeStatusMutation,
+    toggleLockMutation,
     deleteMutation,
   } = useAdminCompanies();
 
@@ -27,6 +30,7 @@ export function AdminCompaniesPage() {
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState(null);
   const [viewingCompany, setViewingCompany] = useState(null);
+  const [changingStatusCompany, setChangingStatusCompany] = useState(null);
   const [deleteConfirmCompany, setDeleteConfirmCompany] = useState(null);
   const [formError, setFormError] = useState("");
 
@@ -58,40 +62,22 @@ export function AdminCompaniesPage() {
   const handleFormSubmit = async (formData) => {
     setFormError("");
 
-    if (!formData.legalName && !formData.businessName) {
-      setFormError("Legal name or brand name is required.");
+    if (!formData.businessName) {
+      setFormError("Business name is required.");
       return;
     }
 
     const payload = {
-      legalName: formData.legalName || formData.businessName,
-      businessName: formData.businessName || formData.legalName,
-      tradingName: formData.businessName || formData.legalName,
-      registrationNumber: formData.registrationNumber,
-      taxId: formData.taxId,
-      countryCode: formData.countryCode,
+      businessName: formData.businessName.trim(),
+      businessEmail: formData.businessEmail.trim().toLowerCase(),
+      businessPhone: formData.businessPhone.trim(),
+      contactPersonName: formData.contactPersonName.trim(),
+      countryCode: formData.countryCode.toUpperCase(),
+      taxRegistrationNumber: formData.taxRegistrationNumber ? formData.taxRegistrationNumber.trim() : null,
+      registrationNumber: formData.registrationNumber ? formData.registrationNumber.trim() : null,
+      address: formData.address.trim(),
       status: formData.status,
-      paymentTermsDays: Number(formData.paymentTermsDays || 0),
-      creditLimit: Number(formData.creditLimit || 0),
-      address: {
-        line1: formData.addressLine1 || "Business Address",
-        line2: formData.addressLine2 || "",
-        city: formData.city || "City",
-        state: formData.state || "State",
-        postalCode: formData.postalCode || "000000",
-        phone: formData.phone || "",
-      },
     };
-
-    if (!editingCompany && formData.adminEmail) {
-      payload.adminUser = {
-        firstName: formData.adminFirstName,
-        lastName: formData.adminLastName,
-        email: formData.adminEmail,
-        password: formData.adminPassword || "Password123!",
-        phone: formData.adminPhone || formData.phone,
-      };
-    }
 
     try {
       if (editingCompany) {
@@ -101,7 +87,8 @@ export function AdminCompaniesPage() {
       }
       setFormModalOpen(false);
     } catch (err) {
-      setFormError(err.message || "Failed to save corporate entity.");
+      const msg = err.response?.data?.message || err.message || "Failed to save business entity.";
+      setFormError(msg);
     }
   };
 
@@ -115,11 +102,15 @@ export function AdminCompaniesPage() {
   };
 
   const filteredCompanies = companies.filter((c) => {
+    const q = searchTerm.toLowerCase();
     const nameMatch =
-      (c.legalName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (c.tradingName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (c.taxId || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (c.registrationNumber || "").toLowerCase().includes(searchTerm.toLowerCase());
+      (c.businessName || "").toLowerCase().includes(q) ||
+      (c.businessEmail || "").toLowerCase().includes(q) ||
+      (c.businessPhone || "").toLowerCase().includes(q) ||
+      (c.contactPersonName || "").toLowerCase().includes(q) ||
+      (c.taxRegistrationNumber || "").toLowerCase().includes(q) ||
+      (c.registrationNumber || "").toLowerCase().includes(q) ||
+      (c.countryCode || "").toLowerCase().includes(q);
 
     const statusMatch = statusFilter === "ALL" || c.status === statusFilter;
 
@@ -165,7 +156,20 @@ export function AdminCompaniesPage() {
         isLoading={isLoading}
         onView={handleOpenView}
         onEdit={handleOpenEdit}
+        onChangeStatus={(comp) => setChangingStatusCompany(comp)}
         onDelete={setDeleteConfirmCompany}
+      />
+
+      {/* ─── Quick Status Change Modal ─── */}
+      <ChangeCompanyStatusModal
+        isOpen={Boolean(changingStatusCompany)}
+        company={changingStatusCompany}
+        onClose={() => setChangingStatusCompany(null)}
+        onConfirm={async ({ id, status, isLocked, reason }) => {
+          await changeStatusMutation.mutateAsync({ id, status, isLocked, reason });
+          setChangingStatusCompany(null);
+        }}
+        isPending={changeStatusMutation.isPending}
       />
 
       {/* ─── View Company Modal ─── */}
@@ -174,6 +178,7 @@ export function AdminCompaniesPage() {
         company={viewingCompany}
         onClose={() => setViewingCompany(null)}
         onEdit={handleOpenEdit}
+        onChangeStatus={(comp) => setChangingStatusCompany(comp)}
       />
 
       {/* ─── Add / Edit Modal ─── */}

@@ -6,7 +6,28 @@ import { MESSAGES } from "../../constants/messages.js";
 const cartInclude = {
   items: {
     orderBy: { createdAt: "asc" },
-    include: { product: true, variant: true }
+    include: {
+      product: {
+        include: {
+          images: {
+            orderBy: { sortOrder: "asc" }
+          },
+          category: {
+            select: { id: true, name: true, slug: true }
+          },
+          brand: {
+            select: { id: true, name: true, slug: true, imageUrl: true }
+          }
+        }
+      },
+      variant: {
+        include: {
+          countries: {
+            include: { country: true }
+          }
+        }
+      }
+    }
   }
 };
 
@@ -20,11 +41,18 @@ async function getOrCreateCart(userId, tx = prisma) {
 }
 
 async function validateItem(productId, variantId) {
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
+  const product = await prisma.product.findFirst({
+    where: {
+      OR: [
+        { id: productId },
+        { slug: productId }
+      ],
+      isActive: true,
+      deletedAt: null
+    },
     include: { variants: true }
   });
-  if (!product || !product.isActive) {
+  if (!product) {
     throw new AppError(MESSAGES.PRODUCT_NOT_AVAILABLE, HTTP_STATUS.UNPROCESSABLE_ENTITY, "PRODUCT_NOT_AVAILABLE");
   }
 
@@ -34,49 +62,173 @@ async function validateItem(productId, variantId) {
     if (!variant || !variant.isActive) {
       throw new AppError(MESSAGES.VARIANT_NOT_AVAILABLE, HTTP_STATUS.UNPROCESSABLE_ENTITY, "VARIANT_NOT_AVAILABLE");
     }
-  } else if (variantId) {
+  } else if (variantId && variantId !== productId) {
     throw new AppError(MESSAGES.INVALID_PRODUCT_VARIANT, HTTP_STATUS.BAD_REQUEST, "INVALID_PRODUCT_VARIANT");
   }
 
+  return product;
+}
+
+function formatCart(cart) {
+  if (!cart) return null;
+  const items = (cart.items || []).map((item) => {
+    const product = item.product;
+    const variant = item.variant;
+    const variantLabel = variant?.name || (variant?.attributes && typeof variant.attributes === "object" ? Object.values(variant.attributes).join(" / ") : null);
+    const name = variantLabel
+      ? `${product?.name || ""} - ${variantLabel}`
+      : product?.name || "Product";
+    const image = product?.images?.[0]?.url || null;
+    const sku = variant?.sku || product?.sku || null;
+    const countryPrice = variant?.countries?.[0]?.price ?? product?.basePrice ?? 0;
+    const price = Number(countryPrice);
+
+    return {
+      ...item,
+      name,
+      productName: product?.name,
+      variantName: variantLabel,
+      slug: product?.slug,
+      price,
+      unitPrice: price,
+      image,
+      imageUrl: image,
+      sku,
+    };
+  });
+
+  const subtotal = items.reduce(
+    (sum, it) => sum + Number(it.price || 0) * (it.quantity || 1),
+    0
+  );
+  const itemCount = items.reduce((sum, it) => sum + (it.quantity || 1), 0);
+
+  return {
+    ...cart,
+    items,
+    subtotal,
+    itemCount,
+  };
 }
 
 export async function getCart(userId) {
-  return getOrCreateCart(userId);
+  const cart = await getOrCreateCart(userId);
+  return formatCart(cart);
 }
 
 export async function addItem(userId, { productId, variantId = null, quantity = 1 }) {
-  await validateItem(productId, variantId);
-  return prisma.$transaction(async (tx) => {
-    const cart = await getOrCreateCart(userId, tx);
-    const existing = await tx.cartItem.findFirst({ where: { cartId: cart.id, productId, variantId } });
+  let targetProductId = productId;
+  let targetVariantId = variantId;
+
+  if (!targetProductId && targetVariantId) {
+    const variant = await prisma.productVariant.findUnique({ where: { id: targetVariantId } });
+    if (variant) {
+      targetProductId = variant.productId;
+    }
+  } else if (targetProductId) {
+    const isVariant = await prisma.productVariant.findUnique({ where: { id: targetProductId } });
+    if (isVariant) {
+      targetVariantId = isVariant.id;
+      targetProductId = isVariant.productId;
+    }
+  }
+
+  const cleanVariantId = (targetVariantId && targetVariantId !== targetProductId) ? targetVariantId : null;
+  const validatedProduct = await validateItem(targetProductId, cleanVariantId);
+  targetProductId = validatedProduct.id;
+
+  const cart = await prisma.$transaction(async (tx) => {
+    const userCart = await getOrCreateCart(userId, tx);
+    const existing = await tx.cartItem.findFirst({
+      where: {
+        cartId: userCart.id,
+        productId: targetProductId,
+        variantId: cleanVariantId
+      }
+    });
     const nextQuantity = (existing?.quantity ?? 0) + quantity;
-    await validateItem(productId, variantId);
 
     if (existing) {
       await tx.cartItem.update({ where: { id: existing.id }, data: { quantity: nextQuantity } });
     } else {
-      await tx.cartItem.create({ data: { cartId: cart.id, productId, variantId, quantity } });
+      await tx.cartItem.create({
+        data: {
+          cartId: userCart.id,
+          productId: targetProductId,
+          variantId: cleanVariantId,
+          quantity: Math.max(1, quantity)
+        }
+      });
     }
-    return tx.cart.findUnique({ where: { id: cart.id }, include: cartInclude });
+    return tx.cart.findUnique({ where: { id: userCart.id }, include: cartInclude });
   });
-}
 
-async function getOwnedItem(userId, itemId) {
-  const item = await prisma.cartItem.findFirst({ where: { id: itemId, cart: { userId } } });
-  if (!item) throw new AppError(MESSAGES.CART_ITEM_NOT_FOUND, HTTP_STATUS.NOT_FOUND, "CART_ITEM_NOT_FOUND");
-  return item;
+  return formatCart(cart);
 }
 
 export async function updateItem(userId, itemId, quantity) {
-  const item = await getOwnedItem(userId, itemId);
-  await validateItem(item.productId, item.variantId);
+  if (quantity <= 0) {
+    return removeItem(userId, itemId);
+  }
+
+  const cart = await getOrCreateCart(userId);
+  const item = await prisma.cartItem.findFirst({
+    where: {
+      cartId: cart.id,
+      OR: [
+        { id: itemId },
+        { productId: itemId },
+        { variantId: itemId }
+      ]
+    }
+  });
+
+  if (!item) {
+    // If not found in user's cart, try to find matching product or variant to add
+    const product = await prisma.product.findFirst({
+      where: {
+        OR: [
+          { id: itemId },
+          { variants: { some: { id: itemId } } }
+        ]
+      },
+      include: { variants: true }
+    });
+
+    if (product) {
+      const isVariant = product.variants.some((v) => v.id === itemId);
+      return addItem(userId, {
+        productId: product.id,
+        variantId: isVariant ? itemId : null,
+        quantity,
+      });
+    }
+
+    return getCart(userId);
+  }
+
+  const cleanVariantId = (item.variantId && item.variantId !== item.productId) ? item.variantId : null;
+  await validateItem(item.productId, cleanVariantId);
   await prisma.cartItem.update({ where: { id: item.id }, data: { quantity } });
   return getCart(userId);
 }
 
 export async function removeItem(userId, itemId) {
-  const item = await getOwnedItem(userId, itemId);
-  await prisma.cartItem.delete({ where: { id: item.id } });
+  const cart = await getOrCreateCart(userId);
+  const item = await prisma.cartItem.findFirst({
+    where: {
+      cartId: cart.id,
+      OR: [
+        { id: itemId },
+        { productId: itemId },
+        { variantId: itemId }
+      ]
+    }
+  });
+
+  if (item) {
+    await prisma.cartItem.delete({ where: { id: item.id } });
+  }
   return getCart(userId);
 }
 

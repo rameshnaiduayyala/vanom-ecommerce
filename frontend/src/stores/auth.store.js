@@ -12,6 +12,8 @@ export const useAuthStore = create(
 
       setUser: (user) => {
         const primaryCompany =
+          user?.bulkBusiness ||
+          user?.business ||
           user?.companies?.[0] ||
           user?.companyMembers?.[0]?.company ||
           user?.company ||
@@ -26,13 +28,35 @@ export const useAuthStore = create(
       setActiveCompany: (company) => set({ activeCompany: company }),
 
       login: (userData, tokens) => {
-        if (tokens?.accessToken) TokenStorage.setAccessToken(tokens.accessToken);
-        if (tokens?.refreshToken) TokenStorage.setRefreshToken(tokens.refreshToken);
+        let accessToken = null;
+        let refreshToken = null;
+
+        if (typeof tokens === "string") {
+          accessToken = tokens;
+        } else if (tokens && typeof tokens === "object") {
+          accessToken = tokens.accessToken || tokens.token;
+          refreshToken = tokens.refreshToken;
+        }
+
+        if (!accessToken && userData) {
+          accessToken = userData.token || userData.accessToken;
+        }
+
+        if (accessToken) {
+          TokenStorage.setAccessToken(accessToken);
+        }
+        if (refreshToken) {
+          TokenStorage.setRefreshToken(refreshToken);
+        }
+
         const primaryCompany =
+          userData?.bulkBusiness ||
+          userData?.business ||
           userData?.companies?.[0] ||
           userData?.companyMembers?.[0]?.company ||
           userData?.company ||
           null;
+
         set({
           user: userData,
           isAuthenticated: true,

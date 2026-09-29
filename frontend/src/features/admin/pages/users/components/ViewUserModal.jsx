@@ -10,19 +10,23 @@ import {
   ShieldCheck,
   Calendar,
   CheckCircle2,
-  Clock,
-  Ban,
+  XCircle,
+  Globe,
+  ShoppingBag,
+  FileText,
   MapPin,
-  CreditCard,
-  Layers,
   Edit2,
 } from "lucide-react";
 
 export function ViewUserModal({ user, isOpen, onClose, onEdit }) {
   if (!isOpen || !user) return null;
 
-  const roles = Array.isArray(user.roles) ? user.roles : [user.roles || "CUSTOMER"];
-  const isB2B = user.customerType === "B2B" || roles.includes("COMPANY_ADMIN");
+  const isSuperAdmin = user.role === "SUPERADMIN";
+  const isB2B = Boolean(user.bulkBusiness);
+  const isActive = user.isActive ?? true;
+  const b2b = user.bulkBusiness;
+  const ordersCount = user._count?.orders ?? 0;
+  const reviewsCount = user._count?.reviews ?? 0;
 
   return (
     <Modal
@@ -34,32 +38,45 @@ export function ViewUserModal({ user, isOpen, onClose, onEdit }) {
       <div className="space-y-6 text-xs text-text-primary max-h-[75vh] overflow-y-auto pr-1">
         {/* Header Profile Section */}
         <div className="flex flex-col sm:flex-row gap-4 items-start pb-4 border-b border-border">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-emerald-100 text-[#00875A] font-black text-2xl flex items-center justify-center shrink-0 border border-emerald-200 shadow-2xs">
+          <div
+            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl font-black text-2xl flex items-center justify-center shrink-0 border shadow-2xs ${
+              isSuperAdmin
+                ? "bg-purple-100 text-purple-800 border-purple-200"
+                : isB2B
+                ? "bg-amber-100 text-amber-800 border-amber-200"
+                : "bg-emerald-100 text-[#00875A] border-emerald-200"
+            }`}
+          >
             {(user.firstName?.[0] || user.email?.[0] || "U").toUpperCase()}
           </div>
 
           <div className="space-y-1.5 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={isB2B ? "warning" : "brand"} size="sm">
-                {isB2B ? "B2B Corporate Wholesale" : "B2C Retail Customer"}
+              <Badge variant={isSuperAdmin ? "brand" : isB2B ? "warning" : "default"} size="sm">
+                {isSuperAdmin
+                  ? "System Administrator (SUPERADMIN)"
+                  : isB2B
+                  ? "B2B Corporate Wholesale Buyer"
+                  : "Retail Customer (USER)"}
               </Badge>
               <span
                 className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                  user.status === "ACTIVE"
+                  isActive
                     ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                    : user.status === "PENDING"
-                    ? "bg-amber-50 text-amber-700 border border-amber-200"
                     : "bg-red-50 text-red-700 border border-red-200"
                 }`}
               >
-                {user.status === "ACTIVE" ? (
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                ) : user.status === "PENDING" ? (
-                  <Clock className="w-3 h-3 text-amber-600" />
+                {isActive ? (
+                  <>
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    Active Account
+                  </>
                 ) : (
-                  <Ban className="w-3 h-3 text-red-500" />
+                  <>
+                    <XCircle className="w-3 h-3 text-red-500" />
+                    Inactive Account
+                  </>
                 )}
-                {user.status || "ACTIVE"}
               </span>
             </div>
 
@@ -95,69 +112,85 @@ export function ViewUserModal({ user, isOpen, onClose, onEdit }) {
               </div>
               <div className="flex items-center justify-between py-1 border-b border-border/50">
                 <span className="text-text-muted">Telephone / Mobile</span>
-                <span className="font-semibold text-text-primary">{user.phone || "Not Provided"}</span>
+                <span className="font-semibold text-text-primary">
+                  {user.phone || b2b?.businessPhone || "Not Provided"}
+                </span>
               </div>
               <div className="flex items-center justify-between py-1">
-                <span className="text-text-muted">Email Verified</span>
-                <span className="font-semibold text-emerald-700 flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Verified
+                <span className="text-text-muted">Assigned Country</span>
+                <span className="font-semibold text-text-primary flex items-center gap-1">
+                  <Globe className="w-3.5 h-3.5 text-text-muted" />
+                  {user.country?.name || user.country?.code || b2b?.countryCode || "Global / Unset"}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Role & Security */}
+          {/* Role & Engagement */}
           <div className="p-4 rounded-2xl bg-surface-muted border border-border space-y-3">
             <h5 className="font-bold text-text-primary uppercase tracking-wider text-[11px] flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
-              Roles & Permissions
+              Security & Activity
             </h5>
             <div className="space-y-2 text-xs">
-              <div className="py-1 border-b border-border/50">
-                <span className="text-text-muted block text-[10px] uppercase font-semibold mb-1">Assigned Security Roles</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {roles.map((r, i) => (
-                    <span
-                      key={i}
-                      className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white border border-border shadow-2xs text-text-primary"
-                    >
-                      {r}
-                    </span>
-                  ))}
-                </div>
+              <div className="flex items-center justify-between py-1 border-b border-border/50">
+                <span className="text-text-muted">Assigned Role</span>
+                <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-white border border-border text-text-primary uppercase">
+                  {user.role || "USER"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-1 border-b border-border/50">
+                <span className="text-text-muted">Lifetime Orders</span>
+                <span className="font-bold text-text-primary flex items-center gap-1">
+                  <ShoppingBag className="w-3.5 h-3.5 text-[#00875A]" />
+                  {ordersCount} Orders
+                </span>
               </div>
               <div className="flex items-center justify-between py-1">
-                <span className="text-text-muted">Security Access Tier</span>
-                <span className="font-mono font-bold text-[#00875A]">
-                  {roles.includes("SUPER_ADMIN") ? "L1-SUPER-ADMIN" : roles.includes("ADMIN") ? "L2-PORTAL-ADMIN" : "L3-CUSTOMER"}
+                <span className="text-text-muted">Submitted Reviews</span>
+                <span className="font-bold text-text-primary flex items-center gap-1">
+                  <FileText className="w-3.5 h-3.5 text-amber-600" />
+                  {reviewsCount} Reviews
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Company Association (if B2B or company linked) */}
-        {user.company && (
-          <div className="p-4 rounded-2xl bg-surface-muted border border-border space-y-3">
-            <h5 className="font-bold text-text-primary uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-              <Building2 className="w-3.5 h-3.5 text-amber-600" />
-              Corporate Entity Association
+        {/* B2B Bulk Business Profile (if linked) */}
+        {b2b && (
+          <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200 space-y-3">
+            <h5 className="font-bold text-amber-950 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-amber-700" />
+              B2B Wholesale Business Profile
             </h5>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="bg-white p-3 rounded-xl border border-border">
-                <span className="text-text-muted block text-[10px] uppercase font-semibold">Legal Entity Name</span>
-                <span className="font-bold text-text-primary text-sm">{user.company.legalName}</span>
+              <div className="bg-white p-3 rounded-xl border border-amber-200">
+                <span className="text-text-muted block text-[10px] uppercase font-semibold">Business Name</span>
+                <span className="font-bold text-text-primary text-sm">{b2b.businessName}</span>
               </div>
-              <div className="bg-white p-3 rounded-xl border border-border">
-                <span className="text-text-muted block text-[10px] uppercase font-semibold">Trading / Business Name</span>
-                <span className="font-semibold text-text-primary">{user.company.tradingName || user.company.legalName}</span>
+              <div className="bg-white p-3 rounded-xl border border-amber-200">
+                <span className="text-text-muted block text-[10px] uppercase font-semibold">Registration / Tax ID</span>
+                <span className="font-mono font-bold text-amber-800">
+                  {b2b.taxRegistrationNumber || b2b.registrationNumber || "N/A"}
+                </span>
               </div>
-              <div className="bg-white p-3 rounded-xl border border-border">
-                <span className="text-text-muted block text-[10px] uppercase font-semibold">Tax Identification (GST/EIN)</span>
-                <span className="font-mono font-bold text-amber-700">{user.company.taxId || "N/A"}</span>
+              <div className="bg-white p-3 rounded-xl border border-amber-200">
+                <span className="text-text-muted block text-[10px] uppercase font-semibold">B2B Status & Contact</span>
+                <div className="flex items-center justify-between mt-0.5">
+                  <span className="font-semibold text-text-primary">{b2b.contactPersonName || "Direct"}</span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900">
+                    {b2b.status || "APPROVED"}
+                  </span>
+                </div>
               </div>
             </div>
+            {b2b.address && (
+              <div className="bg-white p-3 rounded-xl border border-amber-200 flex items-center gap-2 text-text-secondary">
+                <MapPin className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                <span>{b2b.address}</span>
+              </div>
+            )}
           </div>
         )}
 

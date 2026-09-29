@@ -46,12 +46,22 @@ export async function list(request, reply) {
   const result = await categoryService.listCategories({
     ...pagination,
     search: request.query.search,
-    isActive: request.query.isActive
+    isActive: request.query.isActive,
+    parentId: request.query.parentId,
+    rootOnly: request.query.rootOnly === true || request.query.rootOnly === "true"
   });
   return sendSuccess(reply, {
     message: MESSAGES.CATEGORIES_FETCHED,
     data: result.items,
     meta: getPaginationMeta(pagination.page, pagination.limit, result.total)
+  });
+}
+
+export async function getTree(request, reply) {
+  const tree = await categoryService.getCategoryTree();
+  return sendSuccess(reply, {
+    message: "Category tree fetched successfully",
+    data: tree
   });
 }
 

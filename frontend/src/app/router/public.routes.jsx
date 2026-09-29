@@ -1,19 +1,107 @@
-import React from "react";
+import React, { lazy } from "react";
 import { PublicLayout } from "../../layouts/public/PublicLayout.jsx";
-import { HomePage } from "../../features/storefront/pages/HomePage.jsx";
-import { ProductsPage } from "../../features/storefront/pages/ProductsPage.jsx";
-import { ProductDetailsPage } from "../../features/storefront/pages/ProductDetailsPage.jsx";
-import { CartPage } from "../../features/cart/pages/CartPage.jsx";
-import { CheckoutPage } from "../../features/checkout/pages/CheckoutPage.jsx";
-import { PaymentProcessingPage, PaymentSuccessPage, PaymentCancelledPage } from "../../features/checkout/pages/PaymentPages.jsx";
-import { OrdersPage } from "../../features/orders/pages/OrdersPage.jsx";
-import { OrderDetailsPage } from "../../features/orders/pages/OrderDetailsPage.jsx";
-import { WishlistPage } from "../../features/wishlist/pages/WishlistPage.jsx";
-import { ContactPage } from "../../features/storefront/pages/ContactPage.jsx";
-import { ConsumerAccountPage } from "../../features/account/pages/ConsumerAccountPage.jsx";
-import { LoginPage } from "../../features/auth/pages/LoginPage.jsx";
-import { RegisterPage, ForgotPasswordPage } from "../../features/auth/pages/RegisterPage.jsx";
 import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
+
+const HomePage = lazy(() =>
+  import("../../features/storefront/pages/HomePage.jsx").then((m) => ({
+    default: m.HomePage || m.default,
+  }))
+);
+const ProductsPage = lazy(() =>
+  import("../../features/storefront/pages/ProductsPage.jsx").then((m) => ({
+    default: m.ProductsPage || m.default,
+  }))
+);
+const ProductDetailsPage = lazy(() =>
+  import("../../features/storefront/pages/ProductDetailsPage.jsx").then((m) => ({
+    default: m.ProductDetailsPage || m.default,
+  }))
+);
+const CartPage = lazy(() =>
+  import("../../features/cart/pages/CartPage.jsx").then((m) => ({
+    default: m.CartPage || m.default,
+  }))
+);
+const CheckoutPage = lazy(() =>
+  import("../../features/checkout/pages/CheckoutPage.jsx").then((m) => ({
+    default: m.CheckoutPage || m.default,
+  }))
+);
+const PaymentProcessingPage = lazy(() =>
+  import("../../features/checkout/pages/PaymentPages.jsx").then((m) => ({
+    default: m.PaymentProcessingPage,
+  }))
+);
+const PaymentSuccessPage = lazy(() =>
+  import("../../features/checkout/pages/PaymentPages.jsx").then((m) => ({
+    default: m.PaymentSuccessPage,
+  }))
+);
+const PaymentCancelledPage = lazy(() =>
+  import("../../features/checkout/pages/PaymentPages.jsx").then((m) => ({
+    default: m.PaymentCancelledPage,
+  }))
+);
+const OrdersPage = lazy(() =>
+  import("../../features/orders/pages/OrdersPage.jsx").then((m) => ({
+    default: m.OrdersPage || m.default,
+  }))
+);
+const OrderDetailsPage = lazy(() =>
+  import("../../features/orders/pages/OrderDetailsPage.jsx").then((m) => ({
+    default: m.OrderDetailsPage || m.default,
+  }))
+);
+const WishlistPage = lazy(() =>
+  import("../../features/wishlist/pages/WishlistPage.jsx").then((m) => ({
+    default: m.WishlistPage || m.default,
+  }))
+);
+const ContactPage = lazy(() =>
+  import("../../features/storefront/pages/ContactPage.jsx").then((m) => ({
+    default: m.ContactPage || m.default,
+  }))
+);
+const CareersPage = lazy(() =>
+  import("../../features/storefront/pages/CareersPage.jsx").then((m) => ({
+    default: m.CareersPage || m.default,
+  }))
+);
+const OurStoryPage = lazy(() =>
+  import("../../features/storefront/pages/OurStoryPage.jsx").then((m) => ({
+    default: m.OurStoryPage || m.default,
+  }))
+);
+const ConsumerAccountPage = lazy(() =>
+  import("../../features/account/pages/ConsumerAccountPage.jsx").then((m) => ({
+    default: m.ConsumerAccountPage || m.default,
+  }))
+);
+const LoginPage = lazy(() =>
+  import("../../features/auth/pages/LoginPage.jsx").then((m) => ({
+    default: m.LoginPage || m.default,
+  }))
+);
+const RegisterPage = lazy(() =>
+  import("../../features/auth/pages/RegisterPage.jsx").then((m) => ({
+    default: m.RegisterPage || m.default,
+  }))
+);
+const ForgotPasswordPage = lazy(() =>
+  import("../../features/auth/pages/ForgotPasswordPage.jsx").then((m) => ({
+    default: m.ForgotPasswordPage || m.default,
+  }))
+);
+const VerifyEmailPage = lazy(() =>
+  import("../../features/auth/pages/VerifyEmailPage.jsx").then((m) => ({
+    default: m.VerifyEmailPage || m.default,
+  }))
+);
+const InvoiceVerificationPage = lazy(() =>
+  import("../../features/storefront/pages/InvoiceVerificationPage.jsx").then((m) => ({
+    default: m.InvoiceVerificationPage || m.default,
+  }))
+);
 
 export const publicRoutes = {
   element: <PublicLayout />,
@@ -25,6 +113,10 @@ export const publicRoutes = {
     { path: "/categories/:slug", element: <ProductsPage /> },
     { path: "/search", element: <ProductsPage /> },
     { path: "/contact", element: <ContactPage /> },
+    { path: "/careers", element: <CareersPage /> },
+    { path: "/about", element: <OurStoryPage /> },
+    { path: "/our-story", element: <OurStoryPage /> },
+    { path: "/invoice/verify/:invoiceNumber", element: <InvoiceVerificationPage /> },
     { path: "/cart", element: <CartPage /> },
     { path: "/checkout", element: <CheckoutPage /> },
     { path: "/checkout/payment-processing", element: <PaymentProcessingPage /> },
@@ -38,6 +130,7 @@ export const publicRoutes = {
     { path: "/account/addresses", element: <ConsumerAccountPage /> },
     { path: "/login", element: <LoginPage /> },
     { path: "/register", element: <RegisterPage /> },
+    { path: "/verify-email", element: <VerifyEmailPage /> },
     { path: "/forgot-password", element: <ForgotPasswordPage /> },
   ],
 };

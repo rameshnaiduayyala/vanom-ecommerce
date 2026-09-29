@@ -9,7 +9,7 @@ import { ORDER_STATUSES } from "@/constants/countries.js";
 import { Badge } from "@/components/ui/Badge.jsx";
 import { Button } from "@/components/ui/Button.jsx";
 import { toast } from "@/components/ui/Toast.jsx";
-import { EnterpriseInvoiceModal } from "@/components/common/EnterpriseInvoiceModal.jsx";
+import { openDirectInvoicePdf } from "@/utils/invoice.js";
 import {
   User,
   Package,
@@ -317,7 +317,7 @@ export function ConsumerAccountPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setSelectedInvoiceOrder(order)}
+                                onClick={() => openDirectInvoicePdf(order.id, false, order.orderNumber)}
                                 className="gap-1.5 border-emerald-200 text-emerald-800 hover:bg-emerald-50 text-xs"
                               >
                                 <Printer className="w-3.5 h-3.5" />
@@ -433,14 +433,6 @@ export function ConsumerAccountPage() {
         </div>
 
       </div>
-
-      {/* Reusable Enterprise Invoice Modal for Consumer Orders */}
-      <EnterpriseInvoiceModal
-        isOpen={!!selectedInvoiceOrder}
-        onClose={() => setSelectedInvoiceOrder(null)}
-        order={selectedInvoiceOrder}
-        type="RETAIL"
-      />
     </div>
   );
 }

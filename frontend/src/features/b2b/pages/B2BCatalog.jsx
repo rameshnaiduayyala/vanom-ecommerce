@@ -5,15 +5,17 @@ import { Api } from "@/services/api/api-client.js";
 import { useCountryStore } from "../../../stores/country.store.js";
 import { formatPrice } from "../../../utils/formatters.js";
 import { ROUTES } from "../../../constants/routes.js";
-import { Search, Boxes, ArrowRight, Package, Truck, Layers, Plus } from "lucide-react";
+import { Search, Boxes, ArrowRight, Package, Truck, Layers, Plus, Tag, Filter, Check } from "lucide-react";
 import { Badge } from "../../../components/ui/Badge.jsx";
 import { Button } from "../../../components/ui/Button.jsx";
 import { Skeleton, EmptyState } from "../../../components/ui/Alert.jsx";
+import { resolveProductImageUrl, FALLBACK_PRODUCT_IMAGE } from "@/utils/image.js";
 
 export function B2BCatalog() {
   const { country } = useCountryStore();
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [selectedBrand, setSelectedBrand] = useState("ALL");
 
   // Load dedicated B2B Bulk Products from separate BulkProduct database table
   const { data: bulkProducts = [], isLoading } = useQuery({
@@ -21,23 +23,69 @@ export function B2BCatalog() {
     queryFn: () => Api.b2b.getBulkProducts({ search }),
   });
 
-  // Load shared Master Categories
+  // Load shared Master Categories tree
   const { data: categories = [] } = useQuery({
     queryKey: ["shared-categories"],
     queryFn: () => Api.catalog.getCategories(),
   });
 
-  // Filter products by category and search term
+  // Load Brands
+  const { data: brands = [] } = useQuery({
+    queryKey: ["shared-brands"],
+    queryFn: async () => {
+      try {
+        const res = await Api.brands.getBrands();
+        return Array.isArray(res) ? res : res?.items || res?.data || [];
+      } catch (e) {
+        return [];
+      }
+    },
+  });
+
+  // Filter products by category, brand, and search term
   const filteredProducts = bulkProducts.filter((product) => {
-    if (selectedCategory !== "ALL" && product.categoryId !== selectedCategory) {
-      return false;
+    // Category match: check category, categoryId, categoryName, or slug
+    if (selectedCategory !== "ALL") {
+      const matchedCat = categories.find((c) => c.id === selectedCategory || c.slug === selectedCategory);
+      const catId = matchedCat?.id || selectedCategory;
+      const catName = matchedCat?.name?.toLowerCase() || selectedCategory.toLowerCase();
+      const catSlug = matchedCat?.slug?.toLowerCase() || selectedCategory.toLowerCase();
+
+      const prodCat = (product.category || product.categoryName || "").toLowerCase();
+      const prodCatId = product.categoryId;
+
+      const matchesCat =
+        prodCatId === catId ||
+        prodCat === catName ||
+        prodCat === catSlug ||
+        prodCat.includes(catName);
+
+      if (!matchesCat) return false;
     }
+
+    // Brand match
+    if (selectedBrand !== "ALL") {
+      const matchedBrand = brands.find((b) => b.id === selectedBrand || b.slug === selectedBrand || b.name === selectedBrand);
+      const brandName = (matchedBrand?.name || selectedBrand).toLowerCase();
+      const brandSlug = (matchedBrand?.slug || selectedBrand).toLowerCase();
+      const prodBrand = (product.brand || product.originCountry || "").toLowerCase();
+
+      const matchesBrand =
+        prodBrand === brandName ||
+        prodBrand === brandSlug ||
+        prodBrand.includes(brandName);
+
+      if (!matchesBrand) return false;
+    }
+
     if (search) {
       const q = search.toLowerCase();
       return (
         product.name.toLowerCase().includes(q) ||
-        product.sku.toLowerCase().includes(q) ||
-        (product.originCountry && product.originCountry.toLowerCase().includes(q))
+        (product.sku && product.sku.toLowerCase().includes(q)) ||
+        (product.originCountry && product.originCountry.toLowerCase().includes(q)) ||
+        (product.brand && product.brand.toLowerCase().includes(q)) ||
+        (product.category && product.category.toLowerCase().includes(q))
       );
     }
     return true;
@@ -48,16 +96,11 @@ export function B2BCatalog() {
       {/* Catalog Header Banner */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span className="font-bold text-emerald-700 uppercase tracking-wider">Commercial Wholesale Catalog</span>
-            <span>•</span>
-            <span className="text-slate-600">Dedicated B2B Commodities</span>
-          </div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Wholesale & Bulk Catalog</h1>
           <p className="text-xs text-slate-500 mt-1">Browse private wholesale commodities, pallet specifications, and volume tiered discounts.</p>
         </div>
 
-        <div className="flex items-center flex-wrap gap-3">
+        <div className="flex items-center flex-wrap gap-2.5">
           {/* Category Filter */}
           <select
             value={selectedCategory}
@@ -72,6 +115,22 @@ export function B2BCatalog() {
             ))}
           </select>
 
+          {/* Brand Filter */}
+          {brands.length > 0 && (
+            <select
+              value={selectedBrand}
+              onChange={(e) => setSelectedBrand(e.target.value)}
+              className="px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:border-[#006B3C] focus:bg-white focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">All Brands ({brands.length})</option>
+              {brands.map((b) => (
+                <option key={b.id} value={b.name}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          )}
+
           {/* Search Box */}
           <div className="relative max-w-xs w-full">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -79,7 +138,7 @@ export function B2BCatalog() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search SKU, commodity, origin..."
+              placeholder="Search SKU, commodity, brand..."
               className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder:text-slate-400 focus:border-[#006B3C] focus:bg-white focus:outline-none"
             />
           </div>
@@ -109,19 +168,25 @@ export function B2BCatalog() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product) => {
-            const tiers = product.wholesaleTiers || [];
-            const moq = product.moq || 20;
-            const basePrice =
-              country.currency === "CAD"
+            const targetCountryCode = (country.code || "US").toUpperCase();
+            const countryConfig = Array.isArray(product.countryPrices)
+              ? product.countryPrices.find((cp) => cp.countryCode?.toUpperCase() === targetCountryCode && cp.isAvailable !== false) ||
+              product.countryPrices.find((cp) => cp.isAvailable !== false)
+              : null;
+
+            const tiers = Array.isArray(countryConfig?.tiers) && countryConfig.tiers.length > 0
+              ? countryConfig.tiers
+              : product.wholesaleTiers || [];
+
+            const moq = countryConfig?.moq || product.moq || 20;
+            const basePrice = tiers[0]?.price ||
+              (country.currency === "CAD"
                 ? product.price_cad || product.basePriceCAD
                 : country.currency === "INR"
-                ? product.price_inr || product.basePriceINR
-                : product.price_usd || product.basePriceUSD || 30.0;
+                  ? product.price_inr || product.basePriceINR
+                  : product.price_usd || product.basePriceUSD || 30.0);
 
-            const productImage =
-              product.images?.[0] ||
-              product.image ||
-              "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=60";
+            const productImage = resolveProductImageUrl(product);
 
             return (
               <div
@@ -130,8 +195,16 @@ export function B2BCatalog() {
               >
                 <div>
                   {/* Image and MOQ Badge */}
-                  <div className="aspect-16/9 bg-slate-100 overflow-hidden relative">
-                    <img src={productImage} alt={product.name} className="w-full h-full object-cover" />
+                  <Link to={`${ROUTES.B2B.CATALOG}/${product.slug || product.id}`} className="block aspect-16/9 bg-slate-100 overflow-hidden relative group">
+                    <img
+                      src={productImage}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = FALLBACK_PRODUCT_IMAGE;
+                      }}
+                    />
                     <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
                       <span className="bg-white/95 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-xs font-mono">
                         MOQ: {moq} Units
@@ -142,14 +215,18 @@ export function B2BCatalog() {
                         </span>
                       )}
                     </div>
-                  </div>
+                  </Link>
 
                   <div className="p-5 space-y-3">
                     <div>
                       <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
-                        {product.categoryName || "General Commodity"}
+                        {product.categoryName || product.category || "General Commodity"}
                       </span>
-                      <h3 className="text-sm font-bold text-slate-900 leading-snug mt-0.5">{product.name}</h3>
+                      <Link to={`${ROUTES.B2B.CATALOG}/${product.slug || product.id}`} className="block group">
+                        <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#006B3C] transition-colors leading-snug mt-0.5">
+                          {product.name}
+                        </h3>
+                      </Link>
                       <p className="text-xs text-slate-500 font-mono mt-0.5">SKU: {product.sku}</p>
                     </div>
 
@@ -157,7 +234,7 @@ export function B2BCatalog() {
                     <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-700 space-y-1">
                       <div className="flex justify-between">
                         <span className="text-slate-500">Packaging Type:</span>
-                        <span className="font-semibold">{product.packagingType || "Cartons / Sacks"}</span>
+                        <span className="font-semibold">{product.packagingType || product.packaging?.type || "Cartons / Sacks"}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-500">Pallet Spec:</span>
@@ -182,17 +259,17 @@ export function B2BCatalog() {
                         </div>
                         <div className="divide-y divide-slate-100 bg-white">
                           {tiers.slice(0, 3).map((t, idx) => {
-                            const tierPrice =
+                            const tierPrice = t.price !== undefined ? t.price :
                               country.currency === "CAD"
                                 ? t.unitPriceCAD
                                 : country.currency === "INR"
-                                ? t.unitPriceINR
-                                : t.unitPriceUSD || t.unitPrice;
+                                  ? t.unitPriceINR
+                                  : t.unitPriceUSD || t.unitPrice;
 
                             return (
                               <div key={idx} className="px-3 py-1.5 flex justify-between text-[11px] text-slate-700">
                                 <span>{t.maxQuantity ? `${t.minQuantity} - ${t.maxQuantity}` : `${t.minQuantity}+`} units</span>
-                                <span className="font-bold text-slate-900">
+                                <span className="font-bold text-slate-900 font-mono">
                                   {formatPrice(tierPrice || basePrice, country.currency, country.symbol)}
                                 </span>
                               </div>
@@ -203,7 +280,7 @@ export function B2BCatalog() {
                     ) : (
                       <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
                         <span className="text-slate-500 font-medium">Wholesale Base Rate:</span>
-                        <span className="font-black text-slate-900 text-sm">
+                        <span className="font-black text-slate-900 text-sm font-mono">
                           {formatPrice(basePrice, country.currency, country.symbol)}
                         </span>
                       </div>

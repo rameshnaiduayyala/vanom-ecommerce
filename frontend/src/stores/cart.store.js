@@ -35,6 +35,49 @@ export const useCartStore = create(
         });
       },
 
+      syncCartFromApi: (data) => {
+        if (!data) return;
+        const rawItems = data.items || [];
+        const items = rawItems.map((item) => {
+          const variantLabel =
+            item.variantName ||
+            item.variant?.name ||
+            (item.variant?.attributes && typeof item.variant.attributes === "object"
+              ? Object.values(item.variant.attributes).filter(Boolean).join(" / ")
+              : null);
+          const baseName = item.productName || item.product?.name || item.name || "Product";
+          const displayName =
+            variantLabel && !baseName.toLowerCase().includes(variantLabel.toLowerCase())
+              ? `${baseName} - ${variantLabel}`
+              : (item.name || baseName);
+
+          return {
+            id: item.id,
+            variantId: item.variantId || null,
+            productId: item.productId,
+            name: displayName,
+            variantName: variantLabel,
+            slug: item.slug || item.product?.slug || "",
+            price: Number(item.price || item.unitPrice || item.product?.basePrice || 0),
+            quantity: item.quantity || 1,
+            maxStock: item.availableStock !== undefined ? item.availableStock : (item.maxStock ?? 100),
+            image: item.image || item.imageUrl || item.product?.images?.[0]?.url || null,
+            sku: item.sku || item.variant?.sku || item.product?.sku || null,
+          };
+        });
+        const subtotal = Number(data.subtotal || items.reduce((sum, i) => sum + i.price * i.quantity, 0));
+        const itemCount = Number(data.itemCount || items.reduce((sum, i) => sum + i.quantity, 0));
+
+        set({
+          cart: {
+            id: data.id,
+            items,
+            itemCount,
+            subtotal,
+          },
+        });
+      },
+
       // Fetch cart directly from API (if logged in)
       fetchCart: async () => {
         const token = TokenStorage.getAccessToken();
@@ -42,32 +85,10 @@ export const useCartStore = create(
 
         try {
           set({ isLoading: true });
-          const data = await Api.cart.getCart();
+          const res = await Api.cart.getCart();
+          const data = res?.data || res;
           if (data) {
-            const rawItems = data.items || [];
-            const items = rawItems.map((item) => ({
-              id: item.id,
-              variantId: item.variantId,
-              productId: item.productId,
-              name: item.productName || item.variantName || item.name,
-              slug: item.slug,
-              price: Number(item.unitPrice || item.price || 0),
-              quantity: item.quantity,
-              maxStock: item.availableStock !== undefined ? item.availableStock : (item.maxStock ?? 100),
-              image: item.image || item.imageUrl || "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=400&q=80",
-              sku: item.sku,
-            }));
-            const subtotal = Number(data.subtotal || items.reduce((sum, i) => sum + i.price * i.quantity, 0));
-            const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
-
-            set({
-              cart: {
-                id: data.id,
-                items,
-                itemCount,
-                subtotal,
-              },
-            });
+            get().syncCartFromApi(data);
           }
         } catch (err) {
           console.warn("Could not fetch backend cart:", err.message);
@@ -81,20 +102,32 @@ export const useCartStore = create(
         const { cart } = get();
         const token = TokenStorage.getAccessToken();
 
-        // 1. Optimistic UI update
-        const existingIndex = cart.items.findIndex(
-          (i) => i.id === item.id || (item.variantId && i.variantId === item.variantId)
-        );
+        const productId = item.productId || item.id;
+        const variantId = (item.variantId && item.variantId !== productId) ? item.variantId : null;
+        const cartItemId = item.id || (variantId ? `${productId}_${variantId}` : productId);
+        const cleanItem = {
+          ...item,
+          productId,
+          variantId,
+          id: cartItemId,
+          quantity: item.quantity || 1,
+        };
+
+        // 1. Optimistic UI update (Match exact item id or same product + same variant)
+        const existingIndex = cart.items.findIndex((i) => {
+          if (cleanItem.id && i.id === cleanItem.id) return true;
+          return i.productId === productId && (i.variantId || null) === (variantId || null);
+        });
 
         let updatedItems = [];
         if (existingIndex > -1) {
           updatedItems = cart.items.map((it, idx) =>
             idx === existingIndex
-              ? { ...it, quantity: it.quantity + (item.quantity || 1) }
+              ? { ...it, quantity: it.quantity + cleanItem.quantity }
               : it
           );
         } else {
-          updatedItems = [...cart.items, { ...item, quantity: item.quantity || 1 }];
+          updatedItems = [...cart.items, cleanItem];
         }
 
         const subtotal = updatedItems.reduce(
@@ -105,6 +138,7 @@ export const useCartStore = create(
 
         set({
           cart: {
+            ...cart,
             items: updatedItems,
             itemCount,
             subtotal,
@@ -114,11 +148,15 @@ export const useCartStore = create(
         // 2. Sync to Backend API if user is authenticated
         if (token) {
           try {
-            await Api.cart.addItem({
-              variantId: item.variantId || item.id,
-              productId: item.productId,
-              quantity: item.quantity || 1,
+            const res = await Api.cart.addItem({
+              productId,
+              variantId,
+              quantity: cleanItem.quantity,
             });
+            const data = res?.data || res;
+            if (data?.items) {
+              get().syncCartFromApi(data);
+            }
           } catch (err) {
             console.warn("Backend cart add error:", err.message);
           }
@@ -145,6 +183,7 @@ export const useCartStore = create(
 
         set({
           cart: {
+            ...cart,
             items: updatedItems,
             itemCount,
             subtotal,
@@ -153,7 +192,11 @@ export const useCartStore = create(
 
         if (token) {
           try {
-            await Api.cart.updateItem(id, { quantity });
+            const res = await Api.cart.updateItem(id, { quantity });
+            const data = res?.data || res;
+            if (data?.items) {
+              get().syncCartFromApi(data);
+            }
           } catch (err) {
             console.warn("Backend cart update error:", err.message);
           }
@@ -164,7 +207,11 @@ export const useCartStore = create(
       removeItem: async (id) => {
         const token = TokenStorage.getAccessToken();
         const { cart } = get();
-        const updatedItems = cart.items.filter((it) => it.id !== id);
+        const hasDirectMatch = cart.items.some((it) => it.id === id);
+        const updatedItems = hasDirectMatch
+          ? cart.items.filter((it) => it.id !== id)
+          : cart.items.filter((it) => it.productId !== id);
+
         const subtotal = updatedItems.reduce(
           (sum, it) => sum + (Number(it.price || it.unitPrice || 0) * it.quantity),
           0
@@ -173,6 +220,7 @@ export const useCartStore = create(
 
         set({
           cart: {
+            ...cart,
             items: updatedItems,
             itemCount,
             subtotal,
@@ -181,7 +229,11 @@ export const useCartStore = create(
 
         if (token) {
           try {
-            await Api.cart.removeItem(id);
+            const res = await Api.cart.removeItem(id);
+            const data = res?.data || res;
+            if (data?.items) {
+              get().syncCartFromApi(data);
+            }
           } catch (err) {
             console.warn("Backend cart remove error:", err.message);
           }

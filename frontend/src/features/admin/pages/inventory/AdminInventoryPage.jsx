@@ -1,104 +1,89 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Boxes, RefreshCw, ArrowRightLeft, ScanBarcode, Printer } from "lucide-react";
+import {
+  Boxes,
+  RefreshCw,
+  ScanBarcode,
+  ArrowRightLeft,
+  Warehouse,
+  ArrowDownToLine,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button.jsx";
 import { useAdminInventory } from "./hooks/useAdminInventory.js";
+import { useInventoryModals } from "./hooks/useInventoryModals.js";
+
+// Components
 import { InventoryMetrics } from "./components/InventoryMetrics.jsx";
-import { InventoryFilter } from "./components/InventoryFilter.jsx";
-import { InventoryTable } from "./components/InventoryTable.jsx";
-import { StockAdjustmentModal } from "./components/StockAdjustmentModal.jsx";
-import { BarcodeScannerModal } from "./components/BarcodeScannerModal.jsx";
-import { QRCodeModal } from "./components/QRCodeModal.jsx";
+import { InventoryTabsHeader } from "./components/InventoryTabsHeader.jsx";
+import { InventoryHistoryView } from "./components/InventoryHistoryView.jsx";
+import { InventoryModalsContainer } from "./components/modals/InventoryModalsContainer.jsx";
+
+// Views
+import { CatalogView } from "./components/views/CatalogView.jsx";
+import { StockOperationsView } from "./components/views/StockOperationsView.jsx";
+import { WarehouseHubsView } from "./components/views/WarehouseHubsView.jsx";
+import { StockAlertsView } from "./components/views/StockAlertsView.jsx";
+import { BarcodeStudioView } from "./components/views/BarcodeStudioView.jsx";
 
 export function AdminInventoryPage() {
-  const navigate = useNavigate();
   const {
+    inventoryItems,
     filteredInventory,
+    warehouses,
     categories,
     allVariants,
+    catalogSelectables,
     isLoading,
     refetch,
     searchTerm,
     setSearchTerm,
     selectedCategory,
     setSelectedCategory,
+    selectedWarehouse,
+    setSelectedWarehouse,
     adjustMutation,
+    receiveMutation,
+    transferMutation,
+    createWarehouseMutation,
+    updateWarehouseMutation,
+    deleteWarehouseMutation,
     metrics,
   } = useAdminInventory();
 
-  // Modals state
-  const [adjustModalOpen, setAdjustModalOpen] = useState(false);
-  const [barcodeModalOpen, setBarcodeModalOpen] = useState(false);
-  const [qrModalItem, setQrModalItem] = useState(null);
-  const [selectedTarget, setSelectedTarget] = useState(null);
+  // Active top-level workspace tab
+  const [activeTab, setActiveTab] = useState("catalog");
 
-  const handleOpenAdjust = (row = null) => {
-    if (row) {
-      const matchedVariant = allVariants.find(
-        (v) => v.productId === row.id || v.id === row.id
-      );
-      setSelectedTarget(matchedVariant || { productId: row.id, id: row.id });
-    } else {
-      setSelectedTarget(allVariants[0] || null);
-    }
-    setAdjustModalOpen(true);
-  };
+  // Modal states hook (separated concern)
+  const modals = useInventoryModals(allVariants);
 
-  const handleOpenBarcodeScan = () => {
-    setBarcodeModalOpen(true);
-  };
-
-  const handleOpenQR = (row) => {
-    setQrModalItem(row);
-  };
-
-  const handleStockSubmit = (payload) => {
-    adjustMutation.mutate(payload, {
-      onSuccess: () => setAdjustModalOpen(false),
-    });
-  };
-
-  const handleQuickAdjust = (payload, onComplete) => {
-    adjustMutation.mutate(payload, {
-      onSuccess: () => {
-        if (onComplete) onComplete();
-      },
-    });
-  };
+  // Compute alert items (at or below reorder threshold)
+  const alertItems = filteredInventory.filter((item) => {
+    const stock = item.quantity !== undefined ? item.quantity : (item.stock || 0);
+    const reserved = item.reservedQuantity !== undefined ? item.reservedQuantity : (item.reserved || 0);
+    const avail = stock - reserved;
+    return avail <= (item.reorderLevel || 10);
+  });
 
   return (
-    <div className="space-y-6">
-      {/* ─── Header & Top Actions ─── */}
+    <div className="space-y-5">
+      {/* ─── 1. Header & Quick Actions ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
         <div>
           <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2.5">
             <Boxes className="w-6 h-6 text-[#00875A]" />
-            Enterprise Stock & Inventory Management
+            Inventory Management
           </h1>
-          <p className="text-xs text-text-muted mt-1">
-            Real-time stock on-hand, reservation locks, batch QR label printing studio, and direct restock adjustments.
-          </p>
         </div>
 
-        <div className="flex items-center flex-wrap gap-2.5">
-          <Button
-            variant="outline"
-            size="sm"
-            icon={Printer}
-            onClick={() => navigate("/admin/inventory/print")}
-            className="font-bold border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-400 cursor-pointer shadow-xs"
-          >
-            Print Barcode / QR Page
-          </Button>
-
+        {/* Global Toolbar */}
+        <div className="flex items-center flex-wrap gap-2">
           <Button
             variant="outline"
             size="sm"
             icon={ScanBarcode}
-            onClick={() => handleOpenBarcodeScan()}
-            className="font-bold border-slate-300 text-slate-800 hover:bg-emerald-50 hover:border-[#00875A] cursor-pointer"
+            onClick={modals.openBarcode}
+            className="font-bold border-slate-300 text-slate-800 hover:bg-slate-50 cursor-pointer shadow-2xs"
           >
-            Barcode Scanner Terminal
+            Quick Scan
           </Button>
 
           <Button
@@ -106,72 +91,142 @@ export function AdminInventoryPage() {
             size="sm"
             icon={RefreshCw}
             onClick={() => refetch()}
-            className="cursor-pointer"
+            disabled={isLoading}
+            className={`cursor-pointer ${isLoading ? "animate-spin text-text-muted" : ""}`}
           >
             Refresh
-          </Button>
-
-          <Button
-            variant="primary"
-            size="sm"
-            icon={ArrowRightLeft}
-            onClick={() => handleOpenAdjust()}
-            className="font-bold shadow-xs cursor-pointer"
-          >
-            Adjust / Restock
           </Button>
         </div>
       </div>
 
-      {/* ─── Metric KPI Cards ─── */}
+      {/* ─── 2. Metric KPI Cards ─── */}
       <InventoryMetrics metrics={metrics} />
 
-      {/* ─── Search & Category Filters ─── */}
-      <InventoryFilter
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        categories={categories}
-        totalCount={filteredInventory.length}
+      {/* ─── 3. Modular Workspace Tabs Navigation ─── */}
+      <InventoryTabsHeader
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        catalogCount={inventoryItems.length}
+        warehouseCount={warehouses.length}
+        alertCount={alertItems.length}
       />
 
-      {/* ─── Inventory Catalog Table ─── */}
-      <InventoryTable
-        items={filteredInventory}
-        isLoading={isLoading}
-        onAdjust={handleOpenAdjust}
-        onShowQR={handleOpenQR}
-      />
+      {/* ─── 4. Tab Views (Separated Concerns) ─── */}
+      <main>
+        {/* Tab 1: Stock Catalog */}
+        {activeTab === "catalog" && (
+          <CatalogView
+            inventoryItems={inventoryItems}
+            filteredInventory={filteredInventory}
+            warehouses={warehouses}
+            categories={categories}
+            isLoading={isLoading}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            selectedWarehouse={selectedWarehouse}
+            setSelectedWarehouse={setSelectedWarehouse}
+            onOpenAdjust={modals.openAdjust}
+            onOpenReceive={modals.openReceive}
+            onOpenTransfer={modals.openTransfer}
+            onViewHistory={modals.openHistory}
+            onShowQR={modals.openQR}
+            onOpenBarcode={modals.openBarcode}
+          />
+        )}
 
-      {/* ─── Generated QR Code Label Modal (Single Item) ─── */}
-      <QRCodeModal
-        isOpen={Boolean(qrModalItem)}
-        item={qrModalItem}
-        onClose={() => setQrModalItem(null)}
-      />
+        {/* Tab 2: Stock Operations (Inward, Transfer, Adjust) */}
+        {activeTab === "operations" && (
+          <StockOperationsView
+            warehouses={warehouses}
+            inventoryItems={inventoryItems}
+            catalogItems={catalogSelectables}
+            allVariants={allVariants}
+            onReceiveSubmit={receiveMutation.mutate}
+            onTransferSubmit={transferMutation.mutate}
+            onAdjustSubmit={adjustMutation.mutate}
+            isPending={
+              receiveMutation.isPending ||
+              transferMutation.isPending ||
+              adjustMutation.isPending
+            }
+          />
+        )}
 
-      {/* ─── Manual Stock Adjustment Modal ─── */}
-      <StockAdjustmentModal
-        isOpen={adjustModalOpen}
-        onClose={() => setAdjustModalOpen(false)}
-        variants={allVariants}
-        initialTarget={selectedTarget}
-        onSubmit={handleStockSubmit}
-        isPending={adjustMutation.isPending}
-      />
+        {/* Tab 3: Depot Hubs & Warehouse Management */}
+        {activeTab === "warehouses" && (
+          <WarehouseHubsView
+            warehouses={warehouses}
+            inventoryItems={inventoryItems}
+            onCreateWarehouse={createWarehouseMutation.mutate}
+            onUpdateWarehouse={(id, data, cb) => {
+              updateWarehouseMutation.mutate({ id, data }, { onSuccess: cb });
+            }}
+            onDeleteWarehouse={deleteWarehouseMutation.mutate}
+            onOpenReceive={modals.openReceive}
+            onOpenTransfer={modals.openTransfer}
+            isPending={
+              createWarehouseMutation.isPending ||
+              updateWarehouseMutation.isPending ||
+              deleteWarehouseMutation.isPending
+            }
+          />
+        )}
 
-      {/* ─── Barcode Scanning & Instant Adjust Modal ─── */}
-      <BarcodeScannerModal
-        isOpen={barcodeModalOpen}
-        onClose={() => setBarcodeModalOpen(false)}
-        variants={allVariants}
-        onQuickAdjust={handleQuickAdjust}
-        isPending={adjustMutation.isPending}
+        {/* Tab 4: Reorder & Low-Stock Alerts */}
+        {activeTab === "alerts" && (
+          <StockAlertsView
+            alertItems={alertItems}
+            isLoading={isLoading}
+            onOpenReceive={modals.openReceive}
+            onOpenAdjust={modals.openAdjust}
+            onOpenTransfer={modals.openTransfer}
+            onViewHistory={modals.openHistory}
+            onShowQR={modals.openQR}
+          />
+        )}
+
+        {/* Tab 5: Transaction Audit Trail Ledger */}
+        {activeTab === "history" && (
+          <div className="bg-white p-5 rounded-2xl border border-border shadow-2xs">
+            <InventoryHistoryView />
+          </div>
+        )}
+
+        {/* Tab 6: Barcode & QR Label Studio */}
+        {activeTab === "barcodes" && (
+          <BarcodeStudioView
+            allVariants={allVariants}
+            onOpenBarcodeModal={modals.openBarcode}
+            onQuickAdjust={(payload, onComplete) => {
+              adjustMutation.mutate(payload, {
+                onSuccess: () => {
+                  if (onComplete) onComplete();
+                },
+              });
+            }}
+            isPending={adjustMutation.isPending}
+          />
+        )}
+      </main>
+
+      {/* ─── 5. Modal Dialogs Container (Separated Concern) ─── */}
+      <InventoryModalsContainer
+        modals={modals}
+        warehouses={warehouses}
+        inventoryItems={inventoryItems}
+        allVariants={allVariants}
+        catalogSelectables={catalogSelectables}
+        adjustMutation={adjustMutation}
+        receiveMutation={receiveMutation}
+        transferMutation={transferMutation}
+        createWarehouseMutation={createWarehouseMutation}
+        updateWarehouseMutation={updateWarehouseMutation}
+        deleteWarehouseMutation={deleteWarehouseMutation}
       />
     </div>
   );
 }
 
 export default AdminInventoryPage;
-

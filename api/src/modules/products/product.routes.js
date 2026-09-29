@@ -22,7 +22,13 @@ const productProperties = {
   isNew: { type: "boolean" },
   isFeatured: { type: "boolean" },
   isTrending: { type: "boolean" },
-  isBestSeller: { type: "boolean" }
+  isBestSeller: { type: "boolean" },
+  deliveryInfo: { type: ["string", "null"] },
+  returnPolicy: { type: ["string", "null"] },
+  warrantyInfo: { type: ["string", "null"] },
+  keyHighlights: {
+    type: ["array", "object", "null"]
+  }
 };
 
 const productBodySchema = {
@@ -56,7 +62,15 @@ const variantProperties = {
 };
 
 productProperties.countries = { type: "array", items: { type: "object", additionalProperties: false, properties: countryProperties } };
-productProperties.images = { type: "array", items: { type: "object", required: ["url"], additionalProperties: false, properties: imageProperties } };
+productProperties.images = {
+  type: "array",
+  items: {
+    anyOf: [
+      { type: "string", minLength: 1 },
+      { type: "object", required: ["url"], additionalProperties: false, properties: imageProperties }
+    ]
+  }
+};
 productProperties.variants = { type: "array", items: { type: "object", required: ["sku"], additionalProperties: false, properties: variantProperties } };
 
 export async function productRoutes(fastify) {
@@ -79,6 +93,7 @@ export async function productRoutes(fastify) {
           page: { type: "integer", minimum: 1, default: 1 },
           limit: { type: "integer", minimum: 1, maximum: 100, default: 20 },
           search: { type: "string" },
+          categoryId: { type: "string" },
           type: { type: "string", enum: ["SIMPLE", "VARIABLE"] },
           isActive: { type: "boolean" },
           isNew: { type: "boolean" },

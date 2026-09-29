@@ -1,92 +1,22 @@
 import React, { useRef } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, FreeMode, Autoplay } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/free-mode";
+
 import { ProductCardCompact } from "./ProductCardCompact.jsx";
 import { ROUTES } from "../../../../constants/routes.js";
 
-const DEFAULT_NEW_LAUNCHES = [
-  {
-    id: "launch-prod-1",
-    name: "Pure Shilajit Gold Resin 20g",
-    subtitle: "Authentic Himalayan Grade A+",
-    price: 1499,
-    mrp: 2499,
-    discount: 40,
-    rating: 4.9,
-    reviewsCount: 1240,
-    badge: "New Launch",
-    image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80",
-  },
-  {
-    id: "launch-prod-2",
-    name: "Sundarbans Wild Raw Honey 500g",
-    subtitle: "Unprocessed & Pure Single-Origin",
-    price: 699,
-    mrp: 999,
-    discount: 30,
-    rating: 4.8,
-    reviewsCount: 890,
-    badge: "New Launch",
-    image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=400&q=80",
-  },
-  {
-    id: "launch-prod-3",
-    name: "24K Saffron Kumkumadi Facial Oil",
-    subtitle: "Kashmiri Mongra Saffron Infusion",
-    price: 1899,
-    mrp: 2999,
-    discount: 36,
-    rating: 5.0,
-    reviewsCount: 2150,
-    badge: "New Launch",
-    image: "https://images.unsplash.com/photo-1608248597359-009a25b12a21?auto=format&fit=crop&w=400&q=80",
-  },
-  {
-    id: "launch-prod-4",
-    name: "Vedic Bilona A2 Desi Cow Ghee 1L",
-    subtitle: "Traditional Curd Churned",
-    price: 1599,
-    mrp: 2199,
-    discount: 27,
-    rating: 4.9,
-    reviewsCount: 3410,
-    badge: "New Launch",
-    image: "https://images.unsplash.com/photo-1589927986089-35812388d1f4?auto=format&fit=crop&w=400&q=80",
-  },
-  {
-    id: "launch-prod-5",
-    name: "Organic Ceremonial Matcha Tea 50g",
-    subtitle: "First Harvest Japanese Grade",
-    price: 1199,
-    mrp: 1799,
-    discount: 33,
-    rating: 4.7,
-    reviewsCount: 620,
-    badge: "New Launch",
-    image: "https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=400&q=80",
-  },
-  {
-    id: "launch-prod-6",
-    name: "Cold Pressed Moroccan Argan Hair Elixir",
-    subtitle: "Deep Moisture & Anti-Frizz",
-    price: 899,
-    mrp: 1399,
-    discount: 35,
-    rating: 4.8,
-    reviewsCount: 1740,
-    badge: "New Launch",
-    image: "https://images.unsplash.com/photo-1608248597359-009a25b12a21?auto=format&fit=crop&w=400&q=80",
-  },
-];
-
 export function NewLaunchesSection({ products = [], className = "" }) {
-  const scrollRef = useRef(null);
+  const swiperRef = useRef(null);
+  const list = Array.isArray(products) ? products : [];
 
-  const list = products.length > 0 ? products : DEFAULT_NEW_LAUNCHES;
-
-  const scroll = (dir) => {
-    scrollRef.current?.scrollBy({ left: dir * 280, behavior: "smooth" });
-  };
+  if (list.length === 0) {
+    return null;
+  }
 
   return (
     <section className={`py-8 sm:py-10 px-4 sm:px-8 lg:px-12 select-none w-full max-w-full overflow-hidden ${className}`}>
@@ -114,15 +44,15 @@ export function NewLaunchesSection({ products = [], className = "" }) {
 
             <div className="flex items-center gap-1.5">
               <button
-                onClick={() => scroll(-1)}
-                aria-label="Scroll left"
+                onClick={() => swiperRef.current?.slidePrev()}
+                aria-label="Previous products"
                 className="w-8 h-8 rounded-full bg-white border border-[#ebdcb0] hover:bg-[#358B5B] hover:text-white text-gray-700 shadow-2xs flex items-center justify-center transition-all cursor-pointer hover:scale-105"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
-                onClick={() => scroll(1)}
-                aria-label="Scroll right"
+                onClick={() => swiperRef.current?.slideNext()}
+                aria-label="Next products"
                 className="w-8 h-8 rounded-full bg-white border border-[#ebdcb0] hover:bg-[#358B5B] hover:text-white text-gray-700 shadow-2xs flex items-center justify-center transition-all cursor-pointer hover:scale-105"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -131,16 +61,52 @@ export function NewLaunchesSection({ products = [], className = "" }) {
           </div>
         </div>
 
-        {/* Product Cards Row */}
-        <div
-          ref={scrollRef}
-          className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto scrollbar-none pb-3 pt-1 px-1 w-full min-w-0 touch-pan-x"
-        >
-          {list.map((prod) => (
-            <div key={prod.id} className="w-[180px] sm:w-[220px] shrink-0">
-              <ProductCardCompact product={prod} badge="New Launch" />
-            </div>
-          ))}
+        {/* Swiper Carousel */}
+        <div className="w-full min-w-0 pb-3 pt-1">
+          <Swiper
+            onBeforeInit={(swiper) => {
+              swiperRef.current = swiper;
+            }}
+            modules={[Navigation, FreeMode, Autoplay]}
+            spaceBetween={16}
+            slidesPerView={2}
+            grabCursor={true}
+            freeMode={{
+              enabled: true,
+              sticky: false,
+            }}
+            breakpoints={{
+              480: {
+                slidesPerView: 2.3,
+                spaceBetween: 12,
+              },
+              640: {
+                slidesPerView: 3.2,
+                spaceBetween: 14,
+              },
+              768: {
+                slidesPerView: 4,
+                spaceBetween: 16,
+              },
+              1024: {
+                slidesPerView: 5,
+                spaceBetween: 18,
+              },
+              1280: {
+                slidesPerView: 6,
+                spaceBetween: 20,
+              },
+            }}
+            className="w-full !overflow-visible"
+          >
+            {list.map((prod) => (
+              <SwiperSlide key={prod.id || prod._id} className="!h-auto flex">
+                <div className="w-full h-full flex flex-col">
+                  <ProductCardCompact product={prod} badge="New Launch" />
+                </div>
+              </SwiperSlide>
+            ))}
+          </Swiper>
         </div>
       </div>
     </section>

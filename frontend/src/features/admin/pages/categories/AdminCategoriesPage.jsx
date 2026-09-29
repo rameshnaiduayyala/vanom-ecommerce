@@ -65,9 +65,6 @@ export function AdminCategoriesPage() {
             <FolderTree className="w-6 h-6 text-[#00875A]" />
             Categories & Taxonomies
           </h1>
-          <p className="text-xs text-text-muted mt-1">
-            Manage storefront product classifications, hierarchical parent-child taxonomies, and ordering.
-          </p>
         </div>
 
         <div className="flex items-center gap-3">

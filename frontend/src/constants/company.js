@@ -8,7 +8,7 @@ export const VANOM_COMPANY_DETAILS = {
   brandName: "VANOM",
   tradingName: "VANOM International Commerce",
   registrationNumber: "VN-INT-2026-98421",
-  
+
   // Tax & Fiscal IDs
   taxIdentifiers: {
     US_EIN: "EIN-82-9384721",
@@ -51,27 +51,16 @@ export const VANOM_COMPANY_DETAILS = {
       type: "North America Operations & Logistics",
     },
     {
-      region: "United Kingdom",
-      entity: "Vanom Global Ltd",
-      line1: "25 Cabot Square, Canary Wharf",
-      city: "London",
-      state: "Greater London",
-      postalCode: "E14 4QA",
-      country: "United Kingdom",
-      countryCode: "GB",
-      type: "European Headquarters & Freight Hub",
-    },
-    {
-      region: "India (APAC Hub)",
-      entity: "Vanom India Private Limited",
-      line1: "Plot No. 42, HITEC City Main Rd, Madhapur",
-      city: "Hyderabad",
-      state: "Telangana",
-      postalCode: "500081",
-      country: "India",
-      countryCode: "IN",
-      type: "APAC Regional HQ & Sourcing Center",
-    },
+      region: "Canada",
+      entity: "Vanom Canada Inc",
+      line1: "300 Yonge Street, Suite 1500",
+      city: "Toronto",
+      state: "Ontario",
+      postalCode: "M5B 2L7",
+      country: "Canada",
+      countryCode: "CA",
+      type: "North America Commercial Hub",
+    }
   ],
 
   warehouses: [

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal.jsx";
 import { Input, Textarea, Select, Checkbox } from "@/components/ui/Input.jsx";
 import { Button } from "@/components/ui/Button.jsx";
+import { FileUploadDropzone } from "@/components/common/FileUploadDropzone.jsx";
+import { Trash2 } from "lucide-react";
 
 export function CategoryFormModal({
   isOpen,
@@ -108,30 +110,64 @@ export function CategoryFormModal({
           />
         </div>
 
-        <div>
-          <Input
-            label="Category Image URL"
-            value={formData.imageUrl}
-            onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-            placeholder="https://images.unsplash.com/..."
-            helperText="Direct image URL for storefront display"
-          />
-          {formData.imageUrl && (
-            <div className="mt-2 flex items-center gap-3 p-2 bg-surface-muted rounded-xl border border-border">
-              <img
-                src={formData.imageUrl}
-                alt="Preview"
-                className="w-12 h-12 rounded-lg object-cover border border-border shrink-0 bg-white"
-                onError={(e) => {
-                  e.target.style.display = "none";
-                }}
-              />
-              <div className="text-xs text-text-secondary truncate">
-                <span className="font-semibold block text-text-primary">Image Preview</span>
-                <span className="text-[10px] text-text-muted truncate block">{formData.imageUrl}</span>
+        {/* Category Image Upload & URL */}
+        <div className="space-y-2">
+          <label className="block text-xs font-bold text-slate-700">Category Image</label>
+
+          {formData.imageUrl ? (
+            <div className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+              <div className="flex items-center gap-3 min-w-0">
+                <img
+                  src={formData.imageUrl}
+                  alt="Category Preview"
+                  className="w-14 h-14 rounded-lg object-cover border border-slate-200 shrink-0 bg-white shadow-2xs"
+                  onError={(e) => {
+                    e.target.src = "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=300&q=80";
+                  }}
+                />
+                <div className="min-w-0 flex-1">
+                  <span className="text-xs font-bold text-slate-800 block">Uploaded Category Photo</span>
+                  <span className="text-[10px] font-mono text-slate-400 truncate block mt-0.5 max-w-[280px] sm:max-w-xs">
+                    {formData.imageUrl}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <FileUploadDropzone
+                  folder="categories"
+                  compact={true}
+                  onUploadSuccess={(url) => setFormData((prev) => ({ ...prev, imageUrl: url }))}
+                />
+                <button
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, imageUrl: "" }))}
+                  className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
+                  title="Remove image"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
+          ) : (
+            <FileUploadDropzone
+              folder="categories"
+              multiple={false}
+              onUploadSuccess={(url) => setFormData((prev) => ({ ...prev, imageUrl: url }))}
+              label="Click or drop category cover photo"
+              hint="High-res PNG, JPG or WebP (square 600x600 recommended)"
+            />
           )}
+
+          <div className="pt-1">
+            <input
+              type="url"
+              value={formData.imageUrl}
+              onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+              placeholder="Or paste direct image URL (https://...)"
+              className="w-full px-3 py-1.5 text-xs bg-slate-50/50 border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:border-[#358B5B] focus:bg-white"
+            />
+          </div>
         </div>
 
         <Textarea
@@ -178,3 +214,5 @@ export function CategoryFormModal({
     </Modal>
   );
 }
+
+export default CategoryFormModal;

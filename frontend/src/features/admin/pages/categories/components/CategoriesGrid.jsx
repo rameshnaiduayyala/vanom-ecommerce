@@ -66,9 +66,16 @@ export function CategoriesGrid({ categories, isLoading, onEdit, onDelete, search
                   )}
                 </div>
               </div>
-              <Badge variant="brand" size="sm" className="shrink-0 font-bold">
-                {cat.count || 0} {cat.count === 1 ? "Product" : "Products"}
-              </Badge>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <Badge variant="brand" size="sm" className="font-bold">
+                  {cat.count || 0} {cat.count === 1 ? "Product" : "Products"}
+                </Badge>
+                {cat.subcategoriesCount > 0 && (
+                  <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    {cat.subcategoriesCount} Subcategories
+                  </span>
+                )}
+              </div>
             </div>
 
             <p className="text-xs text-text-secondary leading-relaxed line-clamp-2">

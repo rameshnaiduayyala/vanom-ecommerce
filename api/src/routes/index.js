@@ -11,8 +11,37 @@ import { couponRoutes } from "../modules/coupons/coupon.routes.js";
 import { pricingRoutes } from "../modules/pricing/pricing.routes.js";
 import { reviewRoutes } from "../modules/reviews/review.routes.js";
 import { bulkRoutes } from "../modules/bulk/routes/index.js";
+import { adminRoutes } from "../modules/admin/admin.routes.js";
+import { uploadRoutes } from "../modules/upload/upload.routes.js";
+import { invoiceRoutes } from "../modules/invoice/invoice.routes.js";
+import { storeRoutes } from "../modules/store/store.routes.js";
+import { contactRoutes } from "../modules/contact/contact.routes.js";
+import { paymentRoutes } from "../modules/payments/payment.routes.js";
+import { inventoryRoutes } from "../modules/inventory/inventory.routes.js";
+import { shippingRoutes } from "../modules/shipping/shipping.routes.js";
 
 export async function registerRoutes(fastify) {
+  await fastify.register(shippingRoutes, {
+    prefix: "/api/v1"
+  });
+  await fastify.register(inventoryRoutes, {
+    prefix: "/api/v1"
+  });
+  await fastify.register(paymentRoutes, {
+    prefix: "/api/v1"
+  });
+  await fastify.register(uploadRoutes, {
+    prefix: "/api/v1"
+  });
+  await fastify.register(invoiceRoutes, {
+    prefix: "/api/v1"
+  });
+  await fastify.register(storeRoutes, {
+    prefix: "/api/v1"
+  });
+  await fastify.register(contactRoutes, {
+    prefix: "/api/v1"
+  });
   await fastify.register(productRoutes, {
     prefix: "/api/v1"
   });
@@ -40,4 +69,5 @@ export async function registerRoutes(fastify) {
   await fastify.register(pricingRoutes, { prefix: "/api/v1" });
   await fastify.register(reviewRoutes, { prefix: "/api/v1" });
   await fastify.register(bulkRoutes, { prefix: "/api/v1" });
+  await fastify.register(adminRoutes, { prefix: "/api/v1" });
 }

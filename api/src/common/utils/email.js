@@ -2,7 +2,12 @@ import { env } from "../../config/env.js";
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import nodemailer from "nodemailer";
-import { renderPasswordResetEmail, renderVerifyEmail } from "../../emails/index.js";
+import {
+  renderPasswordResetEmail,
+  renderVerifyEmail,
+  renderContactInquiryAdminEmail,
+  renderContactInquiryCustomerEmail,
+} from "../../emails/index.js";
 
 function required(value, name) {
   if (!value) throw new Error(`${name} is required for email sending`);
@@ -43,15 +48,28 @@ async function sendWithSes({ to, subject, html, text }) {
 
 let smtpTransporter;
 function getSmtpTransporter() {
-  if (!smtpTransporter) smtpTransporter = nodemailer.createTransport({
-    host: required(env.smtpHost, "SMTP_HOST"), port: env.smtpPort, secure: env.smtpSecure,
-    auth: env.smtpUser ? { user: env.smtpUser, pass: env.smtpPassword } : undefined
-  });
+  if (!smtpTransporter) {
+    smtpTransporter = nodemailer.createTransport({
+      host: required(env.smtpHost, "SMTP_HOST"),
+      port: env.smtpPort,
+      secure: env.smtpSecure,
+      auth: env.smtpUser ? { user: env.smtpUser, pass: env.smtpPassword } : undefined
+    });
+  }
   return smtpTransporter;
 }
 
 async function sendWithSmtp({ to, subject, html, text }) {
-  return getSmtpTransporter().sendMail({ from: required(env.emailFrom, "EMAIL_FROM"), to, subject, text, html });
+  const transporter = getSmtpTransporter();
+  const info = await transporter.sendMail({
+    from: required(env.emailFrom, "EMAIL_FROM"),
+    to,
+    subject,
+    text,
+    html
+  });
+  console.info(`[email:smtp] sent to=${to} id=${info.messageId} response=${info.response}`);
+  return info;
 }
 
 async function sendWithConsole({ to, subject, text }) {
@@ -77,7 +95,7 @@ export async function sendSms({ to, message }) {
 }
 
 export async function sendPasswordResetEmail(email, token) {
-  const resetUrl = `${env.appUrl.replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
+  const resetUrl = `${(env.clientUrl || env.appUrl).replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
   const template = await renderPasswordResetEmail({
     resetUrl,
     expiresInMinutes: env.passwordResetExpiresMinutes
@@ -88,8 +106,73 @@ export async function sendPasswordResetEmail(email, token) {
   });
 }
 
-export async function sendVerificationEmail(email, token) {
-  const verifyUrl = `${env.appUrl.replace(/\/$/, "")}/api/v1/auth/verify-email?token=${encodeURIComponent(token)}`;
-  const template = await renderVerifyEmail({ verifyUrl });
+export async function sendVerificationEmail(email, token, options = {}) {
+  const verifyUrl = `${(env.clientUrl || env.appUrl).replace(/\/$/, "")}/verify-email?token=${encodeURIComponent(token)}`;
+  const template = await renderVerifyEmail({
+    verifyUrl,
+    firstName: options.firstName,
+    businessName: options.businessName,
+    businessEmail: options.businessEmail,
+    businessPhone: options.businessPhone,
+    taxRegistrationNumber: options.taxRegistrationNumber,
+    registrationNumber: options.registrationNumber,
+    address: options.address,
+    isB2B: options.isB2B,
+  });
   return sendEmail({ to: email, ...template });
 }
+
+/**
+ * Sends contact inquiry emails using React Email templates:
+ * 1. Notification to Store Admin / Support Team
+ * 2. Confirmation acknowledgement to Customer
+ */
+export async function sendContactNotificationEmails({ name, email, phone, subject, message, store = null }) {
+  const storeName = store?.storeName || "Vanom";
+  const adminEmail = store?.supportEmail || store?.email || env.emailFrom || "corporate.billing@vanom-global.com";
+
+  const promises = [];
+
+  // 1. Render & Send Admin Notification via React Email
+  try {
+    const adminTemplate = await renderContactInquiryAdminEmail({
+      name,
+      email,
+      phone,
+      subject,
+      message,
+      storeName
+    });
+
+    promises.push(
+      sendEmail({
+        to: adminEmail,
+        ...adminTemplate
+      }).catch((err) => console.warn("[email:contact-admin-failed]", err.message))
+    );
+  } catch (err) {
+    console.error("[email:render-admin-template-failed]", err);
+  }
+
+  // 2. Render & Send Customer Acknowledgement via React Email
+  try {
+    const customerTemplate = await renderContactInquiryCustomerEmail({
+      name,
+      subject,
+      message,
+      storeName
+    });
+
+    promises.push(
+      sendEmail({
+        to: email,
+        ...customerTemplate
+      }).catch((err) => console.warn("[email:contact-customer-failed]", err.message))
+    );
+  } catch (err) {
+    console.error("[email:render-customer-template-failed]", err);
+  }
+
+  await Promise.all(promises);
+}
+

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useCartStore } from "../../../stores/cart.store.js";
 import { useCountryStore } from "../../../stores/country.store.js";
 import { useUIStore } from "../../../stores/ui.store.js";
-import { getLiveProducts } from "../../../services/api/mock-data.js";
+import { Api } from "../../../services/index.js";
 import { ROUTES } from "../../../constants/routes.js";
 
 export function useCartPage() {
@@ -86,10 +86,19 @@ export function useCartPage() {
     [selectedCartItems]
   );
 
-  const recommendedProducts = useMemo(() => {
-    const live    = getLiveProducts() || [];
-    const cartIds = new Set((cart.items || []).map((i) => i.id));
-    return live.filter((p) => !cartIds.has(p.id)).slice(0, 4);
+  const [recommendedProducts, setRecommendedProducts] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+    Api.catalog.getFeaturedProducts({ limit: 4 })
+      .then((res) => {
+        if (!mounted) return;
+        const products = Array.isArray(res) ? res : res?.items || [];
+        const cartIds = new Set((cart.items || []).map((i) => i.id));
+        setRecommendedProducts(products.filter((p) => !cartIds.has(p.id)).slice(0, 4));
+      })
+      .catch(() => {});
+    return () => { mounted = false; };
   }, [cart.items]);
 
   const allSelected =
@@ -153,7 +162,7 @@ export function useCartPage() {
   const handleAddRecommended = (product) => {
     const pricing = product.pricing?.[country.code] || product.pricing?.US || {};
     const price   = Number(product.price || pricing.retailPrice || 399);
-    const image   = product.image || product.images?.[0]?.url || "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=600&q=80";
+    const image   = product.image || product.images?.[0]?.url || null;
     const newItems = [...(cart.items || []), { id: product.id, name: product.name, price, mrp: product.mrp || Math.round(price * 1.35), quantity: 1, image }];
     setCart({ items: newItems, itemCount: newItems.length, subtotal: newItems.reduce((s, i) => s + i.price * i.quantity, 0) });
     setSelectedIds((prev) => [...prev, product.id]);

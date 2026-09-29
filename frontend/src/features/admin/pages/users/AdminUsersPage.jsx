@@ -56,7 +56,7 @@ export function AdminUsersPage() {
     setViewingUser(user);
   };
 
-  const handleFormSubmit = async (formData, b2bCompanyMode) => {
+  const handleFormSubmit = async (formData) => {
     setFormError("");
 
     if (!formData.email) {
@@ -69,55 +69,20 @@ export function AdminUsersPage() {
       return;
     }
 
-    if (formData.customerType === "B2B" && !editingUser && b2bCompanyMode === "NEW") {
-      if (!formData.newCompanyLegalName && !formData.newCompanyName) {
-        setFormError("Please provide the legal or trading business name for the new company.");
-        return;
-      }
-    }
-
-    const payload = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      phone: formData.phone,
-      customerType: formData.customerType,
-      status: formData.status,
-      roles: [formData.role],
-    };
-
-    if (formData.password) {
-      payload.password = formData.password;
-    }
-
-    if (formData.customerType === "B2B") {
-      if (b2bCompanyMode === "EXISTING" && formData.companyId) {
-        payload.companyId = formData.companyId;
-      } else if (b2bCompanyMode === "NEW") {
-        payload.newCompany = {
-          legalName: formData.newCompanyLegalName || formData.newCompanyName,
-          businessName: formData.newCompanyName || formData.newCompanyLegalName,
-          taxId: formData.newCompanyTaxId,
-          registrationNumber: formData.newCompanyRegNo,
-          countryCode: formData.newCompanyCountryCode,
-          addressLine1: formData.newCompanyAddressLine1,
-          city: formData.newCompanyCity,
-          state: formData.newCompanyState,
-          postalCode: formData.newCompanyPostalCode,
-          status: "APPROVED",
-        };
-      }
-    }
-
     try {
       if (editingUser) {
-        await updateMutation.mutateAsync({ id: editingUser.id, data: payload });
+        await updateMutation.mutateAsync({ id: editingUser.id, data: formData });
       } else {
-        await createMutation.mutateAsync(payload);
+        await createMutation.mutateAsync(formData);
       }
       setFormModalOpen(false);
     } catch (err) {
-      setFormError(err.message || "Failed to save user.");
+      const msg =
+        err?.message ||
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Failed to save user account. Please check your inputs.";
+      setFormError(msg);
     }
   };
 
@@ -132,15 +97,40 @@ export function AdminUsersPage() {
 
   // Filtered Users
   const filteredUsers = users.filter((u) => {
-    const nameMatch =
-      `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.company?.legalName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.company?.tradingName?.toLowerCase().includes(searchTerm.toLowerCase());
+    const fullName = `${u.firstName || ""} ${u.lastName || ""}`.toLowerCase();
+    const email = (u.email || "").toLowerCase();
+    const company = (
+      u.bulkBusiness?.businessName ||
+      u.bulkBusiness?.companyName ||
+      u.company?.legalName ||
+      ""
+    ).toLowerCase();
+    const country = (u.country?.name || u.country?.code || "").toLowerCase();
+    const term = searchTerm.toLowerCase();
 
-    const roles = Array.isArray(u.roles) ? u.roles : [u.roles || "CUSTOMER"];
-    const roleMatch = roleFilter === "ALL" || roles.includes(roleFilter);
-    const statusMatch = statusFilter === "ALL" || u.status === statusFilter;
+    const nameMatch =
+      fullName.includes(term) ||
+      email.includes(term) ||
+      company.includes(term) ||
+      country.includes(term);
+
+    // Role Match
+    let roleMatch = true;
+    if (roleFilter === "SUPERADMIN") {
+      roleMatch = u.role === "SUPERADMIN";
+    } else if (roleFilter === "USER") {
+      roleMatch = u.role === "USER" && !u.bulkBusiness;
+    } else if (roleFilter === "B2B") {
+      roleMatch = Boolean(u.bulkBusiness);
+    }
+
+    // Status Match
+    let statusMatch = true;
+    if (statusFilter === "ACTIVE") {
+      statusMatch = (u.isActive ?? true) === true;
+    } else if (statusFilter === "INACTIVE") {
+      statusMatch = (u.isActive ?? true) === false;
+    }
 
     return nameMatch && roleMatch && statusMatch;
   });
@@ -154,9 +144,6 @@ export function AdminUsersPage() {
             <User className="w-6 h-6 text-[#00875A]" />
             User Management
           </h1>
-          <p className="text-xs text-text-muted mt-1">
-            Manage system administrators, retail customers, and commercial B2B buyer accounts.
-          </p>
         </div>
 
         <div className="flex items-center gap-3">

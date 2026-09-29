@@ -12,17 +12,29 @@ import {
   BarChart3,
   CreditCard,
   ShieldCheck,
+  ShoppingBag,
+  Briefcase,
+  Store,
+  Tag,
+  BadgePercent,
+  Bookmark,
+  Mail,
+  Truck,
 } from "lucide-react";
 import { ROUTES } from "./routes.js";
 
 /**
  * Admin Navigation Configuration
- * Simple, clean structure with intuitive sub-items.
+ * Dedicated sections for:
+ * 1. Overview (Dashboard)
+ * 2. Retail (B2C) -> Products, Orders, Categories, Brands
+ * 3. B2B (Wholesale) -> Products, Categories, Orders, Companies
+ * 4. Operations & System -> Inventory, Retail Customers, Finance, Audit & Security
  */
 export const ADMIN_NAV_CONFIG = [
-  // ── MAIN ──
+  // ── OVERVIEW ──
   {
-    header: "Main",
+    header: "Overview",
   },
   {
     id: "dashboard",
@@ -30,53 +42,23 @@ export const ADMIN_NAV_CONFIG = [
     icon: LayoutDashboard,
     path: ROUTES.ADMIN.DASHBOARD,
   },
-  {
-    id: "orders-group",
-    label: "Orders",
-    icon: ShoppingCart,
-    badge: 43,
-    badgeColor: "bg-emerald-600",
-    children: [
-      {
-        id: "all-orders",
-        label: "Master Orders Hub",
-        path: ROUTES.ADMIN.ORDERS,
-      },
-      {
-        id: "orders-retail",
-        label: "Retail Orders",
-        path: ROUTES.ADMIN.RETAIL_ORDERS,
-      },
-      {
-        id: "orders-wholesale",
-        label: "B2B Bulk Orders",
-        path: ROUTES.ADMIN.BULK_ORDERS,
-      },
-    ],
-  },
 
-  // ── CATALOG & INVENTORY ──
+  // ── RETAIL (B2C) ──
   {
-    header: "Catalog & Stock",
+    header: "Retail",
   },
   {
-    id: "products-group",
+    id: "retail-products-group",
     label: "Products",
     icon: Package,
     children: [
       {
-        id: "all-products",
-        label: "Retail Products",
+        id: "retail-products-list",
+        label: "All Products",
         path: ROUTES.ADMIN.PRODUCTS,
       },
       {
-        id: "bulk-products",
-        label: "B2B Bulk Products",
-        icon: Boxes,
-        path: ROUTES.ADMIN.BULK_PRODUCTS,
-      },
-      {
-        id: "add-product",
+        id: "retail-products-add",
         label: "Add Product",
         icon: PlusCircle,
         path: ROUTES.ADMIN.PRODUCT_NEW,
@@ -84,30 +66,122 @@ export const ADMIN_NAV_CONFIG = [
     ],
   },
   {
-    id: "categories",
+    id: "retail-orders-group",
+    label: "Orders",
+    icon: ShoppingBag,
+    children: [
+      {
+        id: "retail-orders-all",
+        label: "Master Orders Hub",
+        path: ROUTES.ADMIN.ORDERS,
+      },
+      {
+        id: "retail-orders-list",
+        label: "Retail Orders",
+        path: ROUTES.ADMIN.RETAIL_ORDERS,
+      },
+    ],
+  },
+  {
+    id: "retail-categories",
     label: "Categories",
     icon: FolderTree,
     path: ROUTES.ADMIN.CATEGORIES,
   },
   {
+    id: "retail-brands",
+    label: "Brands",
+    icon: Tag,
+    path: ROUTES.ADMIN.BRANDS,
+  },
+
+
+  // ── B2B (WHOLESALE) ──
+  {
+    header: "B2B",
+  },
+  {
+    id: "b2b-products-group",
+    label: "Products",
+    icon: Boxes,
+    children: [
+      {
+        id: "b2b-products-list",
+        label: "Bulk Products & Tiers",
+        path: ROUTES.ADMIN.BULK_PRODUCTS,
+      },
+      {
+        id: "b2b-quotes",
+        label: "Custom Quotes / RFQ",
+        icon: FileText,
+        path: ROUTES.ADMIN.QUOTES,
+      },
+    ],
+  },
+  {
+    id: "b2b-categories",
+    label: "Categories",
+    icon: FolderTree,
+    path: ROUTES.ADMIN.BULK_CATEGORIES,
+  },
+
+  {
+    id: "b2b-orders",
+    label: "Orders",
+    icon: Briefcase,
+    path: ROUTES.ADMIN.BULK_ORDERS,
+  },
+  {
+    id: "b2b-companies-group",
+    label: "Companies",
+    icon: Building2,
+    children: [
+      {
+        id: "companies-directory",
+        label: "Company Directory",
+        path: ROUTES.ADMIN.COMPANIES,
+      },
+      {
+        id: "companies-add",
+        label: "Register Company",
+        icon: PlusCircle,
+        path: `${ROUTES.ADMIN.COMPANIES}?action=new`,
+      },
+      {
+        id: "companies-verification",
+        label: "Verification Queue",
+        icon: FileCheck2,
+        path: ROUTES.ADMIN.BUSINESS_APPLICATIONS,
+        badge: "Review",
+        badgeColor: "bg-amber-500",
+      },
+    ],
+  },
+
+  // ── OPERATIONS & SYSTEM ──
+  {
+    header: "Operations & Admin",
+  },
+  {
     id: "inventory",
-    label: "Inventory",
+    label: "Inventory & Stock",
     icon: Boxes,
     path: ROUTES.ADMIN.INVENTORY,
   },
-
-  // ── ACCOUNTS & CORPORATE ──
   {
-    header: "Accounts & Directory",
+    id: "shipments",
+    label: "Shipments & Logistics",
+    icon: Truck,
+    path: ROUTES.ADMIN.SHIPMENTS,
   },
   {
     id: "customers-group",
-    label: "Customers",
+    label: "Retail Customers",
     icon: Users,
     children: [
       {
         id: "users-list",
-        label: "List Customers",
+        label: "Customer Directory",
         path: ROUTES.ADMIN.USERS,
       },
       {
@@ -119,50 +193,13 @@ export const ADMIN_NAV_CONFIG = [
     ],
   },
   {
-    id: "companies-group",
-    label: "Companies",
-    icon: Building2,
-    children: [
-      {
-        id: "companies-list",
-        label: "List Companies",
-        path: ROUTES.ADMIN.COMPANIES,
-      },
-      {
-        id: "companies-add",
-        label: "Add Company",
-        icon: PlusCircle,
-        path: `${ROUTES.ADMIN.COMPANIES}?action=new`,
-      },
-      {
-        id: "companies-approvals",
-        label: "Verification Queue",
-        icon: FileCheck2,
-        path: ROUTES.ADMIN.BUSINESS_APPLICATIONS,
-        badge: 3,
-        badgeColor: "bg-amber-500",
-      },
-      {
-        id: "quotes",
-        label: "Wholesale Quotes",
-        icon: FileText,
-        path: ROUTES.ADMIN.QUOTES,
-      },
-    ],
-  },
-
-  // ── FINANCE & SYSTEM ──
-  {
-    header: "Finance & Security",
-  },
-  {
     id: "finance-group",
-    label: "Finance",
+    label: "Finance & Invoices",
     icon: CreditCard,
     children: [
       {
         id: "payments",
-        label: "Payments & Invoices",
+        label: "Payments & Transactions",
         path: ROUTES.ADMIN.PAYMENTS,
       },
       {
@@ -174,16 +211,24 @@ export const ADMIN_NAV_CONFIG = [
     ],
   },
   {
-    id: "system-group",
-    label: "System",
+    id: "system-audit",
+    label: "Audit & Security",
     icon: ShieldCheck,
-    children: [
-      {
-        id: "audit-logs",
-        label: "Audit Logs & Security",
-        path: ROUTES.ADMIN.AUDIT_LOGS,
-      },
-    ],
+    path: ROUTES.ADMIN.AUDIT_LOGS,
+  },
+  {
+    id: "customer-inquiries",
+    label: "Customer Inquiries",
+    icon: Mail,
+    path: ROUTES.ADMIN.MESSAGES,
+  },
+  {
+    id: "store-settings",
+    label: "Store Settings",
+    icon: Store,
+    path: ROUTES.ADMIN.STORE,
   },
 ];
+
+
 

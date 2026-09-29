@@ -41,51 +41,45 @@ import { NewsletterAppBanner } from "../components/home/NewsletterAppBanner.jsx"
 export function HomePage() {
   const { country } = useCountryStore();
 
-  // ── Data Fetching (parallel, non-blocking) ──────────────────────
-  const { data: heroBanners = [] } = useQuery({
-    queryKey: ["banners-hero"],
-    queryFn: () => Api.banners.list({ type: "HERO_CAROUSEL" }),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: promoBanners = [] } = useQuery({
-    queryKey: ["banners-promo"],
-    queryFn: () => Api.banners.list({ type: "PROMOTIONAL" }),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: productsData, isLoading: loadingProducts } = useQuery({
-    queryKey: ["home-products", country.code],
-    queryFn: () => Api.catalog.getProducts(),
-    staleTime: 2 * 60 * 1000,
-  });
-
-  const { data: featuredData } = useQuery({
+  // ── Data Fetching ──────────────────────────────────────────
+  const { data: featuredData, isLoading: loadingProducts } = useQuery({
     queryKey: ["featured-products", country.code],
-    queryFn: () => Api.catalog.getFeaturedProducts(),
+    queryFn: () => Api.catalog.getFeaturedProducts().catch(() => null),
     staleTime: 2 * 60 * 1000,
   });
 
   const { data: bestSellersData } = useQuery({
     queryKey: ["best-seller-products", country.code],
-    queryFn: () => Api.catalog.getBestSellers(),
+    queryFn: () => Api.catalog.getBestSellers().catch(() => null),
     staleTime: 2 * 60 * 1000,
   });
 
   const { data: categories = [] } = useQuery({
     queryKey: ["home-categories"],
-    queryFn: () => Api.catalog.getCategories(),
+    queryFn: async () => {
+      const res = await Api.catalog.getCategoryTree();
+      const tree = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      if (tree.length > 0) return tree;
+      const flat = await Api.catalog.getCategories();
+      return Array.isArray(flat?.data) ? flat.data : Array.isArray(flat?.items) ? flat.items : Array.isArray(flat) ? flat : [];
+    },
     staleTime: 10 * 60 * 1000,
   });
 
   // ── Data Normalization ──────────────────────────────────────────
-  const products = productsData?.items || (Array.isArray(productsData) ? productsData : []);
-  const featuredProducts = featuredData?.items || (Array.isArray(featuredData) ? featuredData : []);
-  const bestSellers = bestSellersData?.items || (Array.isArray(bestSellersData) ? bestSellersData : []);
-  const categoryList = Array.isArray(categories) ? categories : (categories?.items || []);
+  // API shape: { success, data: [], meta: {} }
+  const normalizeProducts = (raw) =>
+    Array.isArray(raw?.data) ? raw.data
+    : Array.isArray(raw?.items) ? raw.items
+    : Array.isArray(raw) ? raw
+    : [];
+
+  const featuredProducts = normalizeProducts(featuredData);
+  const bestSellers    = normalizeProducts(bestSellersData);
+  const categoryList   = Array.isArray(categories) ? categories : (categories?.items || []);
 
   return (
-    <div className="min-h-screen bg-[#FFFDF7] flex flex-col">
+    <div className="min-h-screen bg-[#FFFDF7] flex flex-col overscroll-y-none">
       <SEO
         title="Vanom E-Commerce | Global Organic Essentials, Value Combos & Superstore"
         description="Discover 100% certified organic groceries, health staples, value combo packs, and wholesale deals. Fast worldwide delivery and 100% purchase guarantee."
@@ -104,8 +98,7 @@ export function HomePage() {
       />
       {/* ── 1. Hero Banner Slider (Primary promotional marketing) ── */}
       <section className="bg-transparent">
-
-        <HeroBanner banners={heroBanners} />
+        <HeroBanner />
       </section>
 
       {/* ── 2. Quick Category Pills Strip (Soft Warm Cream / Vanilla BG) ── */}
@@ -113,11 +106,10 @@ export function HomePage() {
         <CategoryIconStrip className="bg-transparent" categories={categoryList} />
       </section>
 
-      {/* ── 3. Featured & Best Seller Products (Candy White Clean BG) ── */}
+      {/* ── 3. Featured & Best Seller Products ── */}
       <section className="bg-[#D5EBD5] border-b border-gray-100/90 py-4">
         <FeaturedProductsSection
           className="bg-transparent"
-          products={products}
           featuredProducts={featuredProducts}
           bestSellers={bestSellers}
           isLoading={loadingProducts}
@@ -126,7 +118,7 @@ export function HomePage() {
 
       {/* ── 4. Promo Banner 3-Grid (Candy White BG) ── */}
       <section className="py-8 bg-[#FAF9F6] border-b border-gray-200/60">
-        <PromoBannerGrid banners={promoBanners} />
+        <PromoBannerGrid />
       </section>
 
       {/* ── 5. New Launches Carousel (Soft Warm Ivory BG) ── */}

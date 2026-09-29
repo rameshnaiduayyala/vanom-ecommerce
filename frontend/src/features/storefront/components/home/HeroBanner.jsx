@@ -121,7 +121,7 @@ export function HeroBanner({ banners = [] }) {
   useEffect(() => {
     const timer = setInterval(next, AUTO_SCROLL_INTERVAL);
     return () => clearInterval(timer);
-  }, [next, current]);
+  }, [next]);
 
   const slide = slides[current];
 

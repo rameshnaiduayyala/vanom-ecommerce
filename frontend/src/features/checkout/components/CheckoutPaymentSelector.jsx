@@ -1,5 +1,5 @@
 import React from "react";
-import { CreditCard, Star } from "lucide-react";
+import { CreditCard, Star, ShieldCheck, Lock } from "lucide-react";
 import {
   getProvidersForCountry,
   groupProviders,
@@ -10,24 +10,15 @@ function ProviderTile({ provider, selected, onSelect }) {
   return (
     <label
       className={`relative p-3.5 rounded-xl border cursor-pointer transition-all flex flex-col gap-2 select-none ${
-        provider.disabled
-          ? "opacity-50 cursor-not-allowed border-gray-200 bg-gray-50"
-          : selected
+        selected
           ? "border-[#185e3e] bg-[#185e3e]/5 shadow-sm ring-1 ring-[#185e3e]/20"
-          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50/70"
       }`}
     >
-      {/* Coming Soon badge */}
-      {provider.comingSoon && (
-        <span className="absolute top-2 right-2 text-[9px] font-black bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
-          Soon
-        </span>
-      )}
-
       {/* Recommended badge */}
-      {provider.recommended && !provider.comingSoon && (
-        <span className="absolute top-2 right-2 text-[9px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-0.5">
-          <Star className="w-2 h-2 fill-current" /> Best
+      {provider.recommended && (
+        <span className="absolute top-2 right-2 text-[9px] font-black bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-0.5">
+          <Star className="w-2 h-2 fill-current" /> Popular
         </span>
       )}
 
@@ -40,13 +31,12 @@ function ProviderTile({ provider, selected, onSelect }) {
           type="radio"
           name="paymentMethod"
           checked={selected}
-          onChange={() => !provider.disabled && onSelect(provider.id)}
-          disabled={provider.disabled}
-          className="accent-[#185e3e]"
+          onChange={() => onSelect(provider.id)}
+          className="accent-[#185e3e] cursor-pointer"
         />
       </div>
 
-      <span className="text-[10px] text-gray-500">{provider.sub}</span>
+      <span className="text-[10px] text-gray-500 leading-snug">{provider.sub}</span>
     </label>
   );
 }
@@ -54,13 +44,13 @@ function ProviderTile({ provider, selected, onSelect }) {
 // ─── Group header ──────────────────────────────────────────────────────────────
 function GroupHeader({ label }) {
   const LABELS = {
-    Card:   "💳 Card",
-    Wallet: "👜 Digital Wallets",
-    BNPL:   "🔄 Buy Now, Pay Later",
-    Other:  "Other",
+    Card:   "Credit & Debit Cards",
+    Wallet: "Digital & Instant Wallets",
+    BNPL:   "Flexible Installments (BNPL)",
+    Other:  "Other Payment Methods",
   };
   return (
-    <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mt-3 mb-1.5 first:mt-0">
+    <p className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mt-3.5 mb-1.5 first:mt-0">
       {LABELS[label] || label}
     </p>
   );
@@ -72,34 +62,51 @@ export function CheckoutPaymentSelector({ paymentMethod, onSelect, countryCode =
   const groups    = groupProviders(providers);
 
   return (
-    <div className="p-6 rounded-2xl bg-white border border-border shadow-xs space-y-2">
-      <div className="flex items-center gap-2 pb-3 border-b border-border">
-        <div className="w-8 h-8 rounded-full bg-[#185e3e]/10 flex items-center justify-center">
-          <CreditCard className="w-4 h-4 text-[#185e3e]" />
+    <div className="p-6 rounded-2xl bg-white border border-border shadow-xs space-y-3">
+      <div className="flex items-center justify-between pb-3 border-b border-border">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-[#185e3e]/10 text-[#185e3e] flex items-center justify-center">
+            <CreditCard className="w-4 h-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-gray-900 tracking-tight">
+              Payment Method
+            </h3>
+            <p className="text-[11px] text-gray-500">Choose your preferred Stripe payment option</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
-            Payment Method
-          </h3>
-          <p className="text-[11px] text-gray-500">All transactions are encrypted</p>
+
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Stripe Protected</span>
         </div>
       </div>
 
-      {Object.entries(groups).map(([groupName, groupProviders]) => (
-        <div key={groupName}>
-          <GroupHeader label={groupName} />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {groupProviders.map((provider) => (
-              <ProviderTile
-                key={provider.id}
-                provider={provider}
-                selected={paymentMethod === provider.id}
-                onSelect={onSelect}
-              />
-            ))}
+      <div className="space-y-1">
+        {Object.entries(groups).map(([groupName, groupProviders]) => (
+          <div key={groupName}>
+            <GroupHeader label={groupName} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {groupProviders.map((provider) => (
+                <ProviderTile
+                  key={provider.id}
+                  provider={provider}
+                  selected={paymentMethod === provider.id}
+                  onSelect={onSelect}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
+
+      <div className="pt-2 text-[10px] text-gray-500 flex items-center justify-between border-t border-slate-100">
+        <span className="flex items-center gap-1">
+          <Lock className="w-3 h-3 text-slate-400" />
+          PCI-DSS Level 1 Service Provider
+        </span>
+        <span className="font-semibold text-slate-700">Powered by Stripe</span>
+      </div>
     </div>
   );
 }

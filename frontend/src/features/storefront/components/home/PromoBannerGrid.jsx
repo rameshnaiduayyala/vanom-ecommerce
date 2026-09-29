@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import Marquee from "react-fast-marquee";
 import { ROUTES } from "../../../../constants/routes.js";
 import { ArrowRight } from "lucide-react";
 
@@ -43,62 +44,111 @@ const DEFAULT_BANNERS = [
 ];
 
 export function PromoBannerGrid({ banners = [] }) {
-  const items = banners.length >= 3
-    ? banners.slice(0, 3).map((b, i) => ({
-      ...DEFAULT_BANNERS[i],
-      ...b,
-      image: b.imageUrl || DEFAULT_BANNERS[i].image,
-      link: b.buttonLink || DEFAULT_BANNERS[i].link,
-      cta: b.buttonText || DEFAULT_BANNERS[i].cta,
-    }))
-    : DEFAULT_BANNERS;
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef(null);
+
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      setIsVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    const el = sectionRef.current;
+    if (el) observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const items =
+    banners.length >= 3
+      ? banners.slice(0, 3).map((b, i) => ({
+        ...DEFAULT_BANNERS[i],
+        ...b,
+        image: b.imageUrl || DEFAULT_BANNERS[i].image,
+        link: b.buttonLink || DEFAULT_BANNERS[i].link,
+        cta: b.buttonText || DEFAULT_BANNERS[i].cta,
+      }))
+      : DEFAULT_BANNERS;
 
   return (
-    <div className="max-w-[1440px] mx-auto px-4 sm:px-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className={`relative rounded-2xl overflow-hidden p-6 min-h-[200px] sm:min-h-[220px] flex flex-col justify-between ${item.bg} group border border-gray-100/60 shadow-xs`}
-          >
-            {/* Product/Furniture floating image on right */}
-            <img
-              src={item.image}
-              alt={item.title}
-              className="absolute right-0 bottom-0 w-[45%] h-[85%] object-cover object-center group-hover:scale-105 transition-transform duration-500 pointer-events-none rounded-tl-2xl shadow-sm"
-              style={{
-                maskImage: "linear-gradient(to left, black 70%, transparent 100%)",
-                WebkitMaskImage: "linear-gradient(to left, black 70%, transparent 100%)",
-              }}
-            />
-
-            {/* Left text column */}
-            <div className="relative z-10 max-w-[60%]">
-              <h3 className={`text-xl font-black leading-[1.15] tracking-tight ${item.dark ? "text-white" : "text-gray-900"}`}>
-                {item.badge}
-                <br />
-                <span className={item.dark ? "text-emerald-100" : "text-gray-800"}>
-                  {item.badgeSub}
-                </span>
-              </h3>
-
-              <p className={`text-xs mt-2 leading-snug font-medium ${item.dark ? "text-[#F9BC15] text-sm font-black" : "text-gray-600"}`}>
-                {item.title}
-              </p>
-            </div>
-
-            {/* CTA Pill button matching reference */}
-            <div className="relative z-10 mt-4">
-              <Link
-                to={item.link}
-                className="inline-flex items-center gap-1.5 bg-[#F9BC15] hover:bg-[#e6ab0f] text-[#003D2B] text-[11px] font-bold px-4 py-2 rounded-full shadow-xs hover:shadow-md transition-all duration-200 active:scale-95 group/btn"
-              >
-                <span>{item.cta}</span>
-                <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform" />
-              </Link>
-            </div>
-          </div>
+    <div ref={sectionRef} className="w-full overflow-hidden">
+      <Marquee
+        speed={40}
+        pauseOnHover={true}
+        gradient={false}
+        loop={0}
+      >
+        {[...items, ...items, ...items, ...items, ...items, ...items].map((item, idx) => (
+          <BannerCard key={`${item.id}-${idx}`} item={item} isVisible={isVisible} />
         ))}
+      </Marquee>
+    </div>
+  );
+}
+
+function BannerCard({ item, isVisible }) {
+  return (
+    <div
+      style={{ opacity: isVisible ? 1 : 0, transition: "opacity 0.5s ease" }}
+      className={`relative rounded-2xl overflow-hidden p-6
+        min-h-[200px] sm:min-h-[220px]
+        w-[82vw] sm:w-[360px] lg:w-[400px]
+        mx-2 shrink-0 flex flex-col justify-between
+        ${item.bg} border border-white/60 shadow-sm group cursor-pointer`}
+    >
+      {/* Hover overlay */}
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/[0.025] transition-colors duration-300 pointer-events-none rounded-2xl" />
+
+      {/* Right floating image */}
+      <img
+        src={item.image}
+        alt={item.title}
+        draggable={false}
+        className="absolute right-0 bottom-0 w-[45%] h-[88%] object-cover object-center
+          group-hover:scale-[1.06] transition-transform duration-700 ease-out
+          pointer-events-none rounded-tl-2xl select-none"
+        style={{
+          maskImage: "linear-gradient(to left, black 65%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to left, black 65%, transparent 100%)",
+        }}
+      />
+
+      {/* Left text */}
+      <div className="relative z-10 max-w-[58%]">
+        <h3 className={`text-xl font-black leading-[1.15] tracking-tight ${item.dark ? "text-white" : "text-gray-900"}`}>
+          {item.badge}
+          <br />
+          <span className={item.dark ? "text-emerald-100" : "text-gray-700"}>
+            {item.badgeSub}
+          </span>
+        </h3>
+        <p className={`text-xs mt-2 leading-snug font-medium ${item.dark ? "text-yellow-200 font-bold" : "text-gray-600"}`}>
+          {item.title}
+        </p>
+      </div>
+
+      {/* CTA */}
+      <div className="relative z-10 mt-4">
+        <Link
+          to={item.link}
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-1.5 bg-[#F9BC15] hover:bg-[#e6ab0f]
+            text-[#003D2B] text-[11px] font-bold px-4 py-2 rounded-full shadow-xs
+            hover:shadow-sm transition-all duration-200 active:scale-95 group/btn"
+        >
+          <span>{item.cta}</span>
+          <ArrowRight className="w-3 h-3 group-hover/btn:translate-x-1.5 transition-transform duration-300 ease-out" />
+        </Link>
       </div>
     </div>
   );

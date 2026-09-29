@@ -23,7 +23,7 @@ import {
   Printer,
   FileText,
 } from "lucide-react";
-import { EnterpriseInvoiceModal } from "@/components/common/EnterpriseInvoiceModal.jsx";
+import { openDirectInvoicePdf } from "@/utils/invoice.js";
 
 export function AdminOrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -129,17 +129,11 @@ export function AdminOrdersPage() {
       {/* Header Banner */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span className="font-bold text-emerald-700 uppercase tracking-wider">Order Management Center</span>
-            <span>•</span>
-            <span className="text-slate-600">Omnichannel Retail & Bulk PO Desk</span>
-          </div>
+
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             Orders & Wholesale POs
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Monitor and fulfill B2C retail store orders and dedicated enterprise B2B bulk purchase orders.
-          </p>
+
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -161,22 +155,20 @@ export function AdminOrdersPage() {
         <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 rounded-xl border border-slate-200">
           <button
             onClick={() => setSearchParams({ type: "ALL" })}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              isAllTab
-                ? "bg-white text-slate-900 shadow-xs"
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
-            }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${isAllTab
+              ? "bg-white text-slate-900 shadow-xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
+              }`}
           >
             All Orders ({rawRetailOrders.length + rawBulkOrders.length})
           </button>
 
           <button
             onClick={() => setSearchParams({ type: "B2C" })}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              isRetailTab
-                ? "bg-white text-slate-900 shadow-xs"
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
-            }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${isRetailTab
+              ? "bg-white text-slate-900 shadow-xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
+              }`}
           >
             <ShoppingCart className="w-3.5 h-3.5 text-blue-600" />
             <span>Retail Orders ({rawRetailOrders.length})</span>
@@ -184,11 +176,10 @@ export function AdminOrdersPage() {
 
           <button
             onClick={() => setSearchParams({ type: "B2B" })}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              isBulkTab
-                ? "bg-white text-emerald-900 shadow-xs"
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
-            }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${isBulkTab
+              ? "bg-white text-emerald-900 shadow-xs"
+              : "text-slate-600 hover:text-slate-900 hover:bg-white/40"
+              }`}
           >
             <Boxes className="w-3.5 h-3.5 text-emerald-600" />
             <span>B2B Bulk Orders ({rawBulkOrders.length})</span>
@@ -237,9 +228,6 @@ export function AdminOrdersPage() {
                 <h3 className="text-sm font-bold text-slate-900">
                   Enterprise B2B Bulk Orders ({filteredBulkOrders.length})
                 </h3>
-                <p className="text-[11px] text-emerald-800 font-medium">
-                  Stored in dedicated <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-emerald-200">BulkOrder</code> table with container specs & volume tier pricing
-                </p>
               </div>
             </div>
             <Badge variant="green" size="sm">Dedicated B2B Table</Badge>
@@ -312,8 +300,8 @@ export function AdminOrdersPage() {
                               b.status === "COMPLETED" || b.status === "APPROVED"
                                 ? "green"
                                 : b.status === "CANCELLED"
-                                ? "red"
-                                : "yellow"
+                                  ? "red"
+                                  : "yellow"
                             }
                             size="sm"
                           >
@@ -357,9 +345,6 @@ export function AdminOrdersPage() {
                 <h3 className="text-sm font-bold text-slate-900">
                   Consumer Retail Orders ({filteredRetailOrders.length})
                 </h3>
-                <p className="text-[11px] text-blue-800 font-medium">
-                  Stored in primary <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-blue-200">Order</code> table for B2C consumer checkout
-                </p>
               </div>
             </div>
             <Badge variant="blue" size="sm">Retail Table</Badge>
@@ -416,7 +401,7 @@ export function AdminOrdersPage() {
                           {formatDate(o.createdAt)}
                         </td>
                         <td className="p-4 font-bold text-slate-900 text-sm">
-                          {formatPrice(o.totalAmount || 0, o.currency?.code || "USD")}
+                          {formatPrice(Number(o.total ?? o.totalAmount ?? 0), o.currencyCode || o.currency?.code || "USD")}
                         </td>
                         <td className="p-4">
                           <Badge variant={statusConfig.color} size="sm">
@@ -431,13 +416,17 @@ export function AdminOrdersPage() {
                               className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 bg-slate-50 hover:bg-white text-slate-700 cursor-pointer focus:outline-none focus:border-[#006B3C]"
                             >
                               <option value="PENDING">PENDING</option>
+                              <option value="CONFIRMED">CONFIRMED</option>
                               <option value="PROCESSING">PROCESSING</option>
                               <option value="SHIPPED">SHIPPED</option>
                               <option value="DELIVERED">DELIVERED</option>
                               <option value="CANCELLED">CANCELLED</option>
                             </select>
                             <button
-                              onClick={() => setInvoiceOrder(o)}
+                              onClick={() => {
+                                const isB2B = Boolean(o.bulkProduct || o.company || o.orderNumber?.startsWith("BULK") || o.business);
+                                openDirectInvoicePdf(o.id, isB2B, o.orderNumber);
+                              }}
                               className="p-1.5 rounded-md hover:bg-emerald-50 text-emerald-700 hover:text-emerald-900 transition-colors border border-emerald-200"
                               title="Generate Official Invoice"
                             >
@@ -454,14 +443,6 @@ export function AdminOrdersPage() {
           </div>
         </div>
       )}
-
-      {/* Reusable Enterprise Invoice Modal */}
-      <EnterpriseInvoiceModal
-        isOpen={!!invoiceOrder}
-        onClose={() => setInvoiceOrder(null)}
-        order={invoiceOrder}
-        type={invoiceOrder?.bulkProduct || invoiceOrder?.company ? "B2B" : "RETAIL"}
-      />
     </div>
   );
 }

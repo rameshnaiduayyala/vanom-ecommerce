@@ -17,8 +17,12 @@ export const ROUTES = {
   REGISTER: "/register",
   REGISTER_BUSINESS: "/register-business",
   REGISTER_BUSINESS_SUCCESS: "/register-business/pending-approval",
+  VERIFY_EMAIL: "/verify-email",
   FORGOT_PASSWORD: "/forgot-password",
   CONTACT: "/contact",
+  CAREERS: "/careers",
+  ABOUT: "/about",
+  OUR_STORY: "/our-story",
 
 
   // B2B Wholesale Portal
@@ -52,6 +56,8 @@ export const ROUTES = {
     PRODUCT_EDIT: "/admin/products/:id/edit",
     BULK_PRODUCTS: "/admin/bulk-products",
     CATEGORIES: "/admin/categories",
+    BULK_CATEGORIES: "/admin/bulk-categories",
+    BRANDS: "/admin/brands",
     INVENTORY: "/admin/inventory",
     ORDERS: "/admin/orders",
     RETAIL_ORDERS: "/admin/retail-orders",
@@ -60,5 +66,10 @@ export const ROUTES = {
     PAYMENTS: "/admin/payments",
     REPORTS: "/admin/reports",
     AUDIT_LOGS: "/admin/audit-logs",
+    SHIPMENTS: "/admin/shipments",
+    STORE: "/admin/store",
+    MESSAGES: "/admin/messages",
   },
 };
+
+

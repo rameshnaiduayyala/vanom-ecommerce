@@ -1,24 +1,16 @@
 import { apiClient } from "./axios.js";
-import { MOCK_COMPANIES, MOCK_QUOTES } from "./mock-data.js";
-
-const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === "true";
-const delay = (ms = 150) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const b2bService = {
   // ── Bulk Business Account Management ──
   getCompany: async () => {
-    if (USE_MOCK) {
-      await delay(150);
-      return MOCK_COMPANIES[0];
-    }
     return apiClient.get("/bulk/business/me");
   },
 
+  getDashboard: async () => {
+    return apiClient.get("/bulk/business/dashboard");
+  },
+
   registerCompany: async (payload) => {
-    if (USE_MOCK) {
-      await delay(200);
-      return { success: true, data: { ...payload, id: `bulk-biz-${Date.now()}`, status: "PENDING" } };
-    }
     return apiClient.post("/bulk/business/register", {
       businessName: payload.businessName || payload.legalName,
       businessEmail: payload.businessEmail || payload.email,
@@ -28,14 +20,17 @@ export const b2bService = {
       countryCode: payload.countryCode || "US",
       address: typeof payload.address === "string" ? payload.address : `${payload.address?.line1 || ""}, ${payload.address?.city || ""}`.trim(),
       contactPersonName: payload.contactPersonName || `${payload.adminUser?.firstName || ""} ${payload.adminUser?.lastName || ""}`.trim() || "Contact Person",
+      user: payload.adminUser || (payload.password ? {
+        email: payload.email,
+        password: payload.password,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        phone: payload.phone
+      } : null)
     });
   },
 
   updateCompany: async (payload) => {
-    if (USE_MOCK) {
-      await delay(150);
-      return { success: true };
-    }
     return apiClient.put("/bulk/business/me", payload);
   },
 
@@ -114,6 +109,10 @@ export const b2bService = {
     return apiClient.patch(`/admin/bulk/businesses/${id}/suspend`);
   },
 
+  lockAdminBusiness: async (id, isLocked = true) => {
+    return apiClient.patch(`/admin/bulk/businesses/${id}/lock`, { isLocked });
+  },
+
   listAdminBulkOrders: async (params = {}) => {
     return apiClient.get("/admin/bulk/orders", { params });
   },
@@ -134,6 +133,15 @@ export const b2bService = {
 
   createAddress: async (payload) => {
     return apiClient.post("/bulk/addresses", payload);
+  },
+
+  // ── Invoices & PDFKit Exports ──
+  getBulkOrderInvoicePdf: async (orderId) => {
+    return apiClient.get(`/bulk/orders/${orderId}/invoice`, { responseType: "blob" });
+  },
+
+  getAdminBulkOrderInvoicePdf: async (orderId) => {
+    return apiClient.get(`/admin/bulk/orders/${orderId}/invoice`, { responseType: "blob" });
   },
 };
 

@@ -5,15 +5,90 @@ import { HTTP_STATUS } from "../../constants/http-status.js";
 import { MESSAGES } from "../../constants/messages.js";
 
 const orderInclude = {
-  items: { include: { product: true, variant: true } },
+  items: {
+    include: {
+      product: {
+        include: {
+          images: {
+            orderBy: { sortOrder: "asc" }
+          },
+          category: {
+            select: { id: true, name: true, slug: true }
+          },
+          brand: {
+            select: { id: true, name: true, slug: true, imageUrl: true }
+          }
+        }
+      },
+      variant: true
+    }
+  },
   addresses: true,
-  user: { select: { id: true, email: true, firstName: true, lastName: true } }
+  user: { select: { id: true, email: true, firstName: true, lastName: true } },
+  invoices: true,
+  shipments: {
+    include: {
+      warehouse: true,
+      items: true
+    }
+  },
+  rateSnapshots: true
 };
 
-export async function createOrder(userId, { countryId, currencyCode, shippingAddress, billingAddress }) {
+function formatOrder(order) {
+  if (!order) return order;
+  const orderNumber = order.invoices?.[0]?.invoiceNumber 
+    ? `ORD-${order.invoices[0].invoiceNumber.replace(/^INV-/, "")}`
+    : `ORD-${order.id.slice(0, 8).toUpperCase()}`;
+  const totalNum = Number(order.total || 0);
+  return {
+    ...order,
+    orderNumber,
+    total: totalNum,
+    totalAmount: totalNum,
+    subtotal: Number(order.subtotal || 0),
+    tax: Number(order.tax || 0),
+    shippingCharges: Number(order.shippingCharges || 0),
+    discount: Number(order.discount || 0),
+    shippingMethod: order.shippingMethod || null,
+    shippingCarrier: order.shippingCarrier || null,
+    shippingRateId: order.shippingRateId || null,
+    shipments: order.shipments || []
+  };
+}
+
+export async function createOrder(userId, {
+  countryId,
+  currencyCode,
+  shippingAddress,
+  billingAddress,
+  items: directItems,
+  shippingCharges = 0,
+  tax = 0,
+  discount = 0
+}) {
   if (!shippingAddress) {
     throw new AppError(MESSAGES.SHIPPING_ADDRESS_REQUIRED, HTTP_STATUS.BAD_REQUEST, "SHIPPING_ADDRESS_REQUIRED");
   }
+
+  // Reject negative financial parameters
+  if (Number(shippingCharges) < 0 || Number(tax) < 0 || Number(discount) < 0) {
+    throw new AppError("Financial values cannot be negative", HTTP_STATUS.BAD_REQUEST, "INVALID_FINANCIAL_INPUT");
+  }
+
+  // Resolve country by ID or code
+  const targetCountry = await prisma.country.findFirst({
+    where: {
+      OR: [
+        { id: countryId },
+        { code: countryId?.toUpperCase?.() || "" },
+        ...(shippingAddress.countryCode ? [{ code: shippingAddress.countryCode.toUpperCase() }] : [])
+      ]
+    }
+  });
+
+  const resolvedCountryId = targetCountry?.id || countryId;
+  const resolvedCurrencyCode = currencyCode || (targetCountry?.code === "IN" ? "INR" : targetCountry?.code === "CA" ? "CAD" : "USD");
 
   const billing = billingAddress ?? shippingAddress;
   const addressData = (address, type) => ({
@@ -25,54 +100,120 @@ export async function createOrder(userId, { countryId, currencyCode, shippingAdd
     city: address.city,
     state: address.state ?? null,
     postalCode: address.postalCode,
-    countryCode: address.countryCode
+    countryCode: address.countryCode || targetCountry?.code || "US"
   });
 
-  return prisma.$transaction(async (tx) => {
-    const cart = await tx.cart.findUnique({
+  const result = await prisma.$transaction(async (tx) => {
+    let cart = await tx.cart.findUnique({
       where: { userId },
       include: {
-        items: { include: { product: { include: { countries: true } }, variant: { include: { countries: true } } } } }
+        items: { include: { product: { include: { countries: true } }, variant: { include: { countries: true } } } }
+      }
     });
-    if (!cart?.items.length) throw new AppError(MESSAGES.CART_EMPTY, HTTP_STATUS.UNPROCESSABLE_ENTITY, "CART_EMPTY");
+
+    // If server-side cart is empty but client passed items in the request, automatically populate cart items
+    if ((!cart || !cart.items.length) && Array.isArray(directItems) && directItems.length > 0) {
+      if (!cart) {
+        cart = await tx.cart.create({ data: { userId } });
+      }
+      for (const it of directItems) {
+        const pId = it.productId || it.id;
+        const vId = it.variantId || null;
+        if (!pId) continue;
+        const existing = await tx.cartItem.findFirst({ where: { cartId: cart.id, productId: pId, variantId: vId } });
+        if (existing) {
+          await tx.cartItem.update({ where: { id: existing.id }, data: { quantity: existing.quantity + (it.quantity || 1) } });
+        } else {
+          await tx.cartItem.create({ data: { cartId: cart.id, productId: pId, variantId: vId, quantity: it.quantity || 1 } });
+        }
+      }
+      cart = await tx.cart.findUnique({
+        where: { userId },
+        include: {
+          items: { include: { product: { include: { countries: true } }, variant: { include: { countries: true } } } }
+        }
+      });
+    }
+
+    if (!cart || !cart.items.length) {
+      throw new AppError(MESSAGES.CART_EMPTY, HTTP_STATUS.BAD_REQUEST, "CART_EMPTY");
+    }
 
     let subtotal = new Prisma.Decimal(0);
     const items = [];
 
     for (const item of cart.items) {
-      const source = item.variant ?? item.product;
-      const countryPrice = source.countries.find(({ countryId: id, isAvailable }) => id === countryId && isAvailable);
-      if (!countryPrice || countryPrice.price === null) {
-        throw new AppError(MESSAGES.PRICE_NOT_AVAILABLE, HTTP_STATUS.UNPROCESSABLE_ENTITY, "PRICE_NOT_AVAILABLE");
+      const product = item.product;
+      const variant = item.variant;
+
+      // Price resolution priority:
+      // 1. Variant country pricing (for variable products in target country)
+      // 2. Product country pricing (for simple products in target country)
+      // 3. Fallback to product basePrice
+      let unitPrice = null;
+
+      if (variant) {
+        const variantCountry = await tx.productVariantCountry.findUnique({
+          where: { variantId_countryId: { variantId: variant.id, countryId: resolvedCountryId } }
+        });
+        if (variantCountry?.isAvailable && variantCountry?.price !== null) {
+          unitPrice = variantCountry.price;
+        }
       }
 
-      const stockUpdated = item.variant
-        ? await tx.productVariantCountry.updateMany({ where: { variantId: item.variant.id, countryId, stock: { gte: item.quantity }, isAvailable: true }, data: { stock: { decrement: item.quantity } } })
-        : await tx.productCountry.updateMany({ where: { productId: item.product.id, countryId, stock: { gte: item.quantity }, isAvailable: true }, data: { stock: { decrement: item.quantity } } });
-      if (stockUpdated.count !== 1) {
-        throw new AppError(MESSAGES.INSUFFICIENT_STOCK, HTTP_STATUS.UNPROCESSABLE_ENTITY, "INSUFFICIENT_STOCK");
+      if (unitPrice === null) {
+        const productCountry = await tx.productCountry.findUnique({
+          where: { productId_countryId: { productId: product.id, countryId: resolvedCountryId } }
+        });
+        if (productCountry?.isAvailable && productCountry?.price !== null) {
+          unitPrice = productCountry.price;
+        }
       }
 
-      const unitPrice = new Prisma.Decimal(countryPrice.price);
-      const total = unitPrice.mul(item.quantity);
-      subtotal = subtotal.add(total);
+      if (unitPrice === null) {
+        unitPrice = product.basePrice || new Prisma.Decimal(0);
+      }
+
+      const itemTotal = new Prisma.Decimal(unitPrice).mul(item.quantity);
+      subtotal = subtotal.add(itemTotal);
+
+      const productName = variant?.name
+        ? `${product?.name || "Product"} - ${variant.name}`
+        : product?.name || "Product";
+      const sku = variant?.sku || product?.sku || null;
+
       items.push({
         productId: item.productId,
-        variantId: item.variantId,
-        productName: item.product.name,
-        sku: item.variant?.sku ?? item.product.sku,
-        quantity: item.quantity,
+        variantId: item.variantId ?? null,
+        productName,
+        sku,
         unitPrice,
-        total
+        quantity: item.quantity,
+        total: itemTotal
       });
     }
+
+    const numDiscount = new Prisma.Decimal(discount || 0);
+    const numShipping = new Prisma.Decimal(shippingCharges || 0);
+    const numTax = new Prisma.Decimal(tax || 0);
+    const total = subtotal.sub(numDiscount).add(numShipping).add(numTax);
+
+    const { resolveUserOrganization } = await import("../inventory/organization.service.js");
+    const { reserveInventory } = await import("../inventory/inventory.service.js");
+    const userRecord = await tx.user.findUnique({ where: { id: userId } });
+    const org = await resolveUserOrganization(userRecord, tx);
 
     const order = await tx.order.create({
       data: {
         userId,
-        currencyCode,
+        status: "PENDING_PAYMENT",
+        organizationId: org.id,
+        currencyCode: resolvedCurrencyCode,
         subtotal,
-        total: subtotal,
+        discount: numDiscount,
+        shippingCharges: numShipping,
+        tax: numTax,
+        total,
         items: { create: items },
         addresses: {
           create: [addressData(shippingAddress, "SHIPPING"), addressData(billing, "BILLING")]
@@ -80,9 +221,28 @@ export async function createOrder(userId, { countryId, currencyCode, shippingAdd
       },
       include: orderInclude
     });
+
+    // Reserve stock atomically for the order
+    await reserveInventory({
+      organizationId: org.id,
+      items: items.map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
+      orderId: order.id,
+      userId,
+      tx
+    });
+
     await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
     return order;
   });
+
+  try {
+    const { issueInvoiceForOrder } = await import("../invoice/invoice.service.js");
+    await issueInvoiceForOrder({ orderId: result.id });
+  } catch (err) {
+    console.warn("Auto-invoice generation on order creation deferred:", err.message);
+  }
+
+  return formatOrder(result);
 }
 
 export async function listOrders({ userId, page, limit, skip, status }) {
@@ -91,18 +251,47 @@ export async function listOrders({ userId, page, limit, skip, status }) {
     prisma.order.findMany({ where, skip, take: limit, orderBy: { createdAt: "desc" }, include: orderInclude }),
     prisma.order.count({ where })
   ]);
-  return { items, total };
+  return { items: items.map(formatOrder), total };
 }
 
 export async function getOrderById(id, userId = null) {
   const order = await prisma.order.findFirst({ where: { id, ...(userId ? { userId } : {}) }, include: orderInclude });
   if (!order) throw new AppError(MESSAGES.ORDER_NOT_FOUND, HTTP_STATUS.NOT_FOUND, "ORDER_NOT_FOUND");
-  return order;
+  return formatOrder(order);
 }
 
 export async function updateStatus(id, status) {
-  await getOrderById(id);
-  return prisma.order.update({ where: { id }, data: { status }, include: orderInclude });
+  const existingOrder = await getOrderById(id);
+  const updated = await prisma.order.update({ where: { id }, data: { status }, include: orderInclude });
+
+  if (status === "CANCELLED" && existingOrder.inventoryReserved && !existingOrder.inventoryDeducted) {
+    try {
+      const { releaseInventory } = await import("../inventory/inventory.service.js");
+      const { resolveUserOrganization } = await import("../inventory/organization.service.js");
+      const org = await resolveUserOrganization(existingOrder.user);
+      await releaseInventory({
+        organizationId: existingOrder.organizationId || org.id,
+        orderId: id,
+        reason: "Order status updated to CANCELLED"
+      });
+    } catch (err) {
+      console.warn("Could not release inventory reservation for cancelled order:", err.message);
+    }
+  }
+
+  // Synchronize invoice lifecycle status with the new order status
+  try {
+    const { syncInvoiceStatus } = await import("../invoice/invoice.service.js");
+    await syncInvoiceStatus({
+      orderId: id,
+      orderStatus: status,
+      paymentStatus: existingOrder.inventoryDeducted ? (status === "CANCELLED" ? "REFUNDED" : "PAID") : null
+    });
+  } catch (invErr) {
+    console.warn("[Invoice] Could not sync invoice status on order update:", invErr.message);
+  }
+
+  return formatOrder(updated);
 }
 
 export async function deleteOrder(id) {

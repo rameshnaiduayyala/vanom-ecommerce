@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { User, UserPlus, Edit2, X, Building2, AlertCircle } from "lucide-react";
+import { User, UserPlus, Edit2, X, Globe, ShieldCheck, AlertCircle, CheckCircle2, Building2 } from "lucide-react";
 import { Button } from "../../../../../components/ui/Button.jsx";
+import { Api } from "@/services/api/api-client.js";
 
 export function UserFormModal({
   isOpen,
@@ -9,9 +10,11 @@ export function UserFormModal({
   onSubmit,
   isPending,
   formError,
-  companies = [],
 }) {
-  const [b2bCompanyMode, setB2bCompanyMode] = useState("EXISTING");
+  const [countries, setCountries] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [accountType, setAccountType] = useState("RETAIL"); // "RETAIL" | "B2B"
+  const [b2bMode, setB2bMode] = useState("EXISTING"); // "EXISTING" | "NEW"
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -19,86 +22,124 @@ export function UserFormModal({
     email: "",
     password: "",
     phone: "",
-    customerType: "B2C",
-    role: "CUSTOMER",
-    status: "ACTIVE",
+    role: "USER",
+    isActive: true,
+    countryId: "",
 
-    // Existing Company Link
-    companyId: "",
+    // Selected Existing Business
+    businessId: "",
 
-    // New Company Registration
-    newCompanyName: "",
-    newCompanyLegalName: "",
-    newCompanyTaxId: "",
-    newCompanyRegNo: "",
-    newCompanyCountryCode: "IN",
-    newCompanyAddressLine1: "",
-    newCompanyCity: "",
-    newCompanyState: "",
-    newCompanyPostalCode: "",
+    // New Business details
+    businessName: "",
+    taxRegistrationNumber: "",
+    registrationNumber: "",
+    address: "",
   });
 
   useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        const [cList, bList] = await Promise.all([
+          Api.geography.getCountries(),
+          Api.admin.getCompanies(),
+        ]);
+        if (isMounted) {
+          setCountries(cList || []);
+          setCompanies(bList || []);
+        }
+      } catch (e) {
+        console.error("Failed to load countries or businesses in UserFormModal:", e);
+      }
+    }
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     if (editingUser) {
-      const primaryRole = Array.isArray(editingUser.roles)
-        ? editingUser.roles[0]
-        : editingUser.roles || "CUSTOMER";
+      const isB2B = Boolean(editingUser.bulkBusiness);
+      setAccountType(isB2B ? "B2B" : "RETAIL");
+      setB2bMode("EXISTING");
       setFormData({
         firstName: editingUser.firstName || "",
         lastName: editingUser.lastName || "",
         email: editingUser.email || "",
         password: "",
-        phone: editingUser.phone || "",
-        customerType: editingUser.customerType || "B2C",
-        role: primaryRole,
-        status: editingUser.status || "ACTIVE",
-        companyId: editingUser.company?.id || "",
-        newCompanyName: "",
-        newCompanyLegalName: "",
-        newCompanyTaxId: "",
-        newCompanyRegNo: "",
-        newCompanyCountryCode: "IN",
-        newCompanyAddressLine1: "",
-        newCompanyCity: "",
-        newCompanyState: "",
-        newCompanyPostalCode: "",
+        phone: editingUser.phone || editingUser.bulkBusiness?.businessPhone || "",
+        role: editingUser.role || "USER",
+        isActive: editingUser.isActive ?? true,
+        countryId: editingUser.countryId || editingUser.country?.id || "",
+        businessId: editingUser.bulkBusiness?.id || companies[0]?.id || "",
+        businessName: editingUser.bulkBusiness?.businessName || "",
+        taxRegistrationNumber: editingUser.bulkBusiness?.taxRegistrationNumber || "",
+        registrationNumber: editingUser.bulkBusiness?.registrationNumber || "",
+        address: editingUser.bulkBusiness?.address || "",
       });
-      setB2bCompanyMode("EXISTING");
     } else {
+      setAccountType("RETAIL");
+      setB2bMode("EXISTING");
       setFormData({
         firstName: "",
         lastName: "",
         email: "",
         password: "",
         phone: "",
-        customerType: "B2C",
-        role: "CUSTOMER",
-        status: "ACTIVE",
-        companyId: companies[0]?.id || "",
-        newCompanyName: "",
-        newCompanyLegalName: "",
-        newCompanyTaxId: "",
-        newCompanyRegNo: "",
-        newCompanyCountryCode: "IN",
-        newCompanyAddressLine1: "",
-        newCompanyCity: "",
-        newCompanyState: "",
-        newCompanyPostalCode: "",
+        role: "USER",
+        isActive: true,
+        countryId: countries[0]?.id || "",
+        businessId: companies[0]?.id || "",
+        businessName: "",
+        taxRegistrationNumber: "",
+        registrationNumber: "",
+        address: "",
       });
-      setB2bCompanyMode("EXISTING");
     }
-  }, [editingUser, companies, isOpen]);
+  }, [editingUser, countries, companies, isOpen]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData, b2bCompanyMode);
+    const payload = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phone: formData.phone,
+      role: formData.role,
+      isActive: formData.isActive,
+      countryId: formData.countryId || null,
+    };
+
+    if (formData.password) {
+      payload.password = formData.password;
+    }
+
+    if (accountType === "B2B") {
+      if (b2bMode === "EXISTING" && formData.businessId) {
+        payload.businessId = formData.businessId;
+      } else {
+        payload.businessName = formData.businessName || `${formData.firstName}'s Wholesale Trading`;
+        payload.business = {
+          businessName: formData.businessName,
+          businessEmail: formData.email,
+          businessPhone: formData.phone || "—",
+          taxRegistrationNumber: formData.taxRegistrationNumber,
+          registrationNumber: formData.registrationNumber,
+          address: formData.address || "Principal Business Address",
+          status: "APPROVED",
+        };
+      }
+    }
+
+    onSubmit(payload);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl border border-border shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-3xl border border-border shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-[#F8FAF9] sticky top-0 z-10">
           <div className="flex items-center gap-2">
@@ -128,104 +169,88 @@ export function UserFormModal({
             </div>
           )}
 
-          {/* Customer Type Switcher */}
-          <div className="space-y-1">
+          {/* Account Category Switcher: Standard Retail vs B2B Wholesale */}
+          <div className="space-y-1.5">
             <label className="text-xs font-bold text-text-secondary block">Account Type</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    customerType: "B2C",
-                    role: "CUSTOMER",
-                  }))
-                }
-                className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                  formData.customerType === "B2C"
-                    ? "bg-blue-50 border-blue-500 text-blue-700"
+                onClick={() => setAccountType("RETAIL")}
+                className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${accountType === "RETAIL"
+                    ? "bg-blue-50 border-blue-500 text-blue-700 shadow-2xs"
                     : "bg-surface-muted/50 border-border text-text-secondary hover:bg-white"
-                }`}
+                  }`}
               >
                 <User className="w-3.5 h-3.5" />
-                B2C Retail Customer
+                Standard Retail User
               </button>
 
               <button
                 type="button"
-                onClick={() =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    customerType: "B2B",
-                    role: "COMPANY_ADMIN",
-                  }))
-                }
-                className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                  formData.customerType === "B2B"
-                    ? "bg-amber-50 border-amber-500 text-amber-800"
+                onClick={() => setAccountType("B2B")}
+                className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${accountType === "B2B"
+                    ? "bg-amber-50 border-amber-500 text-amber-800 shadow-2xs"
                     : "bg-surface-muted/50 border-border text-text-secondary hover:bg-white"
-                }`}
+                  }`}
               >
-                <Building2 className="w-3.5 h-3.5" />
-                B2B Wholesale Account
+                <Building2 className="w-3.5 h-3.5 text-amber-700" />
+                B2B Wholesale Business
               </button>
             </div>
           </div>
 
-          {/* B2B Company Options: Select Existing or Register New */}
-          {formData.customerType === "B2B" && !editingUser && (
-            <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200 space-y-3">
+          {/* B2B Business Options (if B2B chosen) */}
+          {accountType === "B2B" && (
+            <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200 space-y-3 animate-in fade-in duration-150">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900">
                   <Building2 className="w-4 h-4 text-amber-700" />
-                  Company Affiliation
-                </span>
-                <div className="flex rounded-lg bg-amber-100/80 p-0.5 border border-amber-300/60 text-[11px] font-semibold">
-                  <button
-                    type="button"
-                    onClick={() => setB2bCompanyMode("EXISTING")}
-                    className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                      b2bCompanyMode === "EXISTING"
-                        ? "bg-white text-amber-900 shadow-xs font-bold"
-                        : "text-amber-800 hover:text-amber-900"
-                    }`}
-                  >
-                    Select Existing
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setB2bCompanyMode("NEW")}
-                    className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
-                      b2bCompanyMode === "NEW"
-                        ? "bg-white text-amber-900 shadow-xs font-bold"
-                        : "text-amber-800 hover:text-amber-900"
-                    }`}
-                  >
-                    Register New
-                  </button>
+                  <span>Business Affiliation</span>
                 </div>
+                {!editingUser && (
+                  <div className="flex rounded-lg bg-amber-100 p-0.5 border border-amber-300 text-[11px] font-semibold">
+                    <button
+                      type="button"
+                      onClick={() => setB2bMode("EXISTING")}
+                      className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${b2bMode === "EXISTING"
+                          ? "bg-white text-amber-950 font-bold shadow-2xs"
+                          : "text-amber-800 hover:text-amber-950"
+                        }`}
+                    >
+                      Select Existing
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setB2bMode("NEW")}
+                      className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${b2bMode === "NEW"
+                          ? "bg-white text-amber-950 font-bold shadow-2xs"
+                          : "text-amber-800 hover:text-amber-950"
+                        }`}
+                    >
+                      Create New
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {b2bCompanyMode === "EXISTING" ? (
+              {b2bMode === "EXISTING" ? (
                 <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-amber-900 block">
-                    Select Existing Company
+                  <label className="text-[11px] font-bold text-amber-900 block">
+                    Select Registered Business *
                   </label>
                   {companies.length === 0 ? (
-                    <p className="text-xs text-amber-700 italic">
-                      No companies registered yet. Please switch to "Register New" above.
-                    </p>
+                    <div className="p-2.5 rounded-xl bg-white border border-amber-200 text-xs text-amber-800">
+                      No registered businesses found. Please switch to "Create New" above.
+                    </div>
                   ) : (
                     <select
-                      value={formData.companyId}
-                      onChange={(e) =>
-                        setFormData((prev) => ({ ...prev, companyId: e.target.value }))
-                      }
+                      value={formData.businessId}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, businessId: e.target.value }))}
                       className="w-full px-3 py-2 text-xs bg-white border border-amber-300 rounded-xl text-text-primary focus:outline-none focus:border-amber-500 cursor-pointer"
                     >
                       {companies.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.tradingName || c.legalName} ({c.country?.code || "IN"}) - {c.status}
+                          {c.businessName || c.legalName} ({c.countryCode || "US"}) - {c.status || "APPROVED"}
                         </option>
                       ))}
                     </select>
@@ -233,113 +258,56 @@ export function UserFormModal({
                 </div>
               ) : (
                 <div className="space-y-2.5 pt-1">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-0.5">
-                      <label className="text-[10px] font-bold text-amber-900 uppercase tracking-wider block">
-                        Business / Brand Name *
-                      </label>
-                      <input
-                        type="text"
-                        required={b2bCompanyMode === "NEW"}
-                        value={formData.newCompanyName}
-                        onChange={(e) =>
-                          setFormData((prev) => ({ ...prev, newCompanyName: e.target.value }))
-                        }
-                        placeholder="e.g. Acme Agro"
-                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-amber-300 rounded-lg text-text-primary focus:outline-none"
-                      />
-                    </div>
-                    <div className="space-y-0.5">
-                      <label className="text-[10px] font-bold text-amber-900 uppercase tracking-wider block">
-                        Legal Registered Name *
-                      </label>
-                      <input
-                        type="text"
-                        required={b2bCompanyMode === "NEW"}
-                        value={formData.newCompanyLegalName}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            newCompanyLegalName: e.target.value,
-                          }))
-                        }
-                        placeholder="e.g. Acme Agro Pvt Ltd"
-                        className="w-full px-2.5 py-1.5 text-xs bg-white border border-amber-300 rounded-lg text-text-primary focus:outline-none"
-                      />
-                    </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-amber-900 block">
+                      Company / Legal Business Name *
+                    </label>
+                    <input
+                      type="text"
+                      required={accountType === "B2B" && b2bMode === "NEW"}
+                      value={formData.businessName}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, businessName: e.target.value }))}
+                      placeholder="e.g. Acme Organic Imports LLC"
+                      className="w-full px-3 py-2 text-xs bg-white border border-amber-300 rounded-xl text-text-primary focus:outline-none focus:border-amber-500"
+                    />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="space-y-0.5">
-                      <label className="text-[10px] font-bold text-amber-900 uppercase tracking-wider block">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-amber-900 uppercase block">
                         Tax ID / GSTIN
                       </label>
                       <input
                         type="text"
-                        value={formData.newCompanyTaxId}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            newCompanyTaxId: e.target.value,
-                          }))
-                        }
-                        placeholder="GSTIN/Tax ID"
+                        value={formData.taxRegistrationNumber}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, taxRegistrationNumber: e.target.value }))}
+                        placeholder="US-EIN / GSTIN"
                         className="w-full px-2.5 py-1.5 text-xs bg-white border border-amber-300 rounded-lg text-text-primary focus:outline-none"
                       />
                     </div>
-                    <div className="space-y-0.5">
-                      <label className="text-[10px] font-bold text-amber-900 uppercase tracking-wider block">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-amber-900 uppercase block">
                         Registration No
                       </label>
                       <input
                         type="text"
-                        value={formData.newCompanyRegNo}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            newCompanyRegNo: e.target.value,
-                          }))
-                        }
-                        placeholder="CIN / Reg No"
+                        value={formData.registrationNumber}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, registrationNumber: e.target.value }))}
+                        placeholder="CIN / Corp Reg #"
                         className="w-full px-2.5 py-1.5 text-xs bg-white border border-amber-300 rounded-lg text-text-primary focus:outline-none"
                       />
                     </div>
-                    <div className="space-y-0.5">
-                      <label className="text-[10px] font-bold text-amber-900 uppercase tracking-wider block">
-                        Country
-                      </label>
-                      <select
-                        value={formData.newCompanyCountryCode}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            newCompanyCountryCode: e.target.value,
-                          }))
-                        }
-                        className="w-full px-2 py-1.5 text-xs bg-white border border-amber-300 rounded-lg text-text-primary focus:outline-none cursor-pointer"
-                      >
-                        <option value="IN">India (IN)</option>
-                        <option value="US">United States (US)</option>
-                        <option value="CA">Canada (CA)</option>
-                        <option value="GB">United Kingdom (GB)</option>
-                      </select>
-                    </div>
                   </div>
 
-                  <div className="space-y-0.5">
-                    <label className="text-[10px] font-bold text-amber-900 uppercase tracking-wider block">
-                      Principal Business Address
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-amber-900 uppercase block">
+                      Business Address
                     </label>
                     <input
                       type="text"
-                      value={formData.newCompanyAddressLine1}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          newCompanyAddressLine1: e.target.value,
-                        }))
-                      }
-                      placeholder="Street address or office suite"
+                      value={formData.address}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
+                      placeholder="Suite, Street address, City"
                       className="w-full px-2.5 py-1.5 text-xs bg-white border border-amber-300 rounded-lg text-text-primary focus:outline-none"
                     />
                   </div>
@@ -383,68 +351,95 @@ export function UserFormModal({
               value={formData.email}
               onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
               placeholder="user@example.com"
-              className={`w-full px-3 py-2 text-xs border border-border rounded-xl text-text-primary focus:outline-none ${
-                editingUser
+              className={`w-full px-3 py-2 text-xs border border-border rounded-xl text-text-primary focus:outline-none ${editingUser
                   ? "bg-slate-100 text-slate-500 cursor-not-allowed"
                   : "bg-surface-muted/50 focus:bg-white focus:border-[#00875A]"
-              }`}
+                }`}
             />
           </div>
 
-          {/* Password */}
+          {/* Password & Phone */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-text-secondary block">
+                {editingUser ? "New Password" : "Password *"}
+              </label>
+              <input
+                type="password"
+                required={!editingUser}
+                value={formData.password}
+                onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+                placeholder="••••••••"
+                className="w-full px-3 py-2 text-xs bg-surface-muted/50 border border-border rounded-xl text-text-primary focus:bg-white focus:outline-none focus:border-[#00875A]"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-text-secondary block">Phone Number</label>
+              <input
+                type="text"
+                value={formData.phone}
+                onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                placeholder="+1 555 123 4567"
+                className="w-full px-3 py-2 text-xs bg-surface-muted/50 border border-border rounded-xl text-text-primary focus:bg-white focus:outline-none focus:border-[#00875A]"
+              />
+            </div>
+          </div>
+
+          {/* Country Selection */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-text-secondary block">
-              {editingUser ? "New Password (leave blank to keep current)" : "Password"}
+            <label className="text-xs font-bold text-text-secondary block flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-[#00875A]" />
+              Assigned Region / Country
             </label>
-            <input
-              type="password"
-              required={!editingUser}
-              value={formData.password}
-              onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
-              placeholder="••••••••"
-              className="w-full px-3 py-2 text-xs bg-surface-muted/50 border border-border rounded-xl text-text-primary focus:bg-white focus:outline-none focus:border-[#00875A]"
-            />
-          </div>
-
-          {/* Phone */}
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-text-secondary block">Phone Number</label>
-            <input
-              type="text"
-              value={formData.phone}
-              onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
-              placeholder="+91 98765 43210"
-              className="w-full px-3 py-2 text-xs bg-surface-muted/50 border border-border rounded-xl text-text-primary focus:bg-white focus:outline-none focus:border-[#00875A]"
-            />
+            <select
+              value={formData.countryId}
+              onChange={(e) => setFormData((prev) => ({ ...prev, countryId: e.target.value }))}
+              className="w-full px-3 py-2 text-xs bg-surface-muted/50 border border-border rounded-xl text-text-primary focus:bg-white focus:outline-none focus:border-[#00875A] cursor-pointer"
+            >
+              <option value="">None / Global</option>
+              {countries.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.code}) - {c.currency?.code || "Default"}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Role and Status Row */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-text-secondary block">Assigned Role</label>
+              <label className="text-xs font-bold text-text-secondary block flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#00875A]" />
+                System Role
+              </label>
               <select
                 value={formData.role}
                 onChange={(e) => setFormData((prev) => ({ ...prev, role: e.target.value }))}
                 className="w-full px-2.5 py-2 text-xs bg-surface-muted/50 border border-border rounded-xl text-text-primary focus:bg-white focus:outline-none focus:border-[#00875A] cursor-pointer"
               >
-                <option value="CUSTOMER">CUSTOMER</option>
-                <option value="COMPANY_ADMIN">COMPANY_ADMIN (B2B)</option>
-                <option value="ADMIN">ADMIN</option>
-                <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                <option value="USER">USER {accountType === "B2B" ? "(Wholesale Buyer)" : "(Customer)"}</option>
+                <option value="SUPERADMIN">SUPERADMIN (System Administrator)</option>
               </select>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-text-secondary block">Account Status</label>
+              <label className="text-xs font-bold text-text-secondary block flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#00875A]" />
+                Account Status
+              </label>
               <select
-                value={formData.status}
-                onChange={(e) => setFormData((prev) => ({ ...prev, status: e.target.value }))}
+                value={formData.isActive ? "ACTIVE" : "INACTIVE"}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    isActive: e.target.value === "ACTIVE",
+                  }))
+                }
                 className="w-full px-2.5 py-2 text-xs bg-surface-muted/50 border border-border rounded-xl text-text-primary focus:bg-white focus:outline-none focus:border-[#00875A] cursor-pointer"
               >
                 <option value="ACTIVE">ACTIVE</option>
-                <option value="PENDING">PENDING</option>
-                <option value="SUSPENDED">SUSPENDED</option>
-                <option value="INVITED">INVITED</option>
+                <option value="INACTIVE">INACTIVE</option>
               </select>
             </div>
           </div>

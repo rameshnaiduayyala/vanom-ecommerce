@@ -12,6 +12,12 @@ import { taxService } from "./tax.service.js";
 import { paymentService } from "./payment.service.js";
 import { reviewService } from "./review.service.js";
 import { couponService } from "./coupon.service.js";
+import { brandService } from "./brand.service.js";
+import { uploadService } from "./upload.service.js";
+import { storeService } from "./store.service.js";
+import { contactService } from "./contact.service.js";
+import { checkoutService } from "./checkout.service.js";
+import { shippingService } from "./shipping.service.js";
 
 export { authService } from "./auth.service.js";
 export { userService } from "./user.service.js";
@@ -19,6 +25,8 @@ export { companyService } from "./company.service.js";
 export { catalogService } from "./catalog.service.js";
 export { cartService } from "./cart.service.js";
 export { orderService } from "./order.service.js";
+export { checkoutService } from "./checkout.service.js";
+export { shippingService } from "./shipping.service.js";
 export { b2bService } from "./b2b.service.js";
 export { adminService } from "./admin.service.js";
 export { bannerService } from "./banner.service.js";
@@ -27,6 +35,10 @@ export { taxService } from "./tax.service.js";
 export { paymentService } from "./payment.service.js";
 export { reviewService } from "./review.service.js";
 export { couponService } from "./coupon.service.js";
+export { brandService } from "./brand.service.js";
+export { uploadService } from "./upload.service.js";
+export { storeService } from "./store.service.js";
+export { contactService } from "./contact.service.js";
 
 export const Api = {
   auth: authService,
@@ -35,6 +47,8 @@ export const Api = {
   catalog: catalogService,
   cart: cartService,
   orders: orderService,
+  checkout: checkoutService,
+  shipping: shippingService,
   b2b: b2bService,
   admin: adminService,
   banners: bannerService,
@@ -43,4 +57,9 @@ export const Api = {
   payments: paymentService,
   reviews: reviewService,
   coupons: couponService,
+  brands: brandService,
+  upload: uploadService,
+  store: storeService,
+  contact: contactService,
 };
+

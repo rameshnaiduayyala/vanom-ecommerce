@@ -5,7 +5,8 @@ import { BRAND_COLORS } from "../../constants/colors.js";
 
 /**
  * EnterpriseSidebar
- * Simple, clean, and elegant enterprise sidebar with smooth collapsible sub-items.
+ * Modern, clean enterprise navigation with collapsible accordion groups,
+ * active route highlighting, and smooth hover interactions.
  */
 export function EnterpriseSidebar({
   collapsed = false,
@@ -68,10 +69,10 @@ export function EnterpriseSidebar({
   return (
     <aside
       style={{ width: collapsed ? collapsedWidth : width }}
-      className={`h-screen flex flex-col bg-[#0F241A] text-slate-200 border-r border-white/10 shrink-0 transition-all duration-200 select-none z-30 ${className}`}
+      className={`h-screen flex flex-col bg-[#0b1d14] text-slate-200 border-r border-emerald-950/40 shrink-0 transition-all duration-200 select-none z-30 shadow-xl ${className}`}
     >
       {/* ── Brand Header ── */}
-      <div className="h-16 flex items-center justify-between px-4 sm:px-5 border-b border-white/10 shrink-0">
+      <div className="h-16 flex items-center justify-between px-4 sm:px-5 border-b border-white/[0.08] shrink-0 bg-[#081710]">
         {!collapsed ? (
           <Link
             to={brand.logoPath || "/admin/dashboard"}
@@ -81,22 +82,22 @@ export function EnterpriseSidebar({
               <img
                 src={brand.logoSrc}
                 alt={brand.title || "Vanom"}
-                className="h-8 w-auto max-w-[140px] object-contain brightness-0 invert"
+                className="h-8 w-auto max-w-[140px] object-contain brightness-0 invert opacity-95 group-hover:opacity-100 transition-opacity"
               />
             ) : (
               <span className="text-lg font-black tracking-wider text-white">
                 {brand.title || "VANOM"}
               </span>
             )}
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-300 font-bold">
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/25 text-[10px] text-emerald-300 font-bold tracking-wide">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>{brand.badgeText || "Admin"}</span>
+              <span>{brand.badgeText || "ADMIN"}</span>
             </div>
           </Link>
         ) : (
           <Link
             to={brand.logoPath || "/admin/dashboard"}
-            className="mx-auto w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center font-black text-white hover:bg-white/15 transition-colors"
+            className="mx-auto w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center font-black text-white hover:bg-white/15 transition-all shadow-inner"
           >
             {brand.title ? brand.title[0] : "V"}
           </Link>
@@ -104,7 +105,7 @@ export function EnterpriseSidebar({
       </div>
 
       {/* ── Navigation List ── */}
-      <div className="flex-1 overflow-y-auto py-3 px-3 space-y-1.5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto py-3.5 px-3 space-y-1.5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
         {navGroups.map((item, idx) => {
           // Section Header
           if (item.header) {
@@ -112,7 +113,7 @@ export function EnterpriseSidebar({
             return (
               <div
                 key={idx}
-                className="px-3 pt-3 pb-1 text-[10px] font-bold text-emerald-400/50 uppercase tracking-wider"
+                className="px-3 pt-3.5 pb-1 text-[10px] font-bold text-emerald-400/60 uppercase tracking-widest"
               >
                 {item.header}
               </div>
@@ -132,13 +133,13 @@ export function EnterpriseSidebar({
                   type="button"
                   onClick={() => toggleSubmenu(item.id)}
                   title={collapsed ? item.label : undefined}
-                  className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer group ${
+                  className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer group ${
                     parentActive
-                      ? "text-white bg-white/10"
-                      : "text-slate-300 hover:text-white hover:bg-white/5"
+                      ? "text-white bg-white/[0.08] shadow-2xs"
+                      : "text-slate-300 hover:text-white hover:bg-white/[0.05]"
                   }`}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     {Icon && (
                       <Icon
                         className={`w-4 h-4 shrink-0 transition-colors ${
@@ -149,7 +150,7 @@ export function EnterpriseSidebar({
                       />
                     )}
                     {!collapsed && (
-                      <span className="truncate font-semibold">{item.label}</span>
+                      <span className="truncate tracking-tight">{item.label}</span>
                     )}
                   </div>
 
@@ -157,7 +158,7 @@ export function EnterpriseSidebar({
                     <div className="flex items-center gap-1.5 shrink-0">
                       {item.badge !== undefined && (
                         <span
-                          className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none text-white ${
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold leading-none text-white ${
                             item.badgeColor || "bg-emerald-600"
                           }`}
                         >
@@ -175,7 +176,7 @@ export function EnterpriseSidebar({
 
                 {/* Submenu Dropdown List */}
                 {!collapsed && isOpen && (
-                  <div className="ml-4 pl-3 border-l border-emerald-500/20 space-y-1 pt-0.5 pb-1 animate-in fade-in-50 duration-150">
+                  <div className="ml-3 pl-3 border-l border-emerald-500/25 space-y-0.5 pt-0.5 pb-1 animate-in fade-in-50 duration-150">
                     {item.children.map((child) => {
                       const childActive = isPathActive(child.path);
                       const ChildIcon = child.icon;
@@ -184,10 +185,10 @@ export function EnterpriseSidebar({
                         <Link
                           key={child.id || child.path}
                           to={child.path}
-                          className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
+                          className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-all ${
                             childActive
-                              ? "bg-[#358B5B] text-white font-bold shadow-xs"
-                              : "text-slate-300 hover:text-white hover:bg-white/5 font-medium"
+                              ? "bg-[#00875A] text-white font-bold shadow-xs"
+                              : "text-slate-300 hover:text-white hover:bg-white/[0.05] font-medium"
                           }`}
                         >
                           <div className="flex items-center gap-2 min-w-0">
@@ -205,7 +206,7 @@ export function EnterpriseSidebar({
 
                           {child.badge !== undefined && (
                             <span
-                              className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none text-white ${
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold leading-none text-white ${
                                 child.badgeColor || "bg-amber-500"
                               }`}
                             >
@@ -221,7 +222,7 @@ export function EnterpriseSidebar({
             );
           }
 
-          // Single Link Item (e.g., Dashboard)
+          // Single Link Item (e.g., Dashboard, Single Routes)
           const singleActive = isPathActive(item.path);
 
           return (
@@ -229,13 +230,13 @@ export function EnterpriseSidebar({
               key={item.id || item.path}
               to={item.path}
               title={collapsed ? item.label : undefined}
-              className={`flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer group ${
+              className={`flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer group ${
                 singleActive
-                  ? "bg-[#358B5B] text-white shadow-xs"
-                  : "text-slate-300 hover:text-white hover:bg-white/5 font-medium"
+                  ? "bg-[#00875A] text-white shadow-xs font-bold"
+                  : "text-slate-300 hover:text-white hover:bg-white/[0.05] font-medium"
               }`}
             >
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0">
                 {Icon && (
                   <Icon
                     className={`w-4 h-4 shrink-0 transition-colors ${
@@ -248,7 +249,7 @@ export function EnterpriseSidebar({
 
               {!collapsed && item.badge !== undefined && (
                 <span
-                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none text-white ${
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold leading-none text-white ${
                     item.badgeColor || "bg-rose-500"
                   }`}
                 >
@@ -262,9 +263,9 @@ export function EnterpriseSidebar({
 
       {/* ── Footer ── */}
       {footer ? (
-        <div className="border-t border-white/10 shrink-0 bg-[#0B1C14]">{footer}</div>
+        <div className="border-t border-white/[0.08] shrink-0 bg-[#081710]">{footer}</div>
       ) : (
-        <div className="p-3 border-t border-white/10 shrink-0 bg-[#0B1C14]">
+        <div className="p-3 border-t border-white/[0.08] shrink-0 bg-[#081710]">
           {!collapsed ? (
             <div className="flex items-center gap-3 px-2 py-1">
               <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-emerald-300 text-xs font-bold">
@@ -287,4 +288,3 @@ export function EnterpriseSidebar({
 }
 
 export default EnterpriseSidebar;
-

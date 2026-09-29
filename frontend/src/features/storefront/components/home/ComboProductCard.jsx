@@ -7,6 +7,14 @@ import { formatPrice } from "../../../../utils/formatters.js";
 import { Star, Check, Plus, Minus, Heart, Sparkles, PackageCheck, Layers } from "lucide-react";
 
 export function ComboProductCard({ combo, badge = null }) {
+  if (!combo || !combo.name) {
+    return (
+      <div className="w-full h-full min-h-[300px] flex items-center justify-center p-6 bg-gray-50/80 rounded-3xl border border-dashed border-gray-300 text-gray-400 text-sm font-medium">
+        No Data Available
+      </div>
+    );
+  }
+
   const { country } = useCountryStore();
   const { cart, setCart } = useCartStore();
   const { addToast } = useUIStore();
@@ -20,24 +28,25 @@ export function ComboProductCard({ combo, badge = null }) {
     combo.prices?.[0]?.amount ||
     pricing.retailPrice ||
     combo.price ||
-    699;
+    0;
   const price = Number(backendPrice);
-  const originalPrice = combo.mrp || pricing.mrp || Math.round(price * 1.45);
-  const discount = combo.discount || (originalPrice > price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 30);
-  const savings = originalPrice - price;
-  const rating = combo.rating || 4.9;
-  const reviews = combo.reviewsCount || combo.reviews || 1480;
+  const originalPrice = combo.mrp || pricing.mrp || 0;
+  const discount = combo.discount || (originalPrice > price ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0);
+  const savings = Math.max(0, originalPrice - price);
+  const rating = combo.rating || null;
+  const reviews = combo.reviewsCount || combo.reviews || 0;
 
   const image =
     combo.image ||
     combo.images?.[0]?.file?.url ||
     combo.images?.[0]?.url ||
-    "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=600&q=80";
+    null;
 
-  const itemsIncluded = combo.itemsIncluded || [
-    "Kadha Sips for Cold Defense (30 Sachets)",
-    "Pure Raw Organic Forest Honey (500g)",
-  ];
+  const itemsIncluded = Array.isArray(combo.itemsIncluded)
+    ? combo.itemsIncluded
+    : Array.isArray(combo.products)
+    ? combo.products.map((p) => p.name || p.product?.name).filter(Boolean)
+    : [];
 
   const handleAddToCart = (e) => {
     e.preventDefault();
@@ -94,12 +103,20 @@ export function ComboProductCard({ combo, badge = null }) {
           className="w-full h-full flex items-center justify-center p-4 relative"
           aria-label={combo.name}
         >
-          <img
-            src={image}
-            alt={combo.name}
-            className="w-full h-full object-contain group-hover:scale-108 transition-transform duration-500 ease-out drop-shadow-md"
-            loading="lazy"
-          />
+          {image ? (
+            <img
+              src={image}
+              alt={combo.name}
+              className="w-full h-full object-contain group-hover:scale-108 transition-transform duration-500 ease-out drop-shadow-md"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-center p-4 bg-purple-50/70 rounded-2xl border border-dashed border-purple-300">
+              <span className="font-extrabold text-sm sm:text-base text-purple-950 leading-snug line-clamp-3">
+                {combo.name}
+              </span>
+            </div>
+          )}
         </Link>
 
         {/* Top-Left Badges */}
@@ -161,16 +178,11 @@ export function ComboProductCard({ combo, badge = null }) {
           </div>
 
           {/* Combo Title */}
-          <Link to={`/products/${combo.slug || combo.id}`} className="block group-hover:text-[#3e8e45] transition-colors">
+          <Link to={`/products/${combo.slug || combo.id}`} className="block group-hover:text-[#3e8e45] transition-colors mb-2.5">
             <h3 className="text-sm sm:text-base font-extrabold text-gray-900 line-clamp-1 leading-snug">
               {combo.name}
             </h3>
           </Link>
-
-          {/* Subtitle / Description */}
-          <p className="text-[11px] text-gray-500 line-clamp-1 mt-0.5 mb-2.5 font-normal">
-            {combo.subtitle || combo.description || "Curated synergistic combination for maximum wellness & value"}
-          </p>
 
           {/* ─── Included Items Mini Checklist ─── */}
           <div className="bg-[#FAFDF9] rounded-xl p-2.5 border border-[#E3EFE6] mb-3 space-y-1">

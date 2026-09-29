@@ -27,6 +27,13 @@ export function useAdminUsers() {
         type: "success",
       });
     },
+    onError: (err) => {
+      addToast({
+        title: "Error Creating User",
+        message: err.message || "Failed to create user account.",
+        type: "error",
+      });
+    },
   });
 
   const updateMutation = useMutation({
@@ -37,6 +44,13 @@ export function useAdminUsers() {
         title: "User Updated",
         message: "User account details updated successfully.",
         type: "success",
+      });
+    },
+    onError: (err) => {
+      addToast({
+        title: "Error Updating User",
+        message: err.message || "Failed to update user account.",
+        type: "error",
       });
     },
   });
