@@ -62,8 +62,8 @@ export function AdminOrderDetailsModal({ order, isOpen, onClose, onStatusChange 
   const items = Array.isArray(order.items) && order.items.length > 0
     ? order.items
     : Array.isArray(order.commodityLines) && order.commodityLines.length > 0
-    ? order.commodityLines
-    : [];
+      ? order.commodityLines
+      : [];
 
   const subtotal = Number(order.subtotal ?? 0);
   const tax = Number(order.tax ?? 0);
@@ -100,12 +100,12 @@ export function AdminOrderDetailsModal({ order, isOpen, onClose, onStatusChange 
                     order.status === "DELIVERED"
                       ? "green"
                       : order.status === "SHIPPED"
-                      ? "blue"
-                      : order.status === "CANCELLED"
-                      ? "red"
-                      : order.status === "PROCESSING" || order.status === "CONFIRMED"
-                      ? "brand"
-                      : "amber"
+                        ? "blue"
+                        : order.status === "CANCELLED"
+                          ? "red"
+                          : order.status === "PROCESSING" || order.status === "CONFIRMED"
+                            ? "brand"
+                            : "amber"
                   }
                   size="sm"
                 >
@@ -194,9 +194,6 @@ export function AdminOrderDetailsModal({ order, isOpen, onClose, onStatusChange 
               <span className="font-bold text-slate-900 text-xs flex items-center gap-2">
                 <Package className="w-4 h-4 text-emerald-700" />
                 Ordered Line Items ({items.length})
-              </span>
-              <span className="text-[11px] text-slate-500 font-medium">
-                High-Resolution Catalog Verification
               </span>
             </div>
 

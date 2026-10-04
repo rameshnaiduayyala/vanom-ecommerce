@@ -1,5 +1,5 @@
 import React from "react";
-import { SlidersHorizontal, Grid3X3, LayoutGrid, X, RotateCcw } from "lucide-react";
+import { SlidersHorizontal, Grid3X3, LayoutGrid, X } from "lucide-react";
 
 export function ProductsHeaderBar({
   title,
@@ -68,13 +68,6 @@ export function ProductsHeaderBar({
               </span>
             )}
 
-            <button
-              onClick={onClearAll}
-              className="text-[11px] font-bold text-red-500 hover:underline ml-1 cursor-pointer flex items-center gap-1"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Reset</span>
-            </button>
           </div>
         )}
       </div>
