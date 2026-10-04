@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
+import { SearchAutocompleteDropdown } from "./SearchAutocompleteDropdown.jsx";
 import { useCountryStore } from "../../stores/country.store.js";
 import { useCartStore } from "../../stores/cart.store.js";
 import { useAuthStore } from "../../stores/auth.store.js";
@@ -76,6 +77,19 @@ export function PublicHeader() {
   const categories = Array.isArray(categoryTree) ? categoryTree : [];
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [searchResults, setSearchResults] = useState({ products: [], categories: [], total: 0 });
+  const [isSearching, setIsSearching] = useState(false);
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [recentSearches, setRecentSearches] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("vanom_recent_searches") || "[]");
+    } catch {
+      return [];
+    }
+  });
+
   const [selectedCategory, setSelectedCategory] = useState({ label: "All Categories", slug: "" });
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
@@ -84,10 +98,96 @@ export function PublicHeader() {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [expandedMobileCategories, setExpandedMobileCategories] = useState({});
 
+  const searchContainerRef = useRef(null);
+  const mobileSearchContainerRef = useRef(null);
   const mobileSearchInputRef = useRef(null);
   const categoryDropdownRef = useRef(null);
   const countryDropdownRef = useRef(null);
   const userRef = useRef(null);
+
+  // Debounce search query by 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Cancel/ignore stale requests when query changes
+  useEffect(() => {
+    if (!debouncedQuery || debouncedQuery.length < 2) {
+      setSearchResults({ products: [], categories: [], total: 0 });
+      setIsSearching(false);
+      return;
+    }
+
+    const abortController = new AbortController();
+    setIsSearching(true);
+
+    Api.catalog.searchProducts(
+      {
+        q: debouncedQuery,
+        categoryId: selectedCategory.slug || undefined,
+        country: country?.code,
+        limit: 8
+      },
+      { signal: abortController.signal }
+    )
+      .then((res) => {
+        let data = { products: [], categories: [], total: 0 };
+        if (res && Array.isArray(res.products)) {
+          data = res;
+        } else if (res?.data && Array.isArray(res.data.products)) {
+          data = res.data;
+        } else if (res?.data?.data && Array.isArray(res.data.data.products)) {
+          data = res.data.data;
+        }
+        setSearchResults(data);
+        setIsSearching(false);
+        setShowAutocomplete(true);
+      })
+      .catch((err) => {
+        if (!abortController.signal.aborted) {
+          setIsSearching(false);
+        }
+      });
+
+    return () => {
+      abortController.abort();
+    };
+  }, [debouncedQuery, selectedCategory.slug, country?.code]);
+
+  // Reset activeIndex whenever search results change
+  useEffect(() => {
+    setActiveIndex(-1);
+  }, [searchResults]);
+
+  const saveRecentSearch = (term) => {
+    const clean = term?.trim();
+    if (!clean || clean.length < 2) return;
+    try {
+      const updated = [clean, ...recentSearches.filter((s) => s.toLowerCase() !== clean.toLowerCase())].slice(0, 8);
+      setRecentSearches(updated);
+      localStorage.setItem("vanom_recent_searches", JSON.stringify(updated));
+    } catch {}
+  };
+
+  const removeRecentSearch = (term, e) => {
+    e?.stopPropagation();
+    try {
+      const updated = recentSearches.filter((s) => s !== term);
+      setRecentSearches(updated);
+      localStorage.setItem("vanom_recent_searches", JSON.stringify(updated));
+    } catch {}
+  };
+
+  const clearRecentSearches = (e) => {
+    e?.stopPropagation();
+    try {
+      setRecentSearches([]);
+      localStorage.removeItem("vanom_recent_searches");
+    } catch {}
+  };
 
   const toggleMobileCategory = (catId) => {
     setExpandedMobileCategories((prev) => ({
@@ -109,17 +209,67 @@ export function PublicHeader() {
     }
   };
 
+  const handleSelectProduct = (product) => {
+    saveRecentSearch(product.name);
+    setShowAutocomplete(false);
+    setMobileSearchOpen(false);
+    navigate(`/products/${product.slug || product.id}`);
+  };
+
+  const handleSelectSuggestedCategory = (cat) => {
+    saveRecentSearch(cat.name);
+    setShowAutocomplete(false);
+    setMobileSearchOpen(false);
+    navigate(`${ROUTES.PRODUCTS}?category=${encodeURIComponent(cat.slug || cat.id)}`);
+  };
+
+  const handleSelectRecentSearch = (term) => {
+    setSearchQuery(term);
+    saveRecentSearch(term);
+    setShowAutocomplete(false);
+    setMobileSearchOpen(false);
+    navigate(`${ROUTES.PRODUCTS}?search=${encodeURIComponent(term)}`);
+  };
+
   const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
+    e?.preventDefault();
+    const query = searchQuery.trim();
+    if (query) {
+      saveRecentSearch(query);
       const catParam = selectedCategory.slug ? `&category=${encodeURIComponent(selectedCategory.slug)}` : "";
-      navigate(`${ROUTES.SEARCH}?q=${encodeURIComponent(searchQuery.trim())}${catParam}`);
+      navigate(`${ROUTES.PRODUCTS}?search=${encodeURIComponent(query)}${catParam}`);
+      setShowAutocomplete(false);
       setMobileMenuOpen(false);
       setMobileSearchOpen(false);
     } else if (selectedCategory.slug) {
       navigate(`${ROUTES.PRODUCTS}?category=${encodeURIComponent(selectedCategory.slug)}`);
+      setShowAutocomplete(false);
       setMobileMenuOpen(false);
       setMobileSearchOpen(false);
+    }
+  };
+
+  const handleSearchKeyDown = (e) => {
+    const products = searchResults?.products || [];
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!showAutocomplete) {
+        setShowAutocomplete(true);
+      } else {
+        setActiveIndex((prev) => (prev < products.length - 1 ? prev + 1 : prev));
+      }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev > -1 ? prev - 1 : -1));
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setShowAutocomplete(false);
+    } else if (e.key === "Enter") {
+      if (showAutocomplete && activeIndex >= 0 && products[activeIndex]) {
+        e.preventDefault();
+        handleSelectProduct(products[activeIndex]);
+      }
     }
   };
 
@@ -142,6 +292,13 @@ export function PublicHeader() {
       if (userRef.current && !userRef.current.contains(e.target)) {
         setShowUserMenu(false);
       }
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target) &&
+        (!mobileSearchContainerRef.current || !mobileSearchContainerRef.current.contains(e.target))
+      ) {
+        setShowAutocomplete(false);
+      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -154,6 +311,7 @@ export function PublicHeader() {
     setShowUserMenu(false);
     setMobileMenuOpen(false);
     setMobileSearchOpen(false);
+    setShowAutocomplete(false);
   }, [location.pathname]);
 
   // Sync selectedCategory label from URL if present
@@ -225,6 +383,7 @@ export function PublicHeader() {
 
           {/* Center Search with Integrated Dynamic Category Dropdown */}
           <form
+            ref={searchContainerRef}
             onSubmit={handleSearch}
             className="hidden md:flex flex-1 max-w-2xl items-center border border-gray-300 rounded-lg overflow-visible bg-white focus-within:border-[#003D2B] focus-within:ring-1 focus-within:ring-[#003D2B] transition-all relative h-[42px]"
           >
@@ -281,7 +440,12 @@ export function PublicHeader() {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowAutocomplete(true);
+              }}
+              onFocus={() => setShowAutocomplete(true)}
+              onKeyDown={handleSearchKeyDown}
               placeholder="Search for products, brands and more..."
               className="flex-1 px-3.5 text-xs sm:text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none bg-transparent"
             />
@@ -290,7 +454,10 @@ export function PublicHeader() {
             {searchQuery && (
               <button
                 type="button"
-                onClick={() => setSearchQuery("")}
+                onClick={() => {
+                  setSearchQuery("");
+                  setShowAutocomplete(false);
+                }}
                 className="p-1 mr-1 text-gray-400 hover:text-gray-600 rounded-full cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
@@ -305,6 +472,24 @@ export function PublicHeader() {
             >
               <Search className="w-4 h-4" />
             </button>
+
+            {/* Autocomplete Dropdown */}
+            <SearchAutocompleteDropdown
+              isOpen={showAutocomplete}
+              isSearching={isSearching}
+              searchQuery={searchQuery}
+              searchResults={searchResults}
+              recentSearches={recentSearches}
+              activeIndex={activeIndex}
+              onSelectProduct={handleSelectProduct}
+              onSelectCategory={handleSelectSuggestedCategory}
+              onSelectRecentSearch={handleSelectRecentSearch}
+              onRemoveRecentSearch={removeRecentSearch}
+              onClearRecentSearches={clearRecentSearches}
+              onViewAll={handleSearch}
+              currency={country?.currency}
+              currencySymbol={country?.symbol}
+            />
           </form>
 
           {/* Right Action Links */}
@@ -566,10 +751,11 @@ export function PublicHeader() {
 
         {/* Mobile Expandable Search Bar */}
         {mobileSearchOpen && (
-          <div className="md:hidden px-4 pb-3 pt-2 bg-[#FFF7DD] border-t border-[#ebdcb0]/60 animate-in slide-in-from-top-2 duration-150">
+          <div className="md:hidden px-4 pb-3 pt-2 bg-[#FFF7DD] border-t border-[#ebdcb0]/60 animate-in slide-in-from-top-2 duration-150 relative">
             <form
+              ref={mobileSearchContainerRef}
               onSubmit={handleSearch}
-              className="flex items-center border border-[#ebdcb0] rounded-xl overflow-hidden bg-white shadow-md focus-within:border-[#358B5B] focus-within:ring-1 focus-within:ring-[#358B5B] transition-all h-10"
+              className="flex items-center border border-[#ebdcb0] rounded-xl overflow-visible bg-white shadow-md focus-within:border-[#358B5B] focus-within:ring-1 focus-within:ring-[#358B5B] transition-all h-10 relative"
             >
               <div className="pl-3 pr-1.5 text-gray-400 flex items-center justify-center">
                 <Search className="w-4 h-4 text-[#358B5B]" />
@@ -578,14 +764,22 @@ export function PublicHeader() {
                 ref={mobileSearchInputRef}
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowAutocomplete(true);
+                }}
+                onFocus={() => setShowAutocomplete(true)}
+                onKeyDown={handleSearchKeyDown}
                 placeholder="Search products, categories & brands..."
                 className="flex-1 px-1 py-2 text-xs text-gray-800 bg-transparent focus:outline-none placeholder:text-gray-400"
               />
               {searchQuery && (
                 <button
                   type="button"
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => {
+                    setSearchQuery("");
+                    setShowAutocomplete(false);
+                  }}
                   className="p-1 mr-1 text-gray-400 hover:text-gray-600 rounded-full"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -598,6 +792,24 @@ export function PublicHeader() {
               >
                 <Search className="w-3.5 h-3.5" />
               </button>
+
+              {/* Mobile Autocomplete Dropdown */}
+              <SearchAutocompleteDropdown
+                isOpen={showAutocomplete}
+                isSearching={isSearching}
+                searchQuery={searchQuery}
+                searchResults={searchResults}
+                recentSearches={recentSearches}
+                activeIndex={activeIndex}
+                onSelectProduct={handleSelectProduct}
+                onSelectCategory={handleSelectSuggestedCategory}
+                onSelectRecentSearch={handleSelectRecentSearch}
+                onRemoveRecentSearch={removeRecentSearch}
+                onClearRecentSearches={clearRecentSearches}
+                onViewAll={handleSearch}
+                currency={country?.currency}
+                currencySymbol={country?.symbol}
+              />
             </form>
           </div>
         )}

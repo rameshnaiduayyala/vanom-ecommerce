@@ -135,3 +135,22 @@ export async function deleteVariant(request, reply) {
   await productService.deleteVariant(request.params.productId, request.params.id);
   return sendSuccess(reply, { message: MESSAGES.VARIANT_DELETED, data: null });
 }
+
+export async function search(request, reply) {
+  const q = request.query.q ?? request.query.search ?? "";
+  const categoryId = request.query.categoryId;
+  const limit = Math.min(20, Math.max(1, parseInt(request.query.limit, 10) || 10));
+  const countryCode = request.headers["x-country-code"] || request.query.country || "US";
+
+  const result = await productService.searchProducts({
+    query: q,
+    categoryId,
+    limit,
+    countryCode,
+  });
+
+  return sendSuccess(reply, {
+    message: "Search completed successfully",
+    data: result,
+  });
+}
