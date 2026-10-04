@@ -311,6 +311,86 @@ export async function updateProduct(id, input) {
         },
         include: productInclude
       });
+
+      // Synchronize warehouse inventory for updated product / variants
+      try {
+        const defaultWarehouse = await tx.warehouse.findFirst({
+          where: { isActive: true },
+          orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }]
+        });
+
+        if (defaultWarehouse) {
+          if (product.type === "VARIABLE" && product.variants?.length) {
+            // Clean up any stale simple-product inventory records for this product
+            await tx.inventory.deleteMany({
+              where: { productId: product.id, variantId: null }
+            });
+
+            // Ensure every active variant has a corresponding inventory row in the warehouse
+            for (const v of product.variants) {
+              const existingInv = await tx.inventory.findFirst({
+                where: { warehouseId: defaultWarehouse.id, variantId: v.id }
+              });
+
+              if (!existingInv) {
+                const initialQty = Math.max(0, Number(v.stock) || 0);
+                await tx.inventory.create({
+                  data: {
+                    organizationId: defaultWarehouse.organizationId,
+                    warehouseId: defaultWarehouse.id,
+                    variantId: v.id,
+                    productId: null,
+                    quantity: initialQty,
+                    reservedQuantity: 0,
+                    reorderLevel: 10,
+                    reorderQuantity: 20
+                  }
+                });
+              } else if (v.stock !== undefined && v.stock !== null) {
+                await tx.inventory.update({
+                  where: { id: existingInv.id },
+                  data: { quantity: Math.max(0, Number(v.stock) || 0) }
+                });
+              }
+            }
+          } else if (product.type === "SIMPLE") {
+            // If switched from VARIABLE to SIMPLE, clean up variant inventory records
+            if (current.type === "VARIABLE") {
+              await tx.inventory.deleteMany({
+                where: { variant: { productId: product.id } }
+              });
+            }
+
+            const existingInv = await tx.inventory.findFirst({
+              where: { warehouseId: defaultWarehouse.id, productId: product.id, variantId: null }
+            });
+
+            if (!existingInv) {
+              const initialQty = Math.max(0, Number(product.stock) || 0);
+              await tx.inventory.create({
+                data: {
+                  organizationId: defaultWarehouse.organizationId,
+                  warehouseId: defaultWarehouse.id,
+                  productId: product.id,
+                  variantId: null,
+                  quantity: initialQty,
+                  reservedQuantity: 0,
+                  reorderLevel: 10,
+                  reorderQuantity: 20
+                }
+              });
+            } else if (input.stock !== undefined) {
+              await tx.inventory.update({
+                where: { id: existingInv.id },
+                data: { quantity: Math.max(0, Number(input.stock) || 0) }
+              });
+            }
+          }
+        }
+      } catch (invErr) {
+        console.warn("[Inventory Sync] Failed to sync inventory on updateProduct:", invErr.message);
+      }
+
       return serializeProduct(product);
     });
   } catch (error) {
@@ -395,6 +475,30 @@ export async function createVariant(productId, input) {
     throw new AppError(MESSAGES.SIMPLE_PRODUCT_CANNOT_HAVE_VARIANTS, HTTP_STATUS.BAD_REQUEST, "INVALID_PRODUCT_VARIANTS");
   }
   const variant = await prisma.productVariant.create({ data: { productId, ...variantCreateData(input) }, include: variantInclude });
+
+  try {
+    const defaultWarehouse = await prisma.warehouse.findFirst({
+      where: { isActive: true },
+      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }]
+    });
+    if (defaultWarehouse) {
+      await prisma.inventory.create({
+        data: {
+          organizationId: defaultWarehouse.organizationId,
+          warehouseId: defaultWarehouse.id,
+          variantId: variant.id,
+          productId: null,
+          quantity: Math.max(0, Number(variant.stock) || 0),
+          reservedQuantity: 0,
+          reorderLevel: 10,
+          reorderQuantity: 20
+        }
+      });
+    }
+  } catch (err) {
+    console.warn("[Inventory Sync] Failed to create inventory for new variant:", err.message);
+  }
+
   return { ...variant, countries: variant.countries.map(serializeCountryPricing) };
 }
 
@@ -428,10 +532,27 @@ export async function updateVariant(productId, id, input) {
     },
     include: variantInclude
   });
+
+  try {
+    if (input.stock !== undefined) {
+      await prisma.inventory.updateMany({
+        where: { variantId: id },
+        data: { quantity: Math.max(0, Number(input.stock) || 0) }
+      });
+    }
+  } catch (err) {
+    console.warn("[Inventory Sync] Failed to sync inventory for variant:", err.message);
+  }
+
   return { ...variant, countries: variant.countries.map(serializeCountryPricing) };
 }
 
 export async function deleteVariant(productId, id) {
   await getVariantById(productId, id);
+  try {
+    await prisma.inventory.deleteMany({ where: { variantId: id } });
+  } catch (err) {
+    console.warn("[Inventory Sync] Failed to remove inventory for deleted variant:", err.message);
+  }
   return prisma.productVariant.delete({ where: { id } });
 }

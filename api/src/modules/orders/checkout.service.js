@@ -210,15 +210,34 @@ export async function processCheckout({
         }
       });
 
-      const totalAvailableStock = inventoryRecords.reduce(
-        (sum, inv) => sum + Math.max(0, inv.quantity - inv.reservedQuantity),
-        0
-      );
+      let totalAvailableStock = 0;
 
-      // If inventory records exist, enforce stock availability
-      if (inventoryRecords.length > 0 && totalAvailableStock < item.quantity) {
+      if (inventoryRecords.length > 0) {
+        totalAvailableStock = inventoryRecords.reduce(
+          (sum, inv) => sum + Math.max(0, inv.quantity - inv.reservedQuantity),
+          0
+        );
+      } else if (dbVariant) {
+        // Fallback to variant country stock or variant stock if warehouse inventory has not been seeded
+        const variantCountry = await prisma.productVariantCountry.findUnique({
+          where: {
+            variantId_countryId: { variantId: dbVariant.id, countryId: resolvedCountryId }
+          }
+        });
+        totalAvailableStock = variantCountry?.stock ?? dbVariant.stock ?? 100;
+      } else {
+        const productCountry = await prisma.productCountry.findUnique({
+          where: {
+            productId_countryId: { productId: dbProduct.id, countryId: resolvedCountryId }
+          }
+        });
+        totalAvailableStock = productCountry?.stock ?? dbProduct.stock ?? 100;
+      }
+
+      // Enforce stock availability
+      if (totalAvailableStock < item.quantity) {
         throw new AppError(
-          `Insufficient stock for "${dbProduct.name}". Available: ${totalAvailableStock}, requested: ${item.quantity}`,
+          `Insufficient stock for "${dbProduct.name}${dbVariant?.name ? ` (${dbVariant.name})` : ""}". Available: ${totalAvailableStock}, requested: ${item.quantity}`,
           HTTP_STATUS.BAD_REQUEST,
           "INSUFFICIENT_STOCK"
         );
