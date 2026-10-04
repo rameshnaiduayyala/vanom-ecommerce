@@ -682,11 +682,37 @@ export async function listShipments({ organizationId, orderId, status, page = 1,
             total: true,
             status: true,
             user: { select: { id: true, email: true, firstName: true, lastName: true } },
-            addresses: true
+            addresses: true,
+            items: {
+              include: {
+                product: {
+                  include: {
+                    images: { orderBy: { sortOrder: "asc" } },
+                    category: { select: { id: true, name: true } },
+                    brand: { select: { id: true, name: true } }
+                  }
+                },
+                variant: true
+              }
+            }
           }
         },
         warehouse: { select: { id: true, name: true, code: true, city: true, country: true } },
-        items: { include: { orderItem: true } }
+        items: {
+          include: {
+            orderItem: {
+              include: {
+                product: {
+                  include: {
+                    images: { orderBy: { sortOrder: "asc" } },
+                    category: { select: { id: true, name: true } }
+                  }
+                },
+                variant: true
+              }
+            }
+          }
+        }
       }
     }),
     prisma.shipment.count({ where })
