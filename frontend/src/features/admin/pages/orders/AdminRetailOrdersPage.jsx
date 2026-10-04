@@ -313,7 +313,6 @@ export function AdminRetailOrdersPage() {
             </tbody>
           </table>
         </div>
-      </div>
 
       {/* Comprehensive Order Details Modal with Product Images */}
       <AdminOrderDetailsModal
