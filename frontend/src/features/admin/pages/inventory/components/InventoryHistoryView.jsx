@@ -82,14 +82,14 @@ export function InventoryHistoryView({ inventoryId = null, filterType = "ALL" })
   return (
     <div className="space-y-4">
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-white border border-border">
-        <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-xl bg-white border border-border">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
           <input
             type="text"
             placeholder="Search by SKU, Product, Reference #, Depot, Reason..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="text-xs rounded-xl border border-border bg-white px-3 py-2 w-72 focus:border-[#00875A] focus:outline-none"
+            className="text-xs rounded-xl border border-border bg-white px-3 py-2 w-full sm:w-72 focus:border-[#00875A] focus:outline-none"
           />
 
           <select
@@ -98,7 +98,7 @@ export function InventoryHistoryView({ inventoryId = null, filterType = "ALL" })
               setSelectedType(e.target.value);
               setPage(1);
             }}
-            className="text-xs rounded-xl border border-border bg-white px-3 py-2 focus:border-[#00875A] focus:outline-none"
+            className="text-xs rounded-xl border border-border bg-white px-3 py-2 w-full sm:w-auto focus:border-[#00875A] focus:outline-none"
           >
             <option value="ALL">All Transaction Types</option>
             {Object.keys(TRANSACTION_BADGES).map((type) => (
@@ -114,7 +114,7 @@ export function InventoryHistoryView({ inventoryId = null, filterType = "ALL" })
           size="sm"
           icon={RefreshCw}
           onClick={() => refetch()}
-          className="cursor-pointer shrink-0"
+          className="cursor-pointer shrink-0 w-full sm:w-auto justify-center"
         >
           Refresh Audit Trail
         </Button>
