@@ -1,8 +1,18 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
+import {
+  Heart,
+  Share2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Star,
+  Check,
+  ShoppingCart,
+  PackageX,
+} from "lucide-react";
 import { useProductCard } from "../hooks/useProductCard.js";
-import { ProductCardImage } from "./product-card/ProductCardImage.jsx";
-import { ProductCardInfo } from "./product-card/ProductCardInfo.jsx";
-import { ProductCardActions } from "./product-card/ProductCardActions.jsx";
+import { formatPrice } from "@/utils/formatters.js";
 
 export function ProductCard({
   product,
@@ -17,84 +27,317 @@ export function ProductCard({
     discount,
     productImage,
     effectiveBadge,
-    quantity,
     addingToCart,
     wishlisted,
     isOutOfStock,
     isVariable,
+    selectedVariantObj,
     selectedVariantId,
     setSelectedVariantId,
     rating,
     reviewCount,
-    subtitle,
     handleAddToCart,
-    handleStepQuantity,
     handleWishlist,
   } = useProductCard({ ...product, badge: product?.badge || badge });
 
   if (!product) return null;
 
+  // ── Gather all gallery images from product data ──
+  const galleryImages = useMemo(() => {
+    const list = [];
+    if (productImage) list.push(productImage);
+
+    if (Array.isArray(product.images)) {
+      product.images.forEach((img) => {
+        const url = typeof img === "string" ? img : img?.url || img?.imageUrl;
+        if (url && !list.includes(url)) list.push(url);
+      });
+    }
+
+    if (Array.isArray(product.gallery)) {
+      product.gallery.forEach((img) => {
+        const url = typeof img === "string" ? img : img?.url;
+        if (url && !list.includes(url)) list.push(url);
+      });
+    }
+
+    if (Array.isArray(product.variants)) {
+      product.variants.forEach((v) => {
+        const vImg = v?.image || v?.imageUrl;
+        if (vImg && !list.includes(vImg)) list.push(vImg);
+      });
+    }
+
+    return list.length > 0 ? list : [productImage || ""];
+  }, [product, productImage]);
+
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
+
+  const handlePrevImage = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : galleryImages.length - 1));
+  };
+
+  const handleNextImage = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveImageIdx((prev) => (prev < galleryImages.length - 1 ? prev + 1 : 0));
+  };
+
+  const handleShare = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const url = `${window.location.origin}/products/${product.slug || product.id || product._id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.name,
+          text: product.name,
+          url,
+        });
+      } catch {
+        // User cancelled
+      }
+    } else {
+      navigator.clipboard?.writeText(url);
+    }
+  };
+
   const productUrl = `/products/${product.slug || product.id || product._id}`;
-  const categoryName = product.category?.name || product.category || "Organic";
-  const isCompact = variant === "compact";
+  const categoryName = product.category?.name || product.category || "General";
+  const displayRating = rating || 4.6;
+  const displayReviewCount = reviewCount > 0 ? reviewCount : 120;
+
+  const savingsAmount =
+    originalPrice > price ? Math.round(originalPrice - price) : null;
 
   return (
     <div
-      className={`group relative bg-white flex flex-col overflow-hidden w-full min-w-0
-        transition-all duration-300 ease-out
-        border border-slate-100 hover:border-slate-200/80
-        shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.10)]
-        hover:-translate-y-1.5
-        ${isCompact ? "rounded-2xl" : "rounded-2xl sm:rounded-3xl"}
-        ${className}`}
+      className={`group relative bg-white flex flex-col rounded-2xl sm:rounded-3xl overflow-hidden w-full min-w-0
+        border border-gray-100 hover:border-gray-200
+        shadow-[0_2px_12px_rgba(0,0,0,0.04)] sm:shadow-[0_4px_20px_rgba(0,0,0,0.06)]
+        hover:shadow-[0_10px_30px_rgba(0,0,0,0.10)]
+        transition-all duration-300 hover:-translate-y-1 select-none ${className}`}
     >
-      {/* Hover accent line */}
-      <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30 rounded-t-3xl" />
+      {/* ── 1. Main Image Frame (Fixed Uncropped Container) ── */}
+      <div className="relative w-full aspect-square bg-[#F7F6F4] overflow-hidden flex items-center justify-center">
+        {/* Main Image Slider with object-contain to never crop */}
+        <Link
+          to={productUrl}
+          aria-label={product.name}
+          className="absolute inset-0 flex items-center justify-center p-3 sm:p-4"
+        >
+          {galleryImages[activeImageIdx] ? (
+            <img
+              src={galleryImages[activeImageIdx]}
+              alt={product.name}
+              loading="lazy"
+              className="w-full h-full object-contain transition-transform duration-500 ease-out group-hover:scale-105"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-center p-2">
+              <span className="font-bold text-xs text-gray-400">{product.name}</span>
+            </div>
+          )}
+        </Link>
 
-      {/* ── Image & Badges ── */}
-      <ProductCardImage
-        productUrl={productUrl}
-        productName={product.name}
-        productImage={productImage}
-        effectiveBadge={effectiveBadge}
-        discount={discount}
-        wishlisted={wishlisted}
-        isOutOfStock={isOutOfStock}
-        onWishlistClick={handleWishlist}
-        variant={variant}
-      />
+        {/* Top-Left: Discount Badge (Red Coral Pill) */}
+        {discount > 0 && (
+          <div className="absolute top-2 sm:top-3 left-2 sm:left-3 z-20">
+            <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-[#FF4D5E] text-white font-bold text-[10px] sm:text-xs shadow-sm sm:shadow-md tracking-tight">
+              -{discount}%
+            </span>
+          </div>
+        )}
 
-      {/* ── Info & Actions Container ── */}
-      <div
-        className={`flex flex-col flex-1 min-w-0 ${
-          isCompact ? "p-3 gap-2.5" : "p-4 sm:p-5 gap-3"
-        }`}
-      >
-        <ProductCardInfo
-          productUrl={productUrl}
-          productName={product.name}
-          categoryName={categoryName}
-          rating={rating}
-          reviewCount={reviewCount}
-          subtitle={subtitle}
-          price={price}
-          originalPrice={originalPrice}
-          country={country}
-          variant={variant}
-          isVariable={isVariable}
-          variants={product?.variants}
-          selectedVariantId={selectedVariantId}
-          onSelectVariant={setSelectedVariantId}
-        />
+        {/* Top-Right: Wishlist & Share Floating Buttons */}
+        <div className="absolute top-2 sm:top-3 right-2 sm:right-3 z-20 flex flex-col gap-1.5 sm:gap-2">
+          {/* Wishlist Button */}
+          <button
+            type="button"
+            onClick={handleWishlist}
+            aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shadow-sm sm:shadow-md backdrop-blur-md transition-all duration-200 cursor-pointer ${
+              wishlisted
+                ? "bg-rose-500 text-white"
+                : "bg-white/95 text-gray-700 hover:text-rose-500 hover:scale-105"
+            }`}
+          >
+            <Heart
+              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform ${
+                wishlisted ? "fill-current text-white scale-110" : ""
+              }`}
+            />
+          </button>
 
-        <ProductCardActions
-          quantity={quantity}
-          addingToCart={addingToCart}
-          isOutOfStock={isOutOfStock}
-          onStepQuantity={handleStepQuantity}
-          onAddToCart={handleAddToCart}
-          variant={variant}
-        />
+          {/* Share Button */}
+          <button
+            type="button"
+            onClick={handleShare}
+            aria-label="Share product"
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 text-gray-700 hover:text-[#358B5B] hover:scale-105 flex items-center justify-center shadow-sm sm:shadow-md backdrop-blur-md transition-all duration-200 cursor-pointer"
+          >
+            <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </button>
+        </div>
+
+        {/* Left Arrow Navigation */}
+        {galleryImages.length > 1 && (
+          <button
+            type="button"
+            onClick={handlePrevImage}
+            aria-label="Previous image"
+            className="absolute left-1.5 sm:left-2 top-1/2 -translate-y-1/2 z-20 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/80 hover:bg-white text-gray-700 hover:text-black flex items-center justify-center shadow-xs backdrop-blur-xs transition-all cursor-pointer opacity-85 hover:opacity-100"
+          >
+            <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </button>
+        )}
+
+        {/* Right Arrow Navigation */}
+        {galleryImages.length > 1 && (
+          <button
+            type="button"
+            onClick={handleNextImage}
+            aria-label="Next image"
+            className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 z-20 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/80 hover:bg-white text-gray-700 hover:text-black flex items-center justify-center shadow-xs backdrop-blur-xs transition-all cursor-pointer opacity-85 hover:opacity-100"
+          >
+            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </button>
+        )}
+
+        {/* Bottom-Right: Image Counter Pill (e.g. 1/6) */}
+        {galleryImages.length > 1 && (
+          <div className="absolute bottom-2 sm:bottom-2.5 right-2 sm:right-2.5 z-20">
+            <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-black/60 text-white text-[9px] sm:text-[10px] font-medium tracking-wider backdrop-blur-xs">
+              {activeImageIdx + 1}/{galleryImages.length}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* ── 2. Compact Product Details Block ── */}
+      <div className="p-3 sm:p-4 flex flex-col flex-1 gap-2">
+        {/* Category Label */}
+        <p className="text-[10px] sm:text-[11px] font-medium text-gray-400 capitalize truncate">
+          {categoryName}
+        </p>
+
+        {/* Product Title */}
+        <Link to={productUrl} className="block group/title">
+          <h3 className="font-bold text-[13px] sm:text-[15px] text-[#172B2A] leading-snug line-clamp-1 group-hover/title:text-[#358B5B] transition-colors">
+            {product.name}
+          </h3>
+        </Link>
+
+        {/* Rating & Stock Status Row */}
+        <div className="flex items-center justify-between gap-1.5 pt-0.5">
+          {/* Rating */}
+          <div className="flex items-center gap-1 min-w-0">
+            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />
+            <span className="text-[11px] sm:text-xs font-bold text-gray-800">
+              {displayRating}
+            </span>
+            <span className="text-[10px] text-gray-400 truncate">
+              ({displayReviewCount > 999 ? `${(displayReviewCount / 1000).toFixed(1)}k` : displayReviewCount})
+            </span>
+          </div>
+
+          {/* In Stock / Out of Stock Pill */}
+          {isOutOfStock ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 font-semibold text-[10px] shrink-0">
+              <PackageX className="w-2.5 h-2.5" />
+              <span>Out of Stock</span>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#EBF7F0] text-[#2E7D52] font-semibold text-[10px] shrink-0">
+              <Check className="w-2.5 h-2.5 text-[#2E7D52]" strokeWidth={2.5} />
+              <span>In Stock</span>
+            </span>
+          )}
+        </div>
+
+        {/* Pricing Row & Savings Pill */}
+        <div className="flex items-center justify-between gap-1.5 pt-0.5 flex-wrap">
+          {/* Prices */}
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-base sm:text-lg font-black text-[#172B2A] tracking-tight">
+              {formatPrice(price, country.currency, country.symbol)}
+            </span>
+
+            {originalPrice > price && (
+              <span className="text-[11px] sm:text-xs font-medium text-gray-400 line-through">
+                {formatPrice(originalPrice, country.currency, country.symbol)}
+              </span>
+            )}
+          </div>
+
+          {/* Save Amount Pill */}
+          {savingsAmount && (
+            <span className="px-2 py-0.5 rounded-full bg-[#FEEBED] text-[#E53950] text-[10px] font-bold tracking-tight shrink-0">
+              Save {formatPrice(savingsAmount, country.currency, country.symbol)}
+            </span>
+          )}
+        </div>
+
+        {/* Variant Dropdown (if product has variants) */}
+        {isVariable && Array.isArray(product.variants) && product.variants.length > 0 && (
+          <div className="pt-1 space-y-0.5">
+            <div className="relative">
+              <select
+                value={selectedVariantId || product.variants[0]?.id || ""}
+                onChange={(e) => {
+                  setSelectedVariantId(e.target.value);
+                }}
+                className="w-full bg-[#F8FAF9] hover:bg-white text-gray-800 text-[11px] font-medium py-1.5 px-2.5 pr-7 rounded-xl border border-gray-200 hover:border-[#358B5B] focus:border-[#358B5B] focus:ring-1 focus:ring-[#358B5B] transition-all appearance-none cursor-pointer outline-none truncate"
+              >
+                {product.variants.map((v) => {
+                  const label =
+                    v.name ||
+                    v.variant_name ||
+                    (v.attributes && typeof v.attributes === "object"
+                      ? Object.values(v.attributes).filter(Boolean).join(" / ")
+                      : "Option");
+
+                  return (
+                    <option key={v.id} value={v.id}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-gray-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          </div>
+        )}
+
+        {/* ── 3. Primary "Add to Cart" Button (Sleek Compact Pill) ── */}
+        <div className="pt-1.5 mt-auto">
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            disabled={addingToCart || isOutOfStock}
+            className={`w-full py-2 sm:py-2.5 px-3 rounded-xl sm:rounded-2xl font-bold text-xs tracking-wide flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer shadow-xs ${
+              isOutOfStock
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+                : addingToCart
+                ? "bg-[#256B45] text-white"
+                : "bg-[#1F5438] hover:bg-[#163E29] text-white active:scale-[0.98] hover:shadow-sm"
+            }`}
+          >
+            {addingToCart ? (
+              <>
+                <Check className="w-3.5 h-3.5 animate-in zoom-in duration-200" strokeWidth={2.5} />
+                <span>Added!</span>
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="w-3.5 h-3.5" />
+                <span>Add to Cart</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

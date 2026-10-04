@@ -64,7 +64,7 @@ export function FeaturedProductsSection({
             <p className="text-xs text-gray-500">Check back soon for freshly updated catalog items.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-5">
             {displayed.map((p, i) => (
               <ProductCardCompact
                 key={p.id || i}
