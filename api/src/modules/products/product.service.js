@@ -334,7 +334,7 @@ export async function updateProduct(id, input) {
 
               if (!existingInv) {
                 const initialQty = Math.max(0, Number(v.stock) || 0);
-                await tx.inventory.create({
+                const newInv = await tx.inventory.create({
                   data: {
                     organizationId: defaultWarehouse.organizationId,
                     warehouseId: defaultWarehouse.id,
@@ -346,11 +346,51 @@ export async function updateProduct(id, input) {
                     reorderQuantity: 20
                   }
                 });
+
+                if (initialQty > 0) {
+                  await tx.inventoryTransaction.create({
+                    data: {
+                      organizationId: defaultWarehouse.organizationId,
+                      inventoryId: newInv.id,
+                      type: "RESTOCK",
+                      quantity: initialQty,
+                      previousQuantity: 0,
+                      newQuantity: initialQty,
+                      previousReservedQuantity: 0,
+                      newReservedQuantity: 0,
+                      referenceId: product.id,
+                      referenceType: "MANUAL",
+                      reason: `Initial stock for variant "${v.name || v.sku || "Variant"}" via Edit Product`
+                    }
+                  });
+                }
               } else if (v.stock !== undefined && v.stock !== null) {
-                await tx.inventory.update({
-                  where: { id: existingInv.id },
-                  data: { quantity: Math.max(0, Number(v.stock) || 0) }
-                });
+                const newQty = Math.max(0, Number(v.stock) || 0);
+                const prevQty = existingInv.quantity;
+                const diff = newQty - prevQty;
+
+                if (diff !== 0) {
+                  await tx.inventory.update({
+                    where: { id: existingInv.id },
+                    data: { quantity: newQty }
+                  });
+
+                  await tx.inventoryTransaction.create({
+                    data: {
+                      organizationId: defaultWarehouse.organizationId,
+                      inventoryId: existingInv.id,
+                      type: diff > 0 ? "RESTOCK" : "ADJUSTMENT",
+                      quantity: Math.abs(diff),
+                      previousQuantity: prevQty,
+                      newQuantity: newQty,
+                      previousReservedQuantity: existingInv.reservedQuantity,
+                      newReservedQuantity: existingInv.reservedQuantity,
+                      referenceId: product.id,
+                      referenceType: "MANUAL",
+                      reason: `Stock changed from ${prevQty} to ${newQty} via Edit Product`
+                    }
+                  });
+                }
               }
             }
           } else if (product.type === "SIMPLE") {
@@ -367,7 +407,7 @@ export async function updateProduct(id, input) {
 
             if (!existingInv) {
               const initialQty = Math.max(0, Number(product.stock) || 0);
-              await tx.inventory.create({
+              const newInv = await tx.inventory.create({
                 data: {
                   organizationId: defaultWarehouse.organizationId,
                   warehouseId: defaultWarehouse.id,
@@ -379,11 +419,51 @@ export async function updateProduct(id, input) {
                   reorderQuantity: 20
                 }
               });
+
+              if (initialQty > 0) {
+                await tx.inventoryTransaction.create({
+                  data: {
+                    organizationId: defaultWarehouse.organizationId,
+                    inventoryId: newInv.id,
+                    type: "RESTOCK",
+                    quantity: initialQty,
+                    previousQuantity: 0,
+                    newQuantity: initialQty,
+                    previousReservedQuantity: 0,
+                    newReservedQuantity: 0,
+                    referenceId: product.id,
+                    referenceType: "MANUAL",
+                    reason: `Initial stock for product "${product.name}" via Edit Product`
+                  }
+                });
+              }
             } else if (input.stock !== undefined) {
-              await tx.inventory.update({
-                where: { id: existingInv.id },
-                data: { quantity: Math.max(0, Number(input.stock) || 0) }
-              });
+              const newQty = Math.max(0, Number(input.stock) || 0);
+              const prevQty = existingInv.quantity;
+              const diff = newQty - prevQty;
+
+              if (diff !== 0) {
+                await tx.inventory.update({
+                  where: { id: existingInv.id },
+                  data: { quantity: newQty }
+                });
+
+                await tx.inventoryTransaction.create({
+                  data: {
+                    organizationId: defaultWarehouse.organizationId,
+                    inventoryId: existingInv.id,
+                    type: diff > 0 ? "RESTOCK" : "ADJUSTMENT",
+                    quantity: Math.abs(diff),
+                    previousQuantity: prevQty,
+                    newQuantity: newQty,
+                    previousReservedQuantity: existingInv.reservedQuantity,
+                    newReservedQuantity: existingInv.reservedQuantity,
+                    referenceId: product.id,
+                    referenceType: "MANUAL",
+                    reason: `Stock changed from ${prevQty} to ${newQty} via Edit Product`
+                  }
+                });
+              }
             }
           }
         }
@@ -535,10 +615,36 @@ export async function updateVariant(productId, id, input) {
 
   try {
     if (input.stock !== undefined) {
-      await prisma.inventory.updateMany({
-        where: { variantId: id },
-        data: { quantity: Math.max(0, Number(input.stock) || 0) }
-      });
+      const invs = await prisma.inventory.findMany({ where: { variantId: id } });
+      const newQty = Math.max(0, Number(input.stock) || 0);
+
+      for (const inv of invs) {
+        const prevQty = inv.quantity;
+        const diff = newQty - prevQty;
+
+        if (diff !== 0) {
+          await prisma.inventory.update({
+            where: { id: inv.id },
+            data: { quantity: newQty }
+          });
+
+          await prisma.inventoryTransaction.create({
+            data: {
+              organizationId: inv.organizationId,
+              inventoryId: inv.id,
+              type: diff > 0 ? "RESTOCK" : "ADJUSTMENT",
+              quantity: Math.abs(diff),
+              previousQuantity: prevQty,
+              newQuantity: newQty,
+              previousReservedQuantity: inv.reservedQuantity,
+              newReservedQuantity: inv.reservedQuantity,
+              referenceId: productId,
+              referenceType: "MANUAL",
+              reason: `Variant stock adjusted from ${prevQty} to ${newQty} via Edit Variant`
+            }
+          });
+        }
+      }
     }
   } catch (err) {
     console.warn("[Inventory Sync] Failed to sync inventory for variant:", err.message);

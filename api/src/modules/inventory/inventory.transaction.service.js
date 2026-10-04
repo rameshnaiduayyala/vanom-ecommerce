@@ -48,9 +48,17 @@ export async function listTransactions(organizationId, {
       include: {
         inventory: {
           include: {
-            warehouse: { select: { id: true, name: true, code: true } },
-            product: { select: { id: true, name: true, sku: true } },
-            variant: { select: { id: true, name: true, sku: true } }
+            warehouse: { select: { id: true, name: true, code: true, address: true, city: true, country: true } },
+            product: { 
+              select: { 
+                id: true, 
+                name: true, 
+                sku: true,
+                category: { select: { id: true, name: true } },
+                brand: { select: { id: true, name: true } }
+              } 
+            },
+            variant: { select: { id: true, name: true, sku: true, attributes: true } }
           }
         },
         createdBy: {
