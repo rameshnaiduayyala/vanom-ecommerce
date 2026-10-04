@@ -30,3 +30,17 @@ cd frontend
 npm install
 npm run dev
 ```
+
+---
+
+## ⚡ Running Everything in One Command
+
+From the root project directory:
+```bash
+npm run dev
+```
+This runs concurrently:
+- **API backend** (`api`)
+- **Frontend UI** (`frontend`)
+- **Prisma Studio** (`api`)
+
