@@ -1,86 +1,128 @@
 import React, { useRef } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Grid, ShoppingBasket } from "lucide-react";
+import { ChevronLeft, ChevronRight, Grid } from "lucide-react";
 import { ROUTES } from "../../../../constants/routes.js";
 
-export function CategoryIconStrip({ categories = [], activeCategory = null, className = "" }) {
+export function CategoryIconStrip({
+  categories = [],
+  activeCategory = null,
+  className = "",
+}) {
   const scrollRef = useRef(null);
   const items = Array.isArray(categories) ? categories : [];
 
   const scroll = (dir) => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: dir * 240, behavior: "smooth" });
-    }
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollBy({
+      left: dir * 320,
+      behavior: "smooth",
+    });
   };
 
   if (items.length === 0) {
-    return (
-      <div className={`w-full max-w-full overflow-hidden py-3 px-4 text-center ${className}`}>
-        <p className="text-xs text-[#264D3B]/70 font-medium">No categories available at the moment.</p>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className={`w-full max-w-full overflow-hidden ${className}`}>
-      <div className="max-w-[1440px] mx-auto relative py-2.5 px-0 sm:px-12 w-full min-w-0">
-        {/* Desktop Left Scroll Button */}
+    <div className={`w-full bg-[#FBFDFB] border-b border-[#E3ECE6] py-3 select-none ${className}`}>
+      <div className="max-w-[1440px] mx-auto px-2 sm:px-6 relative flex items-center">
+
+        {/* Compact Navigation Left */}
         <button
+          type="button"
           onClick={() => scroll(-1)}
           aria-label="Previous categories"
-          className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/95 shadow-md rounded-full items-center justify-center text-gray-700 hover:text-gray-900 transition-all cursor-pointer border border-gray-200/80 hover:scale-105"
+          className="flex absolute left-1 sm:left-2 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 border border-[#D5E4DB] shadow-md hover:shadow-lg items-center justify-center text-[#264D3B] hover:bg-[#264D3B] hover:text-white active:scale-95 transition-all cursor-pointer"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
         </button>
 
-        {/* Scrollable Pill Container */}
+        {/* Scrollable Compact Category Icons Strip */}
         <div
           ref={scrollRef}
-          className="flex items-center justify-start lg:justify-center overflow-x-auto scrollbar-none gap-2 sm:gap-2.5 px-4 sm:px-2 py-1 w-full min-w-0 overscroll-x-contain"
+          className="flex items-center gap-3 sm:gap-5 lg:gap-6 overflow-x-auto scrollbar-none scroll-smooth px-8 sm:px-10 md:px-10 w-full overscroll-x-contain"
         >
           {items.map((cat, idx) => {
             const isFirst = idx === 0 && !activeCategory;
-            const isActive = activeCategory === cat.id || isFirst;
+            const isActive =
+              activeCategory === cat.id ||
+              activeCategory === cat.slug ||
+              isFirst;
+
+            const image =
+              cat.image ||
+              cat.imageUrl ||
+              cat.thumbnail ||
+              cat.categoryImage;
 
             return (
               <Link
-                key={cat.id}
+                key={cat.id || cat.slug || idx}
                 to={`${ROUTES.PRODUCTS}?category=${cat.id || cat.slug}`}
-                className={`flex items-center gap-2 px-3.5 sm:px-4.5 py-2 sm:py-2.5 rounded-full border transition-all duration-200 shrink-0 whitespace-nowrap cursor-pointer select-none font-bold text-[11px] sm:text-xs uppercase tracking-wider ${
-                  isActive
-                    ? "bg-[#358B5B] text-white border-[#358B5B] shadow-xs"
-                    : "bg-transparent text-[#264D3B] border-[#7CA98B]/60 hover:bg-[#358B5B] hover:text-white hover:border-[#358B5B]"
-                }`}
+                className="group shrink-0 flex flex-col items-center gap-1.5 py-1 px-1 cursor-pointer"
               >
-                <ShoppingBasket
-                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 transition-colors ${
-                    isActive ? "text-white" : "text-[#264D3B] group-hover:text-white"
+                {/* Clean Smart Circle Icon */}
+                <div
+                  className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-full p-[2px] transition-all duration-300 ${
+                    isActive
+                      ? "ring-2 ring-[#358B5B] ring-offset-2 ring-offset-white shadow-xs"
+                      : "ring-1 ring-[#D8E6DE] group-hover:ring-[#358B5B]/70 group-hover:scale-105"
                   }`}
-                  strokeWidth={1.8}
-                />
-                <span>{cat.name}</span>
+                >
+                  <div className="w-full h-full rounded-full overflow-hidden bg-white">
+                    {image ? (
+                      <img
+                        src={image}
+                        alt={cat.name}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-[#EAF5EF] to-[#D5EBDC] flex items-center justify-center text-[#264D3B] text-base font-bold">
+                        {cat.name?.charAt(0)?.toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Minimal Label */}
+                <span
+                  className={`text-[11px] sm:text-xs tracking-tight text-center max-w-[80px] sm:max-w-[90px] truncate transition-colors duration-200 ${
+                    isActive
+                      ? "text-[#264D3B] font-bold"
+                      : "text-[#3D5249] font-medium group-hover:text-[#264D3B]"
+                  }`}
+                >
+                  {cat.name}
+                </span>
               </Link>
             );
           })}
 
-          {/* "Show All" Pill */}
+          {/* Quick "All" Action */}
           <Link
             to={ROUTES.PRODUCTS}
-            className="flex items-center gap-1.5 px-3.5 sm:px-4.5 py-2 sm:py-2.5 rounded-full border border-[#7CA98B]/60 text-[#264D3B] hover:bg-[#358B5B] hover:text-white hover:border-[#358B5B] transition-all duration-200 shrink-0 whitespace-nowrap cursor-pointer font-bold text-[11px] sm:text-xs uppercase tracking-wider"
+            className="group shrink-0 flex flex-col items-center gap-1.5 py-1 px-1 cursor-pointer"
           >
-            <Grid className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" strokeWidth={1.8} />
-            <span>Show All</span>
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border border-dashed border-[#A7C8B5] bg-white group-hover:bg-[#EBF5EF] group-hover:border-[#358B5B] flex items-center justify-center text-[#264D3B] transition-all duration-300 group-hover:scale-105">
+              <Grid className="w-5 h-5 text-[#358B5B]" />
+            </div>
+            <span className="text-[11px] sm:text-xs font-semibold text-[#264D3B] tracking-tight">
+              All
+            </span>
           </Link>
         </div>
 
-        {/* Desktop Right Scroll Button */}
+        {/* Compact Navigation Right */}
         <button
+          type="button"
           onClick={() => scroll(1)}
           aria-label="Next categories"
-          className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/95 shadow-md rounded-full items-center justify-center text-gray-700 hover:text-gray-900 transition-all cursor-pointer border border-gray-200/80 hover:scale-105"
+          className="flex absolute right-1 sm:right-2 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/95 border border-[#D5E4DB] shadow-md hover:shadow-lg items-center justify-center text-[#264D3B] hover:bg-[#264D3B] hover:text-white active:scale-95 transition-all cursor-pointer"
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
         </button>
+
       </div>
     </div>
   );

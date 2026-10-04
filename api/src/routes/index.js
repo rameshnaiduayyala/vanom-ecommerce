@@ -45,6 +45,10 @@ export async function registerRoutes(fastify) {
   await fastify.register(productRoutes, {
     prefix: "/api/v1"
   });
+  fastify.get("/api/products/search", async (request, reply) => {
+    const { search } = await import("../modules/products/product.controller.js");
+    return search(request, reply);
+  });
   await fastify.register(userRoutes, {
     prefix: "/api/v1"
   });

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronDown, Circle } from "lucide-react";
+import { ChevronDown, Circle, X } from "lucide-react";
 import { BRAND_COLORS } from "../../constants/colors.js";
+import defaultLogo from "@/assets/logo.png";
 
 /**
  * EnterpriseSidebar
@@ -15,11 +16,14 @@ export function EnterpriseSidebar({
     title: "VANOM",
     subtitle: "Admin Portal",
     logoPath: "/admin/dashboard",
+    logoSrc: defaultLogo,
   },
   footer,
   width = "260px",
   collapsedWidth = "76px",
   className = "",
+  isMobileOpen = false,
+  onCloseMobile = null,
 }) {
   const location = useLocation();
 
@@ -57,6 +61,10 @@ export function EnterpriseSidebar({
       }
     });
     setOpenMenus((prev) => ({ ...prev, ...initialOpen }));
+    // Auto-close mobile drawer on route navigation
+    if (onCloseMobile) {
+      onCloseMobile();
+    }
   }, [location.pathname, location.search]);
 
   const toggleSubmenu = (id) => {
@@ -78,17 +86,11 @@ export function EnterpriseSidebar({
             to={brand.logoPath || "/admin/dashboard"}
             className="flex items-center gap-3 min-w-0 group"
           >
-            {brand.logoSrc ? (
-              <img
-                src={brand.logoSrc}
-                alt={brand.title || "Vanom"}
-                className="h-8 w-auto max-w-[140px] object-contain brightness-0 invert opacity-95 group-hover:opacity-100 transition-opacity"
-              />
-            ) : (
-              <span className="text-lg font-black tracking-wider text-white">
-                {brand.title || "VANOM"}
-              </span>
-            )}
+            <img
+              src={brand.logoSrc || defaultLogo}
+              alt={brand.title || "Vanom"}
+              className="h-9 w-auto max-w-[140px] object-contain drop-shadow-xs group-hover:scale-102 transition-transform duration-200"
+            />
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/25 text-[10px] text-emerald-300 font-bold tracking-wide">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span>{brand.badgeText || "ADMIN"}</span>
@@ -97,10 +99,27 @@ export function EnterpriseSidebar({
         ) : (
           <Link
             to={brand.logoPath || "/admin/dashboard"}
-            className="mx-auto w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center font-black text-white hover:bg-white/15 transition-all shadow-inner"
+            className="mx-auto w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center p-1.5 hover:bg-white/15 transition-all shadow-inner"
+            title={brand.title || "Vanom"}
           >
-            {brand.title ? brand.title[0] : "V"}
+            <img
+              src={brand.logoSrc || defaultLogo}
+              alt={brand.title || "Vanom"}
+              className="w-full h-full object-contain"
+            />
           </Link>
+        )}
+
+        {/* Mobile Close Button */}
+        {onCloseMobile && (
+          <button
+            type="button"
+            onClick={onCloseMobile}
+            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            title="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
         )}
       </div>
 
@@ -133,20 +152,18 @@ export function EnterpriseSidebar({
                   type="button"
                   onClick={() => toggleSubmenu(item.id)}
                   title={collapsed ? item.label : undefined}
-                  className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer group ${
-                    parentActive
+                  className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer group ${parentActive
                       ? "text-white bg-white/[0.08] shadow-2xs"
                       : "text-slate-300 hover:text-white hover:bg-white/[0.05]"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     {Icon && (
                       <Icon
-                        className={`w-4 h-4 shrink-0 transition-colors ${
-                          parentActive
+                        className={`w-4 h-4 shrink-0 transition-colors ${parentActive
                             ? "text-emerald-400"
                             : "text-slate-400 group-hover:text-slate-200"
-                        }`}
+                          }`}
                       />
                     )}
                     {!collapsed && (
@@ -158,17 +175,15 @@ export function EnterpriseSidebar({
                     <div className="flex items-center gap-1.5 shrink-0">
                       {item.badge !== undefined && (
                         <span
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold leading-none text-white ${
-                            item.badgeColor || "bg-emerald-600"
-                          }`}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold leading-none text-white ${item.badgeColor || "bg-emerald-600"
+                            }`}
                         >
                           {item.badge}
                         </span>
                       )}
                       <ChevronDown
-                        className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
-                          isOpen ? "rotate-180 text-white" : ""
-                        }`}
+                        className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180 text-white" : ""
+                          }`}
                       />
                     </div>
                   )}
@@ -185,20 +200,18 @@ export function EnterpriseSidebar({
                         <Link
                           key={child.id || child.path}
                           to={child.path}
-                          className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-all ${
-                            childActive
+                          className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-all ${childActive
                               ? "bg-[#00875A] text-white font-bold shadow-xs"
                               : "text-slate-300 hover:text-white hover:bg-white/[0.05] font-medium"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center gap-2 min-w-0">
                             {ChildIcon ? (
                               <ChildIcon className="w-3.5 h-3.5 shrink-0" />
                             ) : (
                               <span
-                                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                  childActive ? "bg-white" : "bg-emerald-400/40"
-                                }`}
+                                className={`w-1.5 h-1.5 rounded-full shrink-0 ${childActive ? "bg-white" : "bg-emerald-400/40"
+                                  }`}
                               />
                             )}
                             <span className="truncate">{child.label}</span>
@@ -206,9 +219,8 @@ export function EnterpriseSidebar({
 
                           {child.badge !== undefined && (
                             <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold leading-none text-white ${
-                                child.badgeColor || "bg-amber-500"
-                              }`}
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold leading-none text-white ${child.badgeColor || "bg-amber-500"
+                                }`}
                             >
                               {child.badge}
                             </span>
@@ -230,18 +242,16 @@ export function EnterpriseSidebar({
               key={item.id || item.path}
               to={item.path}
               title={collapsed ? item.label : undefined}
-              className={`flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer group ${
-                singleActive
+              className={`flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer group ${singleActive
                   ? "bg-[#00875A] text-white shadow-xs font-bold"
                   : "text-slate-300 hover:text-white hover:bg-white/[0.05] font-medium"
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 {Icon && (
                   <Icon
-                    className={`w-4 h-4 shrink-0 transition-colors ${
-                      singleActive ? "text-white" : "text-slate-400 group-hover:text-slate-200"
-                    }`}
+                    className={`w-4 h-4 shrink-0 transition-colors ${singleActive ? "text-white" : "text-slate-400 group-hover:text-slate-200"
+                      }`}
                   />
                 )}
                 {!collapsed && <span className="truncate">{item.label}</span>}
@@ -249,9 +259,8 @@ export function EnterpriseSidebar({
 
               {!collapsed && item.badge !== undefined && (
                 <span
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold leading-none text-white ${
-                    item.badgeColor || "bg-rose-500"
-                  }`}
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold leading-none text-white ${item.badgeColor || "bg-rose-500"
+                    }`}
                 >
                   {item.badge}
                 </span>

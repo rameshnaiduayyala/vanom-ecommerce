@@ -23,6 +23,9 @@ import { Button } from "@/components/ui/Button.jsx";
 import { Input } from "@/components/ui/Input.jsx";
 import { Modal } from "@/components/ui/Modal.jsx";
 import { useUIStore } from "@/stores/ui.store.js";
+import { formatPrice } from "@/utils/formatters.js";
+import { resolveProductImageUrl } from "@/utils/image.js";
+import { AdminOrderDetailsModal } from "../components/AdminOrderDetailsModal.jsx";
 
 const STATUS_BADGES = {
   PENDING: { label: "Pending", variant: "warning" },
@@ -47,6 +50,7 @@ export function AdminShipmentsPage() {
   const [selectedShipment, setSelectedShipment] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [trackingModalShipment, setTrackingModalShipment] = useState(null);
+  const [selectedOrderForModal, setSelectedOrderForModal] = useState(null);
 
   // 1. Fetch Shipments
   const { data, isLoading, refetch } = useQuery({
@@ -325,16 +329,17 @@ export function AdminShipmentsPage() {
 
                           {/* View details */}
                           <Button
-                            variant="ghost"
+                            variant="secondary"
                             size="xs"
                             onClick={() => {
                               setSelectedShipment(s);
                               setIsDetailModalOpen(true);
                             }}
-                            className="p-1.5"
-                            title="View Shipment Details"
+                            className="p-1.5 text-slate-700 border border-slate-200"
+                            title="View Shipment & Ordered Items"
                           >
-                            <Eye className="w-3.5 h-3.5 text-gray-600" />
+                            <Eye className="w-3.5 h-3.5 text-slate-600" />
+                            <span className="text-[11px]">View</span>
                           </Button>
                         </div>
                       </td>
@@ -411,6 +416,105 @@ export function AdminShipmentsPage() {
               </p>
             </div>
 
+            {/* ── Ordered Items with Images Section ── */}
+            <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+              <div className="p-3 bg-slate-100/80 border-b border-slate-200 flex items-center justify-between">
+                <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                  <Package className="w-3.5 h-3.5 text-emerald-700" />
+                  Ordered Items in this Consignment
+                </span>
+                {selectedShipment.order && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedOrderForModal(selectedShipment.order);
+                    }}
+                    className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-900 hover:underline flex items-center gap-1"
+                  >
+                    <span>Full Order View</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {(() => {
+                const orderItems = selectedShipment.order?.items || selectedShipment.items || [];
+                if (orderItems.length === 0) {
+                  return (
+                    <div className="p-4 text-center text-slate-400 italic">
+                      No line items specified for this shipment.
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto">
+                    {orderItems.map((it, idx) => {
+                      const actualItem = it.orderItem || it;
+                      const product = actualItem.product || {};
+                      const variant = actualItem.variant || {};
+                      const name = actualItem.name || product.name || `Shipment Item #${idx + 1}`;
+                      const sku = actualItem.sku || variant.sku || product.sku || "SKU-N/A";
+                      const qty = Number(it.quantity || actualItem.quantity || 1);
+                      const unitPrice = Number(actualItem.unitPrice || actualItem.price || 0);
+                      const imgUrl =
+                        resolveProductImageUrl(product) ||
+                        product.images?.[0]?.url ||
+                        (typeof product.images?.[0] === "string" ? product.images[0] : null) ||
+                        product.image ||
+                        "https://images.unsplash.com/photo-1585336261026-7f81498b584d?auto=format&fit=crop&w=400&q=80";
+
+                      return (
+                        <div
+                          key={it.id || idx}
+                          className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-12 h-12 rounded-lg bg-slate-100 border border-slate-200 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
+                              <img
+                                src={imgUrl}
+                                alt={name}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  e.target.src = "https://images.unsplash.com/photo-1585336261026-7f81498b584d?auto=format&fit=crop&w=400&q=80";
+                                }}
+                              />
+                            </div>
+                            <div className="min-w-0 space-y-0.5">
+                              <p className="font-bold text-slate-900 text-xs truncate max-w-[260px] sm:max-w-[340px]">
+                                {name}
+                              </p>
+                              <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
+                                <span className="font-mono text-slate-500 bg-slate-100 px-1 py-0.2 rounded border border-slate-200">
+                                  {sku}
+                                </span>
+                                {variant.name && (
+                                  <span className="text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded font-medium">
+                                    Variant: {variant.name}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="text-right shrink-0">
+                            <p className="font-bold font-mono text-slate-900 text-xs">
+                              Qty: {qty}
+                            </p>
+                            {unitPrice > 0 && (
+                              <p className="text-[10px] text-slate-400 font-mono">
+                                {formatPrice(unitPrice, "USD")} each
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
             {/* Label actions */}
             {selectedShipment.labelUrl ? (
               <div className="p-3 rounded-xl bg-blue-50 border border-blue-200/60 flex items-center justify-between">
@@ -457,6 +561,15 @@ export function AdminShipmentsPage() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Full Order Details Modal */}
+      {selectedOrderForModal && (
+        <AdminOrderDetailsModal
+          order={selectedOrderForModal}
+          isOpen={Boolean(selectedOrderForModal)}
+          onClose={() => setSelectedOrderForModal(null)}
+        />
       )}
     </div>
   );

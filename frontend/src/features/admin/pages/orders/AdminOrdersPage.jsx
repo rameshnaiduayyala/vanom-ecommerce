@@ -24,6 +24,7 @@ import {
   FileText,
 } from "lucide-react";
 import { openDirectInvoicePdf } from "@/utils/invoice.js";
+import { AdminOrderDetailsModal } from "../components/AdminOrderDetailsModal.jsx";
 
 export function AdminOrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -264,8 +265,12 @@ export function AdminOrdersPage() {
                     const itemsSummary = b.items?.map((i) => i.bulkProduct?.name || "Commodity Item").join(", ") || "Palletized Wholesale Batch";
 
                     return (
-                      <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="p-4 font-mono font-bold text-slate-900">
+                      <tr
+                        key={b.id}
+                        onClick={() => setSelectedOrder(b)}
+                        className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
+                      >
+                        <td className="p-4 font-mono font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
                           {b.orderNumber || `BLK-${b.id.slice(0, 8)}`}
                         </td>
                         <td className="p-4 font-bold text-emerald-800">
@@ -308,20 +313,31 @@ export function AdminOrdersPage() {
                             {b.status || "DRAFT"}
                           </Badge>
                         </td>
-                        <td className="p-4 text-right">
-                          <select
-                            value={b.status || "DRAFT"}
-                            onChange={(e) => handleBulkStatusChange(b.id, e.target.value)}
-                            className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 bg-slate-50 hover:bg-white text-slate-700 cursor-pointer focus:outline-none focus:border-[#006B3C]"
-                          >
-                            <option value="DRAFT">DRAFT</option>
-                            <option value="SUBMITTED">SUBMITTED</option>
-                            <option value="QUOTED">QUOTED</option>
-                            <option value="APPROVED">APPROVED</option>
-                            <option value="PROCESSING">PROCESSING</option>
-                            <option value="COMPLETED">COMPLETED</option>
-                            <option value="CANCELLED">CANCELLED</option>
-                          </select>
+                        <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-2">
+                            <select
+                              value={b.status || "DRAFT"}
+                              onChange={(e) => handleBulkStatusChange(b.id, e.target.value)}
+                              className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 bg-slate-50 hover:bg-white text-slate-700 cursor-pointer focus:outline-none focus:border-[#006B3C]"
+                            >
+                              <option value="DRAFT">DRAFT</option>
+                              <option value="SUBMITTED">SUBMITTED</option>
+                              <option value="QUOTED">QUOTED</option>
+                              <option value="APPROVED">APPROVED</option>
+                              <option value="PROCESSING">PROCESSING</option>
+                              <option value="COMPLETED">COMPLETED</option>
+                              <option value="CANCELLED">CANCELLED</option>
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedOrder(b)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                              title="View Ordered Items"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-slate-500" />
+                              <span>View</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -360,7 +376,7 @@ export function AdminOrdersPage() {
                   <th className="p-4">Date</th>
                   <th className="p-4">Total Amount</th>
                   <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Update Status</th>
+                  <th className="p-4 text-right">Update Status / View</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white">
@@ -382,8 +398,12 @@ export function AdminOrdersPage() {
                       "Consumer Buyer";
 
                     return (
-                      <tr key={o.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="p-4 font-mono font-bold text-slate-900">
+                      <tr
+                        key={o.id}
+                        onClick={() => setSelectedOrder(o)}
+                        className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
+                      >
+                        <td className="p-4 font-mono font-bold text-slate-900 group-hover:text-blue-700 transition-colors">
                           {o.orderNumber || o.id?.slice(0, 10)}
                         </td>
                         <td className="p-4 font-semibold text-slate-800">
@@ -408,7 +428,7 @@ export function AdminOrdersPage() {
                             {o.status || statusConfig.label}
                           </Badge>
                         </td>
-                        <td className="p-4 text-right">
+                        <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-2">
                             <select
                               value={o.status || "PROCESSING"}
@@ -423,14 +443,24 @@ export function AdminOrdersPage() {
                               <option value="CANCELLED">CANCELLED</option>
                             </select>
                             <button
+                              type="button"
                               onClick={() => {
                                 const isB2B = Boolean(o.bulkProduct || o.company || o.orderNumber?.startsWith("BULK") || o.business);
                                 openDirectInvoicePdf(o.id, isB2B, o.orderNumber);
                               }}
-                              className="p-1.5 rounded-md hover:bg-emerald-50 text-emerald-700 hover:text-emerald-900 transition-colors border border-emerald-200"
+                              className="p-1.5 rounded-md hover:bg-emerald-50 text-emerald-700 hover:text-emerald-900 transition-colors border border-emerald-200 cursor-pointer"
                               title="Generate Official Invoice"
                             >
                               <Printer className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedOrder(o)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                              title="View Ordered Items"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-slate-500" />
+                              <span>View</span>
                             </button>
                           </div>
                         </td>
@@ -443,6 +473,20 @@ export function AdminOrdersPage() {
           </div>
         </div>
       )}
+
+      {/* Comprehensive Order Details Modal with Product Images */}
+      <AdminOrderDetailsModal
+        order={selectedOrder}
+        isOpen={Boolean(selectedOrder)}
+        onClose={() => setSelectedOrder(null)}
+        onStatusChange={(id, status) => {
+          if (selectedOrder?.orderNumber?.startsWith("BLK") || selectedOrder?.company) {
+            handleBulkStatusChange(id, status);
+          } else {
+            handleRetailStatusChange(id, status);
+          }
+        }}
+      />
     </div>
   );
 }

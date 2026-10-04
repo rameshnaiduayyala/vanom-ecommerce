@@ -16,7 +16,7 @@ export function ProductsPage() {
   const { country } = useCountryStore();
 
   const currentCategory = slug || searchParams.get("category") || "";
-  const currentSearch = searchParams.get("q") || "";
+  const currentSearch = searchParams.get("search") || searchParams.get("q") || "";
   const [sortBy, setSortBy] = useState("popular");
   const [inStockOnly, setInStockOnly] = useState(false);
   const [gridCols, setGridCols] = useState("standard");
@@ -106,6 +106,7 @@ export function ProductsPage() {
 
   const handleClearSearch = () => {
     searchParams.delete("q");
+    searchParams.delete("search");
     setSearchParams(searchParams);
   };
 

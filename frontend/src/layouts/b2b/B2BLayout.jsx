@@ -14,6 +14,7 @@ import { PageLoader } from "@/components/common/PageLoader.jsx";
 
 export function B2BLayout() {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const { user, activeCompany } = useAuthStore();
 
   const status =
@@ -28,29 +29,59 @@ export function B2BLayout() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#F4F6F8] font-sans text-slate-800">
-      {/* ── REUSABLE ENTERPRISE SCALABLE SIDEBAR ── */}
-      <EnterpriseSidebar
-        collapsed={collapsed}
-        navGroups={B2B_NAV_CONFIG}
-        brand={{
-          title: "Vanom",
-          subtitle: "Wholesale Portal",
-          logoSrc: vanomLogo,
-          logoPath: ROUTES.B2B.DASHBOARD,
-          badgeText: "B2B",
-        }}
-        footer={<B2BSidebarFooter collapsed={collapsed} />}
-        bgColor={BRAND_COLORS.DEEP_GREEN}
-        activeBgColor={BRAND_COLORS.VANOM_GREEN}
-      />
+      {/* ── MOBILE BACKDROP OVERLAY ── */}
+      {mobileOpen && (
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Close sidebar"
+          onClick={() => setMobileOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " " || e.key === "Escape") {
+              setMobileOpen(false);
+            }
+          }}
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden animate-in fade-in duration-200"
+        />
+      )}
+
+      {/* ── RESPONSIVE ENTERPRISE SIDEBAR CONTAINER ── */}
+      <div
+        className={`fixed inset-y-0 left-0 z-50 transform md:relative md:translate-x-0 transition-transform duration-200 ease-in-out shrink-0 ${
+          mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
+      >
+        <EnterpriseSidebar
+          collapsed={collapsed}
+          navGroups={B2B_NAV_CONFIG}
+          brand={{
+            title: "Vanom",
+            subtitle: "Wholesale Portal",
+            logoSrc: vanomLogo,
+            logoPath: ROUTES.B2B.DASHBOARD,
+            badgeText: "B2B",
+          }}
+          footer={<B2BSidebarFooter collapsed={collapsed} />}
+          bgColor={BRAND_COLORS.DEEP_GREEN}
+          activeBgColor={BRAND_COLORS.VANOM_GREEN}
+          isMobileOpen={mobileOpen}
+          onCloseMobile={() => setMobileOpen(false)}
+        />
+      </div>
 
       {/* ── RIGHT MAIN CONTENT AREA ── */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden">
         <B2BHeader
           collapsed={collapsed}
-          onToggleSidebar={() => setCollapsed((prev) => !prev)}
+          onToggleSidebar={() => {
+            if (window.innerWidth < 768) {
+              setMobileOpen((prev) => !prev);
+            } else {
+              setCollapsed((prev) => !prev);
+            }
+          }}
         />
-        <main className="flex-1 overflow-y-auto bg-[#F4F6F8] p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto bg-[#F4F6F8] p-3 sm:p-5 lg:p-7 min-w-0">
           <Suspense fallback={<PageLoader />}>
             <Outlet />
           </Suspense>
