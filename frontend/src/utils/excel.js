@@ -1,78 +1,233 @@
 import ExcelJS from "exceljs";
 
 /**
- * Enterprise-Grade Reusable ExcelJS Utility for VANOM E-Commerce
- * Produces presentation-grade, publication-ready Excel workbooks (.xlsx).
- * Features:
- * - Executive KPI summary cards ribbon
- * - Frozen header panes for smooth multi-page scrolling
- * - Clean enterprise typography (Segoe UI / Calibri) and VANOM brand palette
- * - Color-coded status badges (soft tints with bold dark text)
- * - Accounting-standard number & currency formatting
- * - Dynamic column auto-fitting with safety padding
- * - Multi-sheet support (Orders Summary + Itemized Line Items Breakdown)
- * - Single-Order Executive Commercial Spec / Invoice layout
- * - Real Excel `=SUM(...)` formulas for dynamic financial totals
+ * Enterprise ExcelJS export utilities for VANOM E-Commerce.
+ *
+ * Public API:
+ *   - ENTERPRISE_THEME
+ *   - downloadExcelBuffer
+ *   - exportToExcel
+ *   - exportOrdersToExcel
+ *
+ * Design goals:
+ *   - One source of truth for Excel styling
+ *   - Reusable sheet/table builders
+ *   - Orders Overview + Line Items Detail
+ *   - Single-order commercial invoice layout
+ *   - Real Excel formulas for totals
  */
 
-// Enterprise Vanom Brand & UI Palettes (ARGB format for ExcelJS)
 export const ENTERPRISE_THEME = {
   fontFamily: "Segoe UI",
-  brandGreenDark: "FF0A4D2E",    // VANOM Signature Deep Emerald
-  brandGreenMedium: "FF006B3C",  // VANOM Accent Green
-  brandGreenLight: "FFE6F4EA",   // Soft Emerald Tint
-  brandNavy: "FF0F172A",         // Slate-900 Executive Navy
-  brandSlateDark: "FF1E293B",    // Slate-800
-  brandSlateMuted: "FF64748B",   // Slate-500
-  brandSlateBorder: "FFE2E8F0",  // Slate-200
-  brandSlateZebra: "FFF8FAFC",   // Slate-50 alternating row
+  brandGreenDark: "FF0A4D2E",
+  brandGreenMedium: "FF006B3C",
+  brandGreenLight: "FFE6F4EA",
+  brandNavy: "FF0F172A",
+  brandSlateDark: "FF1E293B",
+  brandSlateMuted: "FF64748B",
+  brandSlateBorder: "FFE2E8F0",
+  brandSlateZebra: "FFF8FAFC",
   white: "FFFFFFFF",
-
-  // Status Badge Colors (Soft Fill + High-Contrast Text)
+  slateSoft: "FFF1F5F9",
   statusColors: {
     COMPLETED: { fill: "FFDCFCE7", text: "FF166534" },
     DELIVERED: { fill: "FFDCFCE7", text: "FF166534" },
     PAID: { fill: "FFDCFCE7", text: "FF166534" },
     APPROVED: { fill: "FFDCFCE7", text: "FF166534" },
-
     PROCESSING: { fill: "FFDBEAFE", text: "FF1E40AF" },
     CONFIRMED: { fill: "FFDBEAFE", text: "FF1E40AF" },
-
     SHIPPED: { fill: "FFEDE9FE", text: "FF4338CA" },
-
     PENDING: { fill: "FFFEF3C7", text: "FF92400E" },
     DRAFT: { fill: "FFF1F5F9", text: "FF475569" },
     QUOTED: { fill: "FFFEF3C7", text: "FF92400E" },
     SUBMITTED: { fill: "FFFEF3C7", text: "FF92400E" },
-
     CANCELLED: { fill: "FFFEE2E2", text: "FF991B1B" },
     REJECTED: { fill: "FFFEE2E2", text: "FF991B1B" },
   },
 };
 
-/**
- * Triggers a native browser file download from an ExcelJS buffer
- * @param {ArrayBuffer} buffer - ExcelJS writeBuffer result
- * @param {string} filename - Target file name
- */
-export function downloadExcelBuffer(buffer, filename = "export.xlsx") {
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+const EXCEL_MIME =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+const DEFAULT_BORDER = ENTERPRISE_THEME.brandSlateBorder;
+
+const font = (size = 10, options = {}) => ({
+  name: ENTERPRISE_THEME.fontFamily,
+  size,
+  ...options,
+});
+
+const solidFill = (argb) => ({
+  type: "pattern",
+  pattern: "solid",
+  fgColor: { argb },
+});
+
+const currencyFormat = (symbol) =>
+  `"${symbol}"#,##0.00;("${symbol}"#,##0.00);"-"`;
+
+function currencySymbol(code = "USD") {
+  const symbols = {
+    INR: "₹",
+    USD: "$",
+    CAD: "C$",
+    AUD: "A$",
+    EUR: "€",
+    GBP: "£",
+  };
+  return symbols[String(code).toUpperCase()] || String(code).toUpperCase() || "$";
 }
 
-/**
- * Applies subtle borders to a cell
- */
-function applyCellBorder(cell, { top = "thin", bottom = "thin", left = "thin", right = "thin", color = "FFE2E8F0" } = {}) {
+function resolveCurrency(orderOrCode) {
+  if (!orderOrCode) return "USD";
+  if (typeof orderOrCode === "string") return orderOrCode;
+  return (
+    orderOrCode.currencyCode ||
+    orderOrCode.currency?.code ||
+    (typeof orderOrCode.currency === "string" ? orderOrCode.currency : null) ||
+    "USD"
+  );
+}
+
+function normalizeStatus(value, fallback = "PROCESSING") {
+  return String(value || fallback).trim().toUpperCase();
+}
+
+function isB2BOrder(order = {}) {
+  return Boolean(
+    order.bulkProduct ||
+    order.company ||
+    order.orderNumber?.startsWith("BLK") ||
+    order.orderNumber?.startsWith("BULK") ||
+    order.type === "B2B",
+  );
+}
+
+function getOrderNumber(order = {}) {
+  const b2b = isB2BOrder(order);
+  return (
+    order.orderNumber ||
+    `${b2b ? "BLK" : "ORD"}-${String(order.id || "")
+      .slice(0, 8)
+      .toUpperCase()}`
+  );
+}
+
+function getOrderItems(order = {}) {
+  if (Array.isArray(order.items) && order.items.length) return order.items;
+  if (Array.isArray(order.commodityLines) && order.commodityLines.length) {
+    return order.commodityLines;
+  }
+  return [];
+}
+
+function getShippingAddress(order = {}) {
+  return (
+    order.shippingAddress ||
+    (Array.isArray(order.addresses)
+      ? order.addresses.find(
+        (a) => a.type === "SHIPPING" || a.type === "DELIVERY",
+      )
+      : null) ||
+    (Array.isArray(order.addresses) ? order.addresses[0] : null)
+  );
+}
+
+function getCustomerName(order = {}) {
+  const b2b = isB2BOrder(order);
+
+  return (
+    (b2b && order.company?.legalName) ||
+    `${order.user?.firstName || ""} ${order.user?.lastName || ""}`.trim() ||
+    order.requestedBy?.firstName ||
+    order.shippingAddress?.name ||
+    order.shippingAddress?.fullName ||
+    order.user?.email ||
+    "N/A"
+  );
+}
+
+function getProductName(item = {}) {
+  return (
+    item.product?.name ||
+    item.bulkProduct?.name ||
+    item.name ||
+    item.commodityName ||
+    "Item"
+  );
+}
+
+function getProductSku(item = {}) {
+  return (
+    item.product?.sku ||
+    item.bulkProduct?.sku ||
+    item.sku ||
+    item.id?.slice(0, 8).toUpperCase() ||
+    "SKU-PROD"
+  );
+}
+
+function getItemVariant(item = {}) {
+  return (
+    item.variant?.title ||
+    item.packagingType ||
+    item.grade ||
+    "Standard"
+  );
+}
+
+function getItemPricing(item = {}, order = {}) {
+  const quantity = Number(item.quantity || 1);
+  const unitPrice = Number(
+    item.price ||
+    item.unitPrice ||
+    (order.totalAmount && getOrderItems(order).length
+      ? Number(order.totalAmount) / getOrderItems(order).length
+      : 0),
+  );
+  const lineTotal = Number(item.total ?? unitPrice * quantity);
+
+  return { quantity, unitPrice, lineTotal };
+}
+
+function getOrderFinancials(order = {}, rawItems = []) {
+  const subtotal = Number(
+    order.subtotal ??
+    (rawItems.length > 0 ? 0 : order.totalAmount ?? order.total ?? 0),
+  );
+  const tax = Number(order.tax ?? 0);
+  const shipping = Number(order.shippingCharges ?? 0);
+  const discount = Number(order.discount ?? 0);
+  const total = Number(
+    order.totalAmount ??
+    order.total ??
+    subtotal + tax + shipping - discount,
+  );
+
+  return { subtotal, tax, shipping, discount, total };
+}
+
+function formatDate(value, fallback = "") {
+  if (!value) return fallback;
+  try {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toISOString().replace("T", " ").slice(0, 16);
+  } catch {
+    return String(value);
+  }
+}
+
+function applyCellBorder(
+  cell,
+  {
+    top = "thin",
+    bottom = "thin",
+    left = "thin",
+    right = "thin",
+    color = DEFAULT_BORDER,
+  } = {},
+) {
   cell.border = {
     top: { style: top, color: { argb: color } },
     bottom: { style: bottom, color: { argb: color } },
@@ -81,208 +236,64 @@ function applyCellBorder(cell, { top = "thin", bottom = "thin", left = "thin", r
   };
 }
 
-/**
- * Formats a status cell as an executive pill badge
- */
+function styleCell(cell, options = {}) {
+  const {
+    size = 10,
+    bold = false,
+    italic = false,
+    color = ENTERPRISE_THEME.brandSlateDark,
+    fill,
+    horizontal = "left",
+    vertical = "middle",
+    wrapText = false,
+    border = true,
+  } = options;
+
+  cell.font = font(size, {
+    bold,
+    italic,
+    color: { argb: color },
+  });
+  cell.alignment = { vertical, horizontal, wrapText };
+
+  if (fill) cell.fill = solidFill(fill);
+  if (border) applyCellBorder(cell);
+}
+
 function formatStatusCell(cell, rawStatus) {
-  const statusKey = String(rawStatus || "").trim().toUpperCase();
-  const palette = ENTERPRISE_THEME.statusColors[statusKey] || { fill: "FFF1F5F9", text: "FF475569" };
+  const statusKey = normalizeStatus(rawStatus);
+  const palette =
+    ENTERPRISE_THEME.statusColors[statusKey] ||
+    ENTERPRISE_THEME.statusColors.DRAFT;
 
   cell.value = `●  ${statusKey}`;
-  cell.font = {
-    name: ENTERPRISE_THEME.fontFamily,
-    size: 9.5,
+  cell.font = font(9.5, {
     bold: true,
     color: { argb: palette.text },
-  };
-  cell.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: palette.fill },
-  };
+  });
+  cell.fill = solidFill(palette.fill);
   cell.alignment = { vertical: "middle", horizontal: "center" };
 }
 
-/**
- * Generic Reusable Enterprise Excel Exporter
- *
- * @param {Object} options
- * @param {string} [options.filename='export.xlsx']
- * @param {string} [options.sheetName='Summary']
- * @param {string} [options.title] - Executive Banner Title
- * @param {string} [options.subtitle] - Metadata or description
- * @param {Array<Object>} [options.kpiCards] - Array of KPI tiles: [{ label: 'TOTAL ORDERS', value: 128 }, ...]
- * @param {Array<Object>} options.columns - Column configuration
- * @param {Array<Object>} options.data - Data rows
- * @param {Object} [options.totals] - Configuration for bottom formulas
- * @param {string} [options.statusKey] - Key of the column containing status to apply badge styling
- * @param {boolean} [options.freezePanes=true] - Pinned header row on scroll
- */
-export async function exportToExcel({
-  filename = "export.xlsx",
-  sheetName = "Summary",
-  title = null,
-  subtitle = null,
-  kpiCards = null,
-  columns = [],
-  data = [],
-  totals = null,
-  statusKey = null,
-  freezePanes = true,
-}) {
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = "VANOM Enterprise Portal";
-  workbook.lastModifiedBy = "VANOM Operations";
-  workbook.created = new Date();
-  workbook.modified = new Date();
+function styleHeaderRow(row, columns) {
+  row.height = 28;
 
-  const worksheet = workbook.addWorksheet(sheetName, {
-    views: [{ showGridLines: true }],
-  });
+  columns.forEach((column, index) => {
+    const cell = row.getCell(index + 1);
 
-  let currentRowIdx = 1;
-  const colCount = Math.max(columns.length, 1);
-
-  // 1. Executive Top Brand Banner
-  if (title) {
-    const titleRow = worksheet.getRow(currentRowIdx);
-    titleRow.height = 36;
-    titleRow.getCell(1).value = `  ${title.toUpperCase()}`;
-    titleRow.getCell(1).font = {
-      name: ENTERPRISE_THEME.fontFamily,
-      size: 14,
+    cell.value = String(column.header || column.key).toUpperCase();
+    cell.font = font(9.5, {
       bold: true,
       color: { argb: ENTERPRISE_THEME.white },
-    };
-    titleRow.getCell(1).fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: ENTERPRISE_THEME.brandGreenDark },
-    };
-    titleRow.getCell(1).alignment = { vertical: "middle", horizontal: "left" };
-    worksheet.mergeCells(currentRowIdx, 1, currentRowIdx, colCount);
-    currentRowIdx++;
-
-    // Subtitle / Scope Metadata Row
-    if (subtitle) {
-      const subRow = worksheet.getRow(currentRowIdx);
-      subRow.height = 22;
-      subRow.getCell(1).value = `  ${subtitle}`;
-      subRow.getCell(1).font = {
-        name: ENTERPRISE_THEME.fontFamily,
-        size: 9.5,
-        italic: true,
-        color: { argb: ENTERPRISE_THEME.brandSlateMuted },
-      };
-      subRow.getCell(1).fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFF8FAFC" },
-      };
-      subRow.getCell(1).alignment = { vertical: "middle", horizontal: "left" };
-      worksheet.mergeCells(currentRowIdx, 1, currentRowIdx, colCount);
-      currentRowIdx++;
-    }
-
-    // Spacer
-    worksheet.getRow(currentRowIdx).height = 8;
-    currentRowIdx++;
-  }
-
-  // 2. Executive KPI Summary Cards Ribbon (if provided)
-  if (Array.isArray(kpiCards) && kpiCards.length > 0) {
-    const labelRowIdx = currentRowIdx;
-    const valueRowIdx = currentRowIdx + 1;
-    const labelRow = worksheet.getRow(labelRowIdx);
-    const valueRow = worksheet.getRow(valueRowIdx);
-
-    labelRow.height = 18;
-    valueRow.height = 26;
-
-    // Distribute KPI cards evenly across columns
-    const colsPerCard = Math.max(2, Math.floor(colCount / kpiCards.length));
-
-    kpiCards.forEach((card, idx) => {
-      const startCol = idx * colsPerCard + 1;
-      const endCol = Math.min(startCol + colsPerCard - 1, colCount);
-
-      if (startCol <= colCount) {
-        // Label cell
-        const labelCell = labelRow.getCell(startCol);
-        labelCell.value = card.label?.toUpperCase();
-        labelCell.font = {
-          name: ENTERPRISE_THEME.fontFamily,
-          size: 8.5,
-          bold: true,
-          color: { argb: ENTERPRISE_THEME.brandSlateMuted },
-        };
-        labelCell.alignment = { vertical: "middle", horizontal: "center" };
-        labelCell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FFF1F5F9" },
-        };
-
-        // Value cell
-        const valueCell = valueRow.getCell(startCol);
-        valueCell.value = card.value;
-        valueCell.font = {
-          name: ENTERPRISE_THEME.fontFamily,
-          size: 13,
-          bold: true,
-          color: { argb: card.highlightColor || ENTERPRISE_THEME.brandGreenDark },
-        };
-        valueCell.alignment = { vertical: "middle", horizontal: "center" };
-        valueCell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FFFFFFFF" },
-        };
-
-        if (endCol > startCol) {
-          worksheet.mergeCells(labelRowIdx, startCol, labelRowIdx, endCol);
-          worksheet.mergeCells(valueRowIdx, startCol, valueRowIdx, endCol);
-        }
-
-        // Apply borders across card boundary
-        for (let c = startCol; c <= endCol; c++) {
-          applyCellBorder(labelRow.getCell(c), { color: "FFE2E8F0" });
-          applyCellBorder(valueRow.getCell(c), { color: "FFE2E8F0" });
-        }
-      }
     });
-
-    currentRowIdx += 2;
-
-    // Spacer
-    worksheet.getRow(currentRowIdx).height = 10;
-    currentRowIdx++;
-  }
-
-  // 3. Table Column Headers
-  const headerRowIdx = currentRowIdx;
-  const headerRow = worksheet.getRow(headerRowIdx);
-  headerRow.height = 28;
-
-  columns.forEach((col, idx) => {
-    const cell = headerRow.getCell(idx + 1);
-    cell.value = (col.header || col.key).toUpperCase();
-    cell.font = {
-      name: ENTERPRISE_THEME.fontFamily,
-      size: 10,
-      bold: true,
-      color: { argb: ENTERPRISE_THEME.white },
-    };
-    cell.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: ENTERPRISE_THEME.brandNavy },
-    };
+    cell.fill = solidFill(ENTERPRISE_THEME.brandNavy);
     cell.alignment = {
       vertical: "middle",
-      horizontal: col.align || (col.isNumber ? "right" : "left"),
-      wrapText: false,
+      horizontal:
+        column.align || (column.isNumber ? "right" : "left"),
+      wrapText: Boolean(column.wrapText),
     };
+
     applyCellBorder(cell, {
       top: "thin",
       bottom: "medium",
@@ -291,1012 +302,1163 @@ export async function exportToExcel({
       color: "FF334155",
     });
   });
+}
 
-  currentRowIdx++;
-  const dataStartRowIdx = currentRowIdx;
+function writeDataRow(row, columns, source, rowIndex) {
+  const isZebra = rowIndex % 2 === 1;
+  row.height = 24;
 
-  // 4. Data Rows
-  data.forEach((rowObj, rowNum) => {
-    const dataRow = worksheet.getRow(currentRowIdx);
-    dataRow.height = 24;
-    const isZebra = rowNum % 2 === 1;
+  columns.forEach((column, index) => {
+    const cell = row.getCell(index + 1);
+    let value = source[column.key];
 
-    columns.forEach((col, colIdx) => {
-      const cell = dataRow.getCell(colIdx + 1);
-      let rawVal = rowObj[col.key];
+    if (typeof column.format === "function") {
+      value = column.format(value, source);
+    }
 
-      if (typeof col.format === "function") {
-        rawVal = col.format(rawVal, rowObj);
-      }
-
-      // Check if this is the designated status column
-      if (col.key === statusKey || col.isStatus) {
-        formatStatusCell(cell, rawVal);
+    if (column.isStatus) {
+      formatStatusCell(cell, value);
+    } else {
+      if (column.isNumber) {
+        const numeric = Number(value);
+        cell.value = Number.isNaN(numeric) ? 0 : numeric;
       } else {
-        if (col.isNumber) {
-          const numVal = Number(rawVal);
-          cell.value = isNaN(numVal) ? 0 : numVal;
-        } else {
-          cell.value = rawVal ?? "";
-        }
-
-        if (col.numFmt) {
-          cell.numFmt = col.numFmt;
-        }
-
-        cell.font = {
-          name: ENTERPRISE_THEME.fontFamily,
-          size: 10,
-          color: { argb: ENTERPRISE_THEME.brandSlateDark },
-        };
-
-        cell.alignment = {
-          vertical: "middle",
-          horizontal: col.align || (col.isNumber ? "right" : "left"),
-          wrapText: Boolean(col.wrapText),
-        };
-
-        if (isZebra) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: ENTERPRISE_THEME.brandSlateZebra },
-          };
-        }
+        cell.value = value ?? "";
       }
 
-      applyCellBorder(cell, { color: ENTERPRISE_THEME.brandSlateBorder });
-    });
+      if (column.numFmt) cell.numFmt = column.numFmt;
 
-    currentRowIdx++;
-  });
-
-  const dataEndRowIdx = currentRowIdx - 1;
-
-  // 5. Executive Totals Row (Formulas with accounting double-underline)
-  if (totals && data.length > 0) {
-    const totalsRow = worksheet.getRow(currentRowIdx);
-    totalsRow.height = 28;
-
-    columns.forEach((col, colIdx) => {
-      const cell = totalsRow.getCell(colIdx + 1);
-
-      if (totals.labelColumnKey && col.key === totals.labelColumnKey) {
-        cell.value = totals.labelText || "TOTAL";
-        cell.alignment = { vertical: "middle", horizontal: "left" };
-      } else if (Array.isArray(totals.columns) && totals.columns.includes(col.key)) {
-        const colLetter = worksheet.getColumn(colIdx + 1).letter;
-        cell.value = {
-          formula: `SUM(${colLetter}${dataStartRowIdx}:${colLetter}${dataEndRowIdx})`,
-        };
-        if (col.numFmt) {
-          cell.numFmt = col.numFmt;
-        }
-        cell.alignment = { vertical: "middle", horizontal: col.align || "right" };
-      } else {
-        cell.value = "";
-      }
-
-      cell.font = {
-        name: ENTERPRISE_THEME.fontFamily,
-        size: 10.5,
-        bold: true,
+      cell.font = font(9.5, {
         color: { argb: ENTERPRISE_THEME.brandSlateDark },
-      };
-
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFF1F5F9" },
-      };
-
-      cell.border = {
-        top: { style: "thin", color: { argb: "FF94A3B8" } },
-        bottom: { style: "double", color: { argb: "FF0F172A" } },
-        left: { style: "thin", color: { argb: "FFE2E8F0" } },
-        right: { style: "thin", color: { argb: "FFE2E8F0" } },
-      };
-    });
-
-    currentRowIdx++;
-  }
-
-  // 6. Dynamic Column Widths with generous padding
-  columns.forEach((col, colIdx) => {
-    const worksheetCol = worksheet.getColumn(colIdx + 1);
-    let maxLen = (col.header || col.key || "").toString().length + 4;
-
-    data.forEach((rowObj) => {
-      let val = rowObj[col.key];
-      if (typeof col.format === "function") {
-        val = col.format(val, rowObj);
-      }
-      if (val !== null && val !== undefined) {
-        const strLen = String(val).length;
-        if (strLen > maxLen) {
-          maxLen = strLen;
-        }
-      }
-    });
-
-    const minWidth = col.minWidth || 13;
-    const maxWidth = col.maxWidth || 50;
-    worksheetCol.width = Math.max(minWidth, Math.min(maxLen + 3, maxWidth));
-  });
-
-  // 7. Auto-filter on column headers
-  if (columns.length > 0 && data.length > 0) {
-    const startCell = worksheet.getCell(headerRowIdx, 1).address;
-    const endCell = worksheet.getCell(headerRowIdx, columns.length).address;
-    worksheet.autoFilter = `${startCell}:${endCell}`;
-  }
-
-  // 8. Freeze Panes for fixed header scrolling
-  if (freezePanes) {
-    worksheet.views = [
-      {
-        state: "frozen",
-        ySplit: headerRowIdx,
-        activeCell: `A${headerRowIdx + 1}`,
-        showGridLines: true,
-      },
-    ];
-  }
-
-  const buffer = await workbook.xlsx.writeBuffer();
-  downloadExcelBuffer(buffer, filename);
-}
-
-/**
- * Specialized Single-Order Commercial Specification & Invoice Sheet
- * Generates an executive, formal commercial invoice / purchase order layout.
- */
-async function exportSingleOrderCommercialSlip(order, options = {}) {
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = "VANOM Enterprise Portal";
-  workbook.lastModifiedBy = "VANOM Operations";
-  workbook.created = new Date();
-
-  const isB2B = Boolean(
-    order.bulkProduct ||
-    order.company ||
-    order.orderNumber?.startsWith("BLK") ||
-    order.orderNumber?.startsWith("BULK") ||
-    order.type === "B2B"
-  );
-
-  const orderNumber =
-    order.orderNumber ||
-    (isB2B
-      ? `BLK-${(order.id || "").slice(0, 8).toUpperCase()}`
-      : `ORD-${(order.id || "").slice(0, 8).toUpperCase()}`);
-
-  const currencyCode =
-    order.currencyCode ||
-    order.currency?.code ||
-    (typeof order.currency === "string" ? order.currency : "USD");
-
-  const currencySymbol = currencyCode === "INR" ? "₹" : "$";
-  const numFmt = `"${currencySymbol}"#,##0.00;("${currencySymbol}"#,##0.00);"-"`;
-
-  const sheet = workbook.addWorksheet("Order Slip", {
-    views: [{ showGridLines: true }],
-  });
-
-  // Header Banner
-  sheet.mergeCells("A1:G1");
-  const bannerCell = sheet.getCell("A1");
-  bannerCell.value = `  VANOM E-COMMERCE  |  ${isB2B ? "COMMERCIAL WHOLESALE PURCHASE ORDER" : "OFFICIAL ORDER INVOICE"}`;
-  bannerCell.font = { name: ENTERPRISE_THEME.fontFamily, size: 13, bold: true, color: { argb: "FFFFFFFF" } };
-  bannerCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ENTERPRISE_THEME.brandGreenDark } };
-  bannerCell.alignment = { vertical: "middle", horizontal: "left" };
-  sheet.getRow(1).height = 34;
-
-  // Metadata Sub-banner
-  sheet.mergeCells("A2:G2");
-  const subCell = sheet.getCell("A2");
-  subCell.value = `  ORDER REFERENCE: ${orderNumber}  |  STATUS: ${order.status || "PROCESSING"}  |  DATE: ${new Date(order.createdAt || Date.now()).toLocaleString()}`;
-  subCell.font = { name: ENTERPRISE_THEME.fontFamily, size: 9.5, bold: true, color: { argb: "FF334155" } };
-  subCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
-  subCell.alignment = { vertical: "middle", horizontal: "left" };
-  sheet.getRow(2).height = 22;
-
-  sheet.getRow(3).height = 10; // spacer
-
-  // Two-Column Section: Customer & Delivery Info
-  sheet.mergeCells("A4:C4");
-  sheet.getCell("A4").value = "  BILLING & CUSTOMER ACCOUNT";
-  sheet.getCell("A4").font = { name: ENTERPRISE_THEME.fontFamily, size: 9.5, bold: true, color: { argb: ENTERPRISE_THEME.white } };
-  sheet.getCell("A4").fill = { type: "pattern", pattern: "solid", fgColor: { argb: ENTERPRISE_THEME.brandNavy } };
-
-  sheet.mergeCells("E4:G4");
-  sheet.getCell("E4").value = "  FULFILLMENT & SHIPPING ADDRESS";
-  sheet.getCell("E4").font = { name: ENTERPRISE_THEME.fontFamily, size: 9.5, bold: true, color: { argb: ENTERPRISE_THEME.white } };
-  sheet.getCell("E4").fill = { type: "pattern", pattern: "solid", fgColor: { argb: ENTERPRISE_THEME.brandNavy } };
-  sheet.getRow(4).height = 22;
-
-  // Customer Name / Company
-  const customerName =
-    (isB2B && order.company?.legalName) ||
-    `${order.user?.firstName || ""} ${order.user?.lastName || ""}`.trim() ||
-    order.requestedBy?.firstName ||
-    order.shippingAddress?.name ||
-    "Authorized Buyer";
-
-  const customerEmail = order.user?.email || order.requestedBy?.email || order.company?.email || "N/A";
-  const customerPhone = order.shippingAddress?.phone || order.user?.phone || order.requestedBy?.phone || "N/A";
-
-  const shippingAddr =
-    order.shippingAddress ||
-    (Array.isArray(order.addresses) ? order.addresses.find((a) => a.type === "SHIPPING" || a.type === "DELIVERY") : null) ||
-    (Array.isArray(order.addresses) ? order.addresses[0] : null);
-
-  const addressLine = shippingAddr?.addressLine1 || shippingAddr?.address || "Standard Logistics Center";
-  const cityStateZip = [shippingAddr?.city, shippingAddr?.state, shippingAddr?.postalCode || shippingAddr?.zipCode].filter(Boolean).join(", ") || "City, State, Zip";
-  const country = shippingAddr?.country || shippingAddr?.countryCode || "Standard Territory";
-
-  const details = [
-    { leftLabel: "Account Name:", leftVal: customerName, rightLabel: "Recipient:", rightVal: shippingAddr?.fullName || customerName },
-    { leftLabel: "Email:", leftVal: customerEmail, rightLabel: "Address:", rightVal: addressLine },
-    { leftLabel: "Phone:", leftVal: customerPhone, rightLabel: "City/Zip:", rightVal: cityStateZip },
-    { leftLabel: "Channel:", leftVal: isB2B ? "Enterprise Wholesale (B2B)" : "Consumer Retail (B2C)", rightLabel: "Country:", rightVal: country },
-  ];
-
-  details.forEach((item, idx) => {
-    const rowNum = 5 + idx;
-    sheet.getRow(rowNum).height = 20;
-
-    sheet.getCell(`A${rowNum}`).value = item.leftLabel;
-    sheet.getCell(`A${rowNum}`).font = { name: ENTERPRISE_THEME.fontFamily, size: 9, bold: true, color: { argb: "FF64748B" } };
-    sheet.mergeCells(`B${rowNum}:C${rowNum}`);
-    sheet.getCell(`B${rowNum}`).value = item.leftVal;
-    sheet.getCell(`B${rowNum}`).font = { name: ENTERPRISE_THEME.fontFamily, size: 9.5, color: { argb: "FF0F172A" } };
-
-    sheet.getCell(`E${rowNum}`).value = item.rightLabel;
-    sheet.getCell(`E${rowNum}`).font = { name: ENTERPRISE_THEME.fontFamily, size: 9, bold: true, color: { argb: "FF64748B" } };
-    sheet.mergeCells(`F${rowNum}:G${rowNum}`);
-    sheet.getCell(`F${rowNum}`).value = item.rightVal;
-    sheet.getCell(`F${rowNum}`).font = { name: ENTERPRISE_THEME.fontFamily, size: 9.5, color: { argb: "FF0F172A" } };
-
-    ["A", "B", "C", "E", "F", "G"].forEach((col) => {
-      applyCellBorder(sheet.getCell(`${col}${rowNum}`), { color: "FFE2E8F0" });
-    });
-  });
-
-  sheet.getRow(9).height = 12; // spacer
-
-  // Items Table Header
-  const itemsHeaderRowIdx = 10;
-  sheet.getRow(itemsHeaderRowIdx).height = 26;
-  const tableHeaders = [
-    { col: "A", title: "ITEM #", width: 8, align: "center" },
-    { col: "B", title: "PRODUCT / COMMODITY DESCRIPTION", width: 34, align: "left" },
-    { col: "C", title: "SKU / CODE", width: 16, align: "center" },
-    { col: "D", title: "SPECIFICATION / VARIANT", width: 20, align: "left" },
-    { col: "E", title: "UNIT PRICE", width: 14, align: "right" },
-    { col: "F", title: "QTY", width: 10, align: "right" },
-    { col: "G", title: "LINE TOTAL", width: 18, align: "right" },
-  ];
-
-  tableHeaders.forEach((th) => {
-    const cell = sheet.getCell(`${th.col}${itemsHeaderRowIdx}`);
-    cell.value = th.title;
-    cell.font = { name: ENTERPRISE_THEME.fontFamily, size: 9.5, bold: true, color: { argb: "FFFFFFFF" } };
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ENTERPRISE_THEME.brandNavy } };
-    cell.alignment = { vertical: "middle", horizontal: th.align };
-    applyCellBorder(cell, { color: "FF334155" });
-  });
-
-  // Extract Items
-  const rawItems = Array.isArray(order.items) && order.items.length > 0
-    ? order.items
-    : Array.isArray(order.commodityLines) && order.commodityLines.length > 0
-      ? order.commodityLines
-      : [];
-
-  let lineRowIdx = 11;
-  const itemsStartRow = lineRowIdx;
-
-  if (rawItems.length === 0) {
-    sheet.getRow(lineRowIdx).height = 24;
-    sheet.mergeCells(`A${lineRowIdx}:G${lineRowIdx}`);
-    const emptyCell = sheet.getCell(`A${lineRowIdx}`);
-    emptyCell.value = "Standard Order Batch (Detailed commodity line specifications recorded in system)";
-    emptyCell.font = { name: ENTERPRISE_THEME.fontFamily, size: 9.5, italic: true, color: { argb: "FF64748B" } };
-    emptyCell.alignment = { vertical: "middle", horizontal: "center" };
-    lineRowIdx++;
-  } else {
-    rawItems.forEach((itm, itmIdx) => {
-      sheet.getRow(lineRowIdx).height = 24;
-      const isZebra = itmIdx % 2 === 1;
-
-      const name = itm.product?.name || itm.bulkProduct?.name || itm.name || itm.commodityName || "Item";
-      const sku = itm.product?.sku || itm.bulkProduct?.sku || itm.sku || itm.id?.slice(0, 8).toUpperCase() || "SKU-PROD";
-      const variant = itm.variant?.title || itm.packagingType || itm.grade || "Standard";
-      const unitPrice = Number(itm.price || itm.unitPrice || (order.totalAmount ? order.totalAmount / (rawItems.length || 1) : 0));
-      const qty = Number(itm.quantity || 1);
-      const lineTotal = Number(itm.total || (unitPrice * qty));
-
-      sheet.getCell(`A${lineRowIdx}`).value = itmIdx + 1;
-      sheet.getCell(`A${lineRowIdx}`).alignment = { vertical: "middle", horizontal: "center" };
-
-      sheet.getCell(`B${lineRowIdx}`).value = name;
-      sheet.getCell(`B${lineRowIdx}`).alignment = { vertical: "middle", horizontal: "left" };
-
-      sheet.getCell(`C${lineRowIdx}`).value = sku;
-      sheet.getCell(`C${lineRowIdx}`).alignment = { vertical: "middle", horizontal: "center" };
-
-      sheet.getCell(`D${lineRowIdx}`).value = variant;
-      sheet.getCell(`D${lineRowIdx}`).alignment = { vertical: "middle", horizontal: "left" };
-
-      sheet.getCell(`E${lineRowIdx}`).value = unitPrice;
-      sheet.getCell(`E${lineRowIdx}`).numFmt = numFmt;
-      sheet.getCell(`E${lineRowIdx}`).alignment = { vertical: "middle", horizontal: "right" };
-
-      sheet.getCell(`F${lineRowIdx}`).value = qty;
-      sheet.getCell(`F${lineRowIdx}`).numFmt = "#,##0";
-      sheet.getCell(`F${lineRowIdx}`).alignment = { vertical: "middle", horizontal: "right" };
-
-      sheet.getCell(`G${lineRowIdx}`).value = lineTotal;
-      sheet.getCell(`G${lineRowIdx}`).numFmt = numFmt;
-      sheet.getCell(`G${lineRowIdx}`).alignment = { vertical: "middle", horizontal: "right" };
-
-      ["A", "B", "C", "D", "E", "F", "G"].forEach((col) => {
-        const c = sheet.getCell(`${col}${lineRowIdx}`);
-        c.font = { name: ENTERPRISE_THEME.fontFamily, size: 9.5, color: { argb: "FF0F172A" } };
-        if (isZebra) {
-          c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFC" } };
-        }
-        applyCellBorder(c, { color: "FFE2E8F0" });
       });
-
-      lineRowIdx++;
-    });
-  }
-
-  const itemsEndRow = lineRowIdx - 1;
-
-  // Financial Summary Breakdown Box
-  const subtotal = Number(order.subtotal ?? (rawItems.length > 0 ? 0 : order.totalAmount ?? order.total ?? 0));
-  const tax = Number(order.tax ?? 0);
-  const shipping = Number(order.shippingCharges ?? 0);
-  const discount = Number(order.discount ?? 0);
-  const grandTotal = Number(order.totalAmount ?? order.total ?? (subtotal + tax + shipping - discount));
-
-  const financeRows = [
-    { label: "Items Subtotal", value: subtotal, isFormula: rawItems.length > 0, formula: `SUM(G${itemsStartRow}:G${itemsEndRow})` },
-    { label: "Estimated Tax", value: tax },
-    { label: "Shipping & Logistics", value: shipping },
-    { label: "Discount / Rebate", value: discount > 0 ? -discount : 0 },
-    { label: "GRAND TOTAL", value: grandTotal, isGrandTotal: true },
-  ];
-
-  financeRows.forEach((f) => {
-    sheet.getRow(lineRowIdx).height = f.isGrandTotal ? 28 : 22;
-    sheet.mergeCells(`E${lineRowIdx}:F${lineRowIdx}`);
-
-    const labelCell = sheet.getCell(`E${lineRowIdx}`);
-    labelCell.value = f.label;
-    labelCell.font = {
-      name: ENTERPRISE_THEME.fontFamily,
-      size: f.isGrandTotal ? 11 : 9.5,
-      bold: true,
-      color: { argb: f.isGrandTotal ? "FF0A4D2E" : "FF475569" },
-    };
-    labelCell.alignment = { vertical: "middle", horizontal: "right" };
-
-    const valCell = sheet.getCell(`G${lineRowIdx}`);
-    if (f.isFormula) {
-      valCell.value = { formula: f.formula };
-    } else {
-      valCell.value = f.value;
-    }
-    valCell.numFmt = numFmt;
-    valCell.font = {
-      name: ENTERPRISE_THEME.fontFamily,
-      size: f.isGrandTotal ? 12 : 9.5,
-      bold: true,
-      color: { argb: f.isGrandTotal ? "FF0A4D2E" : "FF0F172A" },
-    };
-    valCell.alignment = { vertical: "middle", horizontal: "right" };
-
-    if (f.isGrandTotal) {
-      labelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE6F4EA" } };
-      valCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE6F4EA" } };
-      valCell.border = {
-        top: { style: "thin", color: { argb: "FF0A4D2E" } },
-        bottom: { style: "double", color: { argb: "FF0A4D2E" } },
-        left: { style: "thin", color: { argb: "FFE2E8F0" } },
-        right: { style: "thin", color: { argb: "FFE2E8F0" } },
+      cell.alignment = {
+        vertical: "middle",
+        horizontal:
+          column.align || (column.isNumber ? "right" : "left"),
+        wrapText: Boolean(column.wrapText),
       };
-      labelCell.border = valCell.border;
-    } else {
-      applyCellBorder(labelCell, { color: "FFE2E8F0" });
-      applyCellBorder(valCell, { color: "FFE2E8F0" });
+
+      if (isZebra) cell.fill = solidFill(ENTERPRISE_THEME.brandSlateZebra);
     }
 
-    lineRowIdx++;
+    applyCellBorder(cell);
   });
-
-  // Footer Note
-  sheet.getRow(lineRowIdx).height = 12; // spacer
-  lineRowIdx++;
-  sheet.mergeCells(`A${lineRowIdx}:G${lineRowIdx}`);
-  const footerCell = sheet.getCell(`A${lineRowIdx}`);
-  footerCell.value = "Official Document generated by VANOM Global E-Commerce & Wholesale Trading System.";
-  footerCell.font = { name: ENTERPRISE_THEME.fontFamily, size: 8.5, italic: true, color: { argb: "FF94A3B8" } };
-  footerCell.alignment = { vertical: "middle", horizontal: "center" };
-
-  // Set explicit clean column widths
-  tableHeaders.forEach((th) => {
-    sheet.getColumn(th.col).width = th.width;
-  });
-
-  const buffer = await workbook.xlsx.writeBuffer();
-  downloadExcelBuffer(buffer, options.filename || `vanom-order-${orderNumber}.xlsx`);
 }
 
-/**
- * Specialized Enterprise Master Orders Exporter
- * Generates a full multi-tab workbook:
- * - Sheet 1: Orders Summary (with Executive KPI Ribbon, Freeze Panes, Auto-Filter, Status Pills, Totals)
- * - Sheet 2: Itemized Line Items Breakdown (Pivot-ready line-by-line product breakdown)
- * If only a single order is passed, generates an Executive Commercial Order Slip!
- *
- * @param {Array<Object>} orders - List of orders
- * @param {Object} [options]
- * @param {string} [options.filename]
- * @param {string} [options.title]
- * @param {string} [options.filterContext]
- */
-export async function exportOrdersToExcel(orders = [], options = {}) {
-  // If exactly 1 order is provided, use the specialized Commercial Slip layout!
-  if (Array.isArray(orders) && orders.length === 1) {
-    return exportSingleOrderCommercialSlip(orders[0], options);
-  }
+function addTotalsRow(
+  worksheet,
+  rowIndex,
+  columns,
+  {
+    labelKey,
+    label,
+    sumKeys = [],
+    startRow,
+    endRow,
+  } = {},
+) {
+  const row = worksheet.getRow(rowIndex);
+  row.height = 28;
 
-  const timestamp = new Date().toISOString().slice(0, 10);
-  const filename = options.filename || `vanom-enterprise-orders-${timestamp}.xlsx`;
-  const filterContext = options.filterContext ? `Scope: ${options.filterContext}` : "Scope: All Master Records";
+  columns.forEach((column, index) => {
+    const cell = row.getCell(index + 1);
 
-  // 1. Calculate Executive KPI Metrics
-  const totalOrdersCount = orders.length;
-  let totalRevenue = 0;
-  let completedCount = 0;
-  let pendingCount = 0;
-  let totalUnits = 0;
-
-  const normalizedOrders = orders.map((order) => {
-    const isB2B = Boolean(
-      order.bulkProduct ||
-      order.company ||
-      order.orderNumber?.startsWith("BLK") ||
-      order.orderNumber?.startsWith("BULK") ||
-      order.type === "B2B"
-    );
-
-    const orderNumber =
-      order.orderNumber ||
-      (isB2B
-        ? `BLK-${(order.id || "").slice(0, 8).toUpperCase()}`
-        : `ORD-${(order.id || "").slice(0, 8).toUpperCase()}`);
-
-    const customerName =
-      (isB2B && order.company?.legalName) ||
-      `${order.user?.firstName || ""} ${order.user?.lastName || ""}`.trim() ||
-      order.requestedBy?.firstName ||
-      order.shippingAddress?.name ||
-      order.shippingAddress?.fullName ||
-      order.user?.email ||
-      "N/A";
-
-    const customerEmail =
-      order.user?.email ||
-      order.requestedBy?.email ||
-      order.company?.email ||
-      order.shippingAddress?.email ||
-      "";
-
-    const customerPhone =
-      order.shippingAddress?.phone ||
-      order.user?.phone ||
-      order.requestedBy?.phone ||
-      order.company?.phone ||
-      "";
-
-    const shippingAddr =
-      order.shippingAddress ||
-      (Array.isArray(order.addresses)
-        ? order.addresses.find((a) => a.type === "SHIPPING" || a.type === "DELIVERY")
-        : null) ||
-      (Array.isArray(order.addresses) ? order.addresses[0] : null);
-
-    const destination = shippingAddr?.city
-      ? `${shippingAddr.city}${shippingAddr.country ? `, ${shippingAddr.country}` : ""}`
-      : "Standard Logistics";
-
-    const fullAddress = [
-      shippingAddr?.addressLine1,
-      shippingAddr?.city,
-      shippingAddr?.state,
-      shippingAddr?.postalCode,
-      shippingAddr?.country || shippingAddr?.countryCode,
-    ].filter(Boolean).join(", ") || "N/A";
-
-    const rawItems = Array.isArray(order.items) && order.items.length > 0
-      ? order.items
-      : Array.isArray(order.commodityLines) && order.commodityLines.length > 0
-        ? order.commodityLines
-        : [];
-
-    const itemsCount = rawItems.reduce((acc, itm) => acc + Number(itm.quantity || 1), 0);
-    totalUnits += itemsCount || 1;
-
-    const itemsSummary = rawItems
-      .map((itm) => {
-        const name = itm.product?.name || itm.bulkProduct?.name || itm.name || itm.commodityName || "Item";
-        const qty = itm.quantity ? `(x${itm.quantity})` : "";
-        return `${name} ${qty}`.trim();
-      })
-      .join("; ") || "Enterprise Wholesale Batch";
-
-    const subtotal = Number(order.subtotal ?? 0);
-    const tax = Number(order.tax ?? 0);
-    const shippingCharges = Number(order.shippingCharges ?? 0);
-    const discount = Number(order.discount ?? 0);
-    const totalAmount = Number(
-      order.totalAmount ?? order.total ?? (subtotal + tax + shippingCharges - discount)
-    );
-
-    totalRevenue += totalAmount;
-
-    const statusUpper = (order.status || "PROCESSING").toUpperCase();
-    if (statusUpper === "DELIVERED" || statusUpper === "COMPLETED" || statusUpper === "APPROVED") {
-      completedCount++;
-    } else if (statusUpper !== "CANCELLED" && statusUpper !== "REJECTED") {
-      pendingCount++;
-    }
-
-    const currency =
-      order.currencyCode ||
-      order.currency?.code ||
-      (typeof order.currency === "string" ? order.currency : "USD");
-
-    let dateStr = "";
-    if (order.createdAt) {
-      try {
-        dateStr = new Date(order.createdAt).toISOString().replace("T", " ").slice(0, 16);
-      } catch {
-        dateStr = String(order.createdAt);
-      }
-    }
-
-    return {
-      rawOrder: order,
-      rawItems,
-      orderNumber,
-      orderType: isB2B ? "Wholesale (B2B)" : "Retail (B2C)",
-      date: dateStr,
-      customerName,
-      customerEmail,
-      customerPhone,
-      destination,
-      fullAddress,
-      itemsCount: itemsCount || 1,
-      itemsSummary,
-      paymentStatus: order.paymentStatus || (statusUpper === "DELIVERED" || statusUpper === "COMPLETED" ? "PAID" : "PENDING"),
-      orderStatus: statusUpper,
-      currency,
-      subtotal,
-      tax,
-      shippingCharges,
-      discount,
-      totalAmount,
-    };
-  });
-
-  const currencySymbol = orders[0]?.currencyCode === "INR" ? "₹" : "$";
-  const numFmt = `"${currencySymbol}"#,##0.00;("${currencySymbol}"#,##0.00);"-"`;
-
-  // Executive KPI ribbon cards
-  const kpiCards = [
-    { label: "Total Orders", value: totalOrdersCount, highlightColor: ENTERPRISE_THEME.brandNavy },
-    { label: "Total Revenue", value: `${currencySymbol}${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, highlightColor: ENTERPRISE_THEME.brandGreenDark },
-    { label: "Completed / Delivered", value: `${completedCount} Orders`, highlightColor: "FF166534" },
-    { label: "In-Flight / Pending", value: `${pendingCount} Orders`, highlightColor: "FF92400E" },
-    { label: "Total Units Packed", value: `${totalUnits.toLocaleString()} Units`, highlightColor: ENTERPRISE_THEME.brandSlateDark },
-  ];
-
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = "VANOM Enterprise Portal";
-  workbook.lastModifiedBy = "VANOM Operations";
-  workbook.created = new Date();
-
-  // ── SHEET 1: ORDERS OVERVIEW ──
-  const summarySheet = workbook.addWorksheet("Orders Overview", {
-    views: [{ showGridLines: true }],
-  });
-
-  const columns = [
-    { header: "Order #", key: "orderNumber", width: 17, align: "center" },
-    { header: "Type", key: "orderType", width: 15, align: "center" },
-    { header: "Date (UTC)", key: "date", width: 18, align: "center" },
-    { header: "Customer / Enterprise", key: "customerName", width: 25, align: "left" },
-    { header: "Contact Email", key: "customerEmail", width: 26, align: "left" },
-    { header: "Phone", key: "customerPhone", width: 16, align: "left" },
-    { header: "Destination", key: "destination", width: 20, align: "left" },
-    { header: "Full Address", key: "fullAddress", width: 36, align: "left", wrapText: true },
-    { header: "Items Qty", key: "itemsCount", width: 12, align: "right", isNumber: true, numFmt: "#,##0" },
-    { header: "Items Summary", key: "itemsSummary", width: 42, align: "left", wrapText: true },
-    { header: "Payment", key: "paymentStatus", width: 14, align: "center", isStatus: true },
-    { header: "Order Status", key: "orderStatus", width: 16, align: "center", isStatus: true },
-    { header: "Currency", key: "currency", width: 10, align: "center" },
-    { header: "Subtotal", key: "subtotal", width: 15, align: "right", isNumber: true, numFmt },
-    { header: "Tax", key: "tax", width: 13, align: "right", isNumber: true, numFmt },
-    { header: "Shipping", key: "shippingCharges", width: 13, align: "right", isNumber: true, numFmt },
-    { header: "Discount", key: "discount", width: 13, align: "right", isNumber: true, numFmt },
-    { header: "Total Amount", key: "totalAmount", width: 18, align: "right", isNumber: true, numFmt },
-  ];
-
-  let curRow = 1;
-  const colCount = columns.length;
-
-  // Title Banner
-  summarySheet.getRow(curRow).height = 36;
-  summarySheet.getCell("A1").value = `  ${(options.title || "VANOM E-COMMERCE  |  EXECUTIVE MASTER ORDERS REPORT").toUpperCase()}`;
-  summarySheet.getCell("A1").font = { name: ENTERPRISE_THEME.fontFamily, size: 13.5, bold: true, color: { argb: "FFFFFFFF" } };
-  summarySheet.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: ENTERPRISE_THEME.brandGreenDark } };
-  summarySheet.getCell("A1").alignment = { vertical: "middle", horizontal: "left" };
-  summarySheet.mergeCells(curRow, 1, curRow, colCount);
-  curRow++;
-
-  // Metadata Sub-banner
-  summarySheet.getRow(curRow).height = 22;
-  summarySheet.getCell(`A${curRow}`).value = `  Exported: ${new Date().toLocaleString()}  |  ${filterContext}  |  Total Records: ${totalOrdersCount}`;
-  summarySheet.getCell(`A${curRow}`).font = { name: ENTERPRISE_THEME.fontFamily, size: 9.5, italic: true, color: { argb: "FF64748B" } };
-  summarySheet.getCell(`A${curRow}`).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFC" } };
-  summarySheet.getCell(`A${curRow}`).alignment = { vertical: "middle", horizontal: "left" };
-  summarySheet.mergeCells(curRow, 1, curRow, colCount);
-  curRow++;
-
-  summarySheet.getRow(curRow).height = 8; // spacer
-  curRow++;
-
-  // KPI Ribbon
-  const kpiLabelRow = curRow;
-  const kpiValRow = curRow + 1;
-  summarySheet.getRow(kpiLabelRow).height = 18;
-  summarySheet.getRow(kpiValRow).height = 26;
-
-  const colsPerCard = Math.max(3, Math.floor(colCount / kpiCards.length));
-  kpiCards.forEach((card, idx) => {
-    const sCol = idx * colsPerCard + 1;
-    const eCol = Math.min(sCol + colsPerCard - 1, colCount);
-
-    if (sCol <= colCount) {
-      const lCell = summarySheet.getCell(kpiLabelRow, sCol);
-      lCell.value = card.label.toUpperCase();
-      lCell.font = { name: ENTERPRISE_THEME.fontFamily, size: 8.5, bold: true, color: { argb: "FF64748B" } };
-      lCell.alignment = { vertical: "middle", horizontal: "center" };
-      lCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
-
-      const vCell = summarySheet.getCell(kpiValRow, sCol);
-      vCell.value = card.value;
-      vCell.font = { name: ENTERPRISE_THEME.fontFamily, size: 12, bold: true, color: { argb: card.highlightColor } };
-      vCell.alignment = { vertical: "middle", horizontal: "center" };
-      vCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFFFF" } };
-
-      if (eCol > sCol) {
-        summarySheet.mergeCells(kpiLabelRow, sCol, kpiLabelRow, eCol);
-        summarySheet.mergeCells(kpiValRow, sCol, kpiValRow, eCol);
-      }
-
-      for (let c = sCol; c <= eCol; c++) {
-        applyCellBorder(summarySheet.getCell(kpiLabelRow, c), { color: "FFE2E8F0" });
-        applyCellBorder(summarySheet.getCell(kpiValRow, c), { color: "FFE2E8F0" });
-      }
-    }
-  });
-
-  curRow += 2;
-  summarySheet.getRow(curRow).height = 10; // spacer
-  curRow++;
-
-  // Headers
-  const headerRowIdx = curRow;
-  summarySheet.getRow(headerRowIdx).height = 28;
-  columns.forEach((col, idx) => {
-    const cell = summarySheet.getCell(headerRowIdx, idx + 1);
-    cell.value = col.header.toUpperCase();
-    cell.font = { name: ENTERPRISE_THEME.fontFamily, size: 9.5, bold: true, color: { argb: "FFFFFFFF" } };
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ENTERPRISE_THEME.brandNavy } };
-    cell.alignment = { vertical: "middle", horizontal: col.align || (col.isNumber ? "right" : "left") };
-    applyCellBorder(cell, { color: "FF334155" });
-  });
-
-  curRow++;
-  const dataStartRow = curRow;
-
-  // Data rows
-  normalizedOrders.forEach((o, rIdx) => {
-    const r = summarySheet.getRow(curRow);
-    r.height = 24;
-    const isZebra = rIdx % 2 === 1;
-
-    columns.forEach((col, cIdx) => {
-      const cell = r.getCell(cIdx + 1);
-      const val = o[col.key];
-
-      if (col.isStatus) {
-        formatStatusCell(cell, val);
-      } else {
-        if (col.isNumber) {
-          const num = Number(val);
-          cell.value = isNaN(num) ? 0 : num;
-        } else {
-          cell.value = val ?? "";
-        }
-
-        if (col.numFmt) {
-          cell.numFmt = col.numFmt;
-        }
-
-        cell.font = { name: ENTERPRISE_THEME.fontFamily, size: 9.5, color: { argb: "FF0F172A" } };
-        cell.alignment = {
-          vertical: "middle",
-          horizontal: col.align || (col.isNumber ? "right" : "left"),
-          wrapText: Boolean(col.wrapText),
-        };
-
-        if (isZebra) {
-          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFC" } };
-        }
-      }
-
-      applyCellBorder(cell, { color: "FFE2E8F0" });
-    });
-
-    curRow++;
-  });
-
-  const dataEndRow = curRow - 1;
-
-  // Totals Row
-  const totalRow = summarySheet.getRow(curRow);
-  totalRow.height = 28;
-  const numSumCols = ["itemsCount", "subtotal", "tax", "shippingCharges", "discount", "totalAmount"];
-
-  columns.forEach((col, cIdx) => {
-    const cell = totalRow.getCell(cIdx + 1);
-    if (col.key === "orderNumber") {
-      cell.value = `TOTAL (${totalOrdersCount} orders)`;
+    if (column.key === labelKey) {
+      cell.value = label || "TOTAL";
       cell.alignment = { vertical: "middle", horizontal: "left" };
-    } else if (numSumCols.includes(col.key)) {
-      const colLetter = summarySheet.getColumn(cIdx + 1).letter;
-      cell.value = { formula: `SUM(${colLetter}${dataStartRow}:${colLetter}${dataEndRow})` };
-      if (col.numFmt) cell.numFmt = col.numFmt;
+    } else if (sumKeys.includes(column.key) && startRow <= endRow) {
+      const letter = worksheet.getColumn(index + 1).letter;
+      cell.value = {
+        formula: `SUM(${letter}${startRow}:${letter}${endRow})`,
+      };
+      if (column.numFmt) cell.numFmt = column.numFmt;
       cell.alignment = { vertical: "middle", horizontal: "right" };
     } else {
       cell.value = "";
     }
 
-    cell.font = { name: ENTERPRISE_THEME.fontFamily, size: 10, bold: true, color: { argb: "FF0F172A" } };
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
+    styleCell(cell, {
+      size: 10,
+      bold: true,
+      color: ENTERPRISE_THEME.brandSlateDark,
+      fill: ENTERPRISE_THEME.slateSoft,
+    });
+
     cell.border = {
       top: { style: "thin", color: { argb: "FF94A3B8" } },
       bottom: { style: "double", color: { argb: "FF0F172A" } },
-      left: { style: "thin", color: { argb: "FFE2E8F0" } },
-      right: { style: "thin", color: { argb: "FFE2E8F0" } },
+      left: { style: "thin", color: { argb: DEFAULT_BORDER } },
+      right: { style: "thin", color: { argb: DEFAULT_BORDER } },
     };
   });
 
-  // Dynamic Column Widths for Sheet 1
-  columns.forEach((col, cIdx) => {
-    const sheetCol = summarySheet.getColumn(cIdx + 1);
-    let maxLen = col.header.length + 4;
-    normalizedOrders.forEach((o) => {
-      const val = o[col.key];
-      if (val) {
-        const len = String(val).length;
-        if (len > maxLen) maxLen = len;
-      }
+  return row;
+}
+
+function addBanner(worksheet, {
+  row = 1,
+  title,
+  subtitle,
+  columnCount,
+}) {
+  worksheet.getRow(row).height = 36;
+  worksheet.mergeCells(row, 1, row, columnCount);
+
+  const titleCell = worksheet.getCell(row, 1);
+  titleCell.value = `  ${String(title || "").toUpperCase()}`;
+  titleCell.font = font(13.5, {
+    bold: true,
+    color: { argb: ENTERPRISE_THEME.white },
+  });
+  titleCell.fill = solidFill(ENTERPRISE_THEME.brandGreenDark);
+  titleCell.alignment = { vertical: "middle", horizontal: "left" };
+
+  let nextRow = row + 1;
+
+  if (subtitle) {
+    worksheet.getRow(nextRow).height = 22;
+    worksheet.mergeCells(nextRow, 1, nextRow, columnCount);
+
+    const subtitleCell = worksheet.getCell(nextRow, 1);
+    subtitleCell.value = `  ${subtitle}`;
+    subtitleCell.font = font(9.5, {
+      italic: true,
+      color: { argb: ENTERPRISE_THEME.brandSlateMuted },
     });
-    sheetCol.width = Math.max(col.width || 12, Math.min(maxLen + 3, 48));
+    subtitleCell.fill = solidFill(ENTERPRISE_THEME.brandSlateZebra);
+    subtitleCell.alignment = { vertical: "middle", horizontal: "left" };
+
+    nextRow += 1;
+  }
+
+  worksheet.getRow(nextRow).height = 8;
+  return nextRow + 1;
+}
+
+function addKpiRibbon(worksheet, row, cards, columnCount) {
+  if (!Array.isArray(cards) || !cards.length) return row;
+
+  const labelRow = worksheet.getRow(row);
+  const valueRow = worksheet.getRow(row + 1);
+
+  labelRow.height = 18;
+  valueRow.height = 26;
+
+  const colsPerCard = Math.max(
+    2,
+    Math.floor(columnCount / cards.length),
+  );
+
+  cards.forEach((card, index) => {
+    const startCol = index * colsPerCard + 1;
+    if (startCol > columnCount) return;
+
+    const endCol = Math.min(
+      startCol + colsPerCard - 1,
+      columnCount,
+    );
+
+    const labelCell = labelRow.getCell(startCol);
+    labelCell.value = String(card.label || "").toUpperCase();
+    labelCell.font = font(8.5, {
+      bold: true,
+      color: { argb: ENTERPRISE_THEME.brandSlateMuted },
+    });
+    labelCell.alignment = { vertical: "middle", horizontal: "center" };
+    labelCell.fill = solidFill(ENTERPRISE_THEME.slateSoft);
+
+    const valueCell = valueRow.getCell(startCol);
+    valueCell.value = card.value;
+    valueCell.font = font(12.5, {
+      bold: true,
+      color: {
+        argb:
+          card.highlightColor ||
+          ENTERPRISE_THEME.brandGreenDark,
+      },
+    });
+    valueCell.alignment = { vertical: "middle", horizontal: "center" };
+    valueCell.fill = solidFill(ENTERPRISE_THEME.white);
+
+    if (endCol > startCol) {
+      worksheet.mergeCells(row, startCol, row, endCol);
+      worksheet.mergeCells(row + 1, startCol, row + 1, endCol);
+    }
+
+    for (let col = startCol; col <= endCol; col += 1) {
+      applyCellBorder(labelRow.getCell(col));
+      applyCellBorder(valueRow.getCell(col));
+    }
   });
 
-  // Auto-filter & Frozen Panes for Sheet 1
-  summarySheet.autoFilter = `A${headerRowIdx}:${summarySheet.getColumn(colCount).letter}${headerRowIdx}`;
-  summarySheet.views = [
+  return row + 2;
+}
+
+function setColumnWidths(worksheet, columns, data = [], {
+  dynamic = true,
+  maxWidth = 48,
+} = {}) {
+  columns.forEach((column, index) => {
+    let width = Number(column.width) || 12;
+
+    if (dynamic) {
+      let maxLength = String(column.header || column.key || "").length + 4;
+
+      data.forEach((row) => {
+        let value = row?.[column.key];
+        if (typeof column.format === "function") {
+          value = column.format(value, row);
+        }
+
+        if (value !== null && value !== undefined) {
+          maxLength = Math.max(maxLength, String(value).length);
+        }
+      });
+
+      width = Math.max(width, Math.min(maxLength + 3, maxWidth));
+    }
+
+    width = Math.max(
+      Number(column.minWidth) || 10,
+      Math.min(width, Number(column.maxWidth) || maxWidth),
+    );
+
+    worksheet.getColumn(index + 1).width = width;
+  });
+}
+
+function freezeAndFilter(
+  worksheet,
+  headerRow,
+  columnCount,
+  { showGridLines = true } = {},
+) {
+  const lastColumn = worksheet.getColumn(columnCount).letter;
+
+  worksheet.autoFilter = `A${headerRow}:${lastColumn}${headerRow}`;
+  worksheet.views = [
     {
       state: "frozen",
-      ySplit: headerRowIdx,
-      activeCell: `A${headerRowIdx + 1}`,
-      showGridLines: true,
+      ySplit: headerRow,
+      activeCell: `A${headerRow + 1}`,
+      showGridLines,
     },
   ];
+}
 
-  // ── SHEET 2: ITEMIZED LINE ITEMS DETAIL (Enterprise standard pivot/audit sheet) ──
-  const itemsSheet = workbook.addWorksheet("Line Items Detail", {
+function createWorkbook() {
+  const workbook = new ExcelJS.Workbook();
+
+  workbook.creator = "VANOM Enterprise Portal";
+  workbook.lastModifiedBy = "VANOM Operations";
+  workbook.created = new Date();
+  workbook.modified = new Date();
+
+  return workbook;
+}
+
+export function downloadExcelBuffer(
+  buffer,
+  filename = "export.xlsx",
+) {
+  const blob = new Blob([buffer], { type: EXCEL_MIME });
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+}
+
+async function downloadWorkbook(workbook, filename) {
+  const buffer = await workbook.xlsx.writeBuffer();
+  downloadExcelBuffer(buffer, filename);
+}
+
+/**
+ * Generic reusable enterprise exporter.
+ */
+export async function exportToExcel({
+  filename = "export.xlsx",
+  sheetName = "Summary",
+  title = null,
+  subtitle = null,
+  kpiCards = [],
+  columns = [],
+  data = [],
+  totals = null,
+  statusKey = null,
+  freezePanes = true,
+}) {
+  const workbook = createWorkbook();
+  const worksheet = workbook.addWorksheet(sheetName, {
     views: [{ showGridLines: true }],
   });
 
-  const itemCols = [
+  let rowIndex = 1;
+  const columnCount = Math.max(columns.length, 1);
+
+  if (title) {
+    rowIndex = addBanner(worksheet, {
+      row: rowIndex,
+      title,
+      subtitle,
+      columnCount,
+    });
+  }
+
+  rowIndex = addKpiRibbon(
+    worksheet,
+    rowIndex,
+    kpiCards,
+    columnCount,
+  );
+
+  const headerRow = rowIndex;
+  styleHeaderRow(worksheet.getRow(headerRow), columns);
+  rowIndex += 1;
+
+  const dataStart = rowIndex;
+
+  data.forEach((row, index) => {
+    writeDataRow(
+      worksheet.getRow(rowIndex),
+      columns.map((column) => ({
+        ...column,
+        isStatus:
+          column.isStatus || column.key === statusKey,
+      })),
+      row,
+      index,
+    );
+    rowIndex += 1;
+  });
+
+  const dataEnd = rowIndex - 1;
+
+  if (totals && data.length) {
+    addTotalsRow(worksheet, rowIndex, columns, {
+      ...totals,
+      startRow: dataStart,
+      endRow: dataEnd,
+    });
+    rowIndex += 1;
+  }
+
+  setColumnWidths(worksheet, columns, data);
+
+  if (freezePanes && columns.length) {
+    freezeAndFilter(worksheet, headerRow, columns.length);
+  }
+
+  await downloadWorkbook(workbook, filename);
+}
+
+/**
+ * Normalizes an order into one export-friendly structure.
+ */
+function normalizeOrder(order) {
+  const b2b = isB2BOrder(order);
+  const items = getOrderItems(order);
+  const address = getShippingAddress(order);
+  const status = normalizeStatus(order.status);
+  const financials = getOrderFinancials(order, items);
+
+  const itemCount = items.reduce(
+    (sum, item) => sum + Number(item.quantity || 1),
+    0,
+  );
+
+  const itemsSummary =
+    items
+      .map((item) => {
+        const qty = item.quantity ? ` (x${item.quantity})` : "";
+        return `${getProductName(item)}${qty}`;
+      })
+      .join("; ") || "Enterprise Wholesale Batch";
+
+  const currency = resolveCurrency(order);
+
+  return {
+    rawOrder: order,
+    rawItems: items,
+    orderNumber: getOrderNumber(order),
+    orderType: b2b ? "Wholesale (B2B)" : "Retail (B2C)",
+    date: formatDate(order.createdAt),
+    customerName: getCustomerName(order),
+    customerEmail:
+      order.user?.email ||
+      order.requestedBy?.email ||
+      order.company?.email ||
+      "",
+    customerPhone:
+      address?.phone ||
+      order.user?.phone ||
+      order.requestedBy?.phone ||
+      order.company?.phone ||
+      "",
+    destination: address?.city
+      ? `${address.city}${address.country ? `, ${address.country}` : ""}`
+      : "Standard Logistics",
+    fullAddress:
+      [
+        address?.addressLine1,
+        address?.city,
+        address?.state,
+        address?.postalCode,
+        address?.country || address?.countryCode,
+      ]
+        .filter(Boolean)
+        .join(", ") || "N/A",
+    itemsCount: itemCount || 1,
+    itemsSummary,
+    paymentStatus:
+      order.paymentStatus ||
+      (["DELIVERED", "COMPLETED"].includes(status) ? "PAID" : "PENDING"),
+    orderStatus: status,
+    currency,
+    subtotal: financials.subtotal,
+    tax: financials.tax,
+    shippingCharges: financials.shipping,
+    discount: financials.discount,
+    totalAmount: financials.total,
+  };
+}
+
+function getOrdersKpis(normalizedOrders) {
+  let revenue = 0;
+  let completed = 0;
+  let pending = 0;
+  let units = 0;
+
+  normalizedOrders.forEach((order) => {
+    revenue += Number(order.totalAmount || 0);
+    units += Number(order.itemsCount || 0);
+
+    if (
+      ["DELIVERED", "COMPLETED", "APPROVED"].includes(order.orderStatus)
+    ) {
+      completed += 1;
+    } else if (
+      !["CANCELLED", "REJECTED"].includes(order.orderStatus)
+    ) {
+      pending += 1;
+    }
+  });
+
+  return {
+    revenue,
+    completed,
+    pending,
+    units,
+  };
+}
+
+function buildOrdersColumns(numFmt) {
+  return [
+    { header: "Order #", key: "orderNumber", width: 17, align: "center" },
+    { header: "Type", key: "orderType", width: 15, align: "center" },
+    { header: "Date (UTC)", key: "date", width: 18, align: "center" },
+    {
+      header: "Customer / Enterprise",
+      key: "customerName",
+      width: 25,
+      align: "left",
+    },
+    {
+      header: "Contact Email",
+      key: "customerEmail",
+      width: 26,
+      align: "left",
+    },
+    { header: "Phone", key: "customerPhone", width: 16, align: "left" },
+    {
+      header: "Destination",
+      key: "destination",
+      width: 20,
+      align: "left",
+    },
+    {
+      header: "Full Address",
+      key: "fullAddress",
+      width: 36,
+      align: "left",
+      wrapText: true,
+    },
+    {
+      header: "Items Qty",
+      key: "itemsCount",
+      width: 12,
+      align: "right",
+      isNumber: true,
+      numFmt: "#,##0",
+    },
+    {
+      header: "Items Summary",
+      key: "itemsSummary",
+      width: 42,
+      align: "left",
+      wrapText: true,
+    },
+    {
+      header: "Payment",
+      key: "paymentStatus",
+      width: 14,
+      align: "center",
+      isStatus: true,
+    },
+    {
+      header: "Order Status",
+      key: "orderStatus",
+      width: 16,
+      align: "center",
+      isStatus: true,
+    },
+    { header: "Currency", key: "currency", width: 10, align: "center" },
+    {
+      header: "Subtotal",
+      key: "subtotal",
+      width: 15,
+      align: "right",
+      isNumber: true,
+      numFmt,
+    },
+    {
+      header: "Tax",
+      key: "tax",
+      width: 13,
+      align: "right",
+      isNumber: true,
+      numFmt,
+    },
+    {
+      header: "Shipping",
+      key: "shippingCharges",
+      width: 13,
+      align: "right",
+      isNumber: true,
+      numFmt,
+    },
+    {
+      header: "Discount",
+      key: "discount",
+      width: 13,
+      align: "right",
+      isNumber: true,
+      numFmt,
+    },
+    {
+      header: "Total Amount",
+      key: "totalAmount",
+      width: 18,
+      align: "right",
+      isNumber: true,
+      numFmt,
+    },
+  ];
+}
+
+function buildItemColumns(numFmt) {
+  return [
     { header: "Order #", key: "orderNumber", width: 17, align: "center" },
     { header: "Date", key: "date", width: 18, align: "center" },
     { header: "Channel", key: "orderType", width: 15, align: "center" },
-    { header: "Customer / Enterprise", key: "customerName", width: 25, align: "left" },
-    { header: "Product / Item Name", key: "name", width: 34, align: "left" },
+    {
+      header: "Customer / Enterprise",
+      key: "customerName",
+      width: 25,
+      align: "left",
+    },
+    {
+      header: "Product / Item Name",
+      key: "name",
+      width: 34,
+      align: "left",
+    },
     { header: "SKU / Code", key: "sku", width: 16, align: "center" },
-    { header: "Variant / Spec", key: "variant", width: 18, align: "left" },
-    { header: "Unit Price", key: "unitPrice", width: 14, align: "right", numFmt },
-    { header: "Quantity", key: "quantity", width: 11, align: "right", numFmt: "#,##0" },
-    { header: "Line Total", key: "lineTotal", width: 16, align: "right", numFmt },
-    { header: "Order Status", key: "status", width: 15, align: "center", isStatus: true },
+    {
+      header: "Variant / Spec",
+      key: "variant",
+      width: 18,
+      align: "left",
+    },
+    {
+      header: "Unit Price",
+      key: "unitPrice",
+      width: 14,
+      align: "right",
+      isNumber: true,
+      numFmt,
+    },
+    {
+      header: "Quantity",
+      key: "quantity",
+      width: 11,
+      align: "right",
+      isNumber: true,
+      numFmt: "#,##0",
+    },
+    {
+      header: "Line Total",
+      key: "lineTotal",
+      width: 16,
+      align: "right",
+      isNumber: true,
+      numFmt,
+    },
+    {
+      header: "Order Status",
+      key: "status",
+      width: 15,
+      align: "center",
+      isStatus: true,
+    },
   ];
+}
 
-  let itemRowIdx = 1;
+function buildLineItemRows(normalizedOrders) {
+  const rows = [];
 
-  // Title for Sheet 2
-  itemsSheet.getRow(itemRowIdx).height = 32;
-  itemsSheet.getCell("A1").value = "  VANOM E-COMMERCE  |  ITEMIZED ORDER FULFILLMENT BREAKDOWN";
-  itemsSheet.getCell("A1").font = { name: ENTERPRISE_THEME.fontFamily, size: 12, bold: true, color: { argb: "FFFFFFFF" } };
-  itemsSheet.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: ENTERPRISE_THEME.brandGreenDark } };
-  itemsSheet.getCell("A1").alignment = { vertical: "middle", horizontal: "left" };
-  itemsSheet.mergeCells(1, 1, 1, itemCols.length);
-  itemRowIdx++;
+  normalizedOrders.forEach((order) => {
+    const items =
+      order.rawItems.length > 0
+        ? order.rawItems
+        : [
+          {
+            name: "Standard Fulfillment Batch",
+            quantity: order.itemsCount,
+            price: order.totalAmount,
+          },
+        ];
 
-  // Subtitle
-  itemsSheet.getRow(itemRowIdx).height = 20;
-  itemsSheet.getCell("A2").value = `  Granular item-by-item breakdown for accounting reconciliations, auditing, and warehouse packing.`;
-  itemsSheet.getCell("A2").font = { name: ENTERPRISE_THEME.fontFamily, size: 9, italic: true, color: { argb: "FF64748B" } };
-  itemsSheet.getCell("A2").fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFC" } };
-  itemsSheet.getCell("A2").alignment = { vertical: "middle", horizontal: "left" };
-  itemsSheet.mergeCells(2, 1, 2, itemCols.length);
-  itemRowIdx++;
+    items.forEach((item) => {
+      const { unitPrice, quantity, lineTotal } = getItemPricing(
+        item,
+        order.rawOrder,
+      );
 
-  itemsSheet.getRow(itemRowIdx).height = 8; // spacer
-  itemRowIdx++;
-
-  // Sheet 2 Headers
-  const itemHeaderRow = itemRowIdx;
-  itemsSheet.getRow(itemHeaderRow).height = 26;
-  itemCols.forEach((col, idx) => {
-    const c = itemsSheet.getCell(itemHeaderRow, idx + 1);
-    c.value = col.header.toUpperCase();
-    c.font = { name: ENTERPRISE_THEME.fontFamily, size: 9.5, bold: true, color: { argb: "FFFFFFFF" } };
-    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ENTERPRISE_THEME.brandNavy } };
-    c.alignment = { vertical: "middle", horizontal: col.align };
-    applyCellBorder(c, { color: "FF334155" });
-  });
-
-  itemRowIdx++;
-  const itemDataStart = itemRowIdx;
-  let lineCount = 0;
-
-  normalizedOrders.forEach((o) => {
-    const items = o.rawItems.length > 0 ? o.rawItems : [{ name: "Standard Fulfillment Batch", quantity: o.itemsCount, price: o.totalAmount }];
-
-    items.forEach((itm) => {
-      const r = itemsSheet.getRow(itemRowIdx);
-      r.height = 22;
-      const isZebra = lineCount % 2 === 1;
-
-      const name = itm.product?.name || itm.bulkProduct?.name || itm.name || itm.commodityName || "Item";
-      const sku = itm.product?.sku || itm.bulkProduct?.sku || itm.sku || itm.id?.slice(0, 8).toUpperCase() || "SKU-PROD";
-      const variant = itm.variant?.title || itm.packagingType || itm.grade || "Standard";
-      const uPrice = Number(itm.price || itm.unitPrice || 0);
-      const qty = Number(itm.quantity || 1);
-      const lTotal = Number(itm.total || (uPrice * qty));
-
-      r.getCell(1).value = o.orderNumber;
-      r.getCell(1).alignment = { vertical: "middle", horizontal: "center" };
-
-      r.getCell(2).value = o.date;
-      r.getCell(2).alignment = { vertical: "middle", horizontal: "center" };
-
-      r.getCell(3).value = o.orderType;
-      r.getCell(3).alignment = { vertical: "middle", horizontal: "center" };
-
-      r.getCell(4).value = o.customerName;
-      r.getCell(4).alignment = { vertical: "middle", horizontal: "left" };
-
-      r.getCell(5).value = name;
-      r.getCell(5).alignment = { vertical: "middle", horizontal: "left" };
-
-      r.getCell(6).value = sku;
-      r.getCell(6).alignment = { vertical: "middle", horizontal: "center" };
-
-      r.getCell(7).value = variant;
-      r.getCell(7).alignment = { vertical: "middle", horizontal: "left" };
-
-      r.getCell(8).value = uPrice;
-      r.getCell(8).numFmt = numFmt;
-      r.getCell(8).alignment = { vertical: "middle", horizontal: "right" };
-
-      r.getCell(9).value = qty;
-      r.getCell(9).numFmt = "#,##0";
-      r.getCell(9).alignment = { vertical: "middle", horizontal: "right" };
-
-      r.getCell(10).value = lTotal;
-      r.getCell(10).numFmt = numFmt;
-      r.getCell(10).alignment = { vertical: "middle", horizontal: "right" };
-
-      formatStatusCell(r.getCell(11), o.orderStatus);
-
-      for (let c = 1; c <= 11; c++) {
-        const cell = r.getCell(c);
-        if (c !== 11) {
-          cell.font = { name: ENTERPRISE_THEME.fontFamily, size: 9.5, color: { argb: "FF0F172A" } };
-          if (isZebra) {
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFC" } };
-          }
-        }
-        applyCellBorder(cell, { color: "FFE2E8F0" });
-      }
-
-      itemRowIdx++;
-      lineCount++;
+      rows.push({
+        orderNumber: order.orderNumber,
+        date: order.date,
+        orderType: order.orderType,
+        customerName: order.customerName,
+        name: getProductName(item),
+        sku: getProductSku(item),
+        variant: getItemVariant(item),
+        unitPrice,
+        quantity,
+        lineTotal,
+        status: order.orderStatus,
+      });
     });
   });
 
-  const itemDataEnd = itemRowIdx - 1;
+  return rows;
+}
 
-  // Totals for Sheet 2
-  if (lineCount > 0) {
-    const itmTotalRow = itemsSheet.getRow(itemRowIdx);
-    itmTotalRow.height = 28;
-    itmTotalRow.getCell(1).value = `TOTAL (${lineCount} line items)`;
-    itemsSheet.mergeCells(itemRowIdx, 1, itemRowIdx, 7);
+function buildLineItemsSheet(workbook, normalizedOrders, numFmt) {
+  const columns = buildItemColumns(numFmt);
+  const rows = buildLineItemRows(normalizedOrders);
 
-    itmTotalRow.getCell(1).font = { name: ENTERPRISE_THEME.fontFamily, size: 10, bold: true, color: { argb: "FF0F172A" } };
-    itmTotalRow.getCell(1).alignment = { vertical: "middle", horizontal: "left" };
-    itmTotalRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
-
-    // Qty Sum
-    const qtyColLetter = itemsSheet.getColumn(9).letter;
-    itmTotalRow.getCell(9).value = { formula: `SUM(${qtyColLetter}${itemDataStart}:${qtyColLetter}${itemDataEnd})` };
-    itmTotalRow.getCell(9).numFmt = "#,##0";
-    itmTotalRow.getCell(9).font = { name: ENTERPRISE_THEME.fontFamily, size: 10, bold: true, color: { argb: "FF0F172A" } };
-    itmTotalRow.getCell(9).alignment = { vertical: "middle", horizontal: "right" };
-    itmTotalRow.getCell(9).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
-
-    // Line Total Sum
-    const totalColLetter = itemsSheet.getColumn(10).letter;
-    itmTotalRow.getCell(10).value = { formula: `SUM(${totalColLetter}${itemDataStart}:${totalColLetter}${itemDataEnd})` };
-    itmTotalRow.getCell(10).numFmt = numFmt;
-    itmTotalRow.getCell(10).font = { name: ENTERPRISE_THEME.fontFamily, size: 10.5, bold: true, color: { argb: "FF0A4D2E" } };
-    itmTotalRow.getCell(10).alignment = { vertical: "middle", horizontal: "right" };
-    itmTotalRow.getCell(10).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
-
-    itmTotalRow.getCell(11).value = "";
-    itmTotalRow.getCell(11).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF1F5F9" } };
-
-    for (let c = 1; c <= 11; c++) {
-      itemsSheet.getCell(itemRowIdx, c).border = {
-        top: { style: "thin", color: { argb: "FF94A3B8" } },
-        bottom: { style: "double", color: { argb: "FF0F172A" } },
-        left: { style: "thin", color: { argb: "FFE2E8F0" } },
-        right: { style: "thin", color: { argb: "FFE2E8F0" } },
-      };
-    }
-  }
-
-  // Widths & Frozen Panes for Sheet 2
-  itemCols.forEach((col, idx) => {
-    itemsSheet.getColumn(idx + 1).width = col.width;
+  const sheet = workbook.addWorksheet("Line Items Detail", {
+    views: [{ showGridLines: true }],
   });
 
-  itemsSheet.autoFilter = `A${itemHeaderRow}:${itemsSheet.getColumn(itemCols.length).letter}${itemHeaderRow}`;
-  itemsSheet.views = [
+  let rowIndex = addBanner(sheet, {
+    row: 1,
+    title: "VANOM E-COMMERCE | ITEMIZED ORDER FULFILLMENT BREAKDOWN",
+    subtitle:
+      "Granular item-by-item breakdown for accounting reconciliations, auditing, and warehouse packing.",
+    columnCount: columns.length,
+  });
+
+  const headerRow = rowIndex;
+  styleHeaderRow(sheet.getRow(headerRow), columns);
+  rowIndex += 1;
+
+  const dataStart = rowIndex;
+
+  rows.forEach((row, index) => {
+    writeDataRow(sheet.getRow(rowIndex), columns, row, index);
+    rowIndex += 1;
+  });
+
+  const dataEnd = rowIndex - 1;
+
+  if (rows.length) {
+    addTotalsRow(sheet, rowIndex, columns, {
+      labelKey: "orderNumber",
+      label: `TOTAL (${rows.length} line items)`,
+      sumKeys: ["quantity", "lineTotal"],
+      startRow: dataStart,
+      endRow: dataEnd,
+    });
+  }
+
+  setColumnWidths(sheet, columns, rows, {
+    dynamic: false,
+    maxWidth: 48,
+  });
+
+  freezeAndFilter(sheet, headerRow, columns.length);
+}
+
+async function exportSingleOrderCommercialSlip(order, options = {}) {
+  const workbook = createWorkbook();
+  const sheet = workbook.addWorksheet("Order Slip", {
+    views: [{ showGridLines: true }],
+  });
+
+  const b2b = isB2BOrder(order);
+  const orderNumber = getOrderNumber(order);
+  const currency = resolveCurrency(order);
+  const numFmt = currencyFormat(currencySymbol(currency));
+  const items = getOrderItems(order);
+  const financials = getOrderFinancials(order, items);
+  const address = getShippingAddress(order);
+
+  const customerName = getCustomerName(order);
+  const customerEmail =
+    order.user?.email ||
+    order.requestedBy?.email ||
+    order.company?.email ||
+    "N/A";
+  const customerPhone =
+    address?.phone ||
+    order.user?.phone ||
+    order.requestedBy?.phone ||
+    "N/A";
+
+  const addressLine =
+    address?.addressLine1 || address?.address || "Standard Logistics Center";
+  const cityStateZip =
+    [address?.city, address?.state, address?.postalCode || address?.zipCode]
+      .filter(Boolean)
+      .join(", ") || "City, State, Zip";
+  const country =
+    address?.country || address?.countryCode || "Standard Territory";
+
+  sheet.mergeCells("A1:G1");
+  const banner = sheet.getCell("A1");
+  banner.value = `  VANOM E-COMMERCE  |  ${b2b
+      ? "COMMERCIAL WHOLESALE PURCHASE ORDER"
+      : "OFFICIAL ORDER INVOICE"
+    }`;
+  banner.font = font(13, {
+    bold: true,
+    color: { argb: ENTERPRISE_THEME.white },
+  });
+  banner.fill = solidFill(ENTERPRISE_THEME.brandGreenDark);
+  banner.alignment = { vertical: "middle", horizontal: "left" };
+  sheet.getRow(1).height = 34;
+
+  sheet.mergeCells("A2:G2");
+  const metadata = sheet.getCell("A2");
+  metadata.value =
+    `  ORDER REFERENCE: ${orderNumber}  |  STATUS: ${normalizeStatus(
+      order.status,
+    )}  |  DATE: ${new Date(order.createdAt || Date.now()).toLocaleString()}`;
+  metadata.font = font(9.5, {
+    bold: true,
+    color: { argb: "FF334155" },
+  });
+  metadata.fill = solidFill(ENTERPRISE_THEME.slateSoft);
+  metadata.alignment = { vertical: "middle", horizontal: "left" };
+  sheet.getRow(2).height = 22;
+  sheet.getRow(3).height = 10;
+
+  sheet.mergeCells("A4:C4");
+  sheet.mergeCells("E4:G4");
+
+  ["A4", "E4"].forEach((cellAddress) => {
+    const cell = sheet.getCell(cellAddress);
+    cell.font = font(9.5, {
+      bold: true,
+      color: { argb: ENTERPRISE_THEME.white },
+    });
+    cell.fill = solidFill(ENTERPRISE_THEME.brandNavy);
+    cell.alignment = { vertical: "middle", horizontal: "left" };
+  });
+
+  sheet.getCell("A4").value = "  BILLING & CUSTOMER ACCOUNT";
+  sheet.getCell("E4").value = "  FULFILLMENT & SHIPPING ADDRESS";
+  sheet.getRow(4).height = 22;
+
+  const details = [
     {
-      state: "frozen",
-      ySplit: itemHeaderRow,
-      activeCell: `A${itemHeaderRow + 1}`,
-      showGridLines: true,
+      leftLabel: "Account Name:",
+      leftVal: customerName,
+      rightLabel: "Recipient:",
+      rightVal: address?.fullName || customerName,
+    },
+    {
+      leftLabel: "Email:",
+      leftVal: customerEmail,
+      rightLabel: "Address:",
+      rightVal: addressLine,
+    },
+    {
+      leftLabel: "Phone:",
+      leftVal: customerPhone,
+      rightLabel: "City/Zip:",
+      rightVal: cityStateZip,
+    },
+    {
+      leftLabel: "Channel:",
+      leftVal: b2b
+        ? "Enterprise Wholesale (B2B)"
+        : "Consumer Retail (B2C)",
+      rightLabel: "Country:",
+      rightVal: country,
     },
   ];
 
-  // 4. Download file
-  const buffer = await workbook.xlsx.writeBuffer();
-  downloadExcelBuffer(buffer, filename);
+  details.forEach((item, index) => {
+    const rowNumber = 5 + index;
+    sheet.getRow(rowNumber).height = 20;
+
+    sheet.getCell(`A${rowNumber}`).value = item.leftLabel;
+    sheet.getCell(`A${rowNumber}`).font = font(9, {
+      bold: true,
+      color: { argb: ENTERPRISE_THEME.brandSlateMuted },
+    });
+
+    sheet.mergeCells(`B${rowNumber}:C${rowNumber}`);
+    sheet.getCell(`B${rowNumber}`).value = item.leftVal;
+    sheet.getCell(`B${rowNumber}`).font = font(9.5, {
+      color: { argb: ENTERPRISE_THEME.brandNavy },
+    });
+
+    sheet.getCell(`E${rowNumber}`).value = item.rightLabel;
+    sheet.getCell(`E${rowNumber}`).font = font(9, {
+      bold: true,
+      color: { argb: ENTERPRISE_THEME.brandSlateMuted },
+    });
+
+    sheet.mergeCells(`F${rowNumber}:G${rowNumber}`);
+    sheet.getCell(`F${rowNumber}`).value = item.rightVal;
+    sheet.getCell(`F${rowNumber}`).font = font(9.5, {
+      color: { argb: ENTERPRISE_THEME.brandNavy },
+    });
+
+    ["A", "B", "C", "E", "F", "G"].forEach((column) =>
+      applyCellBorder(sheet.getCell(`${column}${rowNumber}`)),
+    );
+  });
+
+  sheet.getRow(9).height = 12;
+
+  const tableHeaders = [
+    ["A", "ITEM #", 8, "center"],
+    ["B", "PRODUCT / COMMODITY DESCRIPTION", 34, "left"],
+    ["C", "SKU / CODE", 16, "center"],
+    ["D", "SPECIFICATION / VARIANT", 20, "left"],
+    ["E", "UNIT PRICE", 14, "right"],
+    ["F", "QTY", 10, "right"],
+    ["G", "LINE TOTAL", 18, "right"],
+  ];
+
+  tableHeaders.forEach(([column, title, width, align]) => {
+    const cell = sheet.getCell(`${column}10`);
+    cell.value = title;
+    cell.font = font(9.5, {
+      bold: true,
+      color: { argb: ENTERPRISE_THEME.white },
+    });
+    cell.fill = solidFill(ENTERPRISE_THEME.brandNavy);
+    cell.alignment = { vertical: "middle", horizontal: align };
+    applyCellBorder(cell, { color: "FF334155" });
+    sheet.getColumn(column).width = width;
+  });
+
+  let rowIndex = 11;
+
+  if (!items.length) {
+    sheet.mergeCells(`A${rowIndex}:G${rowIndex}`);
+    const cell = sheet.getCell(`A${rowIndex}`);
+    cell.value =
+      "Standard Order Batch (Detailed commodity line specifications recorded in system)";
+    cell.font = font(9.5, {
+      italic: true,
+      color: { argb: ENTERPRISE_THEME.brandSlateMuted },
+    });
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+    rowIndex += 1;
+  } else {
+    items.forEach((item, index) => {
+      const { unitPrice, quantity, lineTotal } = getItemPricing(
+        item,
+        order,
+      );
+      const zebra = index % 2 === 1;
+      const values = [
+        index + 1,
+        getProductName(item),
+        getProductSku(item),
+        getItemVariant(item),
+        unitPrice,
+        quantity,
+        lineTotal,
+      ];
+
+      values.forEach((value, columnIndex) => {
+        const cell = sheet.getCell(rowIndex, columnIndex + 1);
+        cell.value = value;
+
+        if (columnIndex === 4 || columnIndex === 6) {
+          cell.numFmt = numFmt;
+        }
+        if (columnIndex === 5) cell.numFmt = "#,##0";
+
+        cell.font = font(9.5, {
+          color: { argb: ENTERPRISE_THEME.brandNavy },
+        });
+        cell.alignment = {
+          vertical: "middle",
+          horizontal:
+            columnIndex === 0
+              ? "center"
+              : [4, 5, 6].includes(columnIndex)
+                ? "right"
+                : "left",
+        };
+
+        if (zebra) cell.fill = solidFill(ENTERPRISE_THEME.brandSlateZebra);
+        applyCellBorder(cell);
+      });
+
+      sheet.getRow(rowIndex).height = 24;
+      rowIndex += 1;
+    });
+  }
+
+  const itemsEndRow = rowIndex - 1;
+
+  const financeRows = [
+    {
+      label: "Items Subtotal",
+      value: financials.subtotal,
+      formula:
+        items.length > 0
+          ? `SUM(G11:G${itemsEndRow})`
+          : null,
+    },
+    { label: "Estimated Tax", value: financials.tax },
+    { label: "Shipping & Logistics", value: financials.shipping },
+    {
+      label: "Discount / Rebate",
+      value: financials.discount > 0 ? -financials.discount : 0,
+    },
+    {
+      label: "GRAND TOTAL",
+      value: financials.total,
+      grandTotal: true,
+    },
+  ];
+
+  financeRows.forEach((entry) => {
+    const label = sheet.getCell(`E${rowIndex}`);
+    const value = sheet.getCell(`G${rowIndex}`);
+
+    sheet.mergeCells(`E${rowIndex}:F${rowIndex}`);
+
+    label.value = entry.label;
+    label.font = font(entry.grandTotal ? 11 : 9.5, {
+      bold: true,
+      color: {
+        argb: entry.grandTotal
+          ? ENTERPRISE_THEME.brandGreenDark
+          : "FF475569",
+      },
+    });
+    label.alignment = { vertical: "middle", horizontal: "right" };
+
+    value.value = entry.formula
+      ? { formula: entry.formula }
+      : entry.value;
+    value.numFmt = numFmt;
+    value.font = font(entry.grandTotal ? 12 : 9.5, {
+      bold: true,
+      color: {
+        argb: entry.grandTotal
+          ? ENTERPRISE_THEME.brandGreenDark
+          : ENTERPRISE_THEME.brandNavy,
+      },
+    });
+    value.alignment = { vertical: "middle", horizontal: "right" };
+
+    if (entry.grandTotal) {
+      label.fill = solidFill(ENTERPRISE_THEME.brandGreenLight);
+      value.fill = solidFill(ENTERPRISE_THEME.brandGreenLight);
+      const border = {
+        top: { style: "thin", color: { argb: ENTERPRISE_THEME.brandGreenDark } },
+        bottom: { style: "double", color: { argb: ENTERPRISE_THEME.brandGreenDark } },
+        left: { style: "thin", color: { argb: DEFAULT_BORDER } },
+        right: { style: "thin", color: { argb: DEFAULT_BORDER } },
+      };
+      label.border = border;
+      value.border = border;
+    } else {
+      applyCellBorder(label);
+      applyCellBorder(value);
+    }
+
+    sheet.getRow(rowIndex).height = entry.grandTotal ? 28 : 22;
+    rowIndex += 1;
+  });
+
+  rowIndex += 1;
+  sheet.mergeCells(`A${rowIndex}:G${rowIndex}`);
+  const footer = sheet.getCell(`A${rowIndex}`);
+  footer.value =
+    "Official Document generated by VANOM Global E-Commerce & Wholesale Trading System.";
+  footer.font = font(8.5, {
+    italic: true,
+    color: { argb: "FF94A3B8" },
+  });
+  footer.alignment = { vertical: "middle", horizontal: "center" };
+
+  await downloadWorkbook(
+    workbook,
+    options.filename || `vanom-order-${orderNumber}.xlsx`,
+  );
+}
+
+/**
+ * Enterprise master orders export.
+ *
+ * One order:
+ *   -> commercial order slip
+ *
+ * Multiple orders:
+ *   -> Orders Overview
+ *   -> Line Items Detail
+ */
+export async function exportOrdersToExcel(
+  orders = [],
+  options = {},
+) {
+  if (!Array.isArray(orders)) {
+    throw new TypeError("exportOrdersToExcel expects an array of orders.");
+  }
+
+  if (orders.length === 1) {
+    return exportSingleOrderCommercialSlip(orders[0], options);
+  }
+
+  const timestamp = new Date().toISOString().slice(0, 10);
+  const filename =
+    options.filename ||
+    `vanom-enterprise-orders-${timestamp}.xlsx`;
+
+  const normalizedOrders = orders.map(normalizeOrder);
+  const kpis = getOrdersKpis(normalizedOrders);
+
+  // A workbook can contain multiple currencies. Use the first order's
+  // currency for presentation formatting, while retaining the Currency column.
+  const currency = resolveCurrency(orders[0]);
+  const numFmt = currencyFormat(currencySymbol(currency));
+
+  const columns = buildOrdersColumns(numFmt);
+
+  const workbook = createWorkbook();
+  const summary = workbook.addWorksheet("Orders Overview", {
+    views: [{ showGridLines: true }],
+  });
+
+  const filterContext = options.filterContext
+    ? `Scope: ${options.filterContext}`
+    : "Scope: All Master Records";
+
+  let rowIndex = addBanner(summary, {
+    row: 1,
+    title:
+      options.title ||
+      "VANOM E-COMMERCE | EXECUTIVE MASTER ORDERS REPORT",
+    subtitle:
+      `Exported: ${new Date().toLocaleString()}  |  ${filterContext}  |  Total Records: ${normalizedOrders.length}`,
+    columnCount: columns.length,
+  });
+
+  rowIndex = addKpiRibbon(
+    summary,
+    rowIndex,
+    [
+      {
+        label: "Total Orders",
+        value: normalizedOrders.length,
+        highlightColor: ENTERPRISE_THEME.brandNavy,
+      },
+      {
+        label: "Total Revenue",
+        value: `${currencySymbol(currency)}${kpis.revenue.toLocaleString(
+          undefined,
+          { minimumFractionDigits: 2, maximumFractionDigits: 2 },
+        )}`,
+        highlightColor: ENTERPRISE_THEME.brandGreenDark,
+      },
+      {
+        label: "Completed / Delivered",
+        value: `${kpis.completed} Orders`,
+        highlightColor: "FF166534",
+      },
+      {
+        label: "In-Flight / Pending",
+        value: `${kpis.pending} Orders`,
+        highlightColor: "FF92400E",
+      },
+      {
+        label: "Total Units Packed",
+        value: `${kpis.units.toLocaleString()} Units`,
+        highlightColor: ENTERPRISE_THEME.brandSlateDark,
+      },
+    ],
+    columns.length,
+  );
+
+  const headerRow = rowIndex;
+  styleHeaderRow(summary.getRow(headerRow), columns);
+  rowIndex += 1;
+
+  const dataStart = rowIndex;
+
+  normalizedOrders.forEach((order, index) => {
+    writeDataRow(
+      summary.getRow(rowIndex),
+      columns,
+      order,
+      index,
+    );
+    rowIndex += 1;
+  });
+
+  const dataEnd = rowIndex - 1;
+
+  if (normalizedOrders.length) {
+    addTotalsRow(summary, rowIndex, columns, {
+      labelKey: "orderNumber",
+      label: `TOTAL (${normalizedOrders.length} orders)`,
+      sumKeys: [
+        "itemsCount",
+        "subtotal",
+        "tax",
+        "shippingCharges",
+        "discount",
+        "totalAmount",
+      ],
+      startRow: dataStart,
+      endRow: dataEnd,
+    });
+  }
+
+  setColumnWidths(summary, columns, normalizedOrders);
+  freezeAndFilter(summary, headerRow, columns.length);
+
+  buildLineItemsSheet(workbook, normalizedOrders, numFmt);
+
+  await downloadWorkbook(workbook, filename);
 }
