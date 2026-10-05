@@ -19,14 +19,17 @@ import {
   CheckCircle2,
   Printer,
   FileText,
+  FileSpreadsheet,
 } from "lucide-react";
 import { openDirectInvoicePdf } from "@/utils/invoice.js";
+import { exportOrdersToExcel } from "@/utils/excel.js";
 
 export function AdminBulkOrdersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [selectedBulkOrder, setSelectedBulkOrder] = useState(null);
   const [invoiceOrder, setInvoiceOrder] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch B2B Wholesale Bulk Orders from dedicated BulkOrder table
@@ -88,6 +91,51 @@ export function AdminBulkOrdersPage() {
     return sum + (itemSum || b.totalQuantity || 0);
   }, 0);
 
+  const handleExportExcel = async () => {
+    try {
+      setIsExporting(true);
+      if (filteredOrders.length === 0) {
+        toast.error("Export Failed", "No wholesale bulk orders match current filter.");
+        return;
+      }
+
+      toast.info("Generating Export", `Exporting ${filteredOrders.length} wholesale bulk order(s)...`);
+
+      const statusNote = statusFilter !== "ALL" ? `Status: ${statusFilter}` : "";
+      const searchNote = searchTerm ? `Search: "${searchTerm}"` : "";
+      const filterSummary = ["Wholesale B2B Orders", statusNote, searchNote].filter(Boolean).join(" | ");
+
+      await exportOrdersToExcel(filteredOrders, {
+        filename: `vanom-wholesale-orders-${new Date().toISOString().slice(0, 10)}.xlsx`,
+        title: "VANOM E-COMMERCE - B2B WHOLESALE ORDERS EXPORT",
+        filterContext: filterSummary,
+      });
+
+      toast.success("Excel Downloaded", `${filteredOrders.length} wholesale orders exported successfully!`);
+    } catch (err) {
+      console.error("Export error:", err);
+      toast.error("Export Failed", err.message || "Failed to generate Excel export.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportSingleOrder = async (order) => {
+    try {
+      const num = order.orderNumber || (order.id ? `BLK-${order.id.slice(0, 8).toUpperCase()}` : "ORDER");
+      toast.info("Preparing Export", `Generating Excel for order #${num}...`);
+      await exportOrdersToExcel([order], {
+        filename: `vanom-wholesale-order-${num}.xlsx`,
+        title: `VANOM E-COMMERCE - B2B WHOLESALE ORDER #${num}`,
+        filterContext: `Single Order Export: #${num}`,
+      });
+      toast.success("Excel Downloaded", `Order #${num} exported to Excel.`);
+    } catch (err) {
+      console.error("Export error:", err);
+      toast.error("Export Failed", err.message || "Failed to generate Excel file.");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -107,6 +155,16 @@ export function AdminBulkOrdersPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            icon={FileSpreadsheet}
+            isLoading={isExporting}
+            onClick={handleExportExcel}
+            className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-700 font-semibold cursor-pointer shadow-2xs"
+          >
+            Export to Excel
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -296,6 +354,17 @@ export function AdminBulkOrdersPage() {
                           title="Generate Commercial Invoice"
                         >
                           <Printer className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleExportSingleOrder(b);
+                          }}
+                          className="p-1.5 rounded-md hover:bg-emerald-50 text-emerald-700 hover:text-emerald-900 transition-colors border border-emerald-200 cursor-pointer"
+                          title="Export Order to Excel (.xlsx)"
+                        >
+                          <FileSpreadsheet className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => setSelectedBulkOrder(b)}
