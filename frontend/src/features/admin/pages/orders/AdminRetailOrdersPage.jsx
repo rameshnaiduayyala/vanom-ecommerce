@@ -20,8 +20,10 @@ import {
   Package,
   Printer,
   FileText,
+  FileSpreadsheet,
 } from "lucide-react";
 import { openDirectInvoicePdf } from "@/utils/invoice.js";
+import { exportOrdersToExcel } from "@/utils/excel.js";
 import { AdminOrderDetailsModal } from "../components/AdminOrderDetailsModal.jsx";
 
 export function AdminRetailOrdersPage() {
@@ -29,6 +31,7 @@ export function AdminRetailOrdersPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [invoiceOrder, setInvoiceOrder] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
   const queryClient = useQueryClient();
 
   const {
@@ -81,6 +84,51 @@ export function AdminRetailOrdersPage() {
     (o) => o.status === "PENDING" || o.status === "PENDING_PAYMENT" || o.status === "PROCESSING" || o.status === "CONFIRMED"
   ).length;
 
+  const handleExportExcel = async () => {
+    try {
+      setIsExporting(true);
+      if (filteredOrders.length === 0) {
+        toast.error("Export Failed", "No retail orders match current filter.");
+        return;
+      }
+
+      toast.info("Generating Export", `Exporting ${filteredOrders.length} retail order(s)...`);
+
+      const statusNote = statusFilter !== "ALL" ? `Status: ${statusFilter}` : "";
+      const searchNote = searchTerm ? `Search: "${searchTerm}"` : "";
+      const filterSummary = ["Retail Storefront Orders", statusNote, searchNote].filter(Boolean).join(" | ");
+
+      await exportOrdersToExcel(filteredOrders, {
+        filename: `vanom-retail-orders-${new Date().toISOString().slice(0, 10)}.xlsx`,
+        title: "VANOM E-COMMERCE - RETAIL ORDERS EXPORT",
+        filterContext: filterSummary,
+      });
+
+      toast.success("Excel Downloaded", `${filteredOrders.length} retail orders exported successfully!`);
+    } catch (err) {
+      console.error("Export error:", err);
+      toast.error("Export Failed", err.message || "Failed to generate Excel export.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportSingleOrder = async (order) => {
+    try {
+      const num = order.orderNumber || (order.id ? `ORD-${order.id.slice(0, 8).toUpperCase()}` : "ORDER");
+      toast.info("Preparing Export", `Generating Excel for order #${num}...`);
+      await exportOrdersToExcel([order], {
+        filename: `vanom-retail-order-${num}.xlsx`,
+        title: `VANOM E-COMMERCE - RETAIL ORDER #${num}`,
+        filterContext: `Single Order Export: #${num}`,
+      });
+      toast.success("Excel Downloaded", `Order #${num} exported to Excel.`);
+    } catch (err) {
+      console.error("Export error:", err);
+      toast.error("Export Failed", err.message || "Failed to generate Excel file.");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -100,6 +148,16 @@ export function AdminRetailOrdersPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            icon={FileSpreadsheet}
+            isLoading={isExporting}
+            onClick={handleExportExcel}
+            className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-700 font-semibold cursor-pointer shadow-2xs"
+          >
+            Export to Excel
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -284,6 +342,14 @@ export function AdminRetailOrdersPage() {
                             title="Generate Official Invoice"
                           >
                             <Printer className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleExportSingleOrder(o)}
+                            className="p-1.5 rounded-md hover:bg-emerald-50 text-emerald-700 hover:text-emerald-900 transition-colors border border-emerald-200 cursor-pointer"
+                            title="Export Order to Excel (.xlsx)"
+                          >
+                            <FileSpreadsheet className="w-3.5 h-3.5" />
                           </button>
                           <button
                             type="button"

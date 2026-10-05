@@ -16,13 +16,15 @@ import {
   CreditCard,
   Clock,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  FileSpreadsheet,
 } from "lucide-react";
 import { formatPrice, formatDate } from "@/utils/formatters.js";
 import { resolveProductImageUrl } from "@/utils/image.js";
 import { Badge } from "@/components/ui/Badge.jsx";
 import { Button } from "@/components/ui/Button.jsx";
 import { openDirectInvoicePdf } from "@/utils/invoice.js";
+import { exportOrdersToExcel } from "@/utils/excel.js";
 
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1585336261026-7f81498b584d?auto=format&fit=crop&w=400&q=80";
@@ -332,6 +334,21 @@ export function AdminOrderDetailsModal({ order, isOpen, onClose, onStatusChange 
               className="border-emerald-300 text-emerald-800 hover:bg-emerald-50 cursor-pointer font-semibold shadow-2xs"
             >
               Print Tax Invoice
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={FileSpreadsheet}
+              onClick={() => {
+                exportOrdersToExcel([order], {
+                  filename: `vanom-order-${orderNumber}.xlsx`,
+                  title: `VANOM E-COMMERCE - ORDER #${orderNumber}`,
+                  filterContext: `Single Order Export: #${orderNumber}`,
+                });
+              }}
+              className="border-slate-300 text-slate-700 hover:bg-slate-100 cursor-pointer font-semibold shadow-2xs"
+            >
+              Export Excel
             </Button>
           </div>
 
