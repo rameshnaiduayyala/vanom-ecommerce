@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { useReactToPrint } from "react-to-print";
@@ -24,11 +24,13 @@ export function AdminInventoryPrintPage() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
 
-  // Initialize selection once inventory loads
-  if (!hasInitializedSelection && filteredInventory.length > 0) {
-    setSelectedIds(filteredInventory.map((it) => it.id));
-    setHasInitializedSelection(true);
-  }
+  // Initialize selection safely once inventory loads
+  useEffect(() => {
+    if (!hasInitializedSelection && filteredInventory.length > 0) {
+      setSelectedIds(filteredInventory.map((it) => it.id));
+      setHasInitializedSelection(true);
+    }
+  }, [hasInitializedSelection, filteredInventory]);
 
   // Paper & QR Layout options
   const [paperSize, setPaperSize] = useState("A4"); // A4 | Letter | A5 | Thermal4x6 | Thermal2x1
@@ -172,6 +174,11 @@ export function AdminInventoryPrintPage() {
             <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
               {filteredInventory.map((item) => {
                 const isChecked = selectedIds.includes(item.id);
+                const prod = item.product || item.variant?.product || item;
+                const variant = item.variant;
+                const itemName = variant?.name ? `${prod.name || "Product"} (${variant.name})` : prod.name || item.name || "Item";
+                const itemSku = variant?.sku || prod.sku || item.sku || "SKU-STD";
+
                 return (
                   <div
                     key={item.id}
@@ -188,9 +195,9 @@ export function AdminInventoryPrintPage() {
                       ) : (
                         <Square className="w-4 h-4 text-slate-300 shrink-0" />
                       )}
-                      <span className="font-bold text-xs truncate text-text-primary">{item.name}</span>
+                      <span className="font-bold text-xs truncate text-text-primary">{itemName}</span>
                     </div>
-                    <span className="font-mono text-[10px] text-text-muted shrink-0">{item.sku}</span>
+                    <span className="font-mono text-[10px] text-text-muted shrink-0">{itemSku}</span>
                   </div>
                 );
               })}
@@ -452,11 +459,18 @@ export function AdminInventoryPrintPage() {
                   }}
                 >
                   {selectedItems.map((item) => {
+                    const prod = item.product || item.variant?.product || item;
+                    const variant = item.variant;
+                    const itemName = variant?.name ? `${prod.name || "Product"} (${variant.name})` : prod.name || item.name || "Item";
+                    const itemSku = variant?.sku || prod.sku || item.sku || "SKU-STD";
+                    const itemCategory = typeof prod.category === "object" ? prod.category?.name : prod.category || item.category || "General";
+                    const itemStock = item.quantity !== undefined ? item.quantity : (item.stock || 0);
+
                     const qrPayload = JSON.stringify({
-                      productId: item.productId || item.id,
-                      sku: item.sku,
-                      name: item.name,
-                      stock: item.stock,
+                      productId: prod.id || item.productId || item.id,
+                      sku: itemSku,
+                      name: itemName,
+                      stock: itemStock,
                     });
 
                     return (
@@ -488,7 +502,7 @@ export function AdminInventoryPrintPage() {
                               textOverflow: "ellipsis",
                             }}
                           >
-                            {item.name}
+                            {itemName}
                           </h6>
                         )}
 
@@ -506,7 +520,7 @@ export function AdminInventoryPrintPage() {
                               display: "inline-block",
                             }}
                           >
-                            {item.sku || "SKU-STD"}
+                            {itemSku}
                           </span>
                         )}
 
@@ -522,9 +536,9 @@ export function AdminInventoryPrintPage() {
                               textOverflow: "ellipsis",
                             }}
                           >
-                            {visibleFields.showCategory && `${item.category || "General"}`}
+                            {visibleFields.showCategory && `${itemCategory}`}
                             {visibleFields.showCategory && visibleFields.showStock && " • "}
-                            {visibleFields.showStock && `${item.stock || 0} Units`}
+                            {visibleFields.showStock && `${itemStock} Units`}
                           </p>
                         )}
 

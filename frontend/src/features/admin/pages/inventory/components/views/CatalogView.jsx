@@ -4,7 +4,6 @@ import {
   Filter,
   ArrowDownToLine,
   ArrowRightLeft,
-  ScanBarcode,
   Layers,
   Package,
 } from "lucide-react";
@@ -28,7 +27,6 @@ export function CatalogView({
   onOpenTransfer,
   onViewHistory,
   onShowQR,
-  onOpenBarcode,
 }) {
   const [stockStatusFilter, setStockStatusFilter] = useState("ALL"); // ALL | HEALTHY | LOW | OUT
 
@@ -128,16 +126,6 @@ export function CatalogView({
             className="font-bold border-blue-200 text-blue-700 hover:bg-blue-50 cursor-pointer shadow-2xs"
           >
             Transfer
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            icon={ScanBarcode}
-            onClick={() => onOpenBarcode()}
-            className="font-bold border-slate-300 text-slate-800 hover:bg-slate-50 cursor-pointer shadow-2xs"
-          >
-            Scan Barcode
           </Button>
         </div>
       </div>

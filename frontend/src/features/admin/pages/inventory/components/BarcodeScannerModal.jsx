@@ -14,7 +14,11 @@ import {
   Plus,
   Minus,
   RefreshCw,
+  Smartphone,
+  Monitor,
+  Camera,
 } from "lucide-react";
+import { LiveCameraScanner } from "./LiveCameraScanner.jsx";
 
 function getItemImage(item) {
   if (!item) return null;
@@ -43,6 +47,8 @@ export function BarcodeScannerModal({
   onQuickAdjust,
   isPending,
 }) {
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const [scanMode, setScanMode] = useState(isMobile ? "camera" : "hardware"); // "camera" | "hardware"
   const [scannedCode, setScannedCode] = useState("");
   const [activeItem, setActiveItem] = useState(null);
   const [scanQty, setScanQty] = useState(1);
@@ -103,46 +109,112 @@ export function BarcodeScannerModal({
       title="Barcode & SKU Rapid Scanner Terminal"
       maxWidth="max-w-3xl"
     >
-      <div className="space-y-6 text-xs text-text-primary">
-        {/* Scanner Input Bar */}
-        <div className="p-4 rounded-2xl bg-[#F8FAF9] border border-border space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-text-primary flex items-center gap-1.5">
-              <ScanBarcode className="w-4 h-4 text-[#00875A]" />
-              <span>Scan Barcode / SKU Input</span>
-            </label>
-            <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md font-bold">
-              Ready for Hardware Scanners & Manual SKU
-            </span>
-          </div>
+      <div className="space-y-4 text-xs text-text-primary">
+        {/* Mode Switcher: Mobile Camera vs Web Hardware */}
+        <div className="flex items-center justify-between gap-2 p-1 rounded-xl bg-slate-100 border border-slate-200">
+          <button
+            type="button"
+            onClick={() => setScanMode("camera")}
+            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              scanMode === "camera"
+                ? "bg-white text-emerald-800 shadow-2xs border border-slate-200"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Smartphone className="w-4 h-4 text-emerald-600" />
+            <span>Mobile Camera Viewfinder</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setScanMode("hardware")}
+            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              scanMode === "hardware"
+                ? "bg-white text-slate-900 shadow-2xs border border-slate-200"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Monitor className="w-4 h-4 text-slate-700" />
+            <span>Web Hardware / Manual Input</span>
+          </button>
+        </div>
 
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Barcode className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+        {/* 1. Mobile Camera Viewfinder Mode */}
+        {scanMode === "camera" && (
+          <div className="space-y-3">
+            <LiveCameraScanner
+              onScan={(code) => {
+                setScannedCode(code);
+                handleSearchCode(code);
+              }}
+              className="h-56 sm:h-64 w-full"
+            />
+            {/* Quick manual match fallback */}
+            <div className="flex gap-2">
               <input
                 type="text"
-                autoFocus
                 value={scannedCode}
                 onChange={(e) => {
                   setScannedCode(e.target.value);
                   handleSearchCode(e.target.value);
                 }}
                 onKeyDown={handleKeyDown}
-                placeholder="Scan or type barcode (e.g. SKU-KASH-SAF-01, VN-8392)..."
-                className="w-full pl-9 pr-4 py-2.5 text-xs font-mono rounded-xl border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#00875A]/20 focus:border-[#00875A]"
+                placeholder="Or type SKU manually..."
+                className="flex-1 px-3 py-2 text-xs font-mono rounded-xl border border-border bg-slate-50 focus:bg-white focus:outline-none focus:border-[#00875A]"
               />
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={() => handleSearchCode()}
+                className="font-bold cursor-pointer"
+              >
+                Match
+              </Button>
             </div>
-            <Button
-              type="button"
-              variant="primary"
-              size="md"
-              onClick={() => handleSearchCode()}
-              className="font-bold cursor-pointer"
-            >
-              Lookup SKU
-            </Button>
           </div>
-        </div>
+        )}
+
+        {/* 2. Web Hardware Scanner Gun / Manual Input Bar */}
+        {scanMode === "hardware" && (
+          <div className="p-4 rounded-2xl bg-[#F8FAF9] border border-border space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+                <ScanBarcode className="w-4 h-4 text-[#00875A]" />
+                <span>Scan Barcode / SKU Input</span>
+              </label>
+              <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md font-bold">
+                Ready for Hardware Scanners & Manual SKU
+              </span>
+            </div>
+
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Barcode className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  autoFocus
+                  value={scannedCode}
+                  onChange={(e) => {
+                    setScannedCode(e.target.value);
+                    handleSearchCode(e.target.value);
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Scan or type barcode (e.g. SKU-KASH-SAF-01, VN-8392)..."
+                  className="w-full pl-9 pr-4 py-2.5 text-xs font-mono rounded-xl border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#00875A]/20 focus:border-[#00875A]"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
+                onClick={() => handleSearchCode()}
+                className="font-bold cursor-pointer"
+              >
+                Lookup SKU
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Scanned Item Dossier Box */}
         {activeItem ? (
