@@ -11,7 +11,14 @@ import { env } from "./config/env.js";
 export async function buildApp() {
   const fastify = Fastify({
     logger: true,
-    maxParamLength: 500
+    routerOptions: {
+      maxParamLength: 500
+    },
+    ajv: {
+      customOptions: {
+        allowUnionTypes: true
+      }
+    }
   });
 
   // Preserve raw body buffer for Stripe HMAC webhook verification
