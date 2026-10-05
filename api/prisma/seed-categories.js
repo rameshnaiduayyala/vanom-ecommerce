@@ -80,44 +80,52 @@ export const categoriesData = [
 export async function seedCategories() {
   console.log("🌱 Seeding Parent and Sub Categories...");
 
+  let parentIndex = 0;
   for (const group of categoriesData) {
+    parentIndex += 1;
     const parent = await prisma.category.upsert({
       where: { slug: group.slug },
       update: {
         name: group.name,
         imageUrl: group.imageUrl,
         parentId: null,
-        isActive: true
+        isActive: true,
+        sortOrder: group.sortOrder ?? parentIndex
       },
       create: {
         name: group.name,
         slug: group.slug,
         imageUrl: group.imageUrl,
         parentId: null,
-        isActive: true
+        isActive: true,
+        sortOrder: group.sortOrder ?? parentIndex
       }
     });
 
-    console.log(`📁 Parent: ${parent.name}`);
+    console.log(`📁 Parent: ${parent.name} (sortOrder: ${group.sortOrder ?? parentIndex})`);
 
+    let subIndex = 0;
     for (const sub of group.subcategories) {
+      subIndex += 1;
       const child = await prisma.category.upsert({
         where: { slug: sub.slug },
         update: {
           name: sub.name,
           imageUrl: sub.imageUrl,
           parentId: parent.id,
-          isActive: true
+          isActive: true,
+          sortOrder: sub.sortOrder ?? subIndex
         },
         create: {
           name: sub.name,
           slug: sub.slug,
           imageUrl: sub.imageUrl,
           parentId: parent.id,
-          isActive: true
+          isActive: true,
+          sortOrder: sub.sortOrder ?? subIndex
         }
       });
-      console.log(`  └── 📂 Sub: ${child.name}`);
+      console.log(`  └── 📂 Sub: ${child.name} (sortOrder: ${sub.sortOrder ?? subIndex})`);
     }
   }
 

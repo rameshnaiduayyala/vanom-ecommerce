@@ -71,8 +71,9 @@ export function ProductFormModal({
             <Input
               label="Stock Quantity"
               type="number"
-              value={productForm.stock}
-              onChange={(e) => setProductForm({ ...productForm, stock: parseInt(e.target.value) || 0 })}
+              min="0"
+              value={productForm.stock ?? ""}
+              onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })}
               placeholder="100"
             />
             <div className="md:col-span-2">

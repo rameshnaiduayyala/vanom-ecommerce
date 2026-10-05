@@ -18,11 +18,49 @@ export const catalogService = {
   },
 
   getCategories: async (params = {}) => {
-    return apiClient.get("/categories", { params });
+    const res = await apiClient.get("/categories", { params });
+    const sortByOrder = (items) => {
+      if (!Array.isArray(items)) return items;
+      return [...items].sort((a, b) => {
+        const orderA = a.sortOrder !== undefined && a.sortOrder !== null ? Number(a.sortOrder) : 0;
+        const orderB = b.sortOrder !== undefined && b.sortOrder !== null ? Number(b.sortOrder) : 0;
+        if (orderA !== orderB) return orderA - orderB;
+        return (a.name || "").localeCompare(b.name || "");
+      });
+    };
+    if (res?.data && Array.isArray(res.data)) {
+      res.data = sortByOrder(res.data);
+    } else if (res?.items && Array.isArray(res.items)) {
+      res.items = sortByOrder(res.items);
+    } else if (Array.isArray(res)) {
+      return sortByOrder(res);
+    }
+    return res;
   },
 
   getCategoryTree: async () => {
-    return apiClient.get("/categories/tree");
+    const res = await apiClient.get("/categories/tree");
+    const sortTree = (items) => {
+      if (!Array.isArray(items)) return items;
+      return [...items]
+        .sort((a, b) => {
+          const orderA = a.sortOrder !== undefined && a.sortOrder !== null ? Number(a.sortOrder) : 0;
+          const orderB = b.sortOrder !== undefined && b.sortOrder !== null ? Number(b.sortOrder) : 0;
+          if (orderA !== orderB) return orderA - orderB;
+          return (a.name || "").localeCompare(b.name || "");
+        })
+        .map((item) => ({
+          ...item,
+          children: item.children ? sortTree(item.children) : []
+        }));
+    };
+
+    if (res?.data && Array.isArray(res.data)) {
+      res.data = sortTree(res.data);
+    } else if (Array.isArray(res)) {
+      return sortTree(res);
+    }
+    return res;
   },
 
   getFeaturedProducts: async (params = {}) => {

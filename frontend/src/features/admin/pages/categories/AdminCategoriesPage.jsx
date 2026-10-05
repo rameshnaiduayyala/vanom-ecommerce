@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { FolderTree, Plus } from "lucide-react";
+import { FolderTree, Plus, GitFork } from "lucide-react";
 import { Button } from "@/components/ui/Button.jsx";
 import { ConfirmDialog } from "@/components/ui/Alert.jsx";
 import { useAdminCategories } from "./hooks/useAdminCategories.js";
 import { CategoriesFilter } from "./components/CategoriesFilter.jsx";
 import { CategoriesGrid } from "./components/CategoriesGrid.jsx";
+import { CategoryHierarchyView } from "./components/CategoryHierarchyView.jsx";
 import { CategoryFormModal } from "./components/CategoryFormModal.jsx";
 
 export function AdminCategoriesPage() {
@@ -12,6 +13,8 @@ export function AdminCategoriesPage() {
     useAdminCategories();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [viewMode, setViewMode] = useState("hierarchy"); // "hierarchy" | "grid"
+  const [expandedCategories, setExpandedCategories] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [deletingCategory, setDeletingCategory] = useState(null);
@@ -21,13 +24,41 @@ export function AdminCategoriesPage() {
     setIsModalOpen(true);
   };
 
+  const handleOpenAddSubcategory = (parentCategory) => {
+    setEditingCategory({ parentId: parentCategory.id });
+    setIsModalOpen(true);
+  };
+
   const handleOpenEdit = (cat) => {
     setEditingCategory(cat);
     setIsModalOpen(true);
   };
 
+  const handleToggleExpand = (categoryId) => {
+    setExpandedCategories((prev) => ({
+      ...prev,
+      [categoryId]: prev[categoryId] !== undefined ? !prev[categoryId] : false,
+    }));
+  };
+
+  const handleExpandAll = () => {
+    const next = {};
+    categories.forEach((c) => {
+      if (!c.parentId) next[c.id] = true;
+    });
+    setExpandedCategories(next);
+  };
+
+  const handleCollapseAll = () => {
+    const next = {};
+    categories.forEach((c) => {
+      if (!c.parentId) next[c.id] = false;
+    });
+    setExpandedCategories(next);
+  };
+
   const handleFormSubmit = (data) => {
-    if (editingCategory) {
+    if (editingCategory?.id) {
       updateMutation.mutate(
         { id: editingCategory.id, data },
         {
@@ -65,6 +96,9 @@ export function AdminCategoriesPage() {
             <FolderTree className="w-6 h-6 text-[#00875A]" />
             Categories & Taxonomies
           </h1>
+          <p className="text-xs text-text-muted mt-1">
+            Organize catalog departments, parent categories, and child subcategories with sort orders.
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -73,29 +107,46 @@ export function AdminCategoriesPage() {
             size="sm"
             icon={Plus}
             onClick={handleOpenAdd}
-            className="font-bold shadow-xs cursor-pointer"
+            className="font-bold shadow-xs cursor-pointer bg-[#00875A] hover:bg-[#006B3C] text-white"
           >
             Add New Category
           </Button>
         </div>
       </div>
 
-      {/* ─── Search & Filters Bar ─── */}
+      {/* ─── Search, View Mode & Filters Bar ─── */}
       <CategoriesFilter
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         totalCount={categories.length}
         filteredCount={filteredCategories.length}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        onExpandAll={handleExpandAll}
+        onCollapseAll={handleCollapseAll}
       />
 
-      {/* ─── Categories Grid ─── */}
-      <CategoriesGrid
-        categories={filteredCategories}
-        isLoading={isLoading}
-        onEdit={handleOpenEdit}
-        onDelete={setDeletingCategory}
-        searchTerm={searchTerm}
-      />
+      {/* ─── Categories View: Hierarchy Tree vs Grid ─── */}
+      {viewMode === "hierarchy" ? (
+        <CategoryHierarchyView
+          categories={filteredCategories}
+          isLoading={isLoading}
+          onEdit={handleOpenEdit}
+          onDelete={setDeletingCategory}
+          onAddSubcategory={handleOpenAddSubcategory}
+          searchTerm={searchTerm}
+          expandedCategories={expandedCategories}
+          onToggleExpand={handleToggleExpand}
+        />
+      ) : (
+        <CategoriesGrid
+          categories={filteredCategories}
+          isLoading={isLoading}
+          onEdit={handleOpenEdit}
+          onDelete={setDeletingCategory}
+          searchTerm={searchTerm}
+        />
+      )}
 
       {/* ─── Add / Edit Modal ─── */}
       <CategoryFormModal

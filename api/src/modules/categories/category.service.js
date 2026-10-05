@@ -28,6 +28,7 @@ export async function createCategory(input) {
         name: input.name,
         slug: input.slug ?? slugify(input.name),
         imageUrl: input.imageUrl ?? null,
+        sortOrder: input.sortOrder !== undefined ? Number(input.sortOrder) : 0,
         parentId: input.parentId ?? null,
         isActive: input.isActive ?? true
       },
@@ -41,7 +42,7 @@ export async function createCategory(input) {
   }
 }
 
-export async function listCategories({ page, limit, skip, search, isActive, parentId, rootOnly }) {
+export async function listCategories({ page, limit, skip, search, isActive, parentId, rootOnly, sortBy, sortOrder }) {
   const where = {
     ...(search ? {
       OR: [
@@ -54,23 +55,37 @@ export async function listCategories({ page, limit, skip, search, isActive, pare
     ...(parentId !== undefined ? { parentId: parentId === "null" || parentId === null ? null : parentId } : {})
   };
 
+  let orderBy = [{ sortOrder: "asc" }, { name: "asc" }];
+  if (sortBy) {
+    const dir = sortOrder?.toLowerCase() === "desc" ? "desc" : "asc";
+    if (sortBy === "sortOrder") {
+      orderBy = [{ sortOrder: dir }, { name: "asc" }];
+    } else if (sortBy === "name") {
+      orderBy = [{ name: dir }, { sortOrder: "asc" }];
+    } else if (sortBy === "createdAt") {
+      orderBy = [{ createdAt: dir }];
+    }
+  }
+
   const [items, total] = await prisma.$transaction([
     prisma.category.findMany({
       where,
       skip,
       take: limit,
-      orderBy: { createdAt: "asc" },
+      orderBy,
       include: {
         parent: {
           select: { id: true, name: true, slug: true }
         },
         children: {
           where: isActive !== undefined ? { isActive } : {},
+          orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
           select: {
             id: true,
             name: true,
             slug: true,
             imageUrl: true,
+            sortOrder: true,
             isActive: true,
             _count: {
               select: {
@@ -97,6 +112,7 @@ export async function listCategories({ page, limit, skip, search, isActive, pare
   return {
     items: items.map((cat) => ({
       ...cat,
+      sortOrder: cat.sortOrder ?? 0,
       count: cat._count?.products ?? 0,
       subcategoriesCount: cat._count?.children ?? 0
     })),
@@ -107,11 +123,17 @@ export async function listCategories({ page, limit, skip, search, isActive, pare
 export async function getCategoryTree() {
   const roots = await prisma.category.findMany({
     where: { parentId: null, isActive: true },
-    orderBy: { name: "asc" },
+    orderBy: [
+      { sortOrder: "asc" },
+      { name: "asc" }
+    ],
     include: {
       children: {
         where: { isActive: true },
-        orderBy: { name: "asc" },
+        orderBy: [
+          { sortOrder: "asc" },
+          { name: "asc" }
+        ],
         include: {
           _count: {
             select: {
@@ -137,6 +159,7 @@ export async function getCategoryTree() {
     const directProductCount = cat._count?.products ?? 0;
     const childrenWithCounts = (cat.children || []).map((sub) => ({
       ...sub,
+      sortOrder: sub.sortOrder ?? 0,
       count: sub._count?.products ?? 0
     }));
 
@@ -144,6 +167,7 @@ export async function getCategoryTree() {
 
     return {
       ...cat,
+      sortOrder: cat.sortOrder ?? 0,
       directCount: directProductCount,
       count: directProductCount + totalChildrenProductCount,
       children: childrenWithCounts
@@ -156,7 +180,9 @@ export async function getCategoryById(id) {
     where: { id },
     include: {
       parent: true,
-      children: true,
+      children: {
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
+      },
       _count: {
         select: {
           products: {
@@ -170,6 +196,7 @@ export async function getCategoryById(id) {
   if (!category) throw new AppError(MESSAGES.CATEGORY_NOT_FOUND, HTTP_STATUS.NOT_FOUND, "CATEGORY_NOT_FOUND");
   return {
     ...category,
+    sortOrder: category.sortOrder ?? 0,
     count: category._count?.products ?? 0,
     subcategoriesCount: category._count?.children ?? 0
   };
@@ -188,6 +215,7 @@ export async function updateCategory(id, input) {
         ...(input.name !== undefined && { name: input.name }),
         ...(input.slug !== undefined && { slug: input.slug }),
         ...(input.imageUrl !== undefined && { imageUrl: input.imageUrl }),
+        ...(input.sortOrder !== undefined && { sortOrder: Number(input.sortOrder) || 0 }),
         ...(input.parentId !== undefined && { parentId: input.parentId || null }),
         ...(input.isActive !== undefined && { isActive: input.isActive })
       },

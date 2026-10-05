@@ -17,7 +17,7 @@
  * │  NewsletterAppBanner   (growth)         │
  * └─────────────────────────────────────────┘
  */
-import React from "react";
+import React, { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { useCountryStore } from "../../../stores/country.store.js";
@@ -76,7 +76,24 @@ export function HomePage() {
 
   const featuredProducts = normalizeProducts(featuredData);
   const bestSellers    = normalizeProducts(bestSellersData);
-  const categoryList   = Array.isArray(categories) ? categories : (categories?.items || []);
+  const categoryList   = useMemo(() => {
+    const raw = Array.isArray(categories) ? categories : (categories?.items || []);
+    const sortList = (items) => {
+      if (!Array.isArray(items)) return [];
+      return [...items]
+        .sort((a, b) => {
+          const orderA = a.sortOrder !== undefined && a.sortOrder !== null ? Number(a.sortOrder) : 0;
+          const orderB = b.sortOrder !== undefined && b.sortOrder !== null ? Number(b.sortOrder) : 0;
+          if (orderA !== orderB) return orderA - orderB;
+          return (a.name || "").localeCompare(b.name || "");
+        })
+        .map((cat) => ({
+          ...cat,
+          children: cat.children ? sortList(cat.children) : []
+        }));
+    };
+    return sortList(raw);
+  }, [categories]);
 
   return (
     <div className="min-h-screen bg-[#FFFDF7] flex flex-col overscroll-y-none">

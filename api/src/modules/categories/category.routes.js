@@ -6,9 +6,12 @@ const idParams = { type: "object", required: ["id"], properties: { id: { type: "
 const properties = {
   name: { type: "string", minLength: 2, maxLength: 200 },
   slug: { type: "string", minLength: 2, maxLength: 220 },
+  description: { type: ["string", "null"] },
   imageUrl: { type: ["string", "null"], maxLength: 2000 },
   parentId: { type: ["string", "null"] },
-  isActive: { type: "boolean" }
+  sortOrder: { type: ["integer", "null"] },
+  isActive: { type: "boolean" },
+  active: { type: "boolean" }
 };
 
 export async function categoryRoutes(fastify) {
@@ -16,7 +19,7 @@ export async function categoryRoutes(fastify) {
     schema: {
       body: {
         content: {
-          "application/json": { schema: { type: "object", required: ["name"], additionalProperties: false, properties } },
+          "application/json": { schema: { type: "object", required: ["name"], additionalProperties: true, properties } },
           "multipart/form-data": { schema: { type: "object" } }
         }
       }
@@ -36,7 +39,9 @@ export async function categoryRoutes(fastify) {
           search: { type: "string" },
           isActive: { type: "boolean" },
           parentId: { type: "string" },
-          rootOnly: { type: "string" }
+          rootOnly: { type: "string" },
+          sortBy: { type: "string" },
+          sortOrder: { type: "string" }
         }
       }
     }

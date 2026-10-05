@@ -84,23 +84,30 @@ export function formatAdminCategories(res) {
     ? res.data
     : [];
 
-  return rawCategories.map((c) => ({
-    ...c,
-    name: typeof c.name === "string" ? c.name : c.name?.name || "Category",
-    slug: c.slug || "",
-    description: typeof c.description === "string" ? c.description : "",
-    imageUrl: c.imageUrl || (c.imageAsset ? `/api/v1/files/${c.imageAsset.storageKey}` : ""),
-    active: c.isActive !== undefined ? Boolean(c.isActive) : (c.active !== undefined ? Boolean(c.active) : true),
-    sortOrder: c.sortOrder || 0,
-    parentId: c.parentId || null,
-    parentName: c.parent?.name || null,
-    children: c.children || [],
-    subcategoriesCount: c.subcategoriesCount || c.children?.length || c._count?.children || 0,
-    count:
-      c.productCount !== undefined
-        ? c.productCount
-        : c._count?.products !== undefined
-        ? c._count.products
-        : c.count || c.products?.length || 0,
-  }));
+  return rawCategories
+    .map((c) => ({
+      ...c,
+      name: typeof c.name === "string" ? c.name : c.name?.name || "Category",
+      slug: c.slug || "",
+      description: typeof c.description === "string" ? c.description : "",
+      imageUrl: c.imageUrl || (c.imageAsset ? `/api/v1/files/${c.imageAsset.storageKey}` : ""),
+      active: c.isActive !== undefined ? Boolean(c.isActive) : (c.active !== undefined ? Boolean(c.active) : true),
+      sortOrder: c.sortOrder !== undefined && c.sortOrder !== null ? Number(c.sortOrder) : 0,
+      parentId: c.parentId || null,
+      parentName: c.parent?.name || null,
+      children: c.children || [],
+      subcategoriesCount: c.subcategoriesCount || c.children?.length || c._count?.children || 0,
+      count:
+        c.productCount !== undefined
+          ? c.productCount
+          : c._count?.products !== undefined
+          ? c._count.products
+          : c.count || c.products?.length || 0,
+    }))
+    .sort((a, b) => {
+      const orderA = a.sortOrder ?? 0;
+      const orderB = b.sortOrder ?? 0;
+      if (orderA !== orderB) return orderA - orderB;
+      return (a.name || "").localeCompare(b.name || "");
+    });
 }

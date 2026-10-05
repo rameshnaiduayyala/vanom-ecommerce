@@ -227,6 +227,7 @@ model Category {
   slug String @unique
 
   imageUrl String?
+  sortOrder Int      @default(0)
 
   parentId String?
   parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
@@ -241,6 +242,7 @@ model Category {
 
   @@index([parentId])
   @@index([isActive])
+  @@index([sortOrder])
 }
 
 
