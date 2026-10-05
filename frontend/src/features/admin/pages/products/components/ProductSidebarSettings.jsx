@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   AlertCircle,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button.jsx";
 
@@ -149,51 +150,122 @@ export function ProductSidebarSettings({
         </div>
       </div>
 
-      {/* ── Card 3: Logistics, Returns & Warranty ── */}
+      {/* ── Card 3: Logistics, Returns & Warranty (Optional / Removable) ── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-3.5">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 border-b border-slate-100 pb-2">
-          Logistics & Assurance
-        </h4>
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+              Logistics & Assurance
+            </h4>
+            <p className="text-[10px] text-slate-400 font-normal">
+              Optional — items left blank will not display on product page
+            </p>
+          </div>
+          {(formData.delivery_info || formData.return_policy || formData.warranty_info) && (
+            <button
+              type="button"
+              onClick={() =>
+                setFormData({
+                  ...formData,
+                  delivery_info: "",
+                  return_policy: "",
+                  warranty_info: "",
+                })
+              }
+              className="text-[10px] font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
+            >
+              Clear All
+            </button>
+          )}
+        </div>
 
         <div className="space-y-3">
+          {/* Delivery Information */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <Truck className="w-3.5 h-3.5 text-slate-500" />
-              <span>Delivery Information</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Truck className="w-3.5 h-3.5 text-slate-500" />
+                <span>Delivery Information</span>
+              </label>
+              {formData.delivery_info ? (
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, delivery_info: "" })}
+                  className="text-[10px] font-semibold text-rose-500 hover:text-rose-700 flex items-center gap-0.5 cursor-pointer"
+                  title="Remove delivery info"
+                >
+                  <X className="w-3 h-3" />
+                  <span>Remove</span>
+                </button>
+              ) : (
+                <span className="text-[10px] text-slate-400 italic">Omitted</span>
+              )}
+            </div>
             <input
               type="text"
-              value={formData.delivery_info}
+              value={formData.delivery_info || ""}
               onChange={(e) => setFormData({ ...formData, delivery_info: e.target.value })}
-              placeholder="e.g. Free Express Delivery (2-4 Days)"
+              placeholder="e.g. Free Express Delivery (leave empty to omit)"
               className="w-full px-3 py-2 text-xs bg-slate-50/50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B]"
             />
           </div>
 
+          {/* Return Policy */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-              <span>Return Policy</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                <span>Return Policy</span>
+              </label>
+              {formData.return_policy ? (
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, return_policy: "" })}
+                  className="text-[10px] font-semibold text-rose-500 hover:text-rose-700 flex items-center gap-0.5 cursor-pointer"
+                  title="Remove return policy"
+                >
+                  <X className="w-3 h-3" />
+                  <span>Remove</span>
+                </button>
+              ) : (
+                <span className="text-[10px] text-slate-400 italic">Omitted</span>
+              )}
+            </div>
             <input
               type="text"
-              value={formData.return_policy}
+              value={formData.return_policy || ""}
               onChange={(e) => setFormData({ ...formData, return_policy: e.target.value })}
-              placeholder="e.g. 7 Days Easy Return Window"
+              placeholder="e.g. 7 Days Easy Returns (leave empty to omit)"
               className="w-full px-3 py-2 text-xs bg-slate-50/50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B]"
             />
           </div>
 
+          {/* Warranty / Certification */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-slate-500" />
-              <span>Warranty / Certification</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-slate-500" />
+                <span>Warranty / Certification</span>
+              </label>
+              {formData.warranty_info ? (
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, warranty_info: "" })}
+                  className="text-[10px] font-semibold text-rose-500 hover:text-rose-700 flex items-center gap-0.5 cursor-pointer"
+                  title="Remove warranty info"
+                >
+                  <X className="w-3 h-3" />
+                  <span>Remove</span>
+                </button>
+              ) : (
+                <span className="text-[10px] text-slate-400 italic">Omitted</span>
+              )}
+            </div>
             <input
               type="text"
-              value={formData.warranty_info}
+              value={formData.warranty_info || ""}
               onChange={(e) => setFormData({ ...formData, warranty_info: e.target.value })}
-              placeholder="e.g. 100% USDA Certified Organic"
+              placeholder="e.g. 100% Certified Organic (leave empty to omit)"
               className="w-full px-3 py-2 text-xs bg-slate-50/50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B]"
             />
           </div>

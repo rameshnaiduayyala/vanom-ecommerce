@@ -159,12 +159,12 @@ export function ProductDetailsPage() {
     return `By ${d.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" })}`;
   }, []);
 
-  // Dynamic Delivery & Policy Info from Database / Product API
-  const deliveryInfoText = product?.deliveryInfo || product?.delivery_info || `By ${deliveryDateStr}`;
-  const returnPolicyText = product?.returnPolicy || product?.return_policy || "7 Days Easy Returns";
-  const warrantyInfoText = product?.warrantyInfo || product?.warranty_info || "1 Year Brand Warranty";
+  // Dynamic Delivery & Policy Info from Database / Product API (optional per product)
+  const deliveryInfoText = product?.deliveryInfo || product?.delivery_info || null;
+  const returnPolicyText = product?.returnPolicy || product?.return_policy || null;
+  const warrantyInfoText = product?.warrantyInfo || product?.warranty_info || null;
 
-  // Highlights (8 Pills)
+  // Highlights (Pills)
   const highlights = useMemo(() => {
     if (product?.keyHighlights && Array.isArray(product.keyHighlights) && product.keyHighlights.length > 0) {
       return product.keyHighlights.map((h) => ({
@@ -181,15 +181,15 @@ export function ProductDetailsPage() {
       }));
     }
     return [
-      { label: "Delivery", value: deliveryInfoText, icon: Truck },
-      { label: "Returns", value: returnPolicyText, icon: RotateCcw },
-      { label: "Warranty", value: warrantyInfoText, icon: ShieldCheck },
+      deliveryInfoText ? { label: "Delivery", value: deliveryInfoText, icon: Truck } : null,
+      returnPolicyText ? { label: "Returns", value: returnPolicyText, icon: RotateCcw } : null,
+      warrantyInfoText ? { label: "Warranty", value: warrantyInfoText, icon: ShieldCheck } : null,
       { label: "Authenticity", value: "100% Genuine Organic", icon: CheckCircle2 },
       { label: "Category", value: categoryName, icon: Cpu },
       { label: "Brand", value: brandName, icon: Sparkles },
       { label: "SKU", value: product?.sku || "Standard", icon: Layers },
       { label: "Rating", value: `${rating} / 5 Stars`, icon: Star },
-    ];
+    ].filter(Boolean);
   }, [product, deliveryInfoText, returnPolicyText, warrantyInfoText, brandName, categoryName, rating]);
 
   // Features list
@@ -224,17 +224,18 @@ export function ProductDetailsPage() {
     if (product?.specifications && Object.keys(product.specifications).length > 0) {
       return product.specifications;
     }
-    return {
+    const specs = {
       "Product Title": title,
       "Brand": brandName,
       "Category": categoryName,
       "SKU / Code": product?.sku || product?.id || "N/A",
       "Ranking": product?.isBestSeller ? "#1 Best Seller in " + categoryName : (product?.isNew ? "New Launch" : "Premium Choice"),
-      "Delivery": deliveryInfoText,
-      "Return Policy": returnPolicyText,
-      "Warranty": warrantyInfoText,
-      "Stock Status": product?.isActive !== false && availableStock > 0 ? `${availableStock} Units In Stock` : "Out of Stock",
     };
+    if (deliveryInfoText) specs["Delivery"] = deliveryInfoText;
+    if (returnPolicyText) specs["Return Policy"] = returnPolicyText;
+    if (warrantyInfoText) specs["Warranty"] = warrantyInfoText;
+    specs["Stock Status"] = product?.isActive !== false && availableStock > 0 ? `${availableStock} Units In Stock` : "Out of Stock";
+    return specs;
   }, [product, title, brandName, categoryName, deliveryInfoText, returnPolicyText, warrantyInfoText, availableStock]);
 
   // Related items
@@ -435,7 +436,7 @@ export function ProductDetailsPage() {
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-gray-400">Inclusive of all taxes. Free delivery available.</p>
+              <p className="text-[11px] text-gray-400">Inclusive of all taxes.{deliveryInfoText ? ` ${deliveryInfoText}.` : ""}</p>
             </div>
 
             {/* Variant Selector */}

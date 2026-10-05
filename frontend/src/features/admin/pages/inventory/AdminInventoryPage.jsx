@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Boxes,
   RefreshCw,
@@ -6,6 +7,7 @@ import {
   ArrowRightLeft,
   Warehouse,
   ArrowDownToLine,
+  Printer,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button.jsx";
 import { useAdminInventory } from "./hooks/useAdminInventory.js";
@@ -25,6 +27,7 @@ import { StockAlertsView } from "./components/views/StockAlertsView.jsx";
 import { BarcodeStudioView } from "./components/views/BarcodeStudioView.jsx";
 
 export function AdminInventoryPage() {
+  const navigate = useNavigate();
   const {
     inventoryItems,
     filteredInventory,
@@ -76,6 +79,16 @@ export function AdminInventoryPage() {
 
         {/* Global Toolbar */}
         <div className="flex items-center flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            icon={Printer}
+            onClick={() => navigate("/admin/inventory/print")}
+            className="font-bold border-emerald-300 text-emerald-800 hover:bg-emerald-50 cursor-pointer shadow-2xs"
+          >
+            Print Labels
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -132,7 +145,6 @@ export function AdminInventoryPage() {
             onOpenTransfer={modals.openTransfer}
             onViewHistory={modals.openHistory}
             onShowQR={modals.openQR}
-            onOpenBarcode={modals.openBarcode}
           />
         )}
 

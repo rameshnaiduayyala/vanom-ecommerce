@@ -9,6 +9,20 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge.jsx";
 
+function getProductImageUrl(prod, variant) {
+  if (variant?.image) return variant.image;
+  if (Array.isArray(variant?.images) && variant.images.length > 0) {
+    const v = variant.images[0];
+    return typeof v === "string" ? v : v?.url || v?.file?.url;
+  }
+  if (Array.isArray(prod?.images) && prod.images.length > 0) {
+    const p = prod.images[0];
+    return typeof p === "string" ? p : p?.url || p?.file?.url;
+  }
+  if (prod?.image) return prod.image;
+  return null;
+}
+
 export function InventoryTable({
   items = [],
   isLoading,
@@ -57,6 +71,7 @@ export function InventoryTable({
                 const reserved = row.reservedQuantity !== undefined ? row.reservedQuantity : (row.reserved || 0);
                 const available = row.availableQuantity !== undefined ? row.availableQuantity : Math.max(0, stock - reserved);
                 const reorderLvl = row.reorderLevel !== undefined ? row.reorderLevel : 10;
+                const imgUrl = getProductImageUrl(prod, variant);
 
                 // Status calculation
                 let statusBadge = { label: "In Stock", variant: "success" };
@@ -73,15 +88,34 @@ export function InventoryTable({
                   >
                     {/* Product & SKU */}
                     <td className="p-3.5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-surface-muted border border-border flex items-center justify-center shrink-0">
-                          <Package className="w-4 h-4 text-text-muted" />
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-11 h-11 rounded-xl border border-border bg-surface-muted overflow-hidden shrink-0 flex items-center justify-center shadow-2xs">
+                          {imgUrl ? (
+                            <img
+                              src={imgUrl}
+                              alt={prod.name || "Product"}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                                const fallback = e.currentTarget.parentElement?.querySelector(".img-fallback");
+                                if (fallback) fallback.style.display = "flex";
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            className={`img-fallback w-full h-full flex items-center justify-center bg-slate-100 text-slate-400 ${
+                              imgUrl ? "hidden" : "flex"
+                            }`}
+                          >
+                            <Package className="w-5 h-5 text-text-muted" />
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-text-primary text-xs">
+                        <div className="min-w-0">
+                          <p className="font-bold text-text-primary text-xs leading-tight line-clamp-2 max-w-[220px]" title={prod.name}>
                             {prod.name || "Unknown Product"}
                           </p>
-                          <span className="font-mono text-[11px] text-text-muted">
+                          <span className="font-mono text-[11px] text-text-muted mt-0.5 block">
                             {prod.sku || "-"}
                           </span>
                         </div>
