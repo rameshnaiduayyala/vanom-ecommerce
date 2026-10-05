@@ -65,20 +65,29 @@ export async function resolvePrice(productId, variantId, countryCode, quantity) 
     fail("Product is not available in the requested country", "BULK_PRODUCT_UNAVAILABLE", HTTP_STATUS.BAD_REQUEST);
   }
 
-  assert(quantity >= price.moq, `Minimum order quantity is ${price.moq}`, "BULK_MOQ_NOT_MET");
-  assert(quantity <= price.stock, "Insufficient bulk stock", "BULK_INSUFFICIENT_STOCK");
-
-  const tier = selectTier(price.tiers, quantity);
-  if (!tier) {
-    fail("No pricing tier applies to this quantity", "BULK_TIER_NOT_FOUND", HTTP_STATUS.BAD_REQUEST);
+  const minMoq = price.moq ?? 1;
+  assert(quantity >= minMoq, `Minimum order quantity is ${minMoq}`, "BULK_MOQ_NOT_MET");
+  if (price.stock > 0) {
+    assert(quantity <= price.stock, "Insufficient bulk stock", "BULK_INSUFFICIENT_STOCK");
   }
+
+  // Check if legacy tier applies, otherwise use country-specific unitPrice
+  const tier = price.tiers?.length ? selectTier(price.tiers, quantity) : null;
+  const rawUnitPrice = tier
+    ? tier.price
+    : price.unitPrice !== undefined && price.unitPrice !== null
+    ? price.unitPrice
+    : 0;
+
+  const unitPrice = money(rawUnitPrice);
+  const total = Math.round(unitPrice * quantity * 100) / 100;
 
   return {
     product,
     variant: target,
     price,
-    tier,
-    unitPrice: money(tier.price),
-    total: money(tier.price) * quantity
+    tier: tier || { minQuantity: 1, maxQuantity: null, price: unitPrice },
+    unitPrice,
+    total
   };
 }

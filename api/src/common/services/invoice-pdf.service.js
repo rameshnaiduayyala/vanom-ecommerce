@@ -118,11 +118,17 @@ function normalizeInvoiceData(order, type = "AUTO") {
     const unitPrice = Number(it.unitPrice || it.price || 0);
     const total = Number(it.total ?? (quantity * unitPrice));
     const tier = it.appliedTier ? (typeof it.appliedTier === "string" ? JSON.parse(it.appliedTier) : it.appliedTier) : null;
+    const rawWeight = it.weight ?? it.variant?.weight;
+    const weightUnit = it.weightUnit || it.variant?.weightUnit || "kg";
+    const weight = rawWeight != null ? `${Number(rawWeight)}${weightUnit}` : null;
+    const description = it.description || it.product?.description || "";
 
     return {
       index: idx + 1,
       productName,
       sku,
+      weight,
+      description,
       quantity,
       unitPrice,
       total,
@@ -252,9 +258,7 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
   const isDev = process.env.NODE_ENV !== "production";
   doc.fontSize(8.5).font("Helvetica-Bold").fillColor(C.white);
   doc.text(
-    isDev
-      ? (invoice.invoiceType === "B2B" ? "SAMPLE COMMERCIAL INVOICE" : "SAMPLE TAX INVOICE")
-      : (invoice.invoiceType === "B2B" ? "COMMERCIAL TAX INVOICE" : "OFFICIAL TAX INVOICE"),
+    invoice.invoiceType === "B2B" ? "B2B WHOLESALE PURCHASE ORDER" : (isDev ? "SAMPLE TAX INVOICE" : "OFFICIAL TAX INVOICE"),
     boxX + 10,
     headerTopY + 5.5,
     { width: boxWidth - 20, align: "center" }
@@ -379,8 +383,13 @@ export async function generateInvoicePdf(rawOrder, options = {}) {
     // Item title & SKU
     doc.fontSize(8.5).font("Helvetica-Bold").fillColor(C.navyDark);
     doc.text(item.productName, MARGIN + colIndexW + 6, y + 4, { width: colItemW - 10, height: 10, ellipsis: true });
-    doc.fontSize(7).font("Helvetica").fillColor(C.slate400);
-    doc.text(`SKU: ${item.sku || "N/A"}${item.tierMin ? ` • Tier: ${item.tierMin}+ units` : ""}`, MARGIN + colIndexW + 6, y + 14, { width: colItemW - 10, ellipsis: true });
+    doc.fontSize(7).font("Helvetica").fillColor(C.slate500);
+    const specPieces = [
+      item.weight ? `Weight: ${item.weight}` : null,
+      `SKU: ${item.sku || "N/A"}`,
+      item.tierMin ? `Tier: ${item.tierMin}+ units` : null
+    ].filter(Boolean);
+    doc.text(specPieces.join("  •  "), MARGIN + colIndexW + 6, y + 14, { width: colItemW - 10, ellipsis: true });
 
     // Quantity
     doc.fontSize(8.5).font("Helvetica-Bold").fillColor(C.navyDark);

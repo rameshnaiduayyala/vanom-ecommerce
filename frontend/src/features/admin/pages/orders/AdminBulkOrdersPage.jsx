@@ -449,22 +449,35 @@ export function AdminBulkOrdersPage() {
                       return (
                         <div
                           key={i}
-                          className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0"
+                          className="flex items-center justify-between py-2.5 border-b border-slate-100 last:border-0 gap-3"
                         >
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-                              #{i + 1}
-                            </div>
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={it.imageUrl || (it.product?.images?.[0]?.url) || "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=150&q=80"}
+                              alt={it.productName}
+                              className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-50"
+                            />
                             <div>
                               <p className="font-bold text-slate-800">
-                                {it.productName || it.bulkProduct?.name || it.product?.name || `Wholesale Item #${i + 1}`}
+                                {it.productName || it.product?.name || `Wholesale Item #${i + 1}`}
                               </p>
-                              <p className="text-[11px] text-slate-400 font-mono">
-                                SKU: {it.sku || it.bulkProduct?.sku || "COMMODITY-BULK"} • Qty: {it.quantity} units @ {formatPrice(itemUnit, itemCurrency)}/unit
+                              <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-mono mt-0.5">
+                                <span>SKU: {it.sku || it.product?.sku || "N/A"}</span>
+                                {it.weight && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
+                                      {it.weight}{it.weightUnit || "kg"}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                              <p className="text-[11px] text-slate-500 mt-0.5">
+                                Qty: <strong>{it.quantity}</strong> × {formatPrice(itemUnit, itemCurrency)}
                               </p>
                             </div>
                           </div>
-                          <p className="font-bold text-amber-900 font-mono">
+                          <p className="font-bold text-slate-900 font-mono text-sm shrink-0">
                             {formatPrice(itemTotal, itemCurrency)}
                           </p>
                         </div>

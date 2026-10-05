@@ -113,22 +113,32 @@ export async function create(userId, input) {
         total,
         shippingAddress,
         items: {
-          create: resolved.map((r) => ({
-            productId: r.product.id,
-            variantId: r.variant?.id ?? null,
-            productName: r.product.name,
-            sku: r.variant?.sku ?? r.product.sku,
-            quantity: r.item.quantity,
-            unitPrice: r.unitPrice,
-            appliedTier: {
-              minQuantity: r.tier.minQuantity,
-              maxQuantity: r.tier.maxQuantity,
-              price: r.unitPrice
-            },
-            currencyCode: r.price.currencyCode,
-            countryCode: input.countryCode.toUpperCase(),
-            total: r.total
-          }))
+          create: resolved.map((r) => {
+            const variantWeight = r.variant?.weight ?? r.variant?.attributes?.weight ?? null;
+            const variantWeightUnit = r.variant?.weightUnit ?? r.variant?.attributes?.unit ?? "kg";
+            const img = r.product.images?.[0]?.url || r.product.images?.[0]?.mediaAssetId || null;
+
+            return {
+              productId: r.product.id,
+              variantId: r.variant?.id ?? null,
+              productName: r.product.name,
+              description: r.product.description ?? null,
+              sku: r.variant?.sku ?? r.product.sku,
+              weight: variantWeight,
+              weightUnit: variantWeightUnit,
+              imageUrl: img,
+              quantity: r.item.quantity,
+              unitPrice: r.unitPrice,
+              appliedTier: r.tier ? {
+                minQuantity: r.tier.minQuantity,
+                maxQuantity: r.tier.maxQuantity,
+                price: r.unitPrice
+              } : null,
+              currencyCode: r.price.currencyCode,
+              countryCode: input.countryCode.toUpperCase(),
+              total: r.total
+            };
+          })
         }
       },
       include: orderInclude

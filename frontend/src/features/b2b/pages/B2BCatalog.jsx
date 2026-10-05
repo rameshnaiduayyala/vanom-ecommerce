@@ -169,22 +169,30 @@ export function B2BCatalog() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product) => {
             const targetCountryCode = (country.code || "US").toUpperCase();
-            const countryConfig = Array.isArray(product.countryPrices)
-              ? product.countryPrices.find((cp) => cp.countryCode?.toUpperCase() === targetCountryCode && cp.isAvailable !== false) ||
-              product.countryPrices.find((cp) => cp.isAvailable !== false)
-              : null;
+            const currencyCode = targetCountryCode === "CA" ? "CAD" : "USD";
+            const currencySymbol = targetCountryCode === "CA" ? "CA$" : "$";
 
-            const tiers = Array.isArray(countryConfig?.tiers) && countryConfig.tiers.length > 0
-              ? countryConfig.tiers
-              : product.wholesaleTiers || [];
+            const variants = Array.isArray(product.variants) && product.variants.length > 0
+              ? product.variants.filter((v) => v.isActive !== false)
+              : [];
 
-            const moq = countryConfig?.moq || product.moq || 20;
-            const basePrice = tiers[0]?.price ||
-              (country.currency === "CAD"
-                ? product.price_cad || product.basePriceCAD
-                : country.currency === "INR"
-                  ? product.price_inr || product.basePriceINR
-                  : product.price_usd || product.basePriceUSD || 30.0);
+            // Find starting price
+            let startingPrice = null;
+            if (variants.length > 0) {
+              const prices = variants.map((v) => {
+                const cp = v.countryPrices?.find((p) => p.countryCode?.toUpperCase() === targetCountryCode);
+                return cp?.unitPrice !== undefined ? Number(cp.unitPrice) : null;
+              }).filter((p) => p !== null && !isNaN(p) && p > 0);
+
+              if (prices.length > 0) {
+                startingPrice = Math.min(...prices);
+              }
+            }
+
+            if (startingPrice === null) {
+              const cp = product.countryPrices?.find((p) => p.countryCode?.toUpperCase() === targetCountryCode);
+              startingPrice = cp?.unitPrice !== undefined ? Number(cp.unitPrice) : (product.basePriceUSD || 30.0);
+            }
 
             const productImage = resolveProductImageUrl(product);
 
@@ -194,7 +202,7 @@ export function B2BCatalog() {
                 className="rounded-2xl bg-white border border-slate-200 hover:border-[#006B3C]/50 hover:shadow-md transition-all flex flex-col justify-between overflow-hidden shadow-xs"
               >
                 <div>
-                  {/* Image and MOQ Badge */}
+                  {/* Image and Weight Variant Badge */}
                   <Link to={`${ROUTES.B2B.CATALOG}/${product.slug || product.id}`} className="block aspect-16/9 bg-slate-100 overflow-hidden relative group">
                     <img
                       src={productImage}
@@ -207,11 +215,11 @@ export function B2BCatalog() {
                     />
                     <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
                       <span className="bg-white/95 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-xs font-mono">
-                        MOQ: {moq} Units
+                        {variants.length > 0 ? `${variants.length} Weights` : "Wholesale"}
                       </span>
-                      {product.originCountry && (
+                      {product.brand && (
                         <span className="bg-slate-900/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-lg shadow-xs">
-                          {product.originCountry}
+                          {product.brand}
                         </span>
                       )}
                     </div>
@@ -220,7 +228,7 @@ export function B2BCatalog() {
                   <div className="p-5 space-y-3">
                     <div>
                       <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
-                        {product.categoryName || product.category || "General Commodity"}
+                        {product.category || product.categoryName || "Wholesale Product"}
                       </span>
                       <Link to={`${ROUTES.B2B.CATALOG}/${product.slug || product.id}`} className="block group">
                         <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#006B3C] transition-colors leading-snug mt-0.5">
@@ -230,61 +238,36 @@ export function B2BCatalog() {
                       <p className="text-xs text-slate-500 font-mono mt-0.5">SKU: {product.sku}</p>
                     </div>
 
-                    {/* Packaging Specs */}
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-700 space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Packaging Type:</span>
-                        <span className="font-semibold">{product.packagingType || product.packaging?.type || "Cartons / Sacks"}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Pallet Spec:</span>
-                        <span className="font-semibold text-emerald-800">
-                          {product.palletCapacityUnits || (product.unitsPerPackage || 25) * (product.packagesPerPallet || 40)} units / pallet
-                        </span>
-                      </div>
-                      {product.leadTimeDays && (
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Freight Lead Time:</span>
-                          <span className="font-medium text-slate-700">{product.leadTimeDays} business days</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Volume Tiers Breakdown */}
-                    {tiers.length > 0 ? (
-                      <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
-                        <div className="bg-slate-50 px-3 py-1.5 font-bold text-slate-600 flex justify-between text-[11px] border-b border-slate-200">
-                          <span>Volume Quantity Tier</span>
-                          <span>Unit Price ({country.currency})</span>
-                        </div>
-                        <div className="divide-y divide-slate-100 bg-white">
-                          {tiers.slice(0, 3).map((t, idx) => {
-                            const tierPrice = t.price !== undefined ? t.price :
-                              country.currency === "CAD"
-                                ? t.unitPriceCAD
-                                : country.currency === "INR"
-                                  ? t.unitPriceINR
-                                  : t.unitPriceUSD || t.unitPrice;
+                    {/* Weight Variants Options Preview */}
+                    {variants.length > 0 && (
+                      <div className="space-y-1.5">
+                        <span className="text-[11px] text-slate-500 font-medium block">Available Weights:</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {variants.map((v, idx) => {
+                            const weightStr = v.name || `${v.weight}${v.weightUnit || "kg"}`;
+                            const cp = v.countryPrices?.find((p) => p.countryCode?.toUpperCase() === targetCountryCode);
+                            const price = cp?.unitPrice !== undefined ? Number(cp.unitPrice) : null;
 
                             return (
-                              <div key={idx} className="px-3 py-1.5 flex justify-between text-[11px] text-slate-700">
-                                <span>{t.maxQuantity ? `${t.minQuantity} - ${t.maxQuantity}` : `${t.minQuantity}+`} units</span>
-                                <span className="font-bold text-slate-900 font-mono">
-                                  {formatPrice(tierPrice || basePrice, country.currency, country.symbol)}
-                                </span>
-                              </div>
+                              <span
+                                key={v.id || idx}
+                                className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-semibold font-mono"
+                              >
+                                {weightStr} {price !== null && `(${formatPrice(price, currencyCode, currencySymbol)})`}
+                              </span>
                             );
                           })}
                         </div>
                       </div>
-                    ) : (
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
-                        <span className="text-slate-500 font-medium">Wholesale Base Rate:</span>
-                        <span className="font-black text-slate-900 text-sm font-mono">
-                          {formatPrice(basePrice, country.currency, country.symbol)}
-                        </span>
-                      </div>
                     )}
+
+                    {/* Pricing Summary */}
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+                      <span className="text-slate-500 font-medium">Starting Wholesale Price:</span>
+                      <span className="font-black text-emerald-800 text-base font-mono">
+                        {formatPrice(startingPrice, currencyCode, currencySymbol)}
+                      </span>
+                    </div>
                   </div>
                 </div>
 

@@ -25,7 +25,16 @@ export const productInclude = {
  * Includes line items and a lightweight business summary.
  */
 export const orderInclude = {
-  items: true,
+  items: {
+    include: {
+      product: {
+        include: {
+          images: { orderBy: { sortOrder: "asc" } }
+        }
+      },
+      variant: true
+    }
+  },
   business: {
     select: {
       id: true,

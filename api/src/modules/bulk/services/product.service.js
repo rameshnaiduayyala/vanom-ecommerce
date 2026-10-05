@@ -8,6 +8,7 @@ import { fail } from "../lib/errors.js";
 // ─── Internal Builders ────────────────────────────────────────────────────────
 
 function buildTiers(tiers) {
+  if (!Array.isArray(tiers) || tiers.length === 0) return undefined;
   return {
     create: tiers.map((t) => ({
       minQuantity: t.minQuantity,
@@ -18,21 +19,26 @@ function buildTiers(tiers) {
 }
 
 function buildCountryPrice(price) {
+  const tiersCreate = buildTiers(price.tiers);
   return {
     countryCode: price.countryCode.toUpperCase(),
     currencyCode: price.currencyCode.toUpperCase(),
-    moq: price.moq,
+    unitPrice: price.unitPrice !== undefined && price.unitPrice !== null ? price.unitPrice : 0,
+    moq: price.moq ?? 1,
     stock: price.stock ?? 0,
     isAvailable: price.isAvailable ?? true,
-    tiers: buildTiers(price.tiers)
+    ...(tiersCreate ? { tiers: tiersCreate } : {})
   };
 }
 
-function buildVariant(variant) {
+function buildVariant(variant, idx = 0) {
   return {
-    name: variant.name ?? null,
+    name: variant.name ?? (variant.weight ? `${variant.weight}${variant.weightUnit || "kg"}` : null),
     sku: variant.sku,
-    attributes: variant.attributes ?? null,
+    weight: variant.weight ?? null,
+    weightUnit: variant.weightUnit ?? "kg",
+    sortOrder: variant.sortOrder ?? idx,
+    attributes: variant.attributes ?? (variant.weight ? { weight: variant.weight, unit: variant.weightUnit || "kg" } : null),
     isActive: variant.isActive ?? true,
     ...(variant.countryPrices
       ? { countryPrices: { create: variant.countryPrices.map(buildCountryPrice) } }
@@ -60,6 +66,9 @@ function buildImages(images) {
 }
 
 function buildProductData(input) {
+  const hasVariants = Array.isArray(input.variants) && input.variants.length > 0;
+  const productType = input.type || (hasVariants ? "VARIABLE" : "SIMPLE");
+
   return {
     name: input.name,
     slug: input.slug ?? slugify(input.name),
@@ -67,14 +76,14 @@ function buildProductData(input) {
     description: input.description ?? null,
     category: input.category ?? null,
     brand: input.brand ?? null,
-    type: input.type ?? "SIMPLE",
+    type: productType,
     isActive: input.isActive ?? true,
     ...(input.images ? { images: buildImages(input.images) } : {}),
     ...(input.countryPrices
       ? { countryPrices: { create: input.countryPrices.map(buildCountryPrice) } }
       : {}),
-    ...(input.variants
-      ? { variants: { create: input.variants.map(buildVariant) } }
+    ...(hasVariants
+      ? { variants: { create: input.variants.map((v, idx) => buildVariant(v, idx)) } }
       : {})
   };
 }
@@ -134,13 +143,18 @@ export async function getById(idOrSlug) {
 }
 
 export async function create(input) {
+  const hasVariants = Array.isArray(input.variants) && input.variants.length > 0;
+  if (!input.type) {
+    input.type = hasVariants ? "VARIABLE" : "SIMPLE";
+  }
+
   assert(
-    input.type !== "SIMPLE" || !input.variants?.length,
+    input.type !== "SIMPLE" || !hasVariants,
     "Simple bulk products cannot have variants",
     "INVALID_BULK_PRODUCT_VARIANTS"
   );
   assert(
-    input.type !== "VARIABLE" || input.variants?.length,
+    input.type !== "VARIABLE" || hasVariants,
     "Variable bulk products require variants",
     "VARIABLE_BULK_PRODUCT_REQUIRES_VARIANTS"
   );
@@ -168,7 +182,8 @@ export async function update(id, input) {
     data.countryPrices = { deleteMany: {}, create: input.countryPrices.map(buildCountryPrice) };
   }
   if (input.variants) {
-    data.variants = { deleteMany: {}, create: input.variants.map(buildVariant) };
+    data.type = "VARIABLE";
+    data.variants = { deleteMany: {}, create: input.variants.map((v, idx) => buildVariant(v, idx)) };
   }
 
   return prisma.bulkProduct.update({ where: { id }, data, include: productInclude });
