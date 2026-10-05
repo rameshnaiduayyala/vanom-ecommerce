@@ -122,6 +122,11 @@ const AdminShipmentsPage = lazy(() =>
     default: m.AdminShipmentsPage || m.default,
   }))
 );
+const AdminFilesPage = lazy(() =>
+  import("../../features/admin/pages/files/AdminFilesPage.jsx").then((m) => ({
+    default: m.AdminFilesPage || m.default,
+  }))
+);
 
 export const adminRoutes = {
   path: "/admin",
@@ -158,5 +163,6 @@ export const adminRoutes = {
     { path: "shipments", element: <AdminShipmentsPage /> },
     { path: "store", element: <AdminStoreSettingsPage /> },
     { path: "messages", element: <AdminContactMessagesPage /> },
+    { path: "files", element: <AdminFilesPage /> },
   ],
 };
