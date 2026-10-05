@@ -252,7 +252,13 @@ export function AdminOrderDetailsModal({ order, isOpen, onClose, onStatusChange 
                               {sku}
                             </span>
 
-                            {variant.name && (
+                            {(it.weight || variant.weight) && (
+                              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 font-mono">
+                                Weight: {it.weight ? `${it.weight}${it.weightUnit || "kg"}` : `${variant.weight}${variant.weightUnit || "kg"}`}
+                              </span>
+                            )}
+
+                            {(variant.name && !it.weight) && (
                               <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-100">
                                 Variant: {variant.name}
                               </span>

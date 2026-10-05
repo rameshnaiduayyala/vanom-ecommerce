@@ -12,16 +12,22 @@ import {
   MapPin,
   X,
   Package,
+  FileSpreadsheet,
+  Scale,
+  Calendar,
+  Globe2
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge.jsx";
 import { Button } from "@/components/ui/Button.jsx";
 import { openDirectInvoicePdf } from "@/utils/invoice.js";
+import { exportOrdersToExcel } from "@/utils/excel.js";
+import { resolveProductImageUrl, FALLBACK_PRODUCT_IMAGE } from "@/utils/image.js";
 
 export function B2BOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [invoiceOrder, setInvoiceOrder] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [isExporting, setIsExporting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["b2b-bulk-orders-list"],
@@ -42,7 +48,7 @@ export function B2BOrdersPage() {
 
   const filteredOrders = orders.filter((o) => {
     const orderNum = (o.orderNumber || o.poNumber || o.id || "").toLowerCase();
-    const companyName = (o.company?.legalName || o.company?.name || "").toLowerCase();
+    const companyName = (o.company?.legalName || o.company?.name || o.business?.businessName || "").toLowerCase();
     const query = searchTerm.toLowerCase().trim();
     const matchesSearch = !query || orderNum.includes(query) || companyName.includes(query);
 
@@ -54,8 +60,32 @@ export function B2BOrdersPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const totalVolume = orders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+  const totalVolume = orders.reduce((sum, o) => sum + Number(o.total || o.totalAmount || 0), 0);
   const activeCount = orders.filter((o) => o.status !== "CANCELLED" && o.status !== "DELIVERED").length;
+
+  const handleExportAll = async () => {
+    try {
+      setIsExporting(true);
+      await exportOrdersToExcel(filteredOrders, {
+        filename: `vanom-wholesale-orders-${new Date().toISOString().slice(0, 10)}.xlsx`,
+        title: "VANOM E-COMMERCE - B2B WHOLESALE ORDERS EXPORT",
+        filterContext: statusFilter !== "ALL" ? `Status: ${statusFilter}` : "All Orders",
+      });
+    } catch (err) {
+      console.error("Export error:", err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportSingle = async (ord) => {
+    const num = ord.orderNumber || ord.id;
+    await exportOrdersToExcel([ord], {
+      filename: `vanom-wholesale-order-${num}.xlsx`,
+      title: `VANOM E-COMMERCE - B2B WHOLESALE PURCHASE ORDER #${num}`,
+      filterContext: `Single Order: #${num}`,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -70,20 +100,34 @@ export function B2BOrdersPage() {
             Wholesale Purchase Orders & Invoices
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-            Manage bulk contract orders, verify pallet specifications, track fulfillment status, and generate official cryptographic tax invoices.
+            Manage bulk contract orders, verify weight variants and country pricing, and generate official cryptographic tax invoices and Excel spreadsheets.
           </p>
         </div>
 
-        <Link to={ROUTES.B2B.BULK_ORDER} className="shrink-0">
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
           <Button
-            variant="primary"
+            variant="outline"
             size="md"
-            icon={PackageCheck}
-            className="font-bold shadow-md bg-emerald-600 hover:bg-emerald-500 text-white border-0 py-2.5 px-5"
+            icon={FileSpreadsheet}
+            onClick={handleExportAll}
+            disabled={filteredOrders.length === 0 || isExporting}
+            isLoading={isExporting}
+            className="font-bold border-white/30 text-white hover:bg-white/10"
           >
-            Create New Purchase Order
+            Export All to Excel
           </Button>
-        </Link>
+
+          <Link to={ROUTES.B2B.BULK_ORDER}>
+            <Button
+              variant="primary"
+              size="md"
+              icon={PackageCheck}
+              className="font-bold shadow-md bg-emerald-600 hover:bg-emerald-500 text-white border-0 py-2.5 px-5"
+            >
+              Create New Purchase Order
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* KPI Stats Strip */}
@@ -94,7 +138,7 @@ export function B2BOrdersPage() {
               Total Contract Volume
             </span>
             <div className="text-xl sm:text-2xl font-black text-slate-900 mt-1 font-mono">
-              {formatPrice(totalVolume, orders[0]?.currency?.code || "INR", orders[0]?.currency?.symbol || "₹")}
+              {formatPrice(totalVolume, orders[0]?.currencyCode || orders[0]?.currency?.code || "USD")}
             </div>
           </div>
           <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-100">
@@ -108,7 +152,7 @@ export function B2BOrdersPage() {
               Total Wholesale Orders
             </span>
             <div className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
-              {orders.length} <span className="text-xs font-normal text-slate-400">Contracts</span>
+              {orders.length} <span className="text-xs font-normal text-slate-400">Purchase Orders</span>
             </div>
           </div>
           <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-100">
@@ -168,8 +212,9 @@ export function B2BOrdersPage() {
               <tr>
                 <th className="p-4">PO / Order #</th>
                 <th className="p-4">Company Entity</th>
+                <th className="p-4">Country & Market</th>
                 <th className="p-4">Items Summary</th>
-                <th className="p-4">Contract Amount</th>
+                <th className="p-4">Total Amount</th>
                 <th className="p-4">Fulfillment Status</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
@@ -177,75 +222,97 @@ export function B2BOrdersPage() {
             <tbody className="divide-y divide-slate-100 bg-white">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="p-8 text-center text-slate-400 text-xs">
+                  <td colSpan="7" className="p-8 text-center text-slate-400 text-xs">
                     No wholesale purchase orders match the selected filters.
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((ord) => (
-                  <tr key={ord.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="p-4">
-                      <span className="font-mono font-bold text-slate-900 block">{ord.orderNumber || ord.id}</span>
-                      <span className="text-[11px] text-slate-400">{ord.createdAt ? new Date(ord.createdAt).toLocaleDateString() : "Live Order"}</span>
-                    </td>
-                    <td className="p-4 font-semibold text-slate-800">{ord.company?.legalName || ord.company?.name || "Corporate Wholesale"}</td>
-                    <td className="p-4 text-slate-600">
-                      {ord.items?.length || 1} Commodity Line Items
-                    </td>
-                    <td className="p-4 font-mono font-bold text-slate-900">
-                      {formatPrice(ord.totalAmount || 0, ord.currency?.code || "INR")}
-                    </td>
-                    <td className="p-4">
-                      <Badge
-                        variant={
-                          ord.status === "DELIVERED"
-                            ? "green"
-                            : ord.status === "SHIPPED"
-                            ? "blue"
-                            : ord.status === "CANCELLED"
-                            ? "red"
-                            : "yellow"
-                        }
-                        size="sm"
-                      >
-                        {ord.status || "CONFIRMED"}
-                      </Badge>
-                    </td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedOrder(ord)}
-                          className="font-bold text-[#358B5B] hover:underline"
+                filteredOrders.map((ord) => {
+                  const curr = ord.currencyCode || ord.currency?.code || "USD";
+                  const countryCode = ord.countryCode || ord.shippingAddress?.countryCode || "US";
+                  const itemsCount = ord.items?.length || 1;
+                  const totalAmt = Number(ord.total ?? ord.totalAmount ?? 0);
+
+                  return (
+                    <tr key={ord.id} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="p-4">
+                        <span className="font-mono font-bold text-slate-900 block">{ord.orderNumber || ord.id}</span>
+                        <span className="text-[11px] text-slate-400">{ord.createdAt ? new Date(ord.createdAt).toLocaleDateString() : "Live Order"}</span>
+                      </td>
+                      <td className="p-4 font-semibold text-slate-800">
+                        {ord.company?.legalName || ord.company?.name || ord.business?.businessName || "Corporate Wholesale"}
+                      </td>
+                      <td className="p-4">
+                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold font-mono text-[11px] border border-slate-200">
+                          {countryCode === "US" ? "🇺🇸 USA" : countryCode === "CA" ? "🇨🇦 Canada" : countryCode} ({curr})
+                        </span>
+                      </td>
+                      <td className="p-4 text-slate-600">
+                        {itemsCount} Line Item{itemsCount > 1 ? "s" : ""}
+                      </td>
+                      <td className="p-4 font-mono font-bold text-slate-900">
+                        {formatPrice(totalAmt, curr)}
+                      </td>
+                      <td className="p-4">
+                        <Badge
+                          variant={
+                            ord.status === "DELIVERED"
+                              ? "green"
+                              : ord.status === "SHIPPED"
+                              ? "blue"
+                              : ord.status === "CANCELLED"
+                              ? "red"
+                              : "yellow"
+                          }
+                          size="sm"
                         >
-                          Details
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setInvoiceOrder(ord)}
-                          className="p-1 text-slate-400 hover:text-slate-700"
-                          title="Invoice"
-                        >
-                          <FileText className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                          {ord.status || "CONFIRMED"}
+                        </Badge>
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOrder(ord)}
+                            className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors border border-slate-200 text-xs font-semibold cursor-pointer"
+                          >
+                            Details
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleExportSingle(ord)}
+                            className="p-1.5 rounded-md hover:bg-emerald-50 text-emerald-700 hover:text-emerald-900 transition-colors border border-emerald-200 cursor-pointer"
+                            title="Export to Excel (.xlsx)"
+                          >
+                            <FileSpreadsheet className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openDirectInvoicePdf(ord.id, true, ord.orderNumber)}
+                            className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors border border-slate-200 cursor-pointer"
+                            title="View Commercial Invoice"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Selected Order Modal */}
+      {/* Selected Order Modal (Detailed Line Items with Weights and Pricing) */}
       {selectedOrder && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full p-6 space-y-5 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  Wholesale Bulk Order Contract
+                  Wholesale Purchase Order
                 </span>
                 <h2 className="text-xl font-extrabold text-slate-900 mt-1 font-mono">
                   {selectedOrder.orderNumber || selectedOrder.id}
@@ -267,57 +334,86 @@ export function B2BOrdersPage() {
                   <Building2 className="w-3.5 h-3.5 text-emerald-700" /> Authorized Buyer
                 </span>
                 <p className="font-bold text-slate-900 text-sm">
-                  {selectedOrder.company?.legalName || "Corporate Buyer"}
+                  {selectedOrder.company?.legalName || selectedOrder.business?.businessName || "Corporate Buyer"}
                 </p>
                 <p className="text-slate-500">
-                  {selectedOrder.requestedBy?.email || selectedOrder.company?.email || "Procurement Account"}
+                  {selectedOrder.business?.businessEmail || selectedOrder.company?.email || "Procurement Account"}
                 </p>
-                {selectedOrder.company?.taxId && (
-                  <p className="font-mono text-emerald-800 font-semibold">Tax ID: {selectedOrder.company.taxId}</p>
+                {selectedOrder.business?.taxRegistrationNumber && (
+                  <p className="font-mono text-emerald-800 font-semibold">Tax ID: {selectedOrder.business.taxRegistrationNumber}</p>
                 )}
               </div>
 
               <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-1">
                 <span className="text-slate-400 block text-[10px] uppercase font-bold flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-700" /> Logistics Destination
+                  <MapPin className="w-3.5 h-3.5 text-emerald-700" /> Destination & Country
                 </span>
                 <p className="font-bold text-slate-900">
                   {selectedOrder.shippingAddress?.addressLine1 || selectedOrder.shippingAddress?.line1 || "Enterprise Logistics Facility"}
                 </p>
                 <p className="text-slate-500">
-                  {selectedOrder.shippingAddress?.city || "Industrial Hub"}, {selectedOrder.shippingAddress?.state || "State"} {selectedOrder.shippingAddress?.postalCode || ""}
+                  {selectedOrder.shippingAddress?.city || "City"}, {selectedOrder.shippingAddress?.state || "State"} {selectedOrder.shippingAddress?.postalCode || ""}
                 </p>
-                <p className="text-slate-600 font-semibold">{selectedOrder.country?.name || "India"}</p>
+                <p className="text-slate-700 font-semibold flex items-center gap-1">
+                  <Globe2 className="w-3 h-3 text-slate-400" />
+                  {selectedOrder.countryCode === "US" ? "United States" : selectedOrder.countryCode === "CA" ? "Canada" : selectedOrder.countryCode} ({selectedOrder.currencyCode || "USD"})
+                </p>
               </div>
             </div>
 
-            {/* Line Items List */}
+            {/* Detailed Line Items List with Weights and Product Images */}
             <div className="space-y-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
                 <Package className="w-4 h-4 text-emerald-700" />
-                Line Items & Packaging Specification
+                Purchased Line Items & Weights ({selectedOrder.items?.length || 0})
               </h4>
-              <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden max-h-56 overflow-y-auto">
+              <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
                 {selectedOrder.items && selectedOrder.items.length > 0 ? (
-                  selectedOrder.items.map((it, idx) => (
-                    <div key={idx} className="p-3 bg-white flex items-center justify-between text-xs hover:bg-slate-50">
-                      <div>
-                        <p className="font-bold text-slate-900">
-                          {it.bulkProduct?.name || it.name || `Commodity Line #${idx + 1}`}
-                        </p>
-                        <p className="text-[11px] text-slate-400 font-mono">
-                          SKU: {it.bulkProduct?.sku || it.sku || "N/A"} • Unit: {it.bulkProduct?.unitOfMeasure || "Metric Ton"}
-                        </p>
-                        <p className="text-[11px] text-slate-600">
-                          Quantity: <span className="font-bold text-slate-800">{it.quantity?.toLocaleString()}</span> ×{" "}
-                          {formatPrice(it.unitPrice || 0, selectedOrder.currency?.code || "INR")}
-                        </p>
+                  selectedOrder.items.map((it, idx) => {
+                    const weightStr = it.weight
+                      ? `${it.weight}${it.weightUnit || "kg"}`
+                      : it.variant?.name || "Standard";
+
+                    const itemImg = it.imageUrl || resolveProductImageUrl(it.product) || FALLBACK_PRODUCT_IMAGE;
+                    const itemUnit = Number(it.unitPrice || 0);
+                    const itemTotal = Number(it.total ?? (it.quantity * itemUnit));
+                    const itemCurrency = it.currencyCode || selectedOrder.currencyCode || "USD";
+
+                    return (
+                      <div key={idx} className="p-3 bg-white flex items-center justify-between text-xs hover:bg-slate-50 gap-3">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={itemImg}
+                            alt={it.productName}
+                            className="w-11 h-11 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-50"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = FALLBACK_PRODUCT_IMAGE;
+                            }}
+                          />
+                          <div>
+                            <p className="font-bold text-slate-900">
+                              {it.productName || it.product?.name || `Wholesale Item #${idx + 1}`}
+                            </p>
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-mono mt-0.5">
+                              <span>SKU: {it.sku || it.product?.sku || "N/A"}</span>
+                              <span>•</span>
+                              <span className="font-bold text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                                {weightStr}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-600 mt-0.5">
+                              Quantity: <strong className="text-slate-800">{it.quantity}</strong> × {formatPrice(itemUnit, itemCurrency)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="text-right font-black text-slate-900 text-sm font-mono shrink-0">
+                          {formatPrice(itemTotal, itemCurrency)}
+                        </div>
                       </div>
-                      <div className="text-right font-bold text-slate-900 text-sm">
-                        {formatPrice((it.subtotal || (it.quantity * it.unitPrice)) || 0, selectedOrder.currency?.code || "INR")}
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="p-4 text-center text-slate-400 text-xs">
                     Wholesale items specified under master contract agreement.
@@ -326,16 +422,58 @@ export function B2BOrdersPage() {
               </div>
             </div>
 
-            {/* Total Footer */}
-            <div className="flex justify-between items-center pt-3 border-t border-slate-200">
-              <div>
-                <span className="text-xs text-slate-500 block">Total Contract Value</span>
-                <span className="text-xl font-black text-[#006B3C] font-mono">
-                  {formatPrice(selectedOrder.totalAmount || 0, selectedOrder.currency?.code || "INR")}
+            {/* Financials Breakdown */}
+            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs">
+              <div className="flex justify-between text-slate-600">
+                <span>Subtotal:</span>
+                <span className="font-mono font-semibold text-slate-900">
+                  {formatPrice(Number(selectedOrder.subtotal || 0), selectedOrder.currencyCode || "USD")}
                 </span>
               </div>
+              {Number(selectedOrder.tax || 0) > 0 && (
+                <div className="flex justify-between text-slate-600">
+                  <span>Tax:</span>
+                  <span className="font-mono text-slate-800">
+                    {formatPrice(Number(selectedOrder.tax || 0), selectedOrder.currencyCode || "USD")}
+                  </span>
+                </div>
+              )}
+              {Number(selectedOrder.shippingCharges || 0) > 0 && (
+                <div className="flex justify-between text-slate-600">
+                  <span>Shipping:</span>
+                  <span className="font-mono text-slate-800">
+                    {formatPrice(Number(selectedOrder.shippingCharges || 0), selectedOrder.currencyCode || "USD")}
+                  </span>
+                </div>
+              )}
+              {Number(selectedOrder.discount || 0) > 0 && (
+                <div className="flex justify-between text-emerald-700">
+                  <span>Discount:</span>
+                  <span className="font-mono">
+                    -{formatPrice(Number(selectedOrder.discount || 0), selectedOrder.currencyCode || "USD")}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-2 border-t border-slate-200 font-bold text-slate-900 text-sm">
+                <span>Grand Total:</span>
+                <span className="text-lg font-black text-[#006B3C] font-mono">
+                  {formatPrice(Number(selectedOrder.total ?? selectedOrder.totalAmount ?? 0), selectedOrder.currencyCode || "USD")}
+                </span>
+              </div>
+            </div>
 
+            {/* Total Footer Actions */}
+            <div className="flex justify-between items-center pt-2 border-t border-slate-200">
               <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleExportSingle(selectedOrder)}
+                  className="gap-1.5 border-emerald-600 text-emerald-800 hover:bg-emerald-50 cursor-pointer font-bold"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
+                  Export to Excel (.xlsx)
+                </Button>
                 <Button
                   variant="primary"
                   size="sm"
@@ -343,12 +481,13 @@ export function B2BOrdersPage() {
                   className="gap-1.5 bg-[#006B3C] text-white hover:bg-[#005530]"
                 >
                   <FileText className="w-4 h-4" />
-                  View Commercial Invoice
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setSelectedOrder(null)}>
-                  Close
+                  View Invoice
                 </Button>
               </div>
+
+              <Button variant="outline" size="sm" onClick={() => setSelectedOrder(null)}>
+                Close
+              </Button>
             </div>
           </div>
         </div>

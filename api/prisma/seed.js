@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "../src/common/utils/password.js";
+import { seedCategories } from "./seed-categories.js";
 
 const prisma = new PrismaClient();
 
@@ -133,7 +134,7 @@ async function main() {
   });
 
   // ── D. Brand, Category & Store Settings ───────────────────────────────
-  console.log("🏷️  Seeding 1 Brand & 1 Category...");
+  console.log("🏷️  Seeding Brand, Store Settings & Categories...");
   const brand = await prisma.brand.create({
     data: {
       name: "Vanom Organics",
@@ -142,14 +143,10 @@ async function main() {
     }
   });
 
-  const category = await prisma.category.create({
-    data: {
-      name: "Spices & Botanicals",
-      slug: "spices-and-botanicals",
-      imageUrl: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=600&q=80",
-      isActive: true
-    }
-  });
+  await seedCategories();
+  const category = (await prisma.category.findFirst({ where: { slug: "spices-masalas" } }))
+    || (await prisma.category.findFirst({ where: { slug: "staples-pantry" } }))
+    || (await prisma.category.findFirst());
 
   await prisma.storeSetting.create({
     data: {
@@ -315,41 +312,67 @@ async function main() {
     }
   });
 
-  // 1 Wholesale Bulk Product with US & Canada tiered pricing
+  // 1 Wholesale Bulk Product with Dynamic Weight Variants & Independent Country Pricing
   await prisma.bulkProduct.create({
     data: {
-      name: "Organic Kashmiri Saffron Commercial Pack (500g)",
-      slug: "organic-saffron-commercial-pack-500g",
-      sku: "BULK-SAFFRON-500G",
-      type: "SIMPLE",
-      category: "Spices & Botanicals",
+      name: "Premium Basmati Rice Wholesale",
+      slug: "premium-basmati-rice-wholesale",
+      sku: "RICE-001",
+      type: "VARIABLE",
+      category: "Groceries & Daily Needs",
       brand: "Vanom Organics",
+      description: "Aged long-grain aromatic Basmati rice for commercial kitchens, restaurants, and bulk distribution.",
       isActive: true,
-      countryPrices: {
+      images: {
         create: [
           {
-            countryCode: "US",
-            currencyCode: "USD",
-            moq: 2,
-            stock: 50,
-            isAvailable: true,
-            tiers: {
+            mediaAssetId: "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80",
+            sortOrder: 0,
+            isPrimary: true
+          }
+        ]
+      },
+      variants: {
+        create: [
+          {
+            name: "500g",
+            sku: "RICE-001-500G",
+            weight: 500,
+            weightUnit: "g",
+            sortOrder: 1,
+            isActive: true,
+            countryPrices: {
               create: [
-                { minQuantity: 2, maxQuantity: 10, price: 350.0 },
-                { minQuantity: 11, maxQuantity: 50, price: 300.0 }
+                { countryCode: "US", currencyCode: "USD", unitPrice: 4.50, moq: 1, stock: 500, isAvailable: true },
+                { countryCode: "CA", currencyCode: "CAD", unitPrice: 6.00, moq: 1, stock: 300, isAvailable: true }
               ]
             }
           },
           {
-            countryCode: "CA",
-            currencyCode: "CAD",
-            moq: 2,
-            stock: 30,
-            isAvailable: true,
-            tiers: {
+            name: "1kg",
+            sku: "RICE-001-1KG",
+            weight: 1,
+            weightUnit: "kg",
+            sortOrder: 2,
+            isActive: true,
+            countryPrices: {
               create: [
-                { minQuantity: 2, maxQuantity: 10, price: 475.0 },
-                { minQuantity: 11, maxQuantity: 50, price: 410.0 }
+                { countryCode: "US", currencyCode: "USD", unitPrice: 8.00, moq: 1, stock: 500, isAvailable: true },
+                { countryCode: "CA", currencyCode: "CAD", unitPrice: 10.50, moq: 1, stock: 300, isAvailable: true }
+              ]
+            }
+          },
+          {
+            name: "2kg",
+            sku: "RICE-001-2KG",
+            weight: 2,
+            weightUnit: "kg",
+            sortOrder: 3,
+            isActive: true,
+            countryPrices: {
+              create: [
+                { countryCode: "US", currencyCode: "USD", unitPrice: 15.00, moq: 1, stock: 500, isAvailable: true },
+                { countryCode: "CA", currencyCode: "CAD", unitPrice: 20.00, moq: 1, stock: 300, isAvailable: true }
               ]
             }
           }
@@ -378,6 +401,9 @@ async function main() {
     select: { bulkBusinessId: true, role: true }
   });
 
+  const categoryCount = await prisma.category.count();
+  const parentCategoryCount = await prisma.category.count({ where: { parentId: null } });
+
   console.log(`• Total Users         : ${totalUsers} (Expected: 3)`);
   console.log(`• SUPERADMIN Users    : ${superadminCount} (Expected: 1)`);
   console.log(`• B2C Users           : ${b2cCount} (Expected: 1)`);
@@ -385,6 +411,7 @@ async function main() {
   console.log(`• Warehouses          : ${warehouseCount} (Expected: 1 - "${warehouse?.name}")`);
   console.log(`• Businesses (B2B)    : ${businessCount} (Expected: 1)`);
   console.log(`• Countries           : ${countryCount} (Expected: 2 - ${countries.map(c => c.code).join(", ")})`);
+  console.log(`• Categories          : ${categoryCount} (${parentCategoryCount} parents + subcategories)`);
 
   if (totalUsers !== 3) throw new Error(`Validation failed: Expected 3 users, got ${totalUsers}`);
   if (superadminCount !== 1) throw new Error(`Validation failed: Expected 1 SUPERADMIN, got ${superadminCount}`);

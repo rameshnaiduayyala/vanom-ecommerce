@@ -167,12 +167,37 @@ function getProductSku(item = {}) {
   );
 }
 
+function getProductDescription(item = {}) {
+  return (
+    item.description ||
+    item.product?.description ||
+    item.bulkProduct?.description ||
+    ""
+  );
+}
+
 function getItemVariant(item = {}) {
+  if (item.weight) {
+    return `${item.weight}${item.weightUnit || "kg"}`;
+  }
+  if (item.variant?.weight) {
+    return `${item.variant.weight}${item.variant.weightUnit || "kg"}`;
+  }
   return (
     item.variant?.title ||
+    item.variant?.name ||
     item.packagingType ||
     item.grade ||
     "Standard"
+  );
+}
+
+function getItemCountry(item = {}, order = {}) {
+  return (
+    item.countryCode ||
+    order.countryCode ||
+    order.shippingAddress?.countryCode ||
+    (order.currencyCode === "CAD" ? "CA" : "US")
   );
 }
 
@@ -876,16 +901,24 @@ function buildItemColumns(numFmt) {
     {
       header: "Product / Item Name",
       key: "name",
-      width: 34,
+      width: 32,
+      align: "left",
+    },
+    {
+      header: "Description",
+      key: "description",
+      width: 28,
       align: "left",
     },
     { header: "SKU / Code", key: "sku", width: 16, align: "center" },
+    { header: "Country", key: "country", width: 10, align: "center" },
     {
-      header: "Variant / Spec",
+      header: "Weight / Spec",
       key: "variant",
-      width: 18,
-      align: "left",
+      width: 16,
+      align: "center",
     },
+    { header: "Currency", key: "currency", width: 10, align: "center" },
     {
       header: "Unit Price",
       key: "unitPrice",
@@ -947,8 +980,11 @@ function buildLineItemRows(normalizedOrders) {
         orderType: order.orderType,
         customerName: order.customerName,
         name: getProductName(item),
+        description: getProductDescription(item),
         sku: getProductSku(item),
+        country: getItemCountry(item, order.rawOrder),
         variant: getItemVariant(item),
+        currency: item.currencyCode || order.currency,
         unitPrice,
         quantity,
         lineTotal,

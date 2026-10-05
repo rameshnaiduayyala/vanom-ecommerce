@@ -1,4 +1,4 @@
-/** A single pricing tier within a country price entry. */
+/** A single pricing tier within a country price entry (optional for backward compatibility). */
 const tier = {
   type: "object",
   required: ["minQuantity", "price"],
@@ -13,19 +13,20 @@ const tier = {
 /** Pricing and availability for a specific country. */
 const countryPrice = {
   type: "object",
-  required: ["countryCode", "currencyCode", "moq", "tiers"],
+  required: ["countryCode", "currencyCode"],
   additionalProperties: false,
   properties: {
     countryCode: { type: "string", minLength: 2 },
     currencyCode: { type: "string", minLength: 3 },
+    unitPrice: { type: ["number", "string", "null"], minimum: 0 },
     moq: { type: "integer", minimum: 1 },
     stock: { type: "integer", minimum: 0 },
     isAvailable: { type: "boolean" },
-    tiers: { type: "array", minItems: 1, items: tier }
+    tiers: { type: "array", items: tier }
   }
 };
 
-/** A single product variant with optional pricing per country. */
+/** A single product variant with weight specification and pricing per country. */
 const variant = {
   type: "object",
   required: ["sku"],
@@ -33,6 +34,9 @@ const variant = {
   properties: {
     name: { type: ["string", "null"] },
     sku: { type: "string", minLength: 1 },
+    weight: { type: ["number", "string", "null"] },
+    weightUnit: { type: ["string", "null"] },
+    sortOrder: { type: "integer", minimum: 0 },
     attributes: { type: ["object", "null"] },
     isActive: { type: "boolean" },
     countryPrices: { type: "array", items: countryPrice }
