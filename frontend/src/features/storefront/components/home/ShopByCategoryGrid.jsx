@@ -3,7 +3,14 @@ import { Link } from "react-router-dom";
 import { ArrowRight, LayoutGrid } from "lucide-react";
 
 export function ShopByCategoryGrid({ categories = [], className = "" }) {
-  const items = Array.isArray(categories) ? categories : [];
+  const items = Array.isArray(categories)
+    ? [...categories].sort((a, b) => {
+        const orderA = a.sortOrder !== undefined && a.sortOrder !== null ? Number(a.sortOrder) : 0;
+        const orderB = b.sortOrder !== undefined && b.sortOrder !== null ? Number(b.sortOrder) : 0;
+        if (orderA !== orderB) return orderA - orderB;
+        return (a.name || "").localeCompare(b.name || "");
+      })
+    : [];
 
   return (
     <section className={`py-10 bg-white/60 ${className}`}>

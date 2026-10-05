@@ -9,7 +9,14 @@ export function CategoryIconStrip({
   className = "",
 }) {
   const scrollRef = useRef(null);
-  const items = Array.isArray(categories) ? categories : [];
+  const items = Array.isArray(categories)
+    ? [...categories].sort((a, b) => {
+        const orderA = a.sortOrder !== undefined && a.sortOrder !== null ? Number(a.sortOrder) : 0;
+        const orderB = b.sortOrder !== undefined && b.sortOrder !== null ? Number(b.sortOrder) : 0;
+        if (orderA !== orderB) return orderA - orderB;
+        return (a.name || "").localeCompare(b.name || "");
+      })
+    : [];
 
   const scroll = (dir) => {
     if (!scrollRef.current) return;

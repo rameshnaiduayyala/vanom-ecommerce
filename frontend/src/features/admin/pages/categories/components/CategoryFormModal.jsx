@@ -42,7 +42,7 @@ export function CategoryFormModal({
   }, [editingCategory, isOpen]);
 
   const handleNameChange = (val) => {
-    if (!editingCategory) {
+    if (!editingCategory?.id) {
       const generatedSlug = val
         .toLowerCase()
         .trim()
@@ -75,7 +75,13 @@ export function CategoryFormModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={editingCategory ? `Edit Category: ${editingCategory.name}` : "Add New Category Taxonomy"}
+      title={
+        editingCategory?.id
+          ? `Edit Category: ${editingCategory.name}`
+          : editingCategory?.parentId
+          ? "Add New Subcategory"
+          : "Add New Category Taxonomy"
+      }
       maxWidth="max-w-2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -182,8 +188,9 @@ export function CategoryFormModal({
           <Input
             label="Sort Order"
             type="number"
-            value={formData.sortOrder}
-            onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
+            min="0"
+            value={formData.sortOrder ?? ""}
+            onChange={(e) => setFormData({ ...formData, sortOrder: e.target.value })}
             placeholder="0"
           />
 

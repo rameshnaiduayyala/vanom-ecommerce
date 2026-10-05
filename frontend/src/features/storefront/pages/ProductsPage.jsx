@@ -48,13 +48,20 @@ export function ProductsPage() {
       }),
   });
 
-  const catList = Array.isArray(categories)
+  const rawCatList = Array.isArray(categories)
     ? categories
     : Array.isArray(categories?.items)
     ? categories.items
     : Array.isArray(categories?.data)
     ? categories.data
     : [];
+
+  const catList = [...rawCatList].sort((a, b) => {
+    const orderA = a.sortOrder !== undefined && a.sortOrder !== null ? Number(a.sortOrder) : 0;
+    const orderB = b.sortOrder !== undefined && b.sortOrder !== null ? Number(b.sortOrder) : 0;
+    if (orderA !== orderB) return orderA - orderB;
+    return (a.name || "").localeCompare(b.name || "");
+  });
 
   const rawProducts = Array.isArray(productsData?.items)
     ? productsData.items

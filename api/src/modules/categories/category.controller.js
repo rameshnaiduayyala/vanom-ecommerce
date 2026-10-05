@@ -7,33 +7,42 @@ import { AppError } from "../../common/errors/app-error.js";
 import { replaceFile } from "../../common/utils/file-upload.js";
 
 async function getCategoryInput(request, oldImageKey = null) {
-  if (!request.isMultipart?.()) return request.body;
-  const input = {};
-
-  for await (const part of request.parts()) {
-    if (part.type === "file") {
-      if (part.fieldname !== "image") {
-        throw new AppError("Only the image file field is supported", HTTP_STATUS.BAD_REQUEST, "INVALID_UPLOAD_FIELD");
+  let input = request.body || {};
+  if (request.isMultipart?.()) {
+    input = {};
+    for await (const part of request.parts()) {
+      if (part.type === "file") {
+        if (part.fieldname !== "image") {
+          throw new AppError("Only the image file field is supported", HTTP_STATUS.BAD_REQUEST, "INVALID_UPLOAD_FIELD");
+        }
+        const file = oldImageKey
+          ? await replaceFile("categories", part, oldImageKey)
+          : await request.server.uploadFile("categories", part);
+        input.imageUrl = file.storageKey;
+        continue;
       }
-      const file = oldImageKey
-        ? await replaceFile("categories", part, oldImageKey)
-        : await request.server.uploadFile("categories", part);
-      input.imageUrl = file.storageKey;
-      continue;
-    }
 
-    if (part.fieldname === "data") {
-      try {
-        Object.assign(input, JSON.parse(part.value));
-      } catch {
-        throw new AppError("The data field must contain valid JSON", HTTP_STATUS.BAD_REQUEST, "INVALID_CATEGORY_DATA");
+      if (part.fieldname === "data") {
+        try {
+          Object.assign(input, JSON.parse(part.value));
+        } catch {
+          throw new AppError("The data field must contain valid JSON", HTTP_STATUS.BAD_REQUEST, "INVALID_CATEGORY_DATA");
+        }
+        continue;
       }
-      continue;
-    }
 
-    input[part.fieldname] = part.fieldname === "isActive" ? part.value === "true" : part.value;
+      input[part.fieldname] = part.fieldname === "isActive" || part.fieldname === "active" ? part.value === "true" : part.value;
+    }
   }
-  return input;
+
+  const normalized = { ...input };
+  if (normalized.active !== undefined && normalized.isActive === undefined) {
+    normalized.isActive = Boolean(normalized.active);
+  }
+  if (normalized.sortOrder !== undefined) {
+    normalized.sortOrder = Number(normalized.sortOrder) || 0;
+  }
+  return normalized;
 }
 
 export async function create(request, reply) {
@@ -48,7 +57,9 @@ export async function list(request, reply) {
     search: request.query.search,
     isActive: request.query.isActive,
     parentId: request.query.parentId,
-    rootOnly: request.query.rootOnly === true || request.query.rootOnly === "true"
+    rootOnly: request.query.rootOnly === true || request.query.rootOnly === "true",
+    sortBy: request.query.sortBy,
+    sortOrder: request.query.sortOrder
   });
   return sendSuccess(reply, {
     message: MESSAGES.CATEGORIES_FETCHED,

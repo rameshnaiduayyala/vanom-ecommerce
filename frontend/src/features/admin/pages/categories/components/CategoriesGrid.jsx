@@ -86,7 +86,7 @@ export function CategoriesGrid({ categories, isLoading, onEdit, onDelete, search
               <span className="text-[10px] font-mono text-text-muted bg-surface-muted px-2 py-0.5 rounded border border-border/50">
                 /{cat.slug}
               </span>
-              {cat.sortOrder !== undefined && cat.sortOrder > 0 && (
+              {cat.sortOrder !== undefined && cat.sortOrder !== null && (
                 <span className="text-[10px] font-mono text-text-muted bg-surface-muted px-2 py-0.5 rounded">
                   Order: {cat.sortOrder}
                 </span>

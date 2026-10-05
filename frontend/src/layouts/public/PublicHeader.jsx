@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
@@ -74,7 +74,24 @@ export function PublicHeader() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const categories = Array.isArray(categoryTree) ? categoryTree : [];
+  const categories = useMemo(() => {
+    const raw = Array.isArray(categoryTree) ? categoryTree : [];
+    const sortList = (items) => {
+      if (!Array.isArray(items)) return [];
+      return [...items]
+        .sort((a, b) => {
+          const orderA = a.sortOrder !== undefined && a.sortOrder !== null ? Number(a.sortOrder) : 0;
+          const orderB = b.sortOrder !== undefined && b.sortOrder !== null ? Number(b.sortOrder) : 0;
+          if (orderA !== orderB) return orderA - orderB;
+          return (a.name || "").localeCompare(b.name || "");
+        })
+        .map((cat) => ({
+          ...cat,
+          children: cat.children ? sortList(cat.children) : []
+        }));
+    };
+    return sortList(raw);
+  }, [categoryTree]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -329,7 +346,7 @@ export function PublicHeader() {
   }, [location.search, categories]);
 
   // Build flattened search category options from API tree
-  const searchCategoryOptions = [
+  const searchCategoryOptions = useMemo(() => [
     { label: "All Categories", slug: "", isParent: true },
     ...categories.flatMap((cat) => [
       { label: cat.name, slug: cat.slug || cat.id, isParent: true, count: cat.count || cat._count?.products || 0 },
@@ -342,7 +359,7 @@ export function PublicHeader() {
         }))
         : []),
     ]),
-  ];
+  ], [categories]);
 
   return (
     <>
