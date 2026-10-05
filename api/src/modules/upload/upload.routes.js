@@ -36,4 +36,29 @@ export async function uploadRoutes(fastify) {
       }
     }
   }, uploadController.uploadMultiple);
+
+  // Admin File Management (AWS S3 & Cloud Storage)
+  fastify.get("/admin/files", {
+    preHandler: authenticate,
+    schema: {
+      tags: ["Uploads"],
+      summary: "List all files in AWS S3 with pagination and folder filtering"
+    }
+  }, uploadController.listFiles);
+
+  fastify.get("/admin/files/stats", {
+    preHandler: authenticate,
+    schema: {
+      tags: ["Uploads"],
+      summary: "Get AWS S3 / storage stats"
+    }
+  }, uploadController.getFileStats);
+
+  fastify.delete("/admin/files/:id", {
+    preHandler: authenticate,
+    schema: {
+      tags: ["Uploads"],
+      summary: "Delete a file from AWS S3 and database"
+    }
+  }, uploadController.deleteFile);
 }

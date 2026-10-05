@@ -69,5 +69,42 @@ export const uploadService = {
 
     const data = response?.data || response;
     return Array.isArray(data) ? data : data?.data || [];
+  },
+
+  /**
+   * List files stored in AWS S3 with pagination, folder filtering, and search.
+   *
+   * @param {Object} params
+   * @param {number} [params.page=1]
+   * @param {number} [params.limit=24]
+   * @param {string} [params.folder]
+   * @param {string} [params.search]
+   * @param {string} [params.type] 'images' | 'documents' | 'all'
+   * @param {string} [params.sortBy] 'createdAt' | 'size' | 'originalName'
+   * @param {string} [params.sortOrder] 'desc' | 'asc'
+   * @returns {Promise<{ files: Array, pagination: Object }>}
+   */
+  getFiles: async (params = {}) => {
+    return apiClient.get("/admin/files", { params });
+  },
+
+  /**
+   * Get AWS S3 storage statistics.
+   *
+   * @returns {Promise<{ totalFiles: number, totalSizeBytes: number, provider: string, bucket: string, region: string, folderBreakdown: Object }>}
+   */
+  getFileStats: async () => {
+    return apiClient.get("/admin/files/stats");
+  },
+
+  /**
+   * Delete a file from AWS S3 and database by ID.
+   *
+   * @param {string} id
+   * @returns {Promise<{ id: string, storageKey: string }>}
+   */
+  deleteFile: async (id) => {
+    return apiClient.delete(`/admin/files/${id}`);
   }
 };
+

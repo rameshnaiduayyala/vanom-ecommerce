@@ -20,6 +20,7 @@ import {
   Bookmark,
   Mail,
   Truck,
+  HardDrive,
 } from "lucide-react";
 import { ROUTES } from "./routes.js";
 
@@ -215,6 +216,12 @@ export const ADMIN_NAV_CONFIG = [
     label: "Audit & Security",
     icon: ShieldCheck,
     path: ROUTES.ADMIN.AUDIT_LOGS,
+  },
+  {
+    id: "media-files",
+    label: "Media & AWS Files",
+    icon: HardDrive,
+    path: ROUTES.ADMIN.FILES,
   },
   {
     id: "customer-inquiries",
