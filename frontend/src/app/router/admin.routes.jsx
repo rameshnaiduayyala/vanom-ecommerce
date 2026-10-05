@@ -57,11 +57,7 @@ const AdminPaymentsPage = lazy(() =>
     default: m.AdminPaymentsPage || m.default,
   }))
 );
-const AdminReportsPage = lazy(() =>
-  import("../../features/admin/pages/reports/AdminReportsPage.jsx").then((m) => ({
-    default: m.AdminReportsPage || m.default,
-  }))
-);
+
 const AdminUsersPage = lazy(() =>
   import("../../features/admin/pages/users/AdminUsersPage.jsx").then((m) => ({
     default: m.AdminUsersPage || m.default,
@@ -158,7 +154,7 @@ export const adminRoutes = {
     { path: "bulk-orders", element: <AdminBulkOrdersPage /> },
     { path: "quotes", element: <AdminQuotesPage /> },
     { path: "payments", element: <AdminPaymentsPage /> },
-    { path: "reports", element: <AdminReportsPage /> },
+    { path: "reports", element: <Navigate to="/admin/dashboard" replace /> },
     { path: "audit-logs", element: <AdminAuditLogsPage /> },
     { path: "shipments", element: <AdminShipmentsPage /> },
     { path: "store", element: <AdminStoreSettingsPage /> },

@@ -77,16 +77,27 @@ export function useAdminInventory() {
     return { productById: pById, productByVariantId: pByVarId };
   }, [rawProducts]);
 
-  // Normalized inventory items with guaranteed parent product
+  // Normalized inventory items with guaranteed parent product & images
   const inventoryItems = useMemo(() => {
     return rawItems.map((inv) => {
       let resolvedProduct = inv.product || inv.variant?.product;
-      if (!resolvedProduct || !resolvedProduct.name) {
-        if (inv.variantId && productByVariantId.has(inv.variantId)) {
-          resolvedProduct = productByVariantId.get(inv.variantId);
-        } else if (inv.productId && productById.has(inv.productId)) {
-          resolvedProduct = productById.get(inv.productId);
-        }
+      let catalogP = null;
+      if (inv.variantId && productByVariantId.has(inv.variantId)) {
+        catalogP = productByVariantId.get(inv.variantId);
+      } else if (inv.productId && productById.has(inv.productId)) {
+        catalogP = productById.get(inv.productId);
+      }
+
+      if (catalogP) {
+        resolvedProduct = {
+          ...catalogP,
+          ...(resolvedProduct || {}),
+          images:
+            resolvedProduct?.images && resolvedProduct.images.length > 0
+              ? resolvedProduct.images
+              : catalogP.images,
+          image: resolvedProduct?.image || catalogP.image,
+        };
       }
 
       return {
@@ -121,6 +132,20 @@ export function useAdminInventory() {
       const variant = item.variant;
       const stock = item.quantity !== undefined ? item.quantity : (item.stock || 0);
       const reserved = item.reservedQuantity !== undefined ? item.reservedQuantity : (item.reserved || 0);
+      const itemImg =
+        variant?.image ||
+        (Array.isArray(variant?.images) && variant.images.length > 0
+          ? typeof variant.images[0] === "string"
+            ? variant.images[0]
+            : variant.images[0]?.url
+          : null) ||
+        (Array.isArray(prod?.images) && prod.images.length > 0
+          ? typeof prod.images[0] === "string"
+            ? prod.images[0]
+            : prod.images[0]?.url
+          : null) ||
+        prod?.image ||
+        null;
 
       return {
         id: item.id,
@@ -137,6 +162,9 @@ export function useAdminInventory() {
         available: Math.max(0, stock - reserved),
         barcode: variant?.sku || prod.sku || `VN-${item.id.slice(0, 8).toUpperCase()}`,
         warehouse: item.warehouse,
+        image: itemImg,
+        product: prod,
+        variant: variant,
       };
     });
   }, [inventoryItems]);
@@ -147,8 +175,26 @@ export function useAdminInventory() {
     const prods = Array.isArray(rawProducts) ? rawProducts : (rawProducts?.items || []);
 
     prods.forEach((p) => {
+      const pImg =
+        (Array.isArray(p.images) && p.images.length > 0
+          ? typeof p.images[0] === "string"
+            ? p.images[0]
+            : p.images[0]?.url
+          : null) ||
+        p.image ||
+        null;
+
       if (Array.isArray(p.variants) && p.variants.length > 0) {
         p.variants.forEach((v) => {
+          const vImg =
+            v.image ||
+            (Array.isArray(v.images) && v.images.length > 0
+              ? typeof v.images[0] === "string"
+                ? v.images[0]
+                : v.images[0]?.url
+              : null) ||
+            pImg;
+
           list.push({
             id: `var_${v.id}`,
             productId: p.id,
@@ -159,6 +205,9 @@ export function useAdminInventory() {
             variantName: v.name,
             currentStock: v.stock || 0,
             type: "VARIANT",
+            image: vImg,
+            product: p,
+            variant: v,
           });
         });
       } else {
@@ -172,6 +221,9 @@ export function useAdminInventory() {
           variantName: null,
           currentStock: p.stock || 0,
           type: "SIMPLE",
+          image: pImg,
+          product: p,
+          variant: null,
         });
       }
     });
@@ -182,6 +234,21 @@ export function useAdminInventory() {
       const variant = inv.variant;
       const key = variant ? `var_${variant.id}` : `prod_${prod.id}`;
       if (!list.some((item) => item.id === key)) {
+        const itemImg =
+          variant?.image ||
+          (Array.isArray(variant?.images) && variant.images.length > 0
+            ? typeof variant.images[0] === "string"
+              ? variant.images[0]
+              : variant.images[0]?.url
+            : null) ||
+          (Array.isArray(prod?.images) && prod.images.length > 0
+            ? typeof prod.images[0] === "string"
+              ? prod.images[0]
+              : prod.images[0]?.url
+            : null) ||
+          prod?.image ||
+          null;
+
         list.push({
           id: key,
           productId: prod.id,
@@ -194,6 +261,9 @@ export function useAdminInventory() {
           warehouseId: inv.warehouseId,
           warehouseCode: inv.warehouse?.code,
           type: variant ? "VARIANT" : "SIMPLE",
+          image: itemImg,
+          product: prod,
+          variant: variant,
         });
       }
     });

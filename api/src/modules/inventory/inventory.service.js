@@ -897,14 +897,35 @@ export async function listInventory(organizationId, {
       take,
       include: {
         warehouse: { select: { id: true, name: true, code: true, city: true, country: true } },
-        product: { select: { id: true, name: true, sku: true, basePrice: true, type: true, category: { select: { name: true } }, brand: { select: { name: true } } } },
+        product: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            basePrice: true,
+            type: true,
+            category: { select: { name: true } },
+            brand: { select: { name: true } },
+            images: { select: { url: true, sortOrder: true }, orderBy: { sortOrder: "asc" } }
+          }
+        },
         variant: {
           select: {
             id: true,
             name: true,
             sku: true,
             attributes: true,
-            product: { select: { id: true, name: true, sku: true, type: true, category: { select: { name: true } }, brand: { select: { name: true } } } }
+            product: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                type: true,
+                category: { select: { name: true } },
+                brand: { select: { name: true } },
+                images: { select: { url: true, sortOrder: true }, orderBy: { sortOrder: "asc" } }
+              }
+            }
           }
         }
       },

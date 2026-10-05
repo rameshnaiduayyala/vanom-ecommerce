@@ -9,7 +9,6 @@ import {
   FileCheck2,
   Boxes,
   FileText,
-  BarChart3,
   CreditCard,
   ShieldCheck,
   ShoppingBag,
@@ -194,22 +193,10 @@ export const ADMIN_NAV_CONFIG = [
     ],
   },
   {
-    id: "finance-group",
-    label: "Finance & Invoices",
+    id: "payments",
+    label: "Payments & Invoices",
     icon: CreditCard,
-    children: [
-      {
-        id: "payments",
-        label: "Payments & Transactions",
-        path: ROUTES.ADMIN.PAYMENTS,
-      },
-      {
-        id: "reports",
-        label: "Revenue Reports",
-        icon: BarChart3,
-        path: ROUTES.ADMIN.REPORTS,
-      },
-    ],
+    path: ROUTES.ADMIN.PAYMENTS,
   },
   {
     id: "system-audit",

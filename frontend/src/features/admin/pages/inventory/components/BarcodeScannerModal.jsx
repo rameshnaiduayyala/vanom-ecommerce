@@ -16,6 +16,26 @@ import {
   RefreshCw,
 } from "lucide-react";
 
+function getItemImage(item) {
+  if (!item) return null;
+  if (item.image && typeof item.image === "string") return item.image;
+  if (Array.isArray(item.images) && item.images.length > 0) {
+    const img = item.images[0];
+    return typeof img === "string" ? img : img?.url || img?.file?.url;
+  }
+  if (item.variant?.image) return item.variant.image;
+  if (Array.isArray(item.variant?.images) && item.variant.images.length > 0) {
+    const img = item.variant.images[0];
+    return typeof img === "string" ? img : img?.url || img?.file?.url;
+  }
+  if (item.product?.image) return item.product.image;
+  if (Array.isArray(item.product?.images) && item.product.images.length > 0) {
+    const img = item.product.images[0];
+    return typeof img === "string" ? img : img?.url || img?.file?.url;
+  }
+  return null;
+}
+
 export function BarcodeScannerModal({
   isOpen,
   onClose,
@@ -128,20 +148,38 @@ export function BarcodeScannerModal({
         {activeItem ? (
           <div className="p-5 rounded-2xl bg-white border border-emerald-300 shadow-xs space-y-4 animate-in fade-in duration-150">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
-                  <Package className="w-6 h-6 text-[#00875A]" />
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="relative w-14 h-14 rounded-xl border border-emerald-300 bg-white overflow-hidden shrink-0 shadow-2xs flex items-center justify-center">
+                  {getItemImage(activeItem) ? (
+                    <img
+                      src={getItemImage(activeItem)}
+                      alt={activeItem.name || "Product"}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                        const fallback = e.currentTarget.parentElement?.querySelector(".scanner-img-fallback");
+                        if (fallback) fallback.style.display = "flex";
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    className={`scanner-img-fallback w-full h-full flex items-center justify-center bg-emerald-50 text-[#00875A] ${
+                      getItemImage(activeItem) ? "hidden" : "flex"
+                    }`}
+                  >
+                    <Package className="w-7 h-7 text-[#00875A]" />
+                  </div>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-sm text-text-primary">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-bold text-sm text-text-primary leading-tight">
                       {activeItem.name || activeItem.productName}
                     </h4>
                     <Badge variant="success" size="sm">
                       Verified Barcode
                     </Badge>
                   </div>
-                  <div className="text-[11px] text-text-muted font-mono flex items-center gap-2 mt-0.5">
+                  <div className="text-[11px] text-text-muted font-mono flex items-center gap-2 mt-1">
                     <span>SKU: <strong className="text-text-primary">{activeItem.sku}</strong></span>
                     <span>•</span>
                     <span>Barcode: <strong className="text-emerald-800">{activeItem.barcode}</strong></span>
@@ -238,24 +276,50 @@ export function BarcodeScannerModal({
               Quick Select from Catalog ({variants.length} items)
             </h5>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
-              {variants.slice(0, 8).map((v) => (
-                <div
-                  key={v.id}
-                  onClick={() => {
-                    setScannedCode(v.sku);
-                    setActiveItem(v);
-                  }}
-                  className="p-2.5 rounded-xl border border-border bg-white hover:border-[#00875A] hover:bg-emerald-50/40 cursor-pointer transition-all flex items-center justify-between gap-2"
-                >
-                  <div className="truncate">
-                    <p className="font-bold text-text-primary truncate">{v.name}</p>
-                    <span className="font-mono text-[10px] text-text-muted">{v.sku}</span>
+              {variants.slice(0, 8).map((v) => {
+                const vImg = getItemImage(v);
+                return (
+                  <div
+                    key={v.id}
+                    onClick={() => {
+                      setScannedCode(v.sku);
+                      setActiveItem(v);
+                    }}
+                    className="p-2 rounded-xl border border-border bg-white hover:border-[#00875A] hover:bg-emerald-50/40 cursor-pointer transition-all flex items-center justify-between gap-2.5"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="relative w-9 h-9 rounded-lg border border-border bg-surface-muted overflow-hidden shrink-0 flex items-center justify-center">
+                        {vImg ? (
+                          <img
+                            src={vImg}
+                            alt={v.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                              const fallback = e.currentTarget.parentElement?.querySelector(".quick-img-fallback");
+                              if (fallback) fallback.style.display = "flex";
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className={`quick-img-fallback w-full h-full flex items-center justify-center bg-slate-100 text-slate-400 ${
+                            vImg ? "hidden" : "flex"
+                          }`}
+                        >
+                          <Package className="w-4 h-4 text-text-muted" />
+                        </div>
+                      </div>
+                      <div className="min-w-0 truncate">
+                        <p className="font-bold text-text-primary truncate text-xs">{v.name}</p>
+                        <span className="font-mono text-[10px] text-text-muted">{v.sku}</span>
+                      </div>
+                    </div>
+                    <span className="font-mono font-bold text-xs text-slate-800 shrink-0">
+                      {v.stock} units
+                    </span>
                   </div>
-                  <span className="font-mono font-bold text-xs text-slate-800 shrink-0">
-                    {v.stock} units
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

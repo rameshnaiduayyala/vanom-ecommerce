@@ -64,7 +64,6 @@ export const ROUTES = {
     BULK_ORDERS: "/admin/bulk-orders",
     QUOTES: "/admin/quotes",
     PAYMENTS: "/admin/payments",
-    REPORTS: "/admin/reports",
     AUDIT_LOGS: "/admin/audit-logs",
     SHIPMENTS: "/admin/shipments",
     STORE: "/admin/store",

@@ -149,14 +149,27 @@ export function BarcodeStudioView({
           {/* Scanned Item Details Card */}
           {foundItem && (
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-4 animate-in fade-in duration-150">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="font-bold text-sm text-slate-900">{foundItem.name}</h4>
-                  <p className="font-mono text-xs text-text-muted mt-0.5">
-                    SKU: {foundItem.sku} | Depot: {foundItem.warehouse?.code || "CENTRAL"}
-                  </p>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  {foundItem.image ? (
+                    <img
+                      src={foundItem.image}
+                      alt={foundItem.name}
+                      className="w-12 h-12 rounded-xl object-cover border border-border shrink-0 shadow-2xs bg-white"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-white border border-border flex items-center justify-center shrink-0 text-slate-400">
+                      <Package className="w-6 h-6 text-text-muted" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-sm text-slate-900 leading-tight truncate">{foundItem.name}</h4>
+                    <p className="font-mono text-xs text-text-muted mt-0.5">
+                      SKU: {foundItem.sku} | Depot: {foundItem.warehouse?.code || "CENTRAL"}
+                    </p>
+                  </div>
                 </div>
-                <span className="font-mono text-xs px-2.5 py-1 rounded bg-white border border-slate-200 font-bold text-slate-800">
+                <span className="font-mono text-xs px-2.5 py-1 rounded bg-white border border-slate-200 font-bold text-slate-800 shrink-0">
                   {foundItem.category}
                 </span>
               </div>
