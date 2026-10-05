@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
@@ -7,6 +7,7 @@ import { useAuthStore } from "../../../stores/auth.store.js";
 import { formatPrice } from "../../../utils/formatters.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { toast } from "../../../components/ui/Toast.jsx";
+import { B2BCurrencyPicker } from "@/layouts/b2b/B2BCurrencyPicker.jsx";
 import {
   Boxes,
   Plus,
@@ -20,6 +21,7 @@ import {
   Send,
   SlidersHorizontal,
   X,
+  AlertTriangle,
 } from "lucide-react";
 import { resolveProductImageUrl, FALLBACK_PRODUCT_IMAGE } from "@/utils/image.js";
 
@@ -53,8 +55,8 @@ export function BulkOrder() {
   const queryClient = useQueryClient();
 
   const targetCountryCode = (country.code || "US").toUpperCase();
-  const currencyCode = targetCountryCode === "CA" ? "CAD" : "USD";
-  const currencySymbol = targetCountryCode === "CA" ? "CA$" : "$";
+  const currencyCode = country.currency || (targetCountryCode === "CA" ? "CAD" : "USD");
+  const currencySymbol = country.symbol || (targetCountryCode === "CA" ? "CA$" : "$");
 
   /* ─── Data ─── */
   const { data: bulkProducts = [], isLoading: loadingProducts, refetch } = useQuery({
@@ -77,6 +79,25 @@ export function BulkOrder() {
   const [insertVariantToAdd, setInsertVariantToAdd] = useState("");
   const [insertQuantity, setInsertQuantity] = useState(10);
 
+  /* ─── Pricing Resolver ─── */
+  function resolveUnitPrice(prod, variant, countryCode = targetCountryCode, quantity = 10) {
+    if (!prod) return 0;
+    const cCode = (countryCode || "US").toUpperCase();
+    const prices = variant ? variant.countryPrices : prod.countryPrices;
+    const cp = prices?.find((p) => p.countryCode?.toUpperCase() === cCode);
+    if (cp) {
+      if (cp.tiers?.length) {
+        const matchingTier = cp.tiers
+          .filter((t) => quantity >= t.minQuantity && (t.maxQuantity == null || quantity <= t.maxQuantity))
+          .sort((a, b) => b.minQuantity - a.minQuantity)[0];
+        if (matchingTier?.price != null) return Number(matchingTier.price);
+      }
+      if (cp.unitPrice !== undefined && cp.unitPrice !== null) return Number(cp.unitPrice);
+      if (cp.tiers?.[0]?.price != null) return Number(cp.tiers[0].price);
+    }
+    return Number(prod.basePriceUSD || 0);
+  }
+
   /* ─── Derived ─── */
   const bottomChosenProduct = bulkProducts.find((p) => p.id === bottomProductToAdd);
   const bottomVariants = Array.isArray(bottomChosenProduct?.variants)
@@ -85,7 +106,9 @@ export function BulkOrder() {
   const bottomChosenVariant = bottomVariantToAdd
     ? bottomVariants.find((v) => v.id === bottomVariantToAdd)
     : bottomVariants[0] || null;
-  const bottomUnitPrice = bottomChosenProduct ? resolveUnitPrice(bottomChosenProduct, bottomChosenVariant) : 0;
+  const bottomUnitPrice = bottomChosenProduct
+    ? resolveUnitPrice(bottomChosenProduct, bottomChosenVariant, targetCountryCode, bottomQuantity)
+    : 0;
 
   const insertChosenProduct = bulkProducts.find((p) => p.id === insertProductToAdd);
   const insertVariants = Array.isArray(insertChosenProduct?.variants)
@@ -94,7 +117,49 @@ export function BulkOrder() {
   const insertChosenVariant = insertVariantToAdd
     ? insertVariants.find((v) => v.id === insertVariantToAdd)
     : insertVariants[0] || null;
-  const insertUnitPrice = insertChosenProduct ? resolveUnitPrice(insertChosenProduct, insertChosenVariant) : 0;
+  const insertUnitPrice = insertChosenProduct
+    ? resolveUnitPrice(insertChosenProduct, insertChosenVariant, targetCountryCode, insertQuantity)
+    : 0;
+
+  /* ─── Dynamic Country Price Recalculation ─── */
+  const prevCountryRef = useRef(targetCountryCode);
+
+  useEffect(() => {
+    if (rows.length === 0 || bulkProducts.length === 0) {
+      prevCountryRef.current = targetCountryCode;
+      return;
+    }
+
+    const countryChanged = prevCountryRef.current !== targetCountryCode;
+    prevCountryRef.current = targetCountryCode;
+
+    setRows((prevRows) => {
+      let changed = false;
+      const updated = prevRows.map((r) => {
+        const prod = bulkProducts.find((p) => p.id === r.productId);
+        const variant = prod?.variants?.find((v) => v.id === r.variantId);
+        const newUnitPrice = resolveUnitPrice(prod, variant, targetCountryCode, r.quantity);
+        if (newUnitPrice !== r.unitPrice || r.currencyCode !== currencyCode || r.countryCode !== targetCountryCode) {
+          changed = true;
+          return {
+            ...r,
+            unitPrice: newUnitPrice,
+            currencyCode,
+            countryCode: targetCountryCode,
+          };
+        }
+        return r;
+      });
+
+      if (changed && countryChanged) {
+        toast.info(
+          "Prices Recalculated",
+          `Updated line items to ${targetCountryCode} pricing (${currencyCode}).`
+        );
+      }
+      return changed ? updated : prevRows;
+    });
+  }, [targetCountryCode, currencyCode, bulkProducts]);
 
   /* ─── URL pre-populate ─── */
   useEffect(() => {
@@ -109,18 +174,6 @@ export function BulkOrder() {
     }
   }, [requestedProductId, requestedVariantId, requestedQty, bulkProducts]);
 
-  /* ─── Helpers ─── */
-  function resolveUnitPrice(prod, variant) {
-    if (variant) {
-      const cp = variant.countryPrices?.find((p) => p.countryCode?.toUpperCase() === targetCountryCode);
-      if (cp && cp.unitPrice !== undefined && cp.unitPrice !== null) return Number(cp.unitPrice);
-      if (cp?.tiers?.[0]?.price) return Number(cp.tiers[0].price);
-    }
-    const cp = prod.countryPrices?.find((p) => p.countryCode?.toUpperCase() === targetCountryCode);
-    if (cp && cp.unitPrice !== undefined) return Number(cp.unitPrice);
-    return Number(prod.basePriceUSD || 0);
-  }
-
   const handleAddLine = (prod, variant = null, initialQuantity = 10, insertAtIndex = null) => {
     const variantId = variant?.id || null;
     const rowKey = `${prod.id}_${variantId || "default"}`;
@@ -129,12 +182,13 @@ export function BulkOrder() {
     if (existingIndex >= 0) {
       const newRows = [...rows];
       newRows[existingIndex].quantity += initialQuantity;
+      newRows[existingIndex].unitPrice = resolveUnitPrice(prod, variant, targetCountryCode, newRows[existingIndex].quantity);
       setRows(newRows);
       toast.info("Quantity Updated", `Increased qty for ${prod.name}.`);
       return;
     }
 
-    const unitPrice = resolveUnitPrice(prod, variant);
+    const unitPrice = resolveUnitPrice(prod, variant, targetCountryCode, initialQuantity);
     const weightLabel = variant?.name || (variant?.weight ? `${variant.weight}${variant.weightUnit || "kg"}` : "Standard");
 
     const newRow = {
@@ -189,9 +243,21 @@ export function BulkOrder() {
   };
 
   const handleQuantityChange = (index, qty) => {
-    const newRows = [...rows];
-    newRows[index].quantity = Math.max(1, parseInt(qty, 10) || 1);
-    setRows(newRows);
+    const parsedQty = Math.max(1, parseInt(qty, 10) || 1);
+    setRows((prevRows) => {
+      const newRows = [...prevRows];
+      const r = newRows[index];
+      if (!r) return prevRows;
+      const prod = bulkProducts.find((p) => p.id === r.productId);
+      const variant = prod?.variants?.find((v) => v.id === r.variantId);
+      const newUnitPrice = resolveUnitPrice(prod, variant, targetCountryCode, parsedQty);
+      newRows[index] = {
+        ...r,
+        quantity: parsedQty,
+        unitPrice: newUnitPrice,
+      };
+      return newRows;
+    });
   };
 
   const handleRemoveRow = (index) => setRows(rows.filter((_, i) => i !== index));
@@ -268,6 +334,7 @@ export function BulkOrder() {
           </div>
 
           <div className="flex items-center gap-2">
+            <B2BCurrencyPicker />
             <button
               type="button"
               onClick={() => refetch()}
@@ -343,6 +410,11 @@ export function BulkOrder() {
                 {/* Data Rows */}
                 {rows.map((row, idx) => {
                   const lineTotal = row.unitPrice * row.quantity;
+                  const parentProd = bulkProducts.find((p) => p.id === row.productId);
+                  const variant = parentProd?.variants?.find((v) => v.id === row.variantId);
+                  const prices = variant ? variant.countryPrices : parentProd?.countryPrices;
+                  const cp = prices?.find((p) => p.countryCode?.toUpperCase() === targetCountryCode);
+                  const isUnavailable = cp?.isAvailable === false;
 
                   return (
                     <React.Fragment key={row.rowKey || idx}>
@@ -358,7 +430,15 @@ export function BulkOrder() {
                             />
                             <div className="min-w-0">
                               <div className="text-sm font-semibold text-slate-900 truncate leading-snug">{row.name}</div>
-                              <div className="text-[10px] text-slate-400 mt-0.5">Wholesale Line Item</div>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-[10px] text-slate-400">Wholesale Line Item</span>
+                                {isUnavailable && (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                                    <AlertTriangle className="w-2.5 h-2.5 text-amber-500" />
+                                    Unavailable in {targetCountryCode}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </td>
