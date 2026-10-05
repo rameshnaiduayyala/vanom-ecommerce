@@ -5,6 +5,28 @@ import { seedCategories } from "./seed-categories.js";
 const prisma = new PrismaClient();
 
 async function main() {
+  // Ensure schema compatibility for dynamic columns (e.g. weight, unitPrice, sortOrder) on remote databases
+  const columnMigrations = [
+    `ALTER TABLE "BulkProductVariant" ADD COLUMN IF NOT EXISTS "weight" DECIMAL(10, 3)`,
+    `ALTER TABLE "BulkProductVariant" ADD COLUMN IF NOT EXISTS "weightUnit" TEXT DEFAULT 'kg'`,
+    `ALTER TABLE "BulkProductVariant" ADD COLUMN IF NOT EXISTS "sortOrder" INTEGER NOT NULL DEFAULT 0`,
+    `ALTER TABLE "BulkProductCountryPrice" ADD COLUMN IF NOT EXISTS "unitPrice" DECIMAL(12, 2)`,
+    `ALTER TABLE "BulkVariantCountryPrice" ADD COLUMN IF NOT EXISTS "unitPrice" DECIMAL(12, 2) NOT NULL DEFAULT 0`,
+    `ALTER TABLE "BulkOrderItem" ADD COLUMN IF NOT EXISTS "description" TEXT`,
+    `ALTER TABLE "BulkOrderItem" ADD COLUMN IF NOT EXISTS "weight" DECIMAL(10, 3)`,
+    `ALTER TABLE "BulkOrderItem" ADD COLUMN IF NOT EXISTS "weightUnit" TEXT DEFAULT 'kg'`,
+    `ALTER TABLE "BulkOrderItem" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT`,
+    `ALTER TABLE "BulkOrderItem" ALTER COLUMN "appliedTier" DROP NOT NULL`,
+  ];
+
+  for (const sql of columnMigrations) {
+    try {
+      await prisma.$executeRawUnsafe(sql);
+    } catch {
+      // Ignore if table does not exist yet or already altered
+    }
+  }
+
   console.log("\n========================================================");
   console.log("🧹 1. RESETTING & PURGING ALL EXISTING APPLICATION DATA");
   console.log("========================================================");
