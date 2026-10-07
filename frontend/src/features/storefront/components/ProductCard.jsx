@@ -1,10 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   Heart,
   Share2,
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
   Star,
   Check,
@@ -72,17 +70,23 @@ export function ProductCard({
   }, [product, productImage]);
 
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
-  const handlePrevImage = (e) => {
+  // Auto-scroll images every 3 seconds when multiple images exist (pause on hover)
+  useEffect(() => {
+    if (galleryImages.length <= 1 || isHovered) return;
+
+    const interval = setInterval(() => {
+      setActiveImageIdx((prev) => (prev + 1) % galleryImages.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [galleryImages.length, isHovered]);
+
+  const handleDotClick = (e, index) => {
     e.preventDefault();
     e.stopPropagation();
-    setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : galleryImages.length - 1));
-  };
-
-  const handleNextImage = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setActiveImageIdx((prev) => (prev < galleryImages.length - 1 ? prev + 1 : 0));
+    setActiveImageIdx(index);
   };
 
   const handleShare = async (e) => {
@@ -114,6 +118,8 @@ export function ProductCard({
 
   return (
     <div
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className={`group relative bg-white flex flex-col rounded-2xl sm:rounded-3xl overflow-hidden w-full min-w-0
         border border-gray-100 hover:border-gray-200
         shadow-[0_2px_12px_rgba(0,0,0,0.04)] sm:shadow-[0_4px_20px_rgba(0,0,0,0.06)]
@@ -122,19 +128,31 @@ export function ProductCard({
     >
       {/* ── 1. Main Image Frame (Fixed Uncropped Container) ── */}
       <div className="relative w-full aspect-square bg-[#F7F6F4] overflow-hidden flex items-center justify-center">
-        {/* Main Image Slider with object-contain to never crop */}
+        {/* Main Image Horizontal Slide Track */}
         <Link
           to={productUrl}
           aria-label={product.name}
-          className="absolute inset-0 flex items-center justify-center p-3 sm:p-4"
+          className="absolute inset-0 overflow-hidden"
         >
-          {galleryImages[activeImageIdx] ? (
-            <img
-              src={galleryImages[activeImageIdx]}
-              alt={product.name}
-              loading="lazy"
-              className="w-full h-full object-contain transition-transform duration-500 ease-out group-hover:scale-105"
-            />
+          {galleryImages.length > 0 && galleryImages[0] ? (
+            <div
+              className="flex h-full w-full transition-transform duration-600 ease-in-out will-change-transform"
+              style={{ transform: `translateX(-${activeImageIdx * 100}%)` }}
+            >
+              {galleryImages.map((imgSrc, idx) => (
+                <div
+                  key={imgSrc || idx}
+                  className="w-full h-full flex-none flex items-center justify-center p-3 sm:p-4"
+                >
+                  <img
+                    src={imgSrc}
+                    alt={product.name}
+                    loading={idx === 0 ? "eager" : "lazy"}
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out drop-shadow-xs"
+                  />
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="w-full h-full flex items-center justify-center text-center p-2">
               <span className="font-bold text-xs text-gray-400">{product.name}</span>
@@ -182,28 +200,23 @@ export function ProductCard({
           </button>
         </div>
 
-        {/* Left Arrow Navigation */}
+        {/* Bottom Small Dots Carousel Indicator */}
         {galleryImages.length > 1 && (
-          <button
-            type="button"
-            onClick={handlePrevImage}
-            aria-label="Previous image"
-            className="absolute left-1.5 sm:left-2 top-1/2 -translate-y-1/2 z-20 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/80 hover:bg-white text-gray-700 hover:text-black flex items-center justify-center shadow-xs backdrop-blur-xs transition-all cursor-pointer opacity-85 hover:opacity-100"
-          >
-            <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          </button>
-        )}
-
-        {/* Right Arrow Navigation */}
-        {galleryImages.length > 1 && (
-          <button
-            type="button"
-            onClick={handleNextImage}
-            aria-label="Next image"
-            className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 z-20 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/80 hover:bg-white text-gray-700 hover:text-black flex items-center justify-center shadow-xs backdrop-blur-xs transition-all cursor-pointer opacity-85 hover:opacity-100"
-          >
-            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-          </button>
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/25 backdrop-blur-xs">
+            {galleryImages.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={(e) => handleDotClick(e, idx)}
+                aria-label={`Go to image ${idx + 1}`}
+                className={`transition-all duration-300 rounded-full cursor-pointer ${
+                  activeImageIdx === idx
+                    ? "w-4 h-1.5 bg-white shadow-xs"
+                    : "w-1.5 h-1.5 bg-white/50 hover:bg-white/80"
+                }`}
+              />
+            ))}
+          </div>
         )}
 
         {/* Bottom-Right: Image Counter Pill (e.g. 1/6) */}
