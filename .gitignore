@@ -1,6 +1,18 @@
 # Dependencies
 node_modules/
 */node_modules/
+vanom-mobile-app/node_modules/
+
+# Expo & Mobile builds
+.expo/
+*/.expo/
+vanom-mobile-app/.expo/
+vanom-mobile-app/android/
+vanom-mobile-app/ios/
+vanom-mobile-app/web-build/
+vanom-mobile-app/dist/
+.eas/
+credentials.json
 
 # Environment variables
 .env
@@ -38,4 +50,3 @@ prisma/*.db-journal
 # Temp / IDE cache
 .kilo/
 .vercel/
-
