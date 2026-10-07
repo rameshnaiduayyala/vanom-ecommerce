@@ -101,13 +101,13 @@ export function BasicInfoCard({ formData, setFormData, categories = [], brands =
         </div>
 
         <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-slate-700">Brand / Producer</label>
+          <label className="block text-xs font-bold text-slate-700">Brand / Producer <span className="text-slate-400 font-normal">(Optional)</span></label>
           <select
             value={formData.brand_id}
             onChange={(e) => setFormData({ ...formData, brand_id: e.target.value })}
             className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50/50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#358B5B] focus:bg-white cursor-pointer text-slate-800 font-medium"
           >
-            <option value="">Vanom Organics (Default)</option>
+            <option value="">No Brand / None</option>
             {brands.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}

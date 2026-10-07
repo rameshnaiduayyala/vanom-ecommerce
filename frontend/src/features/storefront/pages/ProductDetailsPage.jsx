@@ -84,7 +84,7 @@ export function ProductDetailsPage() {
     if (product?.brandName && typeof product.brandName === "string" && product.brandName.trim()) {
       return product.brandName.trim();
     }
-    return "Vanom Organics";
+    return null;
   }, [product]);
   const brand = brandName;
   const categoryName = typeof product?.category === "object" ? product.category?.name : product?.category || "General";
@@ -380,8 +380,12 @@ export function ProductDetailsPage() {
           <Link to="/" className="hover:text-gray-700 transition-colors">Home</Link>
           <ChevronRight className="w-3 h-3 text-gray-300" />
           <Link to="/products" className="hover:text-gray-700 transition-colors">{categoryName}</Link>
-          <ChevronRight className="w-3 h-3 text-gray-300" />
-          <span className="text-gray-400">{brand}</span>
+          {brand && (
+            <>
+              <ChevronRight className="w-3 h-3 text-gray-300" />
+              <span className="text-gray-400">{brand}</span>
+            </>
+          )}
           <ChevronRight className="w-3 h-3 text-gray-300" />
           <span className="font-semibold text-gray-700 truncate max-w-[180px] sm:max-w-xs">{title}</span>
         </nav>
@@ -403,9 +407,11 @@ export function ProductDetailsPage() {
             {/* Brand + Wishlist + Share row */}
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-black tracking-widest uppercase bg-[#003D2B] text-white shadow-sm">
-                  {brandName}
-                </span>
+                {brandName && (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-black tracking-widest uppercase bg-[#003D2B] text-white shadow-sm">
+                    {brandName}
+                  </span>
+                )}
                 {product?.isBestSeller && (
                   <span className="inline-flex items-center gap-1 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">
                     #1 Best Seller

@@ -78,8 +78,7 @@ export function CategoryIconStrip({
               <Link
                 key={cat.id || cat.slug || idx}
                 to={`${ROUTES.PRODUCTS}?category=${cat.id || cat.slug}`}
-                className={`group shrink-0 flex items-center gap-2.5 py-1.5 px-3 rounded-full transition-all duration-200 cursor-pointer border hover:bg-[#F1F5D6] hover:border-[#2E6B4A]/50 text-gray-700 hover:text-[#1E4D34] hover:shadow-xs hover:-translate-y-0.5"
-                  }`}
+                className="group shrink-0 flex items-center gap-2.5 py-1.5 px-3 rounded-full transition-all duration-200 cursor-pointer border hover:bg-[#F1F5D6] hover:border-[#2E6B4A]/50 text-gray-700 hover:text-[#1E4D34] hover:shadow-xs hover:-translate-y-0.5"
               >
                 {/* Clean Micro Image */}
                 <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center border border-gray-100">
