@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Vanom",
+    "slug": "vanom-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "vanom",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "android": {
+      "package": "com.vanom.mobile"
+    },
+    "ios": {
+      "bundleIdentifier": "com.vanom.mobile"
+    }
+  }
+}
