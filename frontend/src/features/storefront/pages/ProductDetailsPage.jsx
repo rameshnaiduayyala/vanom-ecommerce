@@ -22,6 +22,7 @@ import {
   Star,
   ChevronRight,
   Heart,
+  Share2,
   ShoppingCart,
   Zap,
   Truck,
@@ -42,6 +43,7 @@ export function ProductDetailsPage() {
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [wishlisted, setWishlisted] = useState(false);
+  const [copiedShare, setCopiedShare] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState(null);
 
@@ -82,7 +84,7 @@ export function ProductDetailsPage() {
     if (product?.brandName && typeof product.brandName === "string" && product.brandName.trim()) {
       return product.brandName.trim();
     }
-    return "Vanom Organics";
+    return null;
   }, [product]);
   const brand = brandName;
   const categoryName = typeof product?.category === "object" ? product.category?.name : product?.category || "General";
@@ -303,6 +305,41 @@ export function ProductDetailsPage() {
     });
   };
 
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          text: subtitle || `Check out ${title} on Vanom Organics`,
+          url: shareUrl,
+        });
+        return;
+      } catch {
+        // User canceled share dialogue
+      }
+    }
+
+    if (navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopiedShare(true);
+        addToast({
+          title: "Link Copied!",
+          message: "Product link copied to your clipboard.",
+          type: "success",
+        });
+        setTimeout(() => setCopiedShare(false), 2000);
+      } catch {
+        addToast({
+          title: "Unable to Copy",
+          message: "Please copy the URL from your browser address bar.",
+          type: "warning",
+        });
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 bg-[#FBFDFB]">
@@ -343,8 +380,12 @@ export function ProductDetailsPage() {
           <Link to="/" className="hover:text-gray-700 transition-colors">Home</Link>
           <ChevronRight className="w-3 h-3 text-gray-300" />
           <Link to="/products" className="hover:text-gray-700 transition-colors">{categoryName}</Link>
-          <ChevronRight className="w-3 h-3 text-gray-300" />
-          <span className="text-gray-400">{brand}</span>
+          {brand && (
+            <>
+              <ChevronRight className="w-3 h-3 text-gray-300" />
+              <span className="text-gray-400">{brand}</span>
+            </>
+          )}
           <ChevronRight className="w-3 h-3 text-gray-300" />
           <span className="font-semibold text-gray-700 truncate max-w-[180px] sm:max-w-xs">{title}</span>
         </nav>
@@ -363,12 +404,14 @@ export function ProductDetailsPage() {
           {/* ── RIGHT: Product Info Panel ── */}
           <div className="lg:col-span-6 lg:sticky lg:top-6 space-y-5">
 
-            {/* Brand + Wishlist row */}
+            {/* Brand + Wishlist + Share row */}
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-black tracking-widest uppercase bg-[#003D2B] text-white shadow-sm">
-                  {brandName}
-                </span>
+                {brandName && (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-black tracking-widest uppercase bg-[#003D2B] text-white shadow-sm">
+                    {brandName}
+                  </span>
+                )}
                 {product?.isBestSeller && (
                   <span className="inline-flex items-center gap-1 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md shadow-sm">
                     #1 Best Seller
@@ -385,18 +428,37 @@ export function ProductDetailsPage() {
                   </span>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={handleWishlist}
-                className={`shrink-0 w-9 h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
-                  wishlisted
-                    ? "bg-rose-50 border-rose-300 text-rose-500"
-                    : "bg-white border-gray-200 hover:border-rose-300 text-gray-400 hover:text-rose-500"
-                }`}
-                title="Save to wishlist"
-              >
-                <Heart className={`w-4 h-4 ${wishlisted ? "fill-rose-500" : ""}`} />
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Share Button */}
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-2xs ${
+                    copiedShare
+                      ? "bg-emerald-50 border-emerald-300 text-emerald-600"
+                      : "bg-white border-gray-200 hover:border-emerald-300 text-gray-500 hover:text-emerald-700 hover:bg-emerald-50/40"
+                  }`}
+                  title="Share product"
+                  aria-label="Share product"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
+
+                {/* Wishlist Button */}
+                <button
+                  type="button"
+                  onClick={handleWishlist}
+                  className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-2xs ${
+                    wishlisted
+                      ? "bg-rose-50 border-rose-300 text-rose-500"
+                      : "bg-white border-gray-200 hover:border-rose-300 text-gray-400 hover:text-rose-500 hover:bg-rose-50/40"
+                  }`}
+                  title="Save to wishlist"
+                  aria-label="Save to wishlist"
+                >
+                  <Heart className={`w-4 h-4 ${wishlisted ? "fill-rose-500" : ""}`} />
+                </button>
+              </div>
             </div>
 
             {/* Title */}

@@ -70,13 +70,13 @@ export function HomePage() {
   // API shape: { success, data: [], meta: {} }
   const normalizeProducts = (raw) =>
     Array.isArray(raw?.data) ? raw.data
-    : Array.isArray(raw?.items) ? raw.items
-    : Array.isArray(raw) ? raw
-    : [];
+      : Array.isArray(raw?.items) ? raw.items
+        : Array.isArray(raw) ? raw
+          : [];
 
   const featuredProducts = normalizeProducts(featuredData);
-  const bestSellers    = normalizeProducts(bestSellersData);
-  const categoryList   = useMemo(() => {
+  const bestSellers = normalizeProducts(bestSellersData);
+  const categoryList = useMemo(() => {
     const raw = Array.isArray(categories) ? categories : (categories?.items || []);
     const sortList = (items) => {
       if (!Array.isArray(items)) return [];
