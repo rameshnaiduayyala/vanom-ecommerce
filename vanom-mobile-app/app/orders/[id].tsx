@@ -1,11 +1,11 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React from "react";
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
-} from "react-native";
+  } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { colors } from "../../src/theme/colors";

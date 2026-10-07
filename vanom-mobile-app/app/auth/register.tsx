@@ -1,10 +1,10 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from "react";
 import {
   View,
   Text,
   TextInput,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
 } from "react-native";
@@ -74,7 +74,7 @@ export default function RegisterScreen() {
           <Text style={styles.label}>Password (minimum 8 characters)</Text>
           <TextInput
             style={styles.input}
-            placeholder="••••••••"
+            placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"
             secureTextEntry
             value={password}
             onChangeText={setPassword}

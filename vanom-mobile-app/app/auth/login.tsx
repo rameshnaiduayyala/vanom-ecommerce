@@ -1,10 +1,10 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from "react";
 import {
   View,
   Text,
   TextInput,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -55,7 +55,7 @@ export default function LoginScreen() {
           <Text style={styles.label}>Password</Text>
           <TextInput
             style={styles.input}
-            placeholder="••••••••"
+            placeholder="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"
             secureTextEntry
             value={password}
             onChangeText={setPassword}

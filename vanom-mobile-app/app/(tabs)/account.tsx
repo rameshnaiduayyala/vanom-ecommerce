@@ -1,3 +1,4 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React from "react";
 import {
   View,
@@ -5,8 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
-} from "react-native";
+  } from "react-native";
 import { useRouter } from "expo-router";
 import { colors } from "../../src/theme/colors";
 import { radius } from "../../src/theme/radius";
@@ -69,7 +69,7 @@ export default function AccountScreen() {
           >
             <Text style={styles.menuIcon}>??</Text>
             <Text style={styles.menuTitle}>My Orders</Text>
-            <Text style={styles.menuChevron}>›</Text>
+            <Text style={styles.menuChevron}>ï¿½</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -78,13 +78,13 @@ export default function AccountScreen() {
           >
             <Text style={styles.menuIcon}>??</Text>
             <Text style={styles.menuTitle}>Wishlist ({wishlistCount})</Text>
-            <Text style={styles.menuChevron}>›</Text>
+            <Text style={styles.menuChevron}>ï¿½</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
             <Text style={styles.menuIcon}>??</Text>
             <Text style={styles.menuTitle}>Saved Delivery Addresses</Text>
-            <Text style={styles.menuChevron}>›</Text>
+            <Text style={styles.menuChevron}>ï¿½</Text>
           </TouchableOpacity>
         </View>
 
@@ -93,19 +93,19 @@ export default function AccountScreen() {
           <TouchableOpacity style={styles.menuItem}>
             <Text style={styles.menuIcon}>??</Text>
             <Text style={styles.menuTitle}>Customer Support &amp; Help Desk</Text>
-            <Text style={styles.menuChevron}>›</Text>
+            <Text style={styles.menuChevron}>ï¿½</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
             <Text style={styles.menuIcon}>??</Text>
             <Text style={styles.menuTitle}>Cancellation &amp; Refund Policy</Text>
-            <Text style={styles.menuChevron}>›</Text>
+            <Text style={styles.menuChevron}>ï¿½</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
             <Text style={styles.menuIcon}>??</Text>
             <Text style={styles.menuTitle}>Privacy &amp; Security</Text>
-            <Text style={styles.menuChevron}>›</Text>
+            <Text style={styles.menuChevron}>ï¿½</Text>
           </TouchableOpacity>
         </View>
 

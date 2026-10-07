@@ -1,3 +1,4 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from "react";
 import {
   View,
@@ -8,8 +9,7 @@ import {
   FlatList,
   Image,
   RefreshControl,
-  SafeAreaView,
-} from "react-native";
+  } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { colors } from "../../src/theme/colors";

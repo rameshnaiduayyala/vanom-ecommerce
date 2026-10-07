@@ -1,10 +1,10 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from "react";
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
   TextInput,
 } from "react-native";
 import { useRouter } from "expo-router";

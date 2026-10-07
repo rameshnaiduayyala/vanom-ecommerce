@@ -1,3 +1,4 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState } from "react";
 import {
   View,
@@ -6,7 +7,6 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Dimensions,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
