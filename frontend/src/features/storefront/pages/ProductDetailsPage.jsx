@@ -315,7 +315,7 @@ export function ProductDetailsPage() {
           url: shareUrl,
         });
         return;
-      } catch {
+      } catch (error) {
         // User canceled share dialogue
       }
     }
@@ -433,11 +433,10 @@ export function ProductDetailsPage() {
                 <button
                   type="button"
                   onClick={handleShare}
-                  className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-2xs ${
-                    copiedShare
+                  className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-2xs ${copiedShare
                       ? "bg-emerald-50 border-emerald-300 text-emerald-600"
                       : "bg-white border-gray-200 hover:border-emerald-300 text-gray-500 hover:text-emerald-700 hover:bg-emerald-50/40"
-                  }`}
+                    }`}
                   title="Share product"
                   aria-label="Share product"
                 >
@@ -448,11 +447,10 @@ export function ProductDetailsPage() {
                 <button
                   type="button"
                   onClick={handleWishlist}
-                  className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-2xs ${
-                    wishlisted
+                  className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all cursor-pointer shadow-2xs ${wishlisted
                       ? "bg-rose-50 border-rose-300 text-rose-500"
                       : "bg-white border-gray-200 hover:border-rose-300 text-gray-400 hover:text-rose-500 hover:bg-rose-50/40"
-                  }`}
+                    }`}
                   title="Save to wishlist"
                   aria-label="Save to wishlist"
                 >
@@ -523,11 +521,10 @@ export function ProductDetailsPage() {
                 type="button"
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
-                className={`py-3.5 px-4 rounded-2xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] ${
-                  isOutOfStock
+                className={`py-3.5 px-4 rounded-2xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] ${isOutOfStock
                     ? "border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed"
                     : "border-[#006B3C] text-[#006B3C] hover:bg-[#006B3C]/8 hover:shadow-sm"
-                }`}
+                  }`}
               >
                 {isOutOfStock ? (
                   <span>Sold Out</span>
@@ -548,11 +545,10 @@ export function ProductDetailsPage() {
                 type="button"
                 onClick={handleAddToCart}
                 disabled={isOutOfStock}
-                className={`py-3.5 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-sm ${
-                  isOutOfStock
+                className={`py-3.5 px-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-sm ${isOutOfStock
                     ? "bg-gray-200 text-gray-400 cursor-not-allowed shadow-none"
                     : "bg-[#006B3C] hover:bg-[#005230] text-white cursor-pointer hover:shadow-md hover:shadow-emerald-900/20"
-                }`}
+                  }`}
               >
                 <Zap className="w-4 h-4 fill-white" />
                 <span>{isOutOfStock ? "Out of Stock" : "Buy Now"}</span>

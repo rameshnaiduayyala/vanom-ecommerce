@@ -134,11 +134,10 @@ export function ProductGallery({
                 key={idx}
                 type="button"
                 onClick={() => onSelectImage(idx)}
-                className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl border p-1 bg-white flex items-center justify-center overflow-hidden transition-all cursor-pointer shadow-2xs ${
-                  selectedImage === idx
-                    ? "border-[#003D2B] ring-2 ring-[#003D2B]/20 scale-102"
-                    : "border-gray-200 hover:border-gray-400 opacity-75 hover:opacity-100"
-                }`}
+                className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl border p-1 bg-white flex items-center justify-center overflow-hidden transition-all cursor-pointer shadow-2xs ${selectedImage === idx
+                  ? "border-[#003D2B] ring-2 ring-[#003D2B]/20 scale-102"
+                  : "border-gray-200 hover:border-gray-400 opacity-75 hover:opacity-100"
+                  }`}
                 title={`Thumbnail ${idx + 1}`}
               >
                 <img
@@ -152,7 +151,7 @@ export function ProductGallery({
         )}
 
         {/* Central Main Image Container */}
-        <div className="flex-1 bg-white rounded-3xl border border-gray-200/80 relative min-h-[380px] sm:min-h-[460px] shadow-xs group overflow-hidden">
+        <div className="flex-1 bg-white rounded-xl border border-gray-200/80 relative min-h-[380px] sm:min-h-[460px] shadow-xs group overflow-hidden">
           {currentImage ? (
             <>
               <div
@@ -278,13 +277,12 @@ export function ProductGallery({
             <div
               onDoubleClick={toggleDoubleZoom}
               onMouseDown={handleMouseDown}
-              className={`relative max-w-full max-h-full flex items-center justify-center transition-transform ${
-                zoomLevel > 1
-                  ? isDragging
-                    ? "cursor-grabbing"
-                    : "cursor-grab"
-                  : "cursor-zoom-in"
-              }`}
+              className={`relative max-w-full max-h-full flex items-center justify-center transition-transform ${zoomLevel > 1
+                ? isDragging
+                  ? "cursor-grabbing"
+                  : "cursor-grab"
+                : "cursor-zoom-in"
+                }`}
               style={{
                 transform: `scale(${zoomLevel}) translate(${panPosition.x / zoomLevel}px, ${panPosition.y / zoomLevel}px)`,
                 transition: isDragging ? "none" : "transform 0.2s ease-out",
@@ -323,11 +321,10 @@ export function ProductGallery({
                     setZoomLevel(1);
                     setPanPosition({ x: 0, y: 0 });
                   }}
-                  className={`w-14 h-14 rounded-xl border-2 p-1 bg-white/10 flex items-center justify-center overflow-hidden transition-all cursor-pointer shrink-0 ${
-                    viewerIndex === idx
-                      ? "border-emerald-400 ring-2 ring-emerald-400/40 scale-105 opacity-100"
-                      : "border-white/20 hover:border-white/50 opacity-60 hover:opacity-90"
-                  }`}
+                  className={`w-14 h-14 rounded-xl border-2 p-1 bg-white/10 flex items-center justify-center overflow-hidden transition-all cursor-pointer shrink-0 ${viewerIndex === idx
+                    ? "border-emerald-400 ring-2 ring-emerald-400/40 scale-105 opacity-100"
+                    : "border-white/20 hover:border-white/50 opacity-60 hover:opacity-90"
+                    }`}
                   title={`View image ${idx + 1}`}
                 >
                   <img
