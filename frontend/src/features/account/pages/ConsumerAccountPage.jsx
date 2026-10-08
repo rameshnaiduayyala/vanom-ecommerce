@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal.jsx";
 import { Input, Select } from "@/components/ui/Input.jsx";
-import { US_STATES, CA_PROVINCES, IN_STATES } from "@/constants/countries.js";
+import { US_STATES, CA_PROVINCES } from "@/constants/countries.js";
 
 export function ConsumerAccountPage() {
   const { user, logout } = useAuthStore();
@@ -751,7 +751,6 @@ export function ConsumerAccountPage() {
                   options={[
                     { label: "United States (US)", value: "US" },
                     { label: "Canada (CA)", value: "CA" },
-                    { label: "India (IN)", value: "IN" },
                   ]}
                 />
               </div>
@@ -761,14 +760,8 @@ export function ConsumerAccountPage() {
               <div>
                 {(() => {
                   const targetCountry = addressForm.countryCode || "US";
-                  const regions =
-                    targetCountry === "CA"
-                      ? CA_PROVINCES
-                      : targetCountry === "IN"
-                      ? IN_STATES
-                      : US_STATES;
-                  const regionLabel =
-                    targetCountry === "CA" ? "Province" : targetCountry === "IN" ? "State" : "State";
+                  const regions = targetCountry === "CA" ? CA_PROVINCES : US_STATES;
+                  const regionLabel = targetCountry === "CA" ? "Province" : "State";
 
                   const rawState = (addressForm.state || "").trim();
                   const matchedRegion = regions.find(
@@ -803,22 +796,10 @@ export function ConsumerAccountPage() {
 
               <div>
                 <Input
-                  label={
-                    addressForm.countryCode === "CA"
-                      ? "Postal Code"
-                      : addressForm.countryCode === "IN"
-                      ? "PIN Code"
-                      : "ZIP Code"
-                  }
+                  label={addressForm.countryCode === "CA" ? "Postal Code" : "ZIP Code"}
                   value={addressForm.postalCode}
                   onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })}
-                  placeholder={
-                    addressForm.countryCode === "CA"
-                      ? "e.g. M5V 2T6"
-                      : addressForm.countryCode === "IN"
-                      ? "e.g. 400001"
-                      : "e.g. 20500"
-                  }
+                  placeholder={addressForm.countryCode === "CA" ? "e.g. M5V 2T6" : "e.g. 20500"}
                   required
                 />
               </div>

@@ -1,7 +1,7 @@
 import React from "react";
 import { Truck, Info, MapPin, Plus, Check } from "lucide-react";
 import { Input } from "../../../components/ui/Input.jsx";
-import { US_STATES, CA_PROVINCES, IN_STATES } from "../../../constants/countries.js";
+import { US_STATES, CA_PROVINCES } from "../../../constants/countries.js";
 
 export function CheckoutAddressForm({
   formData,
@@ -16,11 +16,11 @@ export function CheckoutAddressForm({
   onToggleSaveAddress = null,
   isAuthenticated = false,
 }) {
-  const regions = country.code === "CA" ? CA_PROVINCES : country.code === "IN" ? IN_STATES : US_STATES;
+  const regions = country.code === "CA" ? CA_PROVINCES : US_STATES;
   const regionLabel = country.code === "CA" ? "Province" : "State";
-  const postalLabel = country.code === "CA" ? "Postal Code" : country.code === "IN" ? "PIN Code" : "ZIP Code";
-  const postalPlaceholder = country.code === "CA" ? "M5V 2T6" : country.code === "IN" ? "400001" : "e.g. 94117";
-  const cityPlaceholder = country.code === "CA" ? "e.g. Toronto" : country.code === "IN" ? "e.g. Mumbai" : "e.g. San Francisco";
+  const postalLabel = country.code === "CA" ? "Postal Code" : "ZIP Code";
+  const postalPlaceholder = country.code === "CA" ? "M5V 2T6" : "e.g. 94117";
+  const cityPlaceholder = country.code === "CA" ? "e.g. Toronto" : "e.g. San Francisco";
 
   const isAddressComplete = !!(formData.addressLine1?.trim() && formData.city?.trim() && formData.postalCode?.trim() && formData.state?.trim());
 
