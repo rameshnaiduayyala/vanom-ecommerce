@@ -1,5 +1,5 @@
 import React from "react";
-import { Truck, Info } from "lucide-react";
+import { Truck, Info, MapPin, Plus, Check } from "lucide-react";
 import { Input } from "../../../components/ui/Input.jsx";
 import { US_STATES, CA_PROVINCES, IN_STATES } from "../../../constants/countries.js";
 
@@ -8,7 +8,13 @@ export function CheckoutAddressForm({
   setField,
   country,
   addressValidation = null,
-  onApplyNormalizedAddress = null
+  onApplyNormalizedAddress = null,
+  savedAddresses = [],
+  selectedAddressId = "new",
+  onSelectSavedAddress = null,
+  saveAddressToProfile = false,
+  onToggleSaveAddress = null,
+  isAuthenticated = false,
 }) {
   const regions = country.code === "CA" ? CA_PROVINCES : country.code === "IN" ? IN_STATES : US_STATES;
   const regionLabel = country.code === "CA" ? "Province" : "State";
@@ -38,6 +44,78 @@ export function CheckoutAddressForm({
           <p className="text-[11px] text-gray-500">{country.flag} Shipping to {country.name}</p>
         </div>
       </div>
+
+      {/* Saved Addresses Quick Selection (for authenticated customers) */}
+      {isAuthenticated && savedAddresses && savedAddresses.length > 0 && onSelectSavedAddress && (
+        <div className="space-y-2.5 pb-3 border-b border-border">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Choose Delivery Destination</span>
+            </span>
+            <span className="text-[11px] text-slate-500">
+              {savedAddresses.length} saved {savedAddresses.length === 1 ? "address" : "addresses"}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {savedAddresses.map((addr) => {
+              const isSelected = selectedAddressId === addr.id;
+              return (
+                <div
+                  key={addr.id}
+                  onClick={() => onSelectSavedAddress(addr.id)}
+                  className={`p-3.5 rounded-xl border text-xs cursor-pointer transition-all flex items-start justify-between gap-2 ${
+                    isSelected
+                      ? "border-emerald-600 bg-emerald-50/40 ring-1 ring-emerald-500 shadow-2xs"
+                      : "border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-300"
+                  }`}
+                >
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                      <span className="text-[10px] uppercase font-bold text-slate-700 px-1.5 py-0.2 bg-white rounded border border-slate-200">
+                        {addr.name || "Home"}
+                      </span>
+                      {addr.isDefault && (
+                        <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded">
+                          Default
+                        </span>
+                      )}
+                    </div>
+                    <p className="font-semibold text-slate-800 truncate">{addr.fullName}</p>
+                    <p className="text-slate-600 truncate text-[11px]">{addr.addressLine1}</p>
+                    <p className="text-slate-500 text-[11px]">
+                      {[addr.city, addr.state].filter(Boolean).join(", ")} {addr.postalCode}
+                    </p>
+                  </div>
+                  <div
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                      isSelected
+                        ? "border-emerald-700 bg-emerald-700 text-white"
+                        : "border-slate-300 bg-white"
+                    }`}
+                  >
+                    {isSelected && <Check className="w-2.5 h-2.5" />}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Option to ship to a different address */}
+            <div
+              onClick={() => onSelectSavedAddress("new")}
+              className={`p-3.5 rounded-xl border border-dashed text-xs cursor-pointer transition-all flex items-center justify-center gap-2 ${
+                selectedAddressId === "new"
+                  ? "border-emerald-600 bg-emerald-50/30 text-emerald-900 font-bold shadow-2xs"
+                  : "border-slate-300 text-slate-600 hover:border-slate-400 hover:bg-slate-50"
+              }`}
+            >
+              <Plus className="w-4 h-4 text-emerald-700" />
+              <span>+ Ship to Different Address</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Suggested USPS / Postal Standardization Banner */}
       {hasSuggestedCorrection && onApplyNormalizedAddress && (
@@ -172,6 +250,21 @@ export function CheckoutAddressForm({
           required
         />
       </div>
+
+      {/* Option to save new address to account for future orders */}
+      {isAuthenticated && selectedAddressId === "new" && onToggleSaveAddress && (
+        <div className="pt-2 border-t border-slate-100 flex items-center">
+          <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700 select-none">
+            <input
+              type="checkbox"
+              checked={saveAddressToProfile}
+              onChange={(e) => onToggleSaveAddress(e.target.checked)}
+              className="accent-emerald-700 w-4 h-4 rounded cursor-pointer"
+            />
+            <span>Save this address to my account for future orders</span>
+          </label>
+        </div>
+      )}
     </div>
   );
 }

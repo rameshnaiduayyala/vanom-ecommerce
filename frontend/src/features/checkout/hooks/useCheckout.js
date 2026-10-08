@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import confetti from "canvas-confetti";
 import { useCartStore } from "../../../stores/cart.store.js";
 import { useCountryStore } from "../../../stores/country.store.js";
@@ -41,6 +42,77 @@ export function useCheckout() {
   const [loading, setLoading]             = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [formData, setFormData]           = useState(() => getDefaultForm(user, country.code));
+  // Saved Addresses for Authenticated Customer
+  const { data: savedAddressesData = [] } = useQuery({
+    queryKey: ["checkout-saved-addresses"],
+    queryFn: async () => {
+      if (!isAuthenticated) return [];
+      try {
+        const res = await Api.user.getAddresses();
+        if (Array.isArray(res)) return res;
+        return res?.data || res?.items || [];
+      } catch {
+        return [];
+      }
+    },
+    enabled: Boolean(isAuthenticated),
+  });
+  const savedAddresses = Array.isArray(savedAddressesData) ? savedAddressesData : [];
+
+  const [selectedAddressId, setSelectedAddressId] = useState("new");
+  const [saveAddressToProfile, setSaveAddressToProfile] = useState(false);
+
+  // Auto-prefill default address when saved addresses load
+  useEffect(() => {
+    if (savedAddresses.length > 0 && selectedAddressId === "new") {
+      const defaultAddr = savedAddresses.find((a) => a.isDefault) || savedAddresses[0];
+      if (defaultAddr && !formData.addressLine1) {
+        setSelectedAddressId(defaultAddr.id);
+        setFormData((prev) => ({
+          ...prev,
+          fullName: defaultAddr.fullName || prev.fullName,
+          phone: defaultAddr.phone || prev.phone,
+          addressLine1: defaultAddr.addressLine1 || "",
+          addressLine2: defaultAddr.addressLine2 || "",
+          city: defaultAddr.city || "",
+          state: defaultAddr.state || "",
+          postalCode: defaultAddr.postalCode || "",
+        }));
+      }
+    }
+  }, [savedAddresses]);
+
+  const selectSavedAddress = (id) => {
+    setSelectedAddressId(id);
+    if (id === "new") {
+      setFormData((prev) => ({
+        ...prev,
+        addressLine1: "",
+        addressLine2: "",
+        city: "",
+        state: "",
+        postalCode: "",
+      }));
+      setAddressValidation(null);
+      setShippingRates([]);
+      setSelectedRate(null);
+    } else {
+      const target = savedAddresses.find((a) => a.id === id);
+      if (target) {
+        setFormData((prev) => ({
+          ...prev,
+          fullName: target.fullName || prev.fullName,
+          phone: target.phone || prev.phone,
+          addressLine1: target.addressLine1 || "",
+          addressLine2: target.addressLine2 || "",
+          city: target.city || "",
+          state: target.state || "",
+          postalCode: target.postalCode || "",
+        }));
+      }
+    }
+  };
+
   const [taxData, setTaxData]             = useState(null);
   const [isCalculatingTax, setIsCalc]     = useState(false);
 
@@ -441,6 +513,26 @@ export function useCheckout() {
         throw new Error("Unable to create checkout order session.");
       }
 
+      // Save new address to profile if customer requested
+      if (saveAddressToProfile && selectedAddressId === "new" && isAuthenticated) {
+        try {
+          await Api.user.addAddress({
+            name: "Home",
+            fullName: fd.fullName,
+            phone: fd.phone,
+            addressLine1: fd.addressLine1,
+            addressLine2: fd.addressLine2 || null,
+            city: fd.city,
+            state: fd.state || null,
+            postalCode: fd.postalCode,
+            countryCode: country.code || "US",
+            isDefault: false
+          });
+        } catch (saveErr) {
+          console.warn("Could not save address to customer profile:", saveErr.message);
+        }
+      }
+
       const displayOrderNumber = order?.orderNumber || `ORD-${order.id.slice(0, 8).toUpperCase()}`;
       const clientSecret = checkoutRes?.clientSecret || order?.clientSecret;
       const publishableKey = checkoutRes?.publishableKey || order?.publishableKey;
@@ -627,6 +719,9 @@ export function useCheckout() {
     subtotal, taxAmount, shipping, grandTotal,
     // country
     country, isAuthenticated,
+    // Saved addresses & different destination management
+    savedAddresses, selectedAddressId, selectSavedAddress,
+    saveAddressToProfile, setSaveAddressToProfile,
     // actions
     handleSubmit, handleAuthSuccess,
     // cart

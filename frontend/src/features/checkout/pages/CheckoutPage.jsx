@@ -50,6 +50,12 @@ export function CheckoutPage() {
             country={checkout.country}
             addressValidation={checkout.addressValidation}
             onApplyNormalizedAddress={checkout.applyNormalizedAddress}
+            savedAddresses={checkout.savedAddresses}
+            selectedAddressId={checkout.selectedAddressId}
+            onSelectSavedAddress={checkout.selectSavedAddress}
+            saveAddressToProfile={checkout.saveAddressToProfile}
+            onToggleSaveAddress={checkout.setSaveAddressToProfile}
+            isAuthenticated={checkout.isAuthenticated}
           />
 
           {/* Shippo Live Carrier Shipping Selection */}
