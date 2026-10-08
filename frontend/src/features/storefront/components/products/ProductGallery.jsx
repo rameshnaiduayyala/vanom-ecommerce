@@ -201,8 +201,8 @@ export function ProductGallery({
                 type="button"
                 onClick={() => onSelectImage(idx)}
                 className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl border p-1 bg-white flex items-center justify-center overflow-hidden transition-all cursor-pointer shadow-2xs ${selectedImage === idx
-                    ? "border-[#003D2B] ring-2 ring-[#003D2B]/30 scale-102"
-                    : "border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100"
+                  ? "border-[#003D2B] ring-2 ring-[#003D2B]/30 scale-102"
+                  : "border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100"
                   }`}
                 title={`Thumbnail ${idx + 1}`}
               >
@@ -218,7 +218,7 @@ export function ProductGallery({
 
         {/* Central Main Image Container with Amazon-style touch/drag swipe and pagination dots */}
         <div
-          className="flex-1 bg-white rounded-2xl sm:rounded-3xl border border-gray-200/90 relative min-h-[350px] sm:min-h-[460px] md:min-h-[500px] shadow-sm group overflow-hidden touch-pan-y cursor-grab active:cursor-grabbing"
+          className="flex-1 bg-white rounded-3xl sm:rounded-2xl border border-gray-200/90 relative aspect-square sm:aspect-[4/3] md:aspect-square w-full max-h-[520px] shadow-sm group overflow-hidden touch-pan-y cursor-grab active:cursor-grabbing"
           onTouchStart={handleMainTouchStart}
           onTouchEnd={handleMainTouchEnd}
           onMouseDown={handleMainMouseDown}
@@ -226,7 +226,7 @@ export function ProductGallery({
           onMouseUp={handleMainMouseUp}
         >
           {gallery.length > 0 ? (
-            <div className="relative w-full h-full min-h-[350px] sm:min-h-[460px] md:min-h-[500px] overflow-hidden">
+            <div className="relative w-full h-full overflow-hidden">
               {/* Sliding Image Track for smooth Amazon-like manual scroll experience */}
               <div
                 className="flex h-full w-full transition-transform duration-300 ease-out will-change-transform"
@@ -236,13 +236,13 @@ export function ProductGallery({
                   <div
                     key={idx}
                     onClick={handleMainImageClick}
-                    className="w-full h-full min-h-[350px] sm:min-h-[460px] md:min-h-[500px] flex-none flex items-center justify-center p-6 sm:p-10 cursor-zoom-in"
+                    className="w-full h-full flex-none flex items-center justify-center cursor-zoom-in p-1 sm:p-2"
                     title="Click to enlarge"
                   >
                     <img
                       src={img}
                       alt={`${title} - view ${idx + 1}`}
-                      className="max-h-[340px] sm:max-h-[440px] md:max-h-[480px] w-full object-contain drop-shadow-md select-none pointer-events-none transition-transform duration-300 group-hover:scale-[1.02]"
+                      className="w-full h-full object-contain select-none pointer-events-none transition-transform duration-300 group-hover:scale-[1.02]"
                       loading={idx === 0 ? "eager" : "lazy"}
                       draggable={false}
                     />
@@ -263,8 +263,8 @@ export function ProductGallery({
                       }}
                       aria-label={`Go to image ${idx + 1}`}
                       className={`rounded-full transition-all duration-300 cursor-pointer ${selectedImage === idx
-                          ? "w-5 h-1.5 bg-white shadow-xs"
-                          : "w-1.5 h-1.5 bg-white/50 hover:bg-white/80"
+                        ? "w-5 h-1.5 bg-white shadow-xs"
+                        : "w-1.5 h-1.5 bg-white/50 hover:bg-white/80"
                         }`}
                     />
                   ))}
@@ -385,13 +385,12 @@ export function ProductGallery({
             <div
               onDoubleClick={toggleDoubleZoom}
               onMouseDown={handleMouseDown}
-              className={`relative max-w-full max-h-full flex items-center justify-center transition-transform ${
-                zoomLevel > 1
-                  ? isDragging
-                    ? "cursor-grabbing"
-                    : "cursor-grab"
-                  : "cursor-zoom-in"
-              }`}
+              className={`relative max-w-full max-h-full flex items-center justify-center transition-transform ${zoomLevel > 1
+                ? isDragging
+                  ? "cursor-grabbing"
+                  : "cursor-grab"
+                : "cursor-zoom-in"
+                }`}
               style={{
                 transform: `scale(${zoomLevel}) translate(${panPosition.x / zoomLevel}px, ${panPosition.y / zoomLevel}px)`,
                 transition: isDragging ? "none" : "transform 0.2s ease-out",
@@ -430,11 +429,10 @@ export function ProductGallery({
                     setZoomLevel(1);
                     setPanPosition({ x: 0, y: 0 });
                   }}
-                  className={`w-13 h-13 sm:w-14 sm:h-14 rounded-xl border-2 p-1 bg-white flex items-center justify-center overflow-hidden transition-all cursor-pointer shrink-0 shadow-2xs ${
-                    viewerIndex === idx
-                      ? "border-[#003D2B] ring-2 ring-[#003D2B]/30 scale-105 opacity-100"
-                      : "border-slate-200 hover:border-slate-400 opacity-60 hover:opacity-100"
-                  }`}
+                  className={`w-13 h-13 sm:w-14 sm:h-14 rounded-xl border-2 p-1 bg-white flex items-center justify-center overflow-hidden transition-all cursor-pointer shrink-0 shadow-2xs ${viewerIndex === idx
+                    ? "border-[#003D2B] ring-2 ring-[#003D2B]/30 scale-105 opacity-100"
+                    : "border-slate-200 hover:border-slate-400 opacity-60 hover:opacity-100"
+                    }`}
                   title={`View image ${idx + 1}`}
                 >
                   <img
