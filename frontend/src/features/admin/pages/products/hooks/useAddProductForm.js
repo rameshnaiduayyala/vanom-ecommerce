@@ -27,6 +27,12 @@ export const INITIAL_PRODUCT_FORM_DATA = {
   delivery_info: "",
   return_policy: "",
   warranty_info: "",
+  weight: "",
+  weight_unit: "lb",
+  length: "",
+  width: "",
+  height: "",
+  dimension_unit: "in",
   key_highlights: [
     { label: "Authenticity", value: "100% Genuine Organic" },
     { label: "Quality", value: "Premium Grade Standard" },
@@ -153,11 +159,16 @@ export function useAddProductForm() {
                 id: v.id || `v-${i + 1}`,
                 sku: v.sku || "",
                 variant_name: v.variant_name || v.name || `Variant ${i + 1}`,
-                weight: v.attributes?.weight
-                  ? Number(v.attributes.weight)
-                  : v.weight
-                  ? Number(v.weight)
-                  : 1.0,
+                weight: v.weight !== null && v.weight !== undefined
+                  ? String(v.weight)
+                  : v.attributes?.weight
+                  ? String(v.attributes.weight)
+                  : "",
+                weight_unit: v.weightUnit || "lb",
+                length: v.length !== null && v.length !== undefined ? String(v.length) : "",
+                width: v.width !== null && v.width !== undefined ? String(v.width) : "",
+                height: v.height !== null && v.height !== undefined ? String(v.height) : "",
+                dimension_unit: v.dimensionUnit || "in",
                 price_usd:
                   vUs?.price !== null && vUs?.price !== undefined
                     ? String(vUs.price)
@@ -271,6 +282,12 @@ export function useAddProductForm() {
         delivery_info: p.deliveryInfo ?? p.delivery_info ?? "",
         return_policy: p.returnPolicy ?? p.return_policy ?? "",
         warranty_info: p.warrantyInfo ?? p.warranty_info ?? "",
+        weight: p.weight !== null && p.weight !== undefined ? String(p.weight) : "",
+        weight_unit: p.weightUnit || "lb",
+        length: p.length !== null && p.length !== undefined ? String(p.length) : "",
+        width: p.width !== null && p.width !== undefined ? String(p.width) : "",
+        height: p.height !== null && p.height !== undefined ? String(p.height) : "",
+        dimension_unit: p.dimensionUnit || "in",
         key_highlights: loadedHighlights,
         images:
           Array.isArray(p.images) && p.images.length > 0
@@ -513,7 +530,13 @@ export function useAddProductForm() {
             name: v.variant_name.trim() || `Variant ${i + 1}`,
             stock: vStock,
             isActive: v.status !== "INACTIVE",
-            attributes: { weight: String(v.weight || 1.0) },
+            weight: v.weight !== "" && v.weight !== undefined && v.weight !== null ? parseFloat(v.weight) : null,
+            weightUnit: v.weight_unit || "lb",
+            length: v.length !== "" && v.length !== undefined && v.length !== null ? parseFloat(v.length) : null,
+            width: v.width !== "" && v.width !== undefined && v.width !== null ? parseFloat(v.width) : null,
+            height: v.height !== "" && v.height !== undefined && v.height !== null ? parseFloat(v.height) : null,
+            dimensionUnit: v.dimension_unit || "in",
+            attributes: { weight: String(v.weight || "") },
             ...(variantCountryPricing.length > 0 ? { countries: variantCountryPricing } : {}),
           };
         })
@@ -608,6 +631,12 @@ export function useAddProductForm() {
       deliveryInfo: formData.delivery_info?.trim() || null,
       returnPolicy: formData.return_policy?.trim() || null,
       warrantyInfo: formData.warranty_info?.trim() || null,
+      weight: formData.weight !== "" && formData.weight !== undefined && formData.weight !== null ? parseFloat(formData.weight) : null,
+      weightUnit: formData.weight_unit || "lb",
+      length: formData.length !== "" && formData.length !== undefined && formData.length !== null ? parseFloat(formData.length) : null,
+      width: formData.width !== "" && formData.width !== undefined && formData.width !== null ? parseFloat(formData.width) : null,
+      height: formData.height !== "" && formData.height !== undefined && formData.height !== null ? parseFloat(formData.height) : null,
+      dimensionUnit: formData.dimension_unit || "in",
       keyHighlights: cleanKeyHighlights.length > 0 ? cleanKeyHighlights : null,
       isActive: formData.status !== "INACTIVE",
       images: cleanImages,

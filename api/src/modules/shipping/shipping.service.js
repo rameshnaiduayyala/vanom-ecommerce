@@ -40,31 +40,65 @@ export async function calculateParcels(items = []) {
     if (it.variantId) {
       const variant = await prisma.productVariant.findUnique({
         where: { id: it.variantId },
-        select: { weight: true, weightUnit: true, length: true, width: true, height: true, dimensionUnit: true }
-      });
-      if (variant?.weight) {
-        unitWeight = Number(variant.weight);
-        if (variant.weightUnit?.toLowerCase() === "kg" || variant.weightUnit?.toLowerCase() === "kg") {
-          unitWeight = unitWeight * 2.20462; // kg to lb
+        select: {
+          weight: true, weightUnit: true, length: true, width: true, height: true, dimensionUnit: true,
+          product: {
+            select: { weight: true, weightUnit: true, length: true, width: true, height: true, dimensionUnit: true }
+          }
         }
+      });
+      const spec = (variant?.weight || variant?.length) ? variant : (variant?.product || variant);
+      if (spec?.weight) {
+        let w = Number(spec.weight);
+        const u = spec.weightUnit?.toLowerCase();
+        if (u === "kg") w = w * 2.20462;
+        else if (u === "g") w = w * 0.00220462;
+        else if (u === "oz") w = w * 0.0625;
+        unitWeight = w;
       }
-      if (variant?.length) unitLength = Number(variant.length);
-      if (variant?.width) unitWidth = Number(variant.width);
-      if (variant?.height) unitHeight = Number(variant.height);
+      if (spec?.length) {
+        let l = Number(spec.length);
+        if (spec.dimensionUnit?.toLowerCase() === "cm") l = l * 0.393701;
+        unitLength = l;
+      }
+      if (spec?.width) {
+        let wi = Number(spec.width);
+        if (spec.dimensionUnit?.toLowerCase() === "cm") wi = wi * 0.393701;
+        unitWidth = wi;
+      }
+      if (spec?.height) {
+        let h = Number(spec.height);
+        if (spec.dimensionUnit?.toLowerCase() === "cm") h = h * 0.393701;
+        unitHeight = h;
+      }
     } else if (it.productId) {
       const product = await prisma.product.findUnique({
         where: { id: it.productId },
         select: { weight: true, weightUnit: true, length: true, width: true, height: true, dimensionUnit: true }
       });
       if (product?.weight) {
-        unitWeight = Number(product.weight);
-        if (product.weightUnit?.toLowerCase() === "kg") {
-          unitWeight = unitWeight * 2.20462;
-        }
+        let w = Number(product.weight);
+        const u = product.weightUnit?.toLowerCase();
+        if (u === "kg") w = w * 2.20462;
+        else if (u === "g") w = w * 0.00220462;
+        else if (u === "oz") w = w * 0.0625;
+        unitWeight = w;
       }
-      if (product?.length) unitLength = Number(product.length);
-      if (product?.width) unitWidth = Number(product.width);
-      if (product?.height) unitHeight = Number(product.height);
+      if (product?.length) {
+        let l = Number(product.length);
+        if (product.dimensionUnit?.toLowerCase() === "cm") l = l * 0.393701;
+        unitLength = l;
+      }
+      if (product?.width) {
+        let wi = Number(product.width);
+        if (product.dimensionUnit?.toLowerCase() === "cm") wi = wi * 0.393701;
+        unitWidth = wi;
+      }
+      if (product?.height) {
+        let h = Number(product.height);
+        if (product.dimensionUnit?.toLowerCase() === "cm") h = h * 0.393701;
+        unitHeight = h;
+      }
     }
 
     totalWeightLb += unitWeight * qty;

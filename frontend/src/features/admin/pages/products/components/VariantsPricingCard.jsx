@@ -42,7 +42,7 @@ export function VariantsPricingCard({
               <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-700 uppercase tracking-wider bg-slate-50">
                 <th className="py-3 px-3">Option / Size</th>
                 <th className="py-3 px-2">SKU Code</th>
-                <th className="py-3 px-2">Weight (KG)</th>
+                <th className="py-3 px-2">Weight ({(formData.weightUnit || 'lb').toUpperCase()})</th>
                 <th className="py-3 px-2 bg-emerald-50/70 text-emerald-950">🇺🇸 Price ($)*</th>
                 <th className="py-3 px-2 bg-emerald-50/70 text-emerald-800">Old ($)</th>
                 <th className="py-3 px-2 bg-emerald-50/90 text-emerald-950 font-black">US Stock</th>
