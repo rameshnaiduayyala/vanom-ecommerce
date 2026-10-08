@@ -14,7 +14,7 @@ export function BasicInfoCard({ formData, setFormData, categories = [], brands =
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
         <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
           <Package className="w-4 h-4 text-[#358B5B]" />
-          <span>Product Overview & Classification</span>
+          <span>Product Classification</span>
         </h3>
         <span className="text-[11px] font-semibold text-slate-400">Core Attributes</span>
       </div>
@@ -166,18 +166,16 @@ export function BasicInfoCard({ formData, setFormData, categories = [], brands =
           <button
             type="button"
             onClick={() => setFormData({ ...formData, product_type: "simple" })}
-            className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
-              formData.product_type === "simple"
+            className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${formData.product_type === "simple"
                 ? "border-[#358B5B] bg-[#358B5B]/5 ring-1 ring-[#358B5B]"
                 : "border-slate-200 bg-slate-50/50 hover:bg-slate-50"
-            }`}
+              }`}
           >
             <div
-              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                formData.product_type === "simple"
+              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${formData.product_type === "simple"
                   ? "bg-[#358B5B] text-white"
                   : "bg-slate-200 text-slate-600"
-              }`}
+                }`}
             >
               <Boxes className="w-4 h-4" />
             </div>
@@ -192,18 +190,16 @@ export function BasicInfoCard({ formData, setFormData, categories = [], brands =
           <button
             type="button"
             onClick={() => setFormData({ ...formData, product_type: "variable" })}
-            className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
-              formData.product_type === "variable"
+            className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3 ${formData.product_type === "variable"
                 ? "border-[#358B5B] bg-[#358B5B]/5 ring-1 ring-[#358B5B]"
                 : "border-slate-200 bg-slate-50/50 hover:bg-slate-50"
-            }`}
+              }`}
           >
             <div
-              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                formData.product_type === "variable"
+              className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${formData.product_type === "variable"
                   ? "bg-[#358B5B] text-white"
                   : "bg-slate-200 text-slate-600"
-              }`}
+                }`}
             >
               <Layers className="w-4 h-4" />
             </div>

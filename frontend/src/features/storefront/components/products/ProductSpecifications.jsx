@@ -13,7 +13,7 @@ export function ProductDescriptionSection({ description = "", features = [] }) {
     <div className="pt-8 border-t border-slate-200/80">
       <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-2xs space-y-4">
         <h3 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-          <span>Product Overview & Description</span>
+          <span>Product Description</span>
         </h3>
 
         {description ? (
