@@ -69,70 +69,6 @@ export function ProductCard({
     return list.length > 0 ? list : [productImage || ""];
   }, [product, productImage]);
 
-  const [activeImageIdx, setActiveImageIdx] = useState(0);
-  const touchStartX = React.useRef(null);
-  const isDragging = React.useRef(false);
-
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = (e) => {
-    if (touchStartX.current === null) return;
-    const diff = touchStartX.current - e.changedTouches[0].clientX;
-    const threshold = 40;
-    if (diff > threshold) {
-      // Swiped left -> next image
-      setActiveImageIdx((prev) => (prev < galleryImages.length - 1 ? prev + 1 : 0));
-    } else if (diff < -threshold) {
-      // Swiped right -> prev image
-      setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : galleryImages.length - 1));
-    }
-    touchStartX.current = null;
-  };
-
-  const handleMouseDown = (e) => {
-    touchStartX.current = e.clientX;
-    isDragging.current = false;
-  };
-
-  const handleMouseMove = (e) => {
-    if (touchStartX.current !== null) {
-      const diff = Math.abs(touchStartX.current - e.clientX);
-      if (diff > 8) {
-        isDragging.current = true;
-      }
-    }
-  };
-
-  const handleMouseUp = (e) => {
-    if (touchStartX.current !== null) {
-      const diff = touchStartX.current - e.clientX;
-      const threshold = 40;
-      if (diff > threshold) {
-        // Dragged left -> next image
-        setActiveImageIdx((prev) => (prev < galleryImages.length - 1 ? prev + 1 : 0));
-      } else if (diff < -threshold) {
-        // Dragged right -> prev image
-        setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : galleryImages.length - 1));
-      }
-    }
-    touchStartX.current = null;
-  };
-
-  const handleLinkClick = (e) => {
-    if (isDragging.current) {
-      e.preventDefault();
-      e.stopPropagation();
-      isDragging.current = false;
-    }
-  };
-
-  const handleDotClick = (e, index) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setActiveImageIdx(index);
-  };
 
   const handleShare = async (e) => {
     e.preventDefault();
@@ -170,41 +106,21 @@ export function ProductCard({
         transition-all duration-300 hover:-translate-y-1 select-none ${className}`}
     >
       {/* ── 1. Main Image Frame (Fixed Uncropped Container) ── */}
-      <div
-        className="relative w-full aspect-square overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-      >
-        {/* Main Image Horizontal Slide Track */}
+      <div className="relative w-full aspect-square overflow-hidden flex items-center justify-center">
+        {/* Main Product Image */}
         <Link
           to={productUrl}
-          onClick={handleLinkClick}
           aria-label={product.name}
-          className="absolute inset-0 overflow-hidden"
+          className="absolute inset-0 overflow-hidden flex items-center justify-center p-3 sm:p-4"
         >
-          {galleryImages.length > 0 && galleryImages[0] ? (
-            <div
-              className="flex h-full w-full transition-transform duration-500 ease-in-out will-change-transform"
-              style={{ transform: `translateX(-${activeImageIdx * 100}%)` }}
-            >
-              {galleryImages.map((imgSrc, idx) => (
-                <div
-                  key={imgSrc || idx}
-                  className="w-full h-full flex-none flex items-center justify-center p-3 sm:p-4 pointer-events-none"
-                >
-                  <img
-                    src={imgSrc}
-                    alt={product.name}
-                    loading={idx === 0 ? "eager" : "lazy"}
-                    draggable={false}
-                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out drop-shadow-xs select-none"
-                  />
-                </div>
-              ))}
-            </div>
+          {productImage || galleryImages[0] ? (
+            <img
+              src={productImage || galleryImages[0]}
+              alt={product.name}
+              loading="lazy"
+              draggable={false}
+              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out drop-shadow-xs select-none"
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-center p-2">
               <span className="font-bold text-xs text-gray-400">{product.name}</span>
@@ -228,14 +144,16 @@ export function ProductCard({
             type="button"
             onClick={handleWishlist}
             aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
-            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shadow-sm sm:shadow-md backdrop-blur-md transition-all duration-200 cursor-pointer ${wishlisted
-              ? "bg-rose-500 text-white"
-              : "bg-white/95 text-gray-700 hover:text-rose-500 hover:scale-105"
-              }`}
+            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shadow-sm sm:shadow-md backdrop-blur-md transition-all duration-200 cursor-pointer ${
+              wishlisted
+                ? "bg-rose-500 text-white"
+                : "bg-white/95 text-gray-700 hover:text-rose-500 hover:scale-105"
+            }`}
           >
             <Heart
-              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform ${wishlisted ? "fill-current text-white scale-110" : ""
-                }`}
+              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform ${
+                wishlisted ? "fill-current text-white scale-110" : ""
+              }`}
             />
           </button>
 
@@ -249,32 +167,6 @@ export function ProductCard({
             <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
-
-        {/* Bottom Small Dots Carousel Indicator */}
-        {galleryImages.length > 1 && (
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/25 backdrop-blur-xs">
-            {galleryImages.map((_, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={(e) => handleDotClick(e, idx)}
-                aria-label={`Go to image ${idx + 1}`}
-                className={`transition-all duration-300 rounded-full cursor-pointer ${activeImageIdx === idx
-                  ? "w-4 h-1.5 bg-white shadow-xs"
-                  : "w-1.5 h-1.5 bg-white/50 hover:bg-white/80"
-                  }`}
-              />
-            ))}
-          </div>
-        )}
-        {/* 
-        {galleryImages.length > 1 && (
-          <div className="absolute bottom-2 sm:bottom-2.5 right-2 sm:right-2.5 z-20">
-            <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-black/60 text-white text-[9px] sm:text-[10px] font-medium tracking-wider backdrop-blur-xs">
-              {activeImageIdx + 1}/{galleryImages.length}
-            </span>
-          </div>
-        )} */}
       </div>
 
       {/* ── 2. Compact Product Details Block ── */}

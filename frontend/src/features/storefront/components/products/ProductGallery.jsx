@@ -123,60 +123,168 @@ export function ProductGallery({
     setIsDragging(false);
   };
 
+  // Touch swipe & Drag scroll handlers for Amazon-style manual scroll
+  const touchStartXRef = useRef(null);
+  const touchStartYRef = useRef(null);
+  const isDraggingMainRef = useRef(false);
+  const dragStartXRef = useRef(null);
+
+  const handleMainTouchStart = (e) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+  };
+
+  const handleMainTouchEnd = (e) => {
+    if (touchStartXRef.current === null) return;
+    const diffX = touchStartXRef.current - e.changedTouches[0].clientX;
+    const diffY = touchStartYRef.current - e.changedTouches[0].clientY;
+
+    // Only register horizontal swipe if it's more horizontal than vertical
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 35) {
+      if (diffX > 0) {
+        // Swiped left -> next image
+        onSelectImage(selectedImage < gallery.length - 1 ? selectedImage + 1 : 0);
+      } else {
+        // Swiped right -> prev image
+        onSelectImage(selectedImage > 0 ? selectedImage - 1 : gallery.length - 1);
+      }
+    }
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+  };
+
+  const handleMainMouseDown = (e) => {
+    dragStartXRef.current = e.clientX;
+    isDraggingMainRef.current = false;
+  };
+
+  const handleMainMouseMove = (e) => {
+    if (dragStartXRef.current !== null) {
+      if (Math.abs(dragStartXRef.current - e.clientX) > 6) {
+        isDraggingMainRef.current = true;
+      }
+    }
+  };
+
+  const handleMainMouseUp = (e) => {
+    if (dragStartXRef.current !== null && isDraggingMainRef.current) {
+      const diffX = dragStartXRef.current - e.clientX;
+      if (Math.abs(diffX) > 40) {
+        if (diffX > 0) {
+          onSelectImage(selectedImage < gallery.length - 1 ? selectedImage + 1 : 0);
+        } else {
+          onSelectImage(selectedImage > 0 ? selectedImage - 1 : gallery.length - 1);
+        }
+      }
+    }
+    dragStartXRef.current = null;
+    setTimeout(() => {
+      isDraggingMainRef.current = false;
+    }, 50);
+  };
+
+  const handleMainImageClick = () => {
+    if (!isDraggingMainRef.current) {
+      openViewer(selectedImage);
+    }
+  };
+
   return (
     <>
-      <div className="lg:col-span-6 flex gap-4">
-        {/* Vertical Thumbnail Strip (Only show if multiple images exist) */}
+      <div className="lg:col-span-6 flex flex-col-reverse md:flex-row gap-3 sm:gap-4 select-none">
+        {/* Thumbnail Strip (Desktop vertical, Mobile horizontal scrollable) */}
         {gallery.length > 1 && (
-          <div className="flex flex-col gap-2.5 shrink-0 max-h-[460px] overflow-y-auto no-scrollbar py-1">
+          <div className="hidden sm:flex md:flex-col gap-2 shrink-0 md:max-h-[500px] overflow-x-auto md:overflow-y-auto no-scrollbar py-1">
             {gallery.map((img, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => onSelectImage(idx)}
                 className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl border p-1 bg-white flex items-center justify-center overflow-hidden transition-all cursor-pointer shadow-2xs ${selectedImage === idx
-                  ? "border-[#003D2B] ring-2 ring-[#003D2B]/20 scale-102"
-                  : "border-gray-200 hover:border-gray-400 opacity-75 hover:opacity-100"
+                    ? "border-[#003D2B] ring-2 ring-[#003D2B]/30 scale-102"
+                    : "border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100"
                   }`}
                 title={`Thumbnail ${idx + 1}`}
               >
                 <img
                   src={img}
                   alt={`Thumb ${idx + 1}`}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain pointer-events-none"
                 />
               </button>
             ))}
           </div>
         )}
 
-        {/* Central Main Image Container */}
-        <div className="flex-1 bg-white rounded-xl border border-gray-200/80 relative min-h-[380px] sm:min-h-[460px] shadow-xs group overflow-hidden">
-          {currentImage ? (
-            <>
+        {/* Central Main Image Container with Amazon-style touch/drag swipe and pagination dots */}
+        <div
+          className="flex-1 bg-white rounded-2xl sm:rounded-3xl border border-gray-200/90 relative min-h-[350px] sm:min-h-[460px] md:min-h-[500px] shadow-sm group overflow-hidden touch-pan-y cursor-grab active:cursor-grabbing"
+          onTouchStart={handleMainTouchStart}
+          onTouchEnd={handleMainTouchEnd}
+          onMouseDown={handleMainMouseDown}
+          onMouseMove={handleMainMouseMove}
+          onMouseUp={handleMainMouseUp}
+        >
+          {gallery.length > 0 ? (
+            <div className="relative w-full h-full min-h-[350px] sm:min-h-[460px] md:min-h-[500px] overflow-hidden">
+              {/* Sliding Image Track for smooth Amazon-like manual scroll experience */}
               <div
-                onClick={() => openViewer(selectedImage)}
-                className="absolute inset-0 flex items-center justify-center cursor-zoom-in p-6 sm:p-10"
-                title="Click to open full-screen viewer"
+                className="flex h-full w-full transition-transform duration-300 ease-out will-change-transform"
+                style={{ transform: `translateX(-${selectedImage * 100}%)` }}
               >
-                <img
-                  src={currentImage}
-                  alt={title}
-                  className="w-full h-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-[1.04]"
-                />
+                {gallery.map((img, idx) => (
+                  <div
+                    key={idx}
+                    onClick={handleMainImageClick}
+                    className="w-full h-full min-h-[350px] sm:min-h-[460px] md:min-h-[500px] flex-none flex items-center justify-center p-6 sm:p-10 cursor-zoom-in"
+                    title="Click to enlarge"
+                  >
+                    <img
+                      src={img}
+                      alt={`${title} - view ${idx + 1}`}
+                      className="max-h-[340px] sm:max-h-[440px] md:max-h-[480px] w-full object-contain drop-shadow-md select-none pointer-events-none transition-transform duration-300 group-hover:scale-[1.02]"
+                      loading={idx === 0 ? "eager" : "lazy"}
+                      draggable={false}
+                    />
+                  </div>
+                ))}
               </div>
+
+              {/* Amazon-style Carousel Dots Indicator */}
+              {gallery.length > 1 && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/35 backdrop-blur-sm pointer-events-auto">
+                  {gallery.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectImage(idx);
+                      }}
+                      aria-label={`Go to image ${idx + 1}`}
+                      className={`rounded-full transition-all duration-300 cursor-pointer ${selectedImage === idx
+                          ? "w-5 h-1.5 bg-white shadow-xs"
+                          : "w-1.5 h-1.5 bg-white/50 hover:bg-white/80"
+                        }`}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* Expand to Full-Screen Image Viewer Button */}
               <button
                 type="button"
-                onClick={() => openViewer(selectedImage)}
-                className="absolute right-4 bottom-4 z-10 p-2.5 rounded-xl bg-white/95 hover:bg-white text-gray-700 hover:text-emerald-700 border border-gray-200 shadow-md transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold hover:shadow-lg active:scale-95"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openViewer(selectedImage);
+                }}
+                className="absolute right-3 top-3 z-10 p-2 sm:p-2.5 rounded-xl bg-white/90 hover:bg-white text-gray-700 hover:text-emerald-700 border border-gray-200/90 shadow-sm transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold hover:shadow-md active:scale-95"
                 title="Open full-screen image viewer"
               >
                 <Maximize2 className="w-4 h-4 text-emerald-700" />
                 <span className="hidden sm:inline">Enlarge</span>
               </button>
-            </>
+            </div>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-center p-8 bg-emerald-50/70 rounded-2xl border-2 border-dashed border-emerald-300">
               <span className="font-extrabold text-2xl text-[#1a3c2e] leading-snug max-w-sm">
@@ -187,24 +295,24 @@ export function ProductGallery({
         </div>
       </div>
 
-      {/* ─── FULL-SCREEN IMAGE VIEWER LIGHTBOX MODAL ─── */}
+      {/* ─── FULL-SCREEN IMAGE VIEWER LIGHTBOX MODAL (CLEAN LIGHT THEME) ─── */}
       {isViewerOpen && (
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[9999] bg-black/92 backdrop-blur-md flex flex-col justify-between animate-in fade-in duration-200 select-none"
+          className="fixed inset-0 z-[9999] bg-white/95 backdrop-blur-xl flex flex-col justify-between animate-in fade-in duration-200 select-none"
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
         >
           {/* Top Control Bar */}
-          <div className="w-full px-4 sm:px-6 py-4 flex items-center justify-between text-white border-b border-white/10 bg-black/40 z-10">
+          <div className="w-full px-4 sm:px-6 py-3.5 flex items-center justify-between text-slate-800 border-b border-slate-200/80 bg-white/80 backdrop-blur-md z-10 shadow-2xs">
             {/* Title & Counter */}
             <div className="flex items-center gap-3 min-w-0">
-              <span className="text-xs sm:text-sm font-bold text-gray-300 truncate max-w-xs sm:max-w-md">
+              <span className="text-xs sm:text-sm font-bold text-slate-800 truncate max-w-xs sm:max-w-md">
                 {title}
               </span>
               {gallery.length > 1 && (
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white/10 text-emerald-400 border border-white/10">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-[#003D2B] border border-slate-200">
                   {viewerIndex + 1} / {gallery.length}
                 </span>
               )}
@@ -213,24 +321,24 @@ export function ProductGallery({
             {/* Action Buttons: Zoom & Close */}
             <div className="flex items-center gap-2">
               {/* Zoom Controls */}
-              <div className="flex items-center bg-white/10 rounded-xl p-0.5 border border-white/10">
+              <div className="flex items-center bg-slate-100/90 rounded-xl p-0.5 border border-slate-200">
                 <button
                   type="button"
                   onClick={handleZoomOut}
                   disabled={zoomLevel <= 1}
-                  className="p-1.5 hover:bg-white/10 rounded-lg text-gray-200 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="p-1.5 hover:bg-white rounded-lg text-slate-600 hover:text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                   title="Zoom Out (-)"
                 >
                   <ZoomOut className="w-4 h-4" />
                 </button>
-                <span className="text-[11px] font-bold px-2 text-emerald-400">
+                <span className="text-[11px] font-bold px-2 text-[#003D2B]">
                   {Math.round(zoomLevel * 100)}%
                 </span>
                 <button
                   type="button"
                   onClick={handleZoomIn}
                   disabled={zoomLevel >= 3}
-                  className="p-1.5 hover:bg-white/10 rounded-lg text-gray-200 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="p-1.5 hover:bg-white rounded-lg text-slate-600 hover:text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
                   title="Zoom In (+)"
                 >
                   <ZoomIn className="w-4 h-4" />
@@ -239,7 +347,7 @@ export function ProductGallery({
                   <button
                     type="button"
                     onClick={handleResetZoom}
-                    className="p-1.5 hover:bg-white/10 rounded-lg text-gray-300 hover:text-white transition-colors border-l border-white/10 ml-0.5"
+                    className="p-1.5 hover:bg-white rounded-lg text-slate-500 hover:text-slate-900 transition-colors border-l border-slate-200 ml-0.5 cursor-pointer"
                     title="Reset Zoom (0)"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -251,7 +359,7 @@ export function ProductGallery({
               <button
                 type="button"
                 onClick={closeViewer}
-                className="p-2 rounded-xl bg-white/10 hover:bg-red-500/80 text-white transition-all cursor-pointer border border-white/10"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-700 transition-all cursor-pointer border border-slate-200 shadow-2xs active:scale-95"
                 title="Close Viewer (Esc)"
               >
                 <X className="w-5 h-5" />
@@ -260,13 +368,13 @@ export function ProductGallery({
           </div>
 
           {/* Central Viewer Stage */}
-          <div className="relative flex-1 flex items-center justify-center overflow-hidden p-4 sm:p-8">
+          <div className="relative flex-1 flex items-center justify-center overflow-hidden p-4 sm:p-8 bg-slate-50/60">
             {/* Previous Image Arrow */}
             {gallery.length > 1 && (
               <button
                 type="button"
                 onClick={handlePrev}
-                className="absolute left-4 sm:left-8 z-20 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-all cursor-pointer backdrop-blur-md active:scale-95"
+                className="absolute left-4 sm:left-8 z-20 p-3 rounded-full bg-white/90 hover:bg-white text-slate-700 hover:text-slate-950 border border-slate-200/90 shadow-md transition-all cursor-pointer active:scale-95"
                 title="Previous Image (Left Arrow)"
               >
                 <ChevronLeft className="w-6 h-6" />
@@ -277,12 +385,13 @@ export function ProductGallery({
             <div
               onDoubleClick={toggleDoubleZoom}
               onMouseDown={handleMouseDown}
-              className={`relative max-w-full max-h-full flex items-center justify-center transition-transform ${zoomLevel > 1
-                ? isDragging
-                  ? "cursor-grabbing"
-                  : "cursor-grab"
-                : "cursor-zoom-in"
-                }`}
+              className={`relative max-w-full max-h-full flex items-center justify-center transition-transform ${
+                zoomLevel > 1
+                  ? isDragging
+                    ? "cursor-grabbing"
+                    : "cursor-grab"
+                  : "cursor-zoom-in"
+              }`}
               style={{
                 transform: `scale(${zoomLevel}) translate(${panPosition.x / zoomLevel}px, ${panPosition.y / zoomLevel}px)`,
                 transition: isDragging ? "none" : "transform 0.2s ease-out",
@@ -291,7 +400,7 @@ export function ProductGallery({
               <img
                 src={activeViewerImage}
                 alt={`${title} - view ${viewerIndex + 1}`}
-                className="max-h-[72vh] max-w-[85vw] object-contain drop-shadow-2xl rounded-lg pointer-events-none"
+                className="max-h-[72vh] max-w-[85vw] object-contain drop-shadow-xl rounded-xl pointer-events-none"
               />
             </div>
 
@@ -300,7 +409,7 @@ export function ProductGallery({
               <button
                 type="button"
                 onClick={handleNext}
-                className="absolute right-4 sm:right-8 z-20 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/10 transition-all cursor-pointer backdrop-blur-md active:scale-95"
+                className="absolute right-4 sm:right-8 z-20 p-3 rounded-full bg-white/90 hover:bg-white text-slate-700 hover:text-slate-950 border border-slate-200/90 shadow-md transition-all cursor-pointer active:scale-95"
                 title="Next Image (Right Arrow)"
               >
                 <ChevronRight className="w-6 h-6" />
@@ -310,7 +419,7 @@ export function ProductGallery({
 
           {/* Bottom Thumbnail Strip */}
           {gallery.length > 1 && (
-            <div className="w-full py-4 px-6 bg-black/50 border-t border-white/10 flex items-center justify-center gap-3 overflow-x-auto no-scrollbar z-10">
+            <div className="w-full py-3 sm:py-4 px-6 bg-white/90 border-t border-slate-200/80 flex items-center justify-center gap-2.5 sm:gap-3 overflow-x-auto no-scrollbar z-10 shadow-2xs">
               {gallery.map((img, idx) => (
                 <button
                   key={idx}
@@ -321,10 +430,11 @@ export function ProductGallery({
                     setZoomLevel(1);
                     setPanPosition({ x: 0, y: 0 });
                   }}
-                  className={`w-14 h-14 rounded-xl border-2 p-1 bg-white/10 flex items-center justify-center overflow-hidden transition-all cursor-pointer shrink-0 ${viewerIndex === idx
-                    ? "border-emerald-400 ring-2 ring-emerald-400/40 scale-105 opacity-100"
-                    : "border-white/20 hover:border-white/50 opacity-60 hover:opacity-90"
-                    }`}
+                  className={`w-13 h-13 sm:w-14 sm:h-14 rounded-xl border-2 p-1 bg-white flex items-center justify-center overflow-hidden transition-all cursor-pointer shrink-0 shadow-2xs ${
+                    viewerIndex === idx
+                      ? "border-[#003D2B] ring-2 ring-[#003D2B]/30 scale-105 opacity-100"
+                      : "border-slate-200 hover:border-slate-400 opacity-60 hover:opacity-100"
+                  }`}
                   title={`View image ${idx + 1}`}
                 >
                   <img
