@@ -94,16 +94,26 @@ export function CheckoutShippingSelector({
         </div>
       ) : shippingRates.length === 0 ? (
         <div className="py-6 text-center space-y-3 bg-gray-50/60 rounded-xl border border-dashed border-gray-200">
-          <Truck className="w-8 h-8 text-gray-400 mx-auto" />
+          <div className="w-10 h-10 rounded-full mx-auto flex items-center justify-center bg-gray-100 text-gray-400">
+            {addressValidation && !addressValidation.isValid ? (
+              <AlertCircle className="w-5 h-5 text-amber-500" />
+            ) : (
+              <Truck className="w-5 h-5" />
+            )}
+          </div>
           <div className="space-y-1">
-            <p className="text-xs font-semibold text-gray-700">
-              Live carrier shipping rates ready to calculate
+            <p className="text-xs font-semibold text-gray-800">
+              {addressValidation && !addressValidation.isValid
+                ? "Address Verification Required"
+                : "Enter & Verify Address to View Carrier Rates"}
             </p>
-            <p className="text-[11px] text-gray-500">
-              Confirm your postal code & address to view rates from USPS, UPS, and regional carriers.
+            <p className="text-[11px] text-gray-500 max-w-sm mx-auto leading-relaxed">
+              {addressValidation && !addressValidation.isValid
+                ? "Shippo could not verify the submitted delivery address. Please correct the street address or postal code above to unlock live carrier rates."
+                : "Live shipping rates from USPS, UPS, and regional carriers will appear as soon as your street address and postal code are verified."}
             </p>
           </div>
-          {onRefreshRates && (
+          {addressValidation?.isValid && onRefreshRates && (
             <button
               type="button"
               onClick={onRefreshRates}

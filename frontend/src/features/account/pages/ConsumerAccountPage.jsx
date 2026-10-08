@@ -26,7 +26,16 @@ import {
   Printer,
   Calendar,
   Sparkles,
+  Plus,
+  Trash2,
+  Home,
+  Building,
+  Star,
+  Check,
 } from "lucide-react";
+import { Modal } from "@/components/ui/Modal.jsx";
+import { Input, Select } from "@/components/ui/Input.jsx";
+import { US_STATES, CA_PROVINCES } from "@/constants/countries.js";
 
 export function ConsumerAccountPage() {
   const { user, logout } = useAuthStore();
@@ -45,6 +54,118 @@ export function ConsumerAccountPage() {
   });
 
   const orders = Array.isArray(ordersData) ? ordersData : [];
+
+  // Fetch Consumer Saved Addresses
+  const { data: addressesData = [], isLoading: loadingAddresses } = useQuery({
+    queryKey: ["user-addresses"],
+    queryFn: async () => {
+      const res = await Api.user.getAddresses();
+      if (Array.isArray(res)) return res;
+      return res?.data || res?.items || [];
+    },
+  });
+  const addresses = Array.isArray(addressesData) ? addressesData : [];
+
+  // Address Modal State
+  const [addressModalOpen, setAddressModalOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(null);
+  const [addressForm, setAddressForm] = useState({
+    name: "Home",
+    fullName: "",
+    phone: "",
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    countryCode: "US",
+    isDefault: false,
+  });
+
+  const saveAddressMutation = useMutation({
+    mutationFn: async (payload) => {
+      if (editingAddress?.id) {
+        return Api.user.updateAddress(editingAddress.id, payload);
+      }
+      return Api.user.addAddress(payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-addresses"] });
+      queryClient.invalidateQueries({ queryKey: ["checkout-saved-addresses"] });
+      toast.success(
+        editingAddress ? "Address Updated" : "Address Saved",
+        "Your delivery destination has been saved."
+      );
+      setAddressModalOpen(false);
+      setEditingAddress(null);
+    },
+    onError: (err) => {
+      toast.error("Save Failed", err.message || "Could not save address");
+    },
+  });
+
+  const deleteAddressMutation = useMutation({
+    mutationFn: (id) => Api.user.deleteAddress(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-addresses"] });
+      queryClient.invalidateQueries({ queryKey: ["checkout-saved-addresses"] });
+      toast.success("Address Removed", "The address has been removed from your account.");
+    },
+    onError: (err) => {
+      toast.error("Failed to Remove", err.message);
+    },
+  });
+
+  const setDefaultAddressMutation = useMutation({
+    mutationFn: (id) => Api.user.setDefaultAddress(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-addresses"] });
+      queryClient.invalidateQueries({ queryKey: ["checkout-saved-addresses"] });
+      toast.success("Default Address Updated", "Primary delivery address set.");
+    },
+    onError: (err) => {
+      toast.error("Update Failed", err.message);
+    },
+  });
+
+  const handleOpenAddAddress = () => {
+    setEditingAddress(null);
+    setAddressForm({
+      name: "Home",
+      fullName: `${user?.firstName || ""} ${user?.lastName || ""}`.trim(),
+      phone: user?.phone || "",
+      addressLine1: "",
+      addressLine2: "",
+      city: "",
+      state: "",
+      postalCode: "",
+      countryCode: "US",
+      isDefault: addresses.length === 0,
+    });
+    setAddressModalOpen(true);
+  };
+
+  const handleOpenEditAddress = (addr) => {
+    setEditingAddress(addr);
+    setAddressForm({
+      name: addr.name || "Home",
+      fullName: addr.fullName || "",
+      phone: addr.phone || "",
+      addressLine1: addr.addressLine1 || "",
+      addressLine2: addr.addressLine2 || "",
+      city: addr.city || "",
+      state: addr.state || "",
+      postalCode: addr.postalCode || "",
+      countryCode: addr.countryCode || "US",
+      isDefault: Boolean(addr.isDefault),
+    });
+    setAddressModalOpen(true);
+  };
+
+  const handleAddressSubmit = (e) => {
+    e.preventDefault();
+    saveAddressMutation.mutate(addressForm);
+  };
 
   // Edit Profile Form State
   const [profileForm, setProfileForm] = useState({
@@ -159,7 +280,11 @@ export function ConsumerAccountPage() {
                 <MapPin className="w-4 h-4" />
                 <span>Saved Addresses</span>
               </div>
-              <ArrowRight className="w-3.5 h-3.5 opacity-60" />
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                activeTab === "addresses" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+              }`}>
+                {addresses.length}
+              </span>
             </button>
 
             <button
@@ -361,31 +486,137 @@ export function ConsumerAccountPage() {
             {/* ── TAB 3: ADDRESSES ── */}
             {activeTab === "addresses" && (
               <div className="space-y-6 animate-in fade-in duration-150">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                   <div>
                     <h2 className="text-lg font-bold text-slate-900">Delivery Addresses</h2>
                     <p className="text-xs text-slate-500">Manage your saved shipping and home destinations.</p>
                   </div>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleOpenAddAddress}
+                    className="bg-[#006B3C] text-white text-xs gap-1.5 self-start sm:self-auto shadow-xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add New Address</span>
+                  </Button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-5 rounded-2xl border-2 border-emerald-500/40 bg-emerald-50/20 space-y-2 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900">Default Residential</span>
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                        Primary
-                      </span>
-                    </div>
-                    <p className="font-semibold text-slate-800">
-                      {user?.firstName} {user?.lastName}
+                {loadingAddresses ? (
+                  <div className="py-12 text-center text-slate-400 text-xs">Loading saved addresses...</div>
+                ) : addresses.length === 0 ? (
+                  <div className="py-16 text-center text-slate-400 space-y-3">
+                    <MapPin className="w-10 h-10 mx-auto text-slate-300" />
+                    <p className="font-bold text-slate-700 text-sm">No saved addresses yet</p>
+                    <p className="text-xs text-slate-400 max-w-xs mx-auto">
+                      Add your home or office address to enable quick 1-click delivery checkout.
                     </p>
-                    <p className="text-slate-600">
-                      100 World Trade Center Blvd<br />
-                      New York, NY 10007, United States
-                    </p>
-                    <p className="text-slate-500 font-mono pt-1">{user?.phone || "+1 (555) 019-2834"}</p>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleOpenAddAddress}
+                      className="bg-[#006B3C] text-white gap-1.5 inline-flex"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Your First Address</span>
+                    </Button>
                   </div>
-                </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {addresses.map((addr) => {
+                      const isDefault = Boolean(addr.isDefault);
+                      const countryName =
+                        addr.countryCode === "US"
+                          ? "United States"
+                          : addr.countryCode === "CA"
+                          ? "Canada"
+                          : addr.countryCode || "USA";
+
+                      return (
+                        <div
+                          key={addr.id}
+                          className={`p-5 rounded-2xl border transition-all text-xs space-y-3 flex flex-col justify-between ${
+                            isDefault
+                              ? "border-emerald-500/70 bg-emerald-50/20 shadow-xs"
+                              : "border-slate-200/80 bg-white hover:border-slate-300"
+                          }`}
+                        >
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                                <span className="p-1 rounded-lg bg-slate-100 text-slate-700">
+                                  {addr.name?.toLowerCase().includes("work") || addr.name?.toLowerCase().includes("office") ? (
+                                    <Building className="w-3.5 h-3.5" />
+                                  ) : (
+                                    <Home className="w-3.5 h-3.5" />
+                                  )}
+                                </span>
+                                <span>{addr.name || "Delivery Address"}</span>
+                              </div>
+                              {isDefault ? (
+                                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                                  Primary Default
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setDefaultAddressMutation.mutate(addr.id)}
+                                  disabled={setDefaultAddressMutation.isPending}
+                                  className="text-[11px] font-semibold text-slate-500 hover:text-emerald-700 transition-colors flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Star className="w-3 h-3" />
+                                  <span>Set as Default</span>
+                                </button>
+                              )}
+                            </div>
+
+                            <p className="font-bold text-slate-900 text-sm pt-0.5">
+                              {addr.fullName}
+                            </p>
+                            <p className="text-slate-600 leading-relaxed">
+                              {addr.addressLine1}
+                              {addr.addressLine2 ? `, ${addr.addressLine2}` : ""}
+                              <br />
+                              {[addr.city, addr.state].filter(Boolean).join(", ")} {addr.postalCode}
+                              <br />
+                              <span className="font-semibold text-slate-800">{countryName}</span>
+                            </p>
+                            {addr.phone && (
+                              <p className="text-slate-500 font-mono text-[11px]">
+                                Contact: {addr.phone}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditAddress(addr)}
+                              className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              <span>Edit Details</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm("Are you sure you want to delete this address?")) {
+                                  deleteAddressMutation.mutate(addr.id);
+                                }
+                              }}
+                              disabled={deleteAddressMutation.isPending}
+                              className="text-xs font-semibold text-rose-500 hover:text-rose-700 flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              <span>Remove</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
@@ -431,6 +662,185 @@ export function ConsumerAccountPage() {
           </div>
 
         </div>
+
+        {/* Address Create / Edit Modal */}
+        <Modal
+          isOpen={addressModalOpen}
+          onClose={() => {
+            setAddressModalOpen(false);
+            setEditingAddress(null);
+          }}
+          title={editingAddress ? "Edit Delivery Address" : "Add New Delivery Address"}
+          description="Save a destination address for effortless checkout and parcel shipping."
+          size="md"
+        >
+          <form onSubmit={handleAddressSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Input
+                  label="Address Label (e.g. Home, Work)"
+                  value={addressForm.name || ""}
+                  onChange={(e) => setAddressForm({ ...addressForm, name: e.target.value })}
+                  placeholder="Home"
+                  required
+                />
+              </div>
+              <div>
+                <Input
+                  label="Recipient Full Name"
+                  value={addressForm.fullName}
+                  onChange={(e) => setAddressForm({ ...addressForm, fullName: e.target.value })}
+                  placeholder="Jane Doe"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <Input
+                label="Contact Phone"
+                value={addressForm.phone}
+                onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                placeholder="+1 (555) 000-0000"
+                required
+              />
+            </div>
+
+            <div>
+              <Input
+                label="Street Address (Line 1)"
+                value={addressForm.addressLine1}
+                onChange={(e) => setAddressForm({ ...addressForm, addressLine1: e.target.value })}
+                placeholder="1600 Pennsylvania Ave NW"
+                required
+              />
+            </div>
+
+            <div>
+              <Input
+                label="Apt, Suite, Unit (Line 2)"
+                value={addressForm.addressLine2 || ""}
+                onChange={(e) => setAddressForm({ ...addressForm, addressLine2: e.target.value })}
+                placeholder="Suite 400 (Optional)"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Input
+                  label="City"
+                  value={addressForm.city}
+                  onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                  placeholder="e.g. Washington"
+                  required
+                />
+              </div>
+
+              <div>
+                <Select
+                  label="Country"
+                  value={addressForm.countryCode || "US"}
+                  onChange={(e) => {
+                    const nextCountry = e.target.value;
+                    setAddressForm({
+                      ...addressForm,
+                      countryCode: nextCountry,
+                      state: "",
+                    });
+                  }}
+                  options={[
+                    { label: "United States (US)", value: "US" },
+                    { label: "Canada (CA)", value: "CA" },
+                  ]}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                {(() => {
+                  const targetCountry = addressForm.countryCode || "US";
+                  const regions = targetCountry === "CA" ? CA_PROVINCES : US_STATES;
+                  const regionLabel = targetCountry === "CA" ? "Province" : "State";
+
+                  const rawState = (addressForm.state || "").trim();
+                  const matchedRegion = regions.find(
+                    (r) =>
+                      r.code.toUpperCase() === rawState.toUpperCase() ||
+                      r.name.toLowerCase() === rawState.toLowerCase()
+                  );
+                  const selectedVal = matchedRegion ? matchedRegion.code : rawState;
+
+                  const options = [
+                    { label: `— Select ${regionLabel} —`, value: "" },
+                    ...(selectedVal && !regions.some((r) => r.code === selectedVal)
+                      ? [{ label: selectedVal, value: selectedVal }]
+                      : []),
+                    ...regions.map((r) => ({
+                      label: `${r.name} (${r.code})`,
+                      value: r.code,
+                    })),
+                  ];
+
+                  return (
+                    <Select
+                      label={`${regionLabel} *`}
+                      value={selectedVal}
+                      onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                      options={options}
+                      required
+                    />
+                  );
+                })()}
+              </div>
+
+              <div>
+                <Input
+                  label={addressForm.countryCode === "CA" ? "Postal Code" : "ZIP Code"}
+                  value={addressForm.postalCode}
+                  onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })}
+                  placeholder={addressForm.countryCode === "CA" ? "e.g. M5V 2T6" : "e.g. 20500"}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="pt-1">
+              <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-800">
+                <input
+                  type="checkbox"
+                  checked={addressForm.isDefault}
+                  onChange={(e) => setAddressForm({ ...addressForm, isDefault: e.target.checked })}
+                  className="accent-emerald-700 w-4 h-4 rounded cursor-pointer"
+                />
+                <span>Make this my primary default address</span>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                onClick={() => {
+                  setAddressModalOpen(false);
+                  setEditingAddress(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                type="submit"
+                isLoading={saveAddressMutation.isPending}
+                className="bg-[#006B3C] text-white font-bold"
+              >
+                {editingAddress ? "Update Address" : "Save Address"}
+              </Button>
+            </div>
+          </form>
+        </Modal>
 
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import confetti from "canvas-confetti";
 import { useCartStore } from "../../../stores/cart.store.js";
 import { useCountryStore } from "../../../stores/country.store.js";
@@ -41,6 +42,77 @@ export function useCheckout() {
   const [loading, setLoading]             = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [formData, setFormData]           = useState(() => getDefaultForm(user, country.code));
+  // Saved Addresses for Authenticated Customer
+  const { data: savedAddressesData = [] } = useQuery({
+    queryKey: ["checkout-saved-addresses"],
+    queryFn: async () => {
+      if (!isAuthenticated) return [];
+      try {
+        const res = await Api.user.getAddresses();
+        if (Array.isArray(res)) return res;
+        return res?.data || res?.items || [];
+      } catch {
+        return [];
+      }
+    },
+    enabled: Boolean(isAuthenticated),
+  });
+  const savedAddresses = Array.isArray(savedAddressesData) ? savedAddressesData : [];
+
+  const [selectedAddressId, setSelectedAddressId] = useState("new");
+  const [saveAddressToProfile, setSaveAddressToProfile] = useState(false);
+
+  // Auto-prefill default address when saved addresses load
+  useEffect(() => {
+    if (savedAddresses.length > 0 && selectedAddressId === "new") {
+      const defaultAddr = savedAddresses.find((a) => a.isDefault) || savedAddresses[0];
+      if (defaultAddr && !formData.addressLine1) {
+        setSelectedAddressId(defaultAddr.id);
+        setFormData((prev) => ({
+          ...prev,
+          fullName: defaultAddr.fullName || prev.fullName,
+          phone: defaultAddr.phone || prev.phone,
+          addressLine1: defaultAddr.addressLine1 || "",
+          addressLine2: defaultAddr.addressLine2 || "",
+          city: defaultAddr.city || "",
+          state: defaultAddr.state || "",
+          postalCode: defaultAddr.postalCode || "",
+        }));
+      }
+    }
+  }, [savedAddresses]);
+
+  const selectSavedAddress = (id) => {
+    setSelectedAddressId(id);
+    if (id === "new") {
+      setFormData((prev) => ({
+        ...prev,
+        addressLine1: "",
+        addressLine2: "",
+        city: "",
+        state: "",
+        postalCode: "",
+      }));
+      setAddressValidation(null);
+      setShippingRates([]);
+      setSelectedRate(null);
+    } else {
+      const target = savedAddresses.find((a) => a.id === id);
+      if (target) {
+        setFormData((prev) => ({
+          ...prev,
+          fullName: target.fullName || prev.fullName,
+          phone: target.phone || prev.phone,
+          addressLine1: target.addressLine1 || "",
+          addressLine2: target.addressLine2 || "",
+          city: target.city || "",
+          state: target.state || "",
+          postalCode: target.postalCode || "",
+        }));
+      }
+    }
+  };
+
   const [taxData, setTaxData]             = useState(null);
   const [isCalculatingTax, setIsCalc]     = useState(false);
 
@@ -81,6 +153,10 @@ export function useCheckout() {
     disabledReason = "Please enter your delivery street address.";
   } else if (!formData.city?.trim() || !formData.postalCode?.trim()) {
     disabledReason = "Please complete your city and postal code to calculate shipping.";
+  } else if (!addressValidation) {
+    disabledReason = "Please enter your delivery address to verify with Shippo.";
+  } else if (!addressValidation.isValid) {
+    disabledReason = "Please correct the invalid delivery address before placing order.";
   } else if (isLoadingRates) {
     disabledReason = "Calculating live carrier shipping rates via Shippo...";
   } else if (!isShippingReady) {
@@ -133,6 +209,17 @@ export function useCheckout() {
         return;
       }
 
+      // Check if minimal location info is present
+      const targetState = formData.state?.trim() || "";
+      const targetPostal = formData.postalCode?.trim() || "";
+      const targetCity = formData.city?.trim() || "";
+      const targetLine1 = formData.addressLine1?.trim() || "";
+
+      if (!targetState && !targetPostal && !targetCity) {
+        setTaxData(null);
+        return;
+      }
+
       setIsCalc(true);
       try {
         const response = await Api.checkout.calculateStripeTax({
@@ -140,10 +227,10 @@ export function useCheckout() {
           shippingCost: shipping,
           shippingAddress: {
             countryCode: country.code || "US",
-            state: formData.state || "",
-            postalCode: formData.postalCode || "",
-            city: formData.city || "",
-            addressLine1: formData.addressLine1 || "",
+            state: targetState,
+            postalCode: targetPostal,
+            city: targetCity,
+            addressLine1: targetLine1,
           },
           items: cart.items.map((item) => ({
             productId: item.productId || item.id,
@@ -162,7 +249,11 @@ export function useCheckout() {
             effectiveRate: normalizedRate,
             calculationId: response.calculationId || response.taxCalculationId || null,
             breakdown: response.breakdown || response.taxBreakdown || [],
-            isStripeTax: response.isCalculatedViaStripe !== false,
+            taxabilityReason: response.taxabilityReason || null,
+            jurisdiction: response.jurisdiction || null,
+            isStripeTax: response.isCalculatedViaStripe === true,
+            error: response.error || null,
+            notice: response.error ? "Tax location determined at final payment step" : null,
           });
         }
       } catch (err) {
@@ -174,6 +265,8 @@ export function useCheckout() {
             calculationId: null,
             breakdown: [],
             isStripeTax: false,
+            error: err?.message || null,
+            notice: null,
           });
         }
       } finally {
@@ -191,46 +284,105 @@ export function useCheckout() {
       isCancelled = true;
       clearTimeout(timer);
     };
-  }, [country?.code, country?.currency, formData.state, formData.postalCode, subtotal, shipping, cart.items]);
+  }, [
+    country?.code,
+    country?.currency,
+    formData.addressLine1,
+    formData.city,
+    formData.state,
+    formData.postalCode,
+    subtotal,
+    shipping,
+    cart.items
+  ]);
 
   // ── Shippo Address Validation & Real-Time Carrier Rates ───────────────
   const fetchShippoRates = async (showLoadingState = true) => {
+    // Strictly require street address and postal code before attempting validation or rates
+    const hasStreet = Boolean(formData.addressLine1 && formData.addressLine1.trim().length >= 4);
+    const hasPostal = Boolean(formData.postalCode && formData.postalCode.trim().length >= 2);
+
+    if (!hasStreet || !hasPostal) {
+      setAddressValidation(null);
+      setShippingRates([]);
+      setSelectedRate(null);
+      if (showLoadingState) setIsLoadingRates(false);
+      return;
+    }
+
     if (showLoadingState) setIsLoadingRates(true);
 
     try {
-      // 1. If street address is filled, validate address with Shippo
-      if (formData.addressLine1 && formData.addressLine1.trim().length >= 4) {
-        try {
-          const valRes = await Api.shipping.validateAddress({
-            fullName: formData.fullName,
-            addressLine1: formData.addressLine1,
-            city: formData.city,
-            state: formData.state,
-            postalCode: formData.postalCode,
-            countryCode: country.code || "US",
-            phone: formData.phone
-          });
-          const valData = valRes?.isValid !== undefined 
-            ? valRes 
-            : (valRes?.data?.isValid !== undefined ? valRes.data : null);
-          if (valData) {
-            setAddressValidation(valData);
-          }
-        } catch (valErr) {
-          console.warn("[Shippo] Address check notice:", valErr?.message || valErr);
+      // 1. Validate delivery address with Shippo
+      let valData = null;
+      try {
+        const valRes = await Api.shipping.validateAddress({
+          fullName: formData.fullName,
+          addressLine1: formData.addressLine1.trim(),
+          city: formData.city?.trim() || "",
+          state: formData.state?.trim() || "",
+          postalCode: formData.postalCode.trim(),
+          countryCode: country.code || "US",
+          phone: formData.phone
+        });
+        valData = valRes?.isValid !== undefined 
+          ? valRes 
+          : (valRes?.data?.isValid !== undefined ? valRes.data : null);
+        if (valData) {
+          setAddressValidation(valData);
         }
-      } else {
-        setAddressValidation(null);
+      } catch (valErr) {
+        console.warn("[Shippo] Address check notice:", valErr?.message || valErr);
+        valData = { isValid: false, error: valErr?.message };
+        setAddressValidation(valData);
       }
 
-      // 2. Fetch Live Carrier Rates (works with city/state/postalCode or street address)
+      // ── STRICT GATE: WITHOUT A VALIDATED ADDRESS, NEVER FETCH OR DISPLAY RATES ──
+      if (!valData || !valData.isValid) {
+        setShippingRates([]);
+        setSelectedRate(null);
+        return;
+      }
+
+      // Auto-populate normalized postal address formatting if valid
+      let effectiveLine1 = formData.addressLine1.trim();
+      let effectiveCity = formData.city?.trim() || "";
+      let effectiveState = formData.state?.trim() || "";
+      let effectivePostal = formData.postalCode.trim();
+
+      if (valData.normalizedAddress) {
+        const norm = valData.normalizedAddress;
+        if (norm.addressLine1) effectiveLine1 = norm.addressLine1;
+        if (norm.city) effectiveCity = norm.city;
+        if (norm.state) effectiveState = norm.state;
+        if (norm.postalCode) effectivePostal = norm.postalCode;
+
+        setFormData((prev) => {
+          const isDifferent =
+            (norm.city && norm.city !== prev.city) ||
+            (norm.state && norm.state !== prev.state) ||
+            (norm.postalCode && norm.postalCode !== prev.postalCode);
+          if (isDifferent) {
+            return {
+              ...prev,
+              addressLine1: norm.addressLine1 || prev.addressLine1,
+              city: norm.city || prev.city,
+              state: norm.state || prev.state,
+              postalCode: norm.postalCode || prev.postalCode,
+            };
+          }
+          return prev;
+        });
+      }
+
+      // 2. Fetch Live Carrier Rates ONLY for the verified validated address
       const ratesRes = await Api.shipping.getShippingRates({
         shippingAddress: {
           fullName: formData.fullName || "Customer",
-          addressLine1: formData.addressLine1 || "",
-          city: formData.city || "",
-          state: formData.state || "",
-          postalCode: formData.postalCode || "",
+          addressLine1: effectiveLine1,
+          city: effectiveCity,
+          state: effectiveState,
+          postalCode: effectivePostal,
           countryCode: country.code || "US",
           phone: formData.phone || ""
         },
@@ -274,9 +426,14 @@ export function useCheckout() {
           if (prev && rates.some(r => r.id === prev.id)) return prev;
           return rates[0] || null;
         });
+      } else {
+        setShippingRates([]);
+        setSelectedRate(null);
       }
     } catch (err) {
       console.warn("[Shippo] Rate query notice:", err?.message || err);
+      setShippingRates([]);
+      setSelectedRate(null);
     } finally {
       if (showLoadingState) {
         setIsLoadingRates(false);
@@ -354,6 +511,26 @@ export function useCheckout() {
 
       if (!order?.id) {
         throw new Error("Unable to create checkout order session.");
+      }
+
+      // Save new address to profile if customer requested
+      if (saveAddressToProfile && selectedAddressId === "new" && isAuthenticated) {
+        try {
+          await Api.user.addAddress({
+            name: "Home",
+            fullName: fd.fullName,
+            phone: fd.phone,
+            addressLine1: fd.addressLine1,
+            addressLine2: fd.addressLine2 || null,
+            city: fd.city,
+            state: fd.state || null,
+            postalCode: fd.postalCode,
+            countryCode: country.code || "US",
+            isDefault: false
+          });
+        } catch (saveErr) {
+          console.warn("Could not save address to customer profile:", saveErr.message);
+        }
       }
 
       const displayOrderNumber = order?.orderNumber || `ORD-${order.id.slice(0, 8).toUpperCase()}`;
@@ -509,6 +686,23 @@ export function useCheckout() {
     executeOrder(fd);
   };
 
+  const applyNormalizedAddress = () => {
+    const norm = addressValidation?.normalizedAddress;
+    if (!norm) return;
+    setFormData((prev) => ({
+      ...prev,
+      addressLine1: norm.addressLine1 || prev.addressLine1,
+      city: norm.city || prev.city,
+      state: norm.state || prev.state,
+      postalCode: norm.postalCode || prev.postalCode,
+    }));
+    addToast({
+      title: "Address Standardized",
+      message: "Applied official postal address formatting.",
+      type: "success"
+    });
+  };
+
   return {
     // state
     formData, setField, loading, showAuthModal, setShowAuthModal,
@@ -516,6 +710,7 @@ export function useCheckout() {
     // Shippo Shipping
     shippingRates, selectedRate, setSelectedRate, isLoadingRates, recalculateRates,
     isShippingReady, addressValidation, originWarehouse, freeShippingEligible,
+    applyNormalizedAddress,
     // Order Validation
     canPlaceOrder, disabledReason,
     // Stripe Modal
@@ -524,6 +719,9 @@ export function useCheckout() {
     subtotal, taxAmount, shipping, grandTotal,
     // country
     country, isAuthenticated,
+    // Saved addresses & different destination management
+    savedAddresses, selectedAddressId, selectSavedAddress,
+    saveAddressToProfile, setSaveAddressToProfile,
     // actions
     handleSubmit, handleAuthSuccess,
     // cart

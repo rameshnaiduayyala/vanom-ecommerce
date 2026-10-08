@@ -71,6 +71,12 @@ function variantCreateData(variant) {
     attributes: variant.attributes ?? null,
     stock: variant.stock ?? 0,
     isActive: variant.isActive ?? true,
+    weight: variant.weight !== undefined && variant.weight !== null && variant.weight !== "" ? Number(variant.weight) : null,
+    weightUnit: variant.weightUnit ?? "lb",
+    length: variant.length !== undefined && variant.length !== null && variant.length !== "" ? Number(variant.length) : null,
+    width: variant.width !== undefined && variant.width !== null && variant.width !== "" ? Number(variant.width) : null,
+    height: variant.height !== undefined && variant.height !== null && variant.height !== "" ? Number(variant.height) : null,
+    dimensionUnit: variant.dimensionUnit ?? "in",
     ...(variant.countries ? { countries: { create: countryData(variant.countries) } } : {})
   };
 }
@@ -101,6 +107,12 @@ export async function createProduct(input) {
         returnPolicy: input.returnPolicy ?? null,
         warrantyInfo: input.warrantyInfo ?? null,
         keyHighlights: input.keyHighlights ?? null,
+        weight: input.weight !== undefined && input.weight !== null && input.weight !== "" ? Number(input.weight) : null,
+        weightUnit: input.weightUnit ?? "lb",
+        length: input.length !== undefined && input.length !== null && input.length !== "" ? Number(input.length) : null,
+        width: input.width !== undefined && input.width !== null && input.width !== "" ? Number(input.width) : null,
+        height: input.height !== undefined && input.height !== null && input.height !== "" ? Number(input.height) : null,
+        dimensionUnit: input.dimensionUnit ?? "in",
         ...(input.countries ? { countries: { create: countryData(input.countries) } } : {}),
         ...(input.images ? { images: { create: imageData(input.images) } } : {}),
         ...(input.variants ? { variants: { create: input.variants.map(variantCreateData) } } : {})
@@ -305,6 +317,12 @@ export async function updateProduct(id, input) {
           ...(input.returnPolicy !== undefined && { returnPolicy: input.returnPolicy }),
           ...(input.warrantyInfo !== undefined && { warrantyInfo: input.warrantyInfo }),
           ...(input.keyHighlights !== undefined && { keyHighlights: input.keyHighlights }),
+          ...(input.weight !== undefined && { weight: input.weight !== null && input.weight !== "" ? Number(input.weight) : null }),
+          ...(input.weightUnit !== undefined && { weightUnit: input.weightUnit }),
+          ...(input.length !== undefined && { length: input.length !== null && input.length !== "" ? Number(input.length) : null }),
+          ...(input.width !== undefined && { width: input.width !== null && input.width !== "" ? Number(input.width) : null }),
+          ...(input.height !== undefined && { height: input.height !== null && input.height !== "" ? Number(input.height) : null }),
+          ...(input.dimensionUnit !== undefined && { dimensionUnit: input.dimensionUnit }),
           ...(input.countries ? { countries: { deleteMany: {}, create: countryData(input.countries) } } : {}),
           ...(input.images ? { images: { deleteMany: {}, create: imageData(input.images) } } : {}),
           ...(input.variants ? { variants: { deleteMany: {}, create: input.variants.map(variantCreateData) } } : {})
@@ -608,6 +626,12 @@ export async function updateVariant(productId, id, input) {
       ...(input.attributes !== undefined && { attributes: input.attributes }),
       ...(input.stock !== undefined && { stock: input.stock }),
       ...(input.isActive !== undefined && { isActive: input.isActive }),
+      ...(input.weight !== undefined && { weight: input.weight !== null && input.weight !== "" ? Number(input.weight) : null }),
+      ...(input.weightUnit !== undefined && { weightUnit: input.weightUnit }),
+      ...(input.length !== undefined && { length: input.length !== null && input.length !== "" ? Number(input.length) : null }),
+      ...(input.width !== undefined && { width: input.width !== null && input.width !== "" ? Number(input.width) : null }),
+      ...(input.height !== undefined && { height: input.height !== null && input.height !== "" ? Number(input.height) : null }),
+      ...(input.dimensionUnit !== undefined && { dimensionUnit: input.dimensionUnit }),
       ...(input.countries ? { countries: { deleteMany: {}, create: countryData(input.countries) } } : {})
     },
     include: variantInclude

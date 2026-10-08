@@ -25,6 +25,10 @@ export const userService = {
     return apiClient.delete(`/users/addresses/${addressId}`);
   },
 
+  setDefaultAddress: async (addressId) => {
+    return apiClient.patch(`/users/addresses/${addressId}/default`);
+  },
+
   // Admin / User Management endpoints
   getUsers: async (params = {}) => {
     return apiClient.get("/users", { params });

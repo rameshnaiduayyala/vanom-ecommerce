@@ -1,5 +1,6 @@
 import { productRoutes } from "../modules/products/product.routes.js";
 import { userRoutes } from "../modules/users/user.routes.js";
+import { addressRoutes } from "../modules/users/address.routes.js";
 import { authRoutes } from "../modules/auth/auth.routes.js";
 import { categoryRoutes } from "../modules/categories/category.routes.js";
 import { brandRoutes } from "../modules/brands/brand.routes.js";
@@ -50,6 +51,9 @@ export async function registerRoutes(fastify) {
     return search(request, reply);
   });
   await fastify.register(userRoutes, {
+    prefix: "/api/v1"
+  });
+  await fastify.register(addressRoutes, {
     prefix: "/api/v1"
   });
   await fastify.register(authRoutes, {

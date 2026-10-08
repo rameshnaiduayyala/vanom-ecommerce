@@ -40,31 +40,65 @@ export async function calculateParcels(items = []) {
     if (it.variantId) {
       const variant = await prisma.productVariant.findUnique({
         where: { id: it.variantId },
-        select: { weight: true, weightUnit: true, length: true, width: true, height: true, dimensionUnit: true }
-      });
-      if (variant?.weight) {
-        unitWeight = Number(variant.weight);
-        if (variant.weightUnit?.toLowerCase() === "kg" || variant.weightUnit?.toLowerCase() === "kg") {
-          unitWeight = unitWeight * 2.20462; // kg to lb
+        select: {
+          weight: true, weightUnit: true, length: true, width: true, height: true, dimensionUnit: true,
+          product: {
+            select: { weight: true, weightUnit: true, length: true, width: true, height: true, dimensionUnit: true }
+          }
         }
+      });
+      const spec = (variant?.weight || variant?.length) ? variant : (variant?.product || variant);
+      if (spec?.weight) {
+        let w = Number(spec.weight);
+        const u = spec.weightUnit?.toLowerCase();
+        if (u === "kg") w = w * 2.20462;
+        else if (u === "g") w = w * 0.00220462;
+        else if (u === "oz") w = w * 0.0625;
+        unitWeight = w;
       }
-      if (variant?.length) unitLength = Number(variant.length);
-      if (variant?.width) unitWidth = Number(variant.width);
-      if (variant?.height) unitHeight = Number(variant.height);
+      if (spec?.length) {
+        let l = Number(spec.length);
+        if (spec.dimensionUnit?.toLowerCase() === "cm") l = l * 0.393701;
+        unitLength = l;
+      }
+      if (spec?.width) {
+        let wi = Number(spec.width);
+        if (spec.dimensionUnit?.toLowerCase() === "cm") wi = wi * 0.393701;
+        unitWidth = wi;
+      }
+      if (spec?.height) {
+        let h = Number(spec.height);
+        if (spec.dimensionUnit?.toLowerCase() === "cm") h = h * 0.393701;
+        unitHeight = h;
+      }
     } else if (it.productId) {
       const product = await prisma.product.findUnique({
         where: { id: it.productId },
         select: { weight: true, weightUnit: true, length: true, width: true, height: true, dimensionUnit: true }
       });
       if (product?.weight) {
-        unitWeight = Number(product.weight);
-        if (product.weightUnit?.toLowerCase() === "kg") {
-          unitWeight = unitWeight * 2.20462;
-        }
+        let w = Number(product.weight);
+        const u = product.weightUnit?.toLowerCase();
+        if (u === "kg") w = w * 2.20462;
+        else if (u === "g") w = w * 0.00220462;
+        else if (u === "oz") w = w * 0.0625;
+        unitWeight = w;
       }
-      if (product?.length) unitLength = Number(product.length);
-      if (product?.width) unitWidth = Number(product.width);
-      if (product?.height) unitHeight = Number(product.height);
+      if (product?.length) {
+        let l = Number(product.length);
+        if (product.dimensionUnit?.toLowerCase() === "cm") l = l * 0.393701;
+        unitLength = l;
+      }
+      if (product?.width) {
+        let wi = Number(product.width);
+        if (product.dimensionUnit?.toLowerCase() === "cm") wi = wi * 0.393701;
+        unitWidth = wi;
+      }
+      if (product?.height) {
+        let h = Number(product.height);
+        if (product.dimensionUnit?.toLowerCase() === "cm") h = h * 0.393701;
+        unitHeight = h;
+      }
     }
 
     totalWeightLb += unitWeight * qty;
@@ -194,8 +228,23 @@ export async function getShippingRates({
   items = [],
   subtotal = 0
 }) {
+  const street1 = (shippingAddress?.addressLine1 || shippingAddress?.street1 || "").trim();
+  const postalCode = (shippingAddress?.postalCode || shippingAddress?.zip || "").trim();
+  const city = (shippingAddress?.city || "").trim();
+  const state = (shippingAddress?.state || "").trim();
   const destinationCountry = (shippingAddress?.countryCode || shippingAddress?.country || "US").toUpperCase();
   const warehouse = await resolveOriginWarehouse(organizationId, warehouseId, destinationCountry);
+
+  // Strictly require a real, non-empty street address and postal code
+  if (!street1 || street1.length < 4 || !postalCode) {
+    return {
+      rates: [],
+      originWarehouse: warehouse,
+      freeShippingEligible: false,
+      message: "A valid verified street address and postal code are required to calculate shipping rates."
+    };
+  }
+
   const parcels = await calculateParcels(items);
 
   const addressFrom = {
@@ -212,11 +261,11 @@ export async function getShippingRates({
   const addressTo = {
     fullName: shippingAddress?.fullName || shippingAddress?.name || "Customer",
     company: shippingAddress?.company || null,
-    street1: shippingAddress?.addressLine1 || shippingAddress?.street1 || "100 Main Street",
+    street1,
     street2: shippingAddress?.addressLine2 || shippingAddress?.street2 || null,
-    city: shippingAddress?.city || (destinationCountry === "CA" ? "Toronto" : destinationCountry === "IN" ? "Hyderabad" : "New York"),
-    state: shippingAddress?.state || (destinationCountry === "CA" ? "ON" : destinationCountry === "IN" ? "Telangana" : "NY"),
-    postalCode: shippingAddress?.postalCode || shippingAddress?.zip || (destinationCountry === "CA" ? "M5V 2T6" : destinationCountry === "IN" ? "500081" : "10001"),
+    city,
+    state: state || null,
+    postalCode,
     countryCode: destinationCountry,
     phone: shippingAddress?.phone || "+1 555-0199",
     email: shippingAddress?.email || null
@@ -233,11 +282,11 @@ export async function getShippingRates({
     rawRates = rateResult.rates || [];
     shippoShipmentId = rateResult.shipmentId || null;
   } catch (err) {
-    console.warn("[Shippo] Live rate API notice, using standard carrier quotes:", err.message);
+    console.warn("[Shippo] Live rate API notice:", err.message);
   }
 
-  // If Shippo returned no rates for this route (e.g. India or remote destination), provide reliable carrier options
-  if (!rawRates.length) {
+  // If Shippo returned no rates for international routes without direct carriers (e.g. India), provide reliable carrier options
+  if (!rawRates.length && destinationCountry !== "US") {
     const isIndia = destinationCountry === "IN";
     const isCanada = destinationCountry === "CA";
     const currency = isIndia ? "INR" : isCanada ? "CAD" : "USD";

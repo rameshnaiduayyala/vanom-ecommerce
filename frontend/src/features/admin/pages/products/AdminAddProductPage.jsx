@@ -6,6 +6,7 @@ import { useAddProductForm } from "./hooks/useAddProductForm.js";
 import { BasicInfoCard } from "./components/BasicInfoCard.jsx";
 import { SimplePricingCard } from "./components/SimplePricingCard.jsx";
 import { VariantsPricingCard } from "./components/VariantsPricingCard.jsx";
+import { ShippingDimensionsCard } from "./components/ShippingDimensionsCard.jsx";
 import { ProductImagesCard } from "./components/ProductImagesCard.jsx";
 import { ProductSidebarSettings } from "./components/ProductSidebarSettings.jsx";
 
@@ -85,6 +86,8 @@ export function AdminAddProductPage() {
                 updateVariantRow={updateVariantRow}
               />
             )}
+
+            <ShippingDimensionsCard formData={formData} setFormData={setFormData} />
 
             <ProductImagesCard
               formData={formData}

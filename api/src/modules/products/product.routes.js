@@ -18,6 +18,7 @@ const productProperties = {
   stock: { type: "integer", minimum: 0 },
   brandId: { type: ["string", "null"] },
   categoryId: { type: ["string", "null"] },
+  warehouseId: { type: ["string", "null"] },
   isActive: { type: "boolean" },
   isNew: { type: "boolean" },
   isFeatured: { type: "boolean" },
@@ -28,7 +29,13 @@ const productProperties = {
   warrantyInfo: { type: ["string", "null"] },
   keyHighlights: {
     type: ["array", "object", "null"]
-  }
+  },
+  weight: { type: ["number", "string", "null"] },
+  weightUnit: { type: ["string", "null"] },
+  length: { type: ["number", "string", "null"] },
+  width: { type: ["number", "string", "null"] },
+  height: { type: ["number", "string", "null"] },
+  dimensionUnit: { type: ["string", "null"] }
 };
 
 const productBodySchema = {
@@ -58,6 +65,12 @@ const variantProperties = {
   attributes: { type: ["object", "null"] },
   stock: { type: "integer", minimum: 0 },
   isActive: { type: "boolean" },
+  weight: { type: ["number", "string", "null"] },
+  weightUnit: { type: ["string", "null"] },
+  length: { type: ["number", "string", "null"] },
+  width: { type: ["number", "string", "null"] },
+  height: { type: ["number", "string", "null"] },
+  dimensionUnit: { type: ["string", "null"] },
   countries: { type: "array", items: { type: "object", additionalProperties: false, properties: countryProperties } }
 };
 

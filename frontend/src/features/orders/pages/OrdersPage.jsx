@@ -77,7 +77,8 @@ export function OrdersPage() {
             (it.productName || it.name || it.product?.name || "").toLowerCase().includes(query) ||
             (it.sku || it.product?.sku || "").toLowerCase().includes(query)
         );
-        const matchesAddress = (order.shippingAddress?.city || "").toLowerCase().includes(query);
+        const shippingCity = (order.shippingAddress?.city || (Array.isArray(order.addresses) ? order.addresses[0]?.city : "") || "").toLowerCase();
+        const matchesAddress = shippingCity.includes(query);
         if (!matchesId && !matchesItems && !matchesAddress) return false;
       }
 
@@ -302,9 +303,10 @@ export function OrdersPage() {
                         Destination
                       </span>
                       <span className="font-semibold text-slate-700 truncate max-w-[160px] block">
-                        {order.shippingAddress?.city
-                          ? `${order.shippingAddress.city}, ${order.shippingAddress.countryCode || "US"}`
-                          : "Standard Logistics"}
+                        {(() => {
+                          const addr = order.shippingAddress || (Array.isArray(order.addresses) ? order.addresses.find((a) => a.type === "SHIPPING") || order.addresses[0] : null);
+                          return addr?.city ? `${addr.city}, ${addr.countryCode || addr.country || "US"}` : "Standard Logistics";
+                        })()}
                       </span>
                     </div>
                   </div>

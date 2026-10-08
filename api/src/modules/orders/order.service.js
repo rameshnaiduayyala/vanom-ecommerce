@@ -41,9 +41,44 @@ function formatOrder(order) {
     ? `ORD-${order.invoices[0].invoiceNumber.replace(/^INV-/, "")}`
     : `ORD-${order.id.slice(0, 8).toUpperCase()}`;
   const totalNum = Number(order.total || 0);
+
+  const shippingAddressRecord = Array.isArray(order.addresses)
+    ? order.addresses.find((a) => a.type === "SHIPPING" || a.type === "DELIVERY") || order.addresses[0] || null
+    : order.shippingAddress || null;
+
+  const billingAddressRecord = Array.isArray(order.addresses)
+    ? order.addresses.find((a) => a.type === "BILLING") || shippingAddressRecord
+    : order.billingAddress || null;
+
+  const shippingAddress = shippingAddressRecord
+    ? {
+        ...shippingAddressRecord,
+        name: shippingAddressRecord.fullName || shippingAddressRecord.name || null,
+        streetAddress: shippingAddressRecord.addressLine1 || shippingAddressRecord.streetAddress || null,
+        line1: shippingAddressRecord.addressLine1 || shippingAddressRecord.line1 || null,
+        line2: shippingAddressRecord.addressLine2 || shippingAddressRecord.line2 || null,
+        country: shippingAddressRecord.countryCode || shippingAddressRecord.country || null,
+        zip: shippingAddressRecord.postalCode || shippingAddressRecord.zip || null,
+      }
+    : null;
+
+  const billingAddress = billingAddressRecord
+    ? {
+        ...billingAddressRecord,
+        name: billingAddressRecord.fullName || billingAddressRecord.name || null,
+        streetAddress: billingAddressRecord.addressLine1 || billingAddressRecord.streetAddress || null,
+        line1: billingAddressRecord.addressLine1 || billingAddressRecord.line1 || null,
+        line2: billingAddressRecord.addressLine2 || billingAddressRecord.line2 || null,
+        country: billingAddressRecord.countryCode || billingAddressRecord.country || null,
+        zip: billingAddressRecord.postalCode || billingAddressRecord.zip || null,
+      }
+    : null;
+
   return {
     ...order,
     orderNumber,
+    shippingAddress,
+    billingAddress,
     total: totalNum,
     totalAmount: totalNum,
     subtotal: Number(order.subtotal || 0),
