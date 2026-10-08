@@ -16,6 +16,21 @@ export async function create(request, reply) {
   });
 }
 
+export async function createCheckoutSession(request, reply) {
+  const data = await paymentService.createCheckoutSession({
+    orderId: request.body.orderId,
+    userId: request.user?.sub || null,
+    successUrl: request.body.successUrl || null,
+    cancelUrl: request.body.cancelUrl || null
+  });
+
+  return sendSuccess(reply, {
+    statusCode: HTTP_STATUS.CREATED,
+    message: "Stripe checkout session initialized successfully",
+    data
+  });
+}
+
 export async function capture(request, reply) {
   const data = await paymentService.capturePayment(request.params.paymentId, {
     ...request.body,

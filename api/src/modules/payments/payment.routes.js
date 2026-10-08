@@ -25,6 +25,22 @@ export async function paymentRoutes(fastify) {
     }
   }, controller.create);
 
+  fastify.post("/payments/checkout-session", {
+    preHandler: optionalAuth,
+    schema: {
+      body: {
+        type: "object",
+        required: ["orderId"],
+        additionalProperties: true,
+        properties: {
+          orderId: { type: "string", minLength: 1 },
+          successUrl: { type: "string" },
+          cancelUrl: { type: "string" }
+        }
+      }
+    }
+  }, controller.createCheckoutSession);
+
   fastify.post("/payments/:paymentId/capture", {
     preHandler: authenticate,
     schema: {

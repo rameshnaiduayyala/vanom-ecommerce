@@ -48,6 +48,8 @@ export function CheckoutPage() {
             formData={checkout.formData}
             setField={checkout.setField}
             country={checkout.country}
+            addressValidation={checkout.addressValidation}
+            onApplyNormalizedAddress={checkout.applyNormalizedAddress}
           />
 
           {/* Shippo Live Carrier Shipping Selection */}

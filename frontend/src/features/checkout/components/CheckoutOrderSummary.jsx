@@ -60,25 +60,46 @@ export function CheckoutOrderSummary({
           </div>
 
           {/* Tax breakdown */}
-          <div className="flex justify-between items-center">
-            <span className="flex items-center gap-1">
-              Tax
-              {taxData?.effectiveRate > 0 && (
-                <span className="text-[10px] text-[#007185]">
-                  ({(taxData.effectiveRate * 100).toFixed(2)}%)
-                </span>
-              )}
-              {isCalculatingTax && <Loader2 className="w-3 h-3 animate-spin text-[#007185]" />}
-            </span>
-            <span className="font-semibold text-gray-900">
-              {isCalculatingTax ? (
-                <span className="text-gray-400 font-normal italic">Calculating…</span>
-              ) : taxData !== null ? (
-                formatPrice(taxAmount, country.currency, country.symbol)
-              ) : (
-                <span className="text-gray-400 font-normal italic">—</span>
-              )}
-            </span>
+          <div className="space-y-1">
+            <div className="flex justify-between items-center">
+              <span className="flex items-center gap-1">
+                Tax
+                {taxData?.effectiveRate > 0 ? (
+                  <span className="text-[10px] text-[#007185] font-semibold">
+                    ({(taxData.effectiveRate * 100).toFixed(2)}%{taxData?.jurisdiction ? ` ${taxData.jurisdiction}` : ""})
+                  </span>
+                ) : (taxData?.isStripeTax && taxData?.taxabilityReason === "not_collecting") ? (
+                  <span className="text-[10px] text-slate-400">
+                    (0%{taxData?.jurisdiction ? ` ${taxData.jurisdiction}` : ""} - No nexus)
+                  </span>
+                ) : null}
+                {isCalculatingTax && <Loader2 className="w-3 h-3 animate-spin text-[#007185]" />}
+              </span>
+              <span className="font-semibold text-gray-900">
+                {isCalculatingTax ? (
+                  <span className="text-gray-400 font-normal italic">Calculating…</span>
+                ) : taxData !== null ? (
+                  taxAmount === 0 ? (
+                    <span className="text-gray-600 font-medium text-[11px]">$0.00</span>
+                  ) : (
+                    formatPrice(taxAmount, country.currency, country.symbol)
+                  )
+                ) : (
+                  <span className="text-gray-400 font-normal italic">—</span>
+                )}
+              </span>
+            </div>
+            {taxData?.calculationId && !isCalculatingTax && (
+              <p className="text-[9.5px] text-emerald-700/90 font-medium text-right flex items-center justify-end gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                Stripe Tax Live Verified
+              </p>
+            )}
+            {taxData?.notice && !isCalculatingTax && (
+              <p className="text-[10px] text-slate-400 text-right leading-tight">
+                Calculated at final payment step
+              </p>
+            )}
           </div>
 
           {/* Shipping breakdown (Strictly no $4.99 default) */}
@@ -121,12 +142,12 @@ export function CheckoutOrderSummary({
           type="submit"
           variant="primary"
           size="lg"
-          className="w-full font-bold shadow-sm"
+          className="w-full font-bold shadow-sm flex items-center justify-center gap-2"
           isLoading={loading}
           disabled={!canPlaceOrder || loading}
         >
-          <Lock className="w-4 h-4 mr-1.5" />
-          Place Order & Pay
+          <Lock className="w-4 h-4" />
+          <span>Pay Securely with Stripe</span>
         </Button>
 
         {/* Status notice when button is disabled */}

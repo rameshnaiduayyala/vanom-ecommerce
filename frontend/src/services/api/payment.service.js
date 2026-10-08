@@ -10,6 +10,15 @@ export const paymentService = {
     return res;
   },
 
+  createCheckoutSession: async ({ orderId, successUrl, cancelUrl } = {}) => {
+    const res = await apiClient.post("/payments/checkout-session", {
+      orderId,
+      successUrl,
+      cancelUrl,
+    });
+    return res;
+  },
+
   capturePayment: async (paymentId, payload = {}) => {
     const body = typeof payload === "object" ? payload : { amount: payload };
     const res = await apiClient.post(`/payments/${paymentId}/capture`, body);

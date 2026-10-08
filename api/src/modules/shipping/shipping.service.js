@@ -194,8 +194,23 @@ export async function getShippingRates({
   items = [],
   subtotal = 0
 }) {
+  const street1 = (shippingAddress?.addressLine1 || shippingAddress?.street1 || "").trim();
+  const postalCode = (shippingAddress?.postalCode || shippingAddress?.zip || "").trim();
+  const city = (shippingAddress?.city || "").trim();
+  const state = (shippingAddress?.state || "").trim();
   const destinationCountry = (shippingAddress?.countryCode || shippingAddress?.country || "US").toUpperCase();
   const warehouse = await resolveOriginWarehouse(organizationId, warehouseId, destinationCountry);
+
+  // Strictly require a real, non-empty street address and postal code
+  if (!street1 || street1.length < 4 || !postalCode) {
+    return {
+      rates: [],
+      originWarehouse: warehouse,
+      freeShippingEligible: false,
+      message: "A valid verified street address and postal code are required to calculate shipping rates."
+    };
+  }
+
   const parcels = await calculateParcels(items);
 
   const addressFrom = {
@@ -212,11 +227,11 @@ export async function getShippingRates({
   const addressTo = {
     fullName: shippingAddress?.fullName || shippingAddress?.name || "Customer",
     company: shippingAddress?.company || null,
-    street1: shippingAddress?.addressLine1 || shippingAddress?.street1 || "100 Main Street",
+    street1,
     street2: shippingAddress?.addressLine2 || shippingAddress?.street2 || null,
-    city: shippingAddress?.city || (destinationCountry === "CA" ? "Toronto" : destinationCountry === "IN" ? "Hyderabad" : "New York"),
-    state: shippingAddress?.state || (destinationCountry === "CA" ? "ON" : destinationCountry === "IN" ? "Telangana" : "NY"),
-    postalCode: shippingAddress?.postalCode || shippingAddress?.zip || (destinationCountry === "CA" ? "M5V 2T6" : destinationCountry === "IN" ? "500081" : "10001"),
+    city,
+    state: state || null,
+    postalCode,
     countryCode: destinationCountry,
     phone: shippingAddress?.phone || "+1 555-0199",
     email: shippingAddress?.email || null
@@ -233,11 +248,11 @@ export async function getShippingRates({
     rawRates = rateResult.rates || [];
     shippoShipmentId = rateResult.shipmentId || null;
   } catch (err) {
-    console.warn("[Shippo] Live rate API notice, using standard carrier quotes:", err.message);
+    console.warn("[Shippo] Live rate API notice:", err.message);
   }
 
-  // If Shippo returned no rates for this route (e.g. India or remote destination), provide reliable carrier options
-  if (!rawRates.length) {
+  // If Shippo returned no rates for international routes without direct carriers (e.g. India), provide reliable carrier options
+  if (!rawRates.length && destinationCountry !== "US") {
     const isIndia = destinationCountry === "IN";
     const isCanada = destinationCountry === "CA";
     const currency = isIndia ? "INR" : isCanada ? "CAD" : "USD";

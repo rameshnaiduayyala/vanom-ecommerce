@@ -1,5 +1,7 @@
 import Stripe from "stripe";
 import { env } from "../../config/env.js";
+import { AppError } from "../../common/errors/app-error.js";
+import { HTTP_STATUS } from "../../constants/http-status.js";
 
 const isRealStripeKey =
   Boolean(env.stripeSecretKey) &&
@@ -69,46 +71,41 @@ export async function calculateStripeTax({
 
       const calculation = await stripeClient.tax.calculations.create(calculationParams);
       const taxAmount = Number((calculation.tax_amount_exclusive / 100).toFixed(2));
+      const firstBreakdown = calculation.tax_breakdown?.[0];
+      const rateStr = firstBreakdown?.tax_rate_details?.percentage_decimal || "0.0";
+      const taxabilityReason = firstBreakdown?.taxability_reason || null;
+      const jurisdiction = firstBreakdown?.tax_rate_details?.state || firstBreakdown?.tax_rate_details?.country || state || null;
 
       return {
         taxAmount,
         taxCalculationId: calculation.id,
         taxBreakdown: calculation.tax_breakdown || [],
-        rate: calculation.tax_breakdown?.[0]?.tax_rate_details?.percentage_decimal || 0,
+        rate: rateStr,
+        taxabilityReason,
+        jurisdiction,
         isCalculatedViaStripe: true
       };
     } catch (err) {
       console.warn("[Stripe Tax] Calculation notice:", err.message);
-      // If Stripe account doesn't have active registration in destination jurisdiction, return 0 tax
+      // When destination jurisdiction has no tax registered or is exempt, return 0 tax with clean explanation
       return {
         taxAmount: 0,
         taxCalculationId: null,
         taxBreakdown: [],
         rate: 0,
+        taxabilityReason: "not_collecting",
+        jurisdiction: state || country,
         error: err.message,
         isCalculatedViaStripe: false
       };
     }
   }
 
-  // Graceful development mode fallback if Stripe secret key is placeholder
-  const subtotalCents = lineItems.reduce((sum, it) => sum + it.amount, 0);
-  const mockTaxRate = country === "US" ? 0.0825 : country === "CA" ? 0.13 : 0.18;
-  const mockTax = Number(((subtotalCents / 100) * mockTaxRate).toFixed(2));
-
-  return {
-    taxAmount: mockTax,
-    taxCalculationId: `taxcalc_dev_${Date.now()}`,
-    taxBreakdown: [
-      {
-        amount: Math.round(mockTax * 100),
-        jurisdiction: { country, state: state || "STATE" },
-        tax_rate_details: { percentage_decimal: mockTaxRate }
-      }
-    ],
-    rate: mockTaxRate,
-    isCalculatedViaStripe: false
-  };
+  throw new AppError(
+    "Stripe Tax calculation unavailable: STRIPE_SECRET_KEY is not configured.",
+    HTTP_STATUS.SERVICE_UNAVAILABLE,
+    "STRIPE_GATEWAY_UNAVAILABLE"
+  );
 }
 
 /**
@@ -123,46 +120,130 @@ export async function createStripePaymentIntent({
   const amountCents = Math.round(Number(order.total) * 100);
   const currency = (order.currencyCode || "USD").toLowerCase();
 
-  if (stripeClient) {
-    const params = {
-      amount: amountCents,
-      currency,
-      metadata: {
-        orderId: order.id,
-        userId: order.userId || "",
-        ...(order.stripeTaxCalculationId ? { taxCalculationId: order.stripeTaxCalculationId } : {}),
-        ...metadata
-      },
-      automatic_payment_methods: {
-        enabled: true
-      }
-    };
-
-    if (customerEmail) {
-      params.receipt_email = customerEmail;
-    }
-
-    const paymentIntent = await stripeClient.paymentIntents.create(params);
-
-    return {
-      id: paymentIntent.id,
-      clientSecret: paymentIntent.client_secret,
-      status: paymentIntent.status,
-      amount: Number(order.total),
-      currency: order.currencyCode,
-      publishableKey: env.stripePublishableKey
-    };
+  if (!stripeClient) {
+    throw new AppError(
+      "Stripe payment gateway is not configured. Please ensure STRIPE_SECRET_KEY is set in environment.",
+      HTTP_STATUS.SERVICE_UNAVAILABLE,
+      "STRIPE_GATEWAY_UNAVAILABLE"
+    );
   }
 
-  // Developer mock client secret when no live key is set
-  const mockId = `pi_dev_${Date.now()}_${order.id.slice(-6)}`;
+  const params = {
+    amount: amountCents,
+    currency,
+    metadata: {
+      orderId: order.id,
+      userId: order.userId || "",
+      ...(order.stripeTaxCalculationId ? { taxCalculationId: order.stripeTaxCalculationId } : {}),
+      ...metadata
+    },
+    automatic_payment_methods: {
+      enabled: true
+    }
+  };
+
+  if (customerEmail) {
+    params.receipt_email = customerEmail;
+  }
+
+  const paymentIntent = await stripeClient.paymentIntents.create(params);
+
   return {
-    id: mockId,
-    clientSecret: `${mockId}_secret_mock_${Math.random().toString(36).slice(2, 12)}`,
-    status: "requires_payment_method",
+    id: paymentIntent.id,
+    clientSecret: paymentIntent.client_secret,
+    status: paymentIntent.status,
     amount: Number(order.total),
     currency: order.currencyCode,
-    publishableKey: env.stripePublishableKey || "pk_test_placeholder"
+    publishableKey: env.stripePublishableKey
+  };
+}
+
+/**
+ * ─── STRIPE CHECKOUT: Create Hosted Checkout Session with Stripe Tax ───────
+ * Pure Stripe SDK call with automatic_tax enabled and customer details
+ */
+export async function createStripeCheckoutSession({
+  order,
+  customerEmail = null,
+  successUrl,
+  cancelUrl,
+  metadata = {}
+}) {
+  if (!stripeClient) {
+    throw new AppError(
+      "Stripe payment gateway is not configured. Please ensure STRIPE_SECRET_KEY is set in environment.",
+      HTTP_STATUS.SERVICE_UNAVAILABLE,
+      "STRIPE_GATEWAY_UNAVAILABLE"
+    );
+  }
+
+  const currency = (order.currencyCode || "USD").toLowerCase();
+
+  // Convert line items from order
+  const lineItems = (order.items || []).map((item) => {
+    const unitPrice = Number(item.unitPrice || 0);
+    const unitAmountCents = Math.round(unitPrice * 100);
+
+    return {
+      price_data: {
+        currency,
+        product_data: {
+          name: item.productName || item.product?.name || "Product",
+          images: item.product?.images?.[0]?.url ? [item.product.images[0].url] : [],
+          metadata: {
+            productId: String(item.productId || ""),
+            variantId: String(item.variantId || "")
+          }
+        },
+        unit_amount: Math.max(0, unitAmountCents)
+      },
+      quantity: Math.max(1, parseInt(item.quantity, 10) || 1)
+    };
+  });
+
+  // If shipping charges apply, add as a line item or shipping option
+  if (Number(order.shippingCharges) > 0) {
+    lineItems.push({
+      price_data: {
+        currency,
+        product_data: {
+          name: `Shipping (${order.shippingCarrier || order.shippingMethod || "Standard"})`,
+          metadata: { type: "shipping" }
+        },
+        unit_amount: Math.round(Number(order.shippingCharges) * 100)
+      },
+      quantity: 1
+    });
+  }
+
+  const session = await stripeClient.checkout.sessions.create({
+    mode: "payment",
+    line_items: lineItems.length > 0 ? lineItems : undefined,
+    customer_email: customerEmail || undefined,
+    automatic_tax: {
+      enabled: true
+    },
+    billing_address_collection: "required",
+    shipping_address_collection: {
+      allowed_countries: ["US", "CA", "GB", "IN", "AU", "DE", "FR"]
+    },
+    tax_id_collection: {
+      enabled: true
+    },
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    metadata: {
+      orderId: order.id,
+      orderNumber: order.orderNumber || `ORD-${order.id.slice(0, 8).toUpperCase()}`,
+      userId: order.userId || "",
+      ...metadata
+    }
+  });
+
+  return {
+    id: session.id,
+    url: session.url,
+    status: session.status
   };
 }
 

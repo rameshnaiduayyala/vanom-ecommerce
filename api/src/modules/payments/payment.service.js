@@ -6,11 +6,69 @@ import * as inventoryService from "../inventory/inventory.service.js";
 import { issueInvoiceForOrder } from "../invoice/invoice.service.js";
 import {
   createStripePaymentIntent,
+  createStripeCheckoutSession,
   recordStripeTaxTransaction,
   refundStripePayment,
   verifyStripeWebhook,
   stripeClient
 } from "./stripe.service.js";
+
+/**
+ * ─── CREATE STRIPE CHECKOUT SESSION (ENTERPRISE HOSTED CHECKOUT) ──────────
+ */
+export async function createCheckoutSession({ orderId, userId = null, successUrl = null, cancelUrl = null }) {
+  if (!orderId) {
+    throw new AppError("Order ID is required", HTTP_STATUS.BAD_REQUEST, "ORDER_ID_REQUIRED");
+  }
+
+  const order = await prisma.order.findFirst({
+    where: {
+      id: orderId,
+      ...(userId ? { userId } : {})
+    },
+    include: {
+      user: { select: { id: true, email: true, firstName: true, lastName: true } },
+      items: {
+        include: {
+          product: {
+            include: {
+              images: { orderBy: { sortOrder: "asc" } }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!order) {
+    throw new AppError(MESSAGES.ORDER_NOT_FOUND || "Order not found", HTTP_STATUS.NOT_FOUND, "ORDER_NOT_FOUND");
+  }
+
+  const clientOrigin = process.env.CLIENT_URL || "http://localhost:5173";
+  const resolvedSuccessUrl =
+    successUrl || `${clientOrigin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_id=${order.id}`;
+  const resolvedCancelUrl =
+    cancelUrl || `${clientOrigin}/checkout?canceled=true&order_id=${order.id}`;
+
+  const session = await createStripeCheckoutSession({
+    order,
+    customerEmail: order.user?.email || null,
+    successUrl: resolvedSuccessUrl,
+    cancelUrl: resolvedCancelUrl,
+    metadata: {
+      orderId: order.id,
+      userId: order.userId || ""
+    }
+  });
+
+  return {
+    sessionId: session.id,
+    url: session.url,
+    orderId: order.id,
+    amount: Number(order.total),
+    currency: order.currencyCode
+  };
+}
 
 /**
  * ─── CREATE PAYMENT INTENT (STRIPE PRIMARY) ──────────────────────────────
