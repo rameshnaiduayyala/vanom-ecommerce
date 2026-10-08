@@ -95,61 +95,91 @@ export function TaxInvoiceModal({
           </div>
 
           {/* Billed To & Shipped To */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs text-text-secondary">
-            <div className="p-4 rounded-xl bg-surface-muted/50 border border-border space-y-1.5">
-              <h5 className="font-bold text-text-primary uppercase text-[11px] text-brand-700">
-                Billed To / Buyer Details:
-              </h5>
-              <p className="font-bold text-text-primary text-sm">
-                {order.user?.firstName} {order.user?.lastName}
-              </p>
-              {order.company && (
-                <p className="font-semibold text-text-primary flex items-center gap-1">
-                  <Building2 className="w-3.5 h-3.5" /> Company: {order.company.name}
-                </p>
-              )}
-              <p>
-                {order.billingAddress?.line1 ||
-                  order.shippingAddress?.streetAddress ||
-                  order.shippingAddress?.line1 ||
-                  "Customer Address"}
-              </p>
-              <p>
-                {order.shippingAddress?.city}, {order.shippingAddress?.state}{" "}
-                {order.shippingAddress?.postalCode}
-              </p>
-              <p className="font-medium text-text-primary">
-                {order.shippingAddress?.country || "India"}
-              </p>
-              <p className="text-text-muted pt-1">Email: {order.user?.email}</p>
-            </div>
+          {(() => {
+            const shippingAddr =
+              order.shippingAddress ||
+              (Array.isArray(order.addresses)
+                ? order.addresses.find((a) => a.type === "SHIPPING" || a.type === "DELIVERY") || order.addresses[0]
+                : null);
+            const billingAddr =
+              order.billingAddress ||
+              (Array.isArray(order.addresses)
+                ? order.addresses.find((a) => a.type === "BILLING")
+                : null) ||
+              shippingAddr;
 
-            <div className="p-4 rounded-xl bg-surface-muted/50 border border-border space-y-1.5">
-              <h5 className="font-bold text-text-primary uppercase text-[11px] text-brand-700">
-                Shipped To / Delivery Address:
-              </h5>
-              <p className="font-bold text-text-primary text-sm">
-                {order.shippingAddress?.fullName ||
-                  order.shippingAddress?.name ||
-                  `${order.user?.firstName || "Customer"} ${order.user?.lastName || ""}`}
-              </p>
-              <p>
-                {order.shippingAddress?.streetAddress ||
-                  order.shippingAddress?.line1 ||
-                  "Customer Shipping Address"}
-              </p>
-              <p>
-                {order.shippingAddress?.city}, {order.shippingAddress?.state}{" "}
-                {order.shippingAddress?.postalCode}
-              </p>
-              <p className="font-medium text-text-primary">
-                {order.shippingAddress?.country || "India"}
-              </p>
-              {order.shippingAddress?.phone && (
-                <p className="text-text-muted pt-1">Phone: {order.shippingAddress.phone}</p>
-              )}
-            </div>
-          </div>
+            const formatCountry = (addr) => {
+              const code = addr?.countryCode || addr?.country || order.country?.name;
+              if (!code) return "United States";
+              const upper = String(code).toUpperCase();
+              if (upper === "US" || upper === "USA" || upper === "UNITED STATES") return "United States";
+              if (upper === "CA" || upper === "CAN" || upper === "CANADA") return "Canada";
+              return code;
+            };
+
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs text-text-secondary">
+                <div className="p-4 rounded-xl bg-surface-muted/50 border border-border space-y-1.5">
+                  <h5 className="font-bold text-text-primary uppercase text-[11px] text-brand-700">
+                    Billed To / Buyer Details:
+                  </h5>
+                  <p className="font-bold text-text-primary text-sm">
+                    {billingAddr?.fullName ||
+                      billingAddr?.name ||
+                      `${order.user?.firstName || "Customer"} ${order.user?.lastName || ""}`}
+                  </p>
+                  {order.company && (
+                    <p className="font-semibold text-text-primary flex items-center gap-1">
+                      <Building2 className="w-3.5 h-3.5" /> Company: {order.company.name}
+                    </p>
+                  )}
+                  <p>
+                    {billingAddr?.addressLine1 ||
+                      billingAddr?.streetAddress ||
+                      billingAddr?.line1 ||
+                      "Customer Address"}
+                  </p>
+                  {billingAddr?.addressLine2 && <p>{billingAddr.addressLine2}</p>}
+                  <p>
+                    {[billingAddr?.city, billingAddr?.state].filter(Boolean).join(", ")}{" "}
+                    {billingAddr?.postalCode || billingAddr?.zip || ""}
+                  </p>
+                  <p className="font-medium text-text-primary">
+                    {formatCountry(billingAddr)}
+                  </p>
+                  <p className="text-text-muted pt-1">Email: {order.user?.email}</p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-surface-muted/50 border border-border space-y-1.5">
+                  <h5 className="font-bold text-text-primary uppercase text-[11px] text-brand-700">
+                    Shipped To / Delivery Address:
+                  </h5>
+                  <p className="font-bold text-text-primary text-sm">
+                    {shippingAddr?.fullName ||
+                      shippingAddr?.name ||
+                      `${order.user?.firstName || "Customer"} ${order.user?.lastName || ""}`}
+                  </p>
+                  <p>
+                    {shippingAddr?.addressLine1 ||
+                      shippingAddr?.streetAddress ||
+                      shippingAddr?.line1 ||
+                      "Customer Shipping Address"}
+                  </p>
+                  {shippingAddr?.addressLine2 && <p>{shippingAddr.addressLine2}</p>}
+                  <p>
+                    {[shippingAddr?.city, shippingAddr?.state].filter(Boolean).join(", ")}{" "}
+                    {shippingAddr?.postalCode || shippingAddr?.zip || ""}
+                  </p>
+                  <p className="font-medium text-text-primary">
+                    {formatCountry(shippingAddr)}
+                  </p>
+                  {shippingAddr?.phone && (
+                    <p className="text-text-muted pt-1">Phone: {shippingAddr.phone}</p>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Items Table */}
           <div className="border border-border rounded-xl overflow-hidden">

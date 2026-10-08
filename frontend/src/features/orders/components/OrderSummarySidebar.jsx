@@ -9,6 +9,21 @@ export function OrderSummarySidebar({ order, currencyCode, currencySymbol, onOpe
   const taxAmount = Number(order.tax || order.taxAmount || 0);
   const totalAmount = Number(order.total ?? order.totalAmount ?? 0);
 
+  const shippingAddr =
+    order.shippingAddress ||
+    (Array.isArray(order.addresses)
+      ? order.addresses.find((a) => a.type === "SHIPPING" || a.type === "DELIVERY") || order.addresses[0]
+      : null);
+
+  const formatCountryName = (addr) => {
+    const raw = addr?.countryCode || addr?.country || order.country?.name;
+    if (!raw) return "";
+    const upper = String(raw).toUpperCase();
+    if (upper === "US" || upper === "USA" || upper === "UNITED STATES") return "United States";
+    if (upper === "CA" || upper === "CAN" || upper === "CANADA") return "Canada";
+    return raw;
+  };
+
   return (
     <div className="space-y-6">
       {/* Destination Address */}
@@ -18,33 +33,40 @@ export function OrderSummarySidebar({ order, currencyCode, currencySymbol, onOpe
           Delivery Destination
         </h4>
         <div className="text-xs text-text-secondary leading-relaxed space-y-1 pt-1">
-          <p className="font-bold text-text-primary text-sm">
-            {order.shippingAddress?.fullName ||
-              order.shippingAddress?.name ||
-              `${order.user?.firstName || "Customer"} ${order.user?.lastName || ""}`}
-          </p>
-          <p>
-            {order.shippingAddress?.addressLine1 ||
-              order.shippingAddress?.streetAddress ||
-              order.shippingAddress?.line1 ||
-              order.shippingAddress?.address ||
-              "Address Line 1"}
-          </p>
-          {(order.shippingAddress?.addressLine2 || order.shippingAddress?.line2) && (
-            <p>{order.shippingAddress?.addressLine2 || order.shippingAddress?.line2}</p>
-          )}
-          <p>
-            {order.shippingAddress?.city || "City"},{" "}
-            {order.shippingAddress?.state || "State"}{" "}
-            <span className="font-mono font-bold text-text-primary">
-              {order.shippingAddress?.postalCode || order.shippingAddress?.pinCode || ""}
-            </span>
-          </p>
-          <p className="font-semibold text-brand-700 pt-1">
-            {order.shippingAddress?.countryCode || order.shippingAddress?.country || order.country?.name || "India"}
-          </p>
-          {order.shippingAddress?.phone && (
-            <p className="text-text-muted pt-1">Contact: {order.shippingAddress.phone}</p>
+          {shippingAddr ? (
+            <>
+              <p className="font-bold text-text-primary text-sm">
+                {shippingAddr.fullName ||
+                  shippingAddr.name ||
+                  `${order.user?.firstName || "Customer"} ${order.user?.lastName || ""}`}
+              </p>
+              <p>
+                {shippingAddr.addressLine1 ||
+                  shippingAddr.streetAddress ||
+                  shippingAddr.line1 ||
+                  shippingAddr.address ||
+                  ""}
+              </p>
+              {(shippingAddr.addressLine2 || shippingAddr.line2) && (
+                <p>{shippingAddr.addressLine2 || shippingAddr.line2}</p>
+              )}
+              <p>
+                {[shippingAddr.city, shippingAddr.state].filter(Boolean).join(", ")}{" "}
+                <span className="font-mono font-bold text-text-primary">
+                  {shippingAddr.postalCode || shippingAddr.pinCode || shippingAddr.zip || ""}
+                </span>
+              </p>
+              {formatCountryName(shippingAddr) && (
+                <p className="font-semibold text-brand-700 pt-1">
+                  {formatCountryName(shippingAddr)}
+                </p>
+              )}
+              {shippingAddr.phone && (
+                <p className="text-text-muted pt-1">Contact: {shippingAddr.phone}</p>
+              )}
+            </>
+          ) : (
+            <p className="text-text-muted italic">No delivery destination provided</p>
           )}
         </div>
       </div>
