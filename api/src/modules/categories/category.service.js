@@ -30,7 +30,8 @@ export async function createCategory(input) {
         imageUrl: input.imageUrl ?? null,
         sortOrder: input.sortOrder !== undefined ? Number(input.sortOrder) : 0,
         parentId: input.parentId ?? null,
-        isActive: input.isActive ?? true
+        isActive: input.isActive ?? true,
+        showOnHome: input.showOnHome !== undefined ? Boolean(input.showOnHome) : false
       },
       include: {
         parent: true,
@@ -42,7 +43,7 @@ export async function createCategory(input) {
   }
 }
 
-export async function listCategories({ page, limit, skip, search, isActive, parentId, rootOnly, sortBy, sortOrder }) {
+export async function listCategories({ page, limit, skip, search, isActive, showOnHome, parentId, rootOnly, sortBy, sortOrder }) {
   const where = {
     ...(search ? {
       OR: [
@@ -51,6 +52,7 @@ export async function listCategories({ page, limit, skip, search, isActive, pare
       ]
     } : {}),
     ...(isActive !== undefined ? { isActive } : {}),
+    ...(showOnHome !== undefined ? { showOnHome: showOnHome === "true" || showOnHome === true } : {}),
     ...(rootOnly ? { parentId: null } : {}),
     ...(parentId !== undefined ? { parentId: parentId === "null" || parentId === null ? null : parentId } : {})
   };
@@ -217,7 +219,8 @@ export async function updateCategory(id, input) {
         ...(input.imageUrl !== undefined && { imageUrl: input.imageUrl }),
         ...(input.sortOrder !== undefined && { sortOrder: Number(input.sortOrder) || 0 }),
         ...(input.parentId !== undefined && { parentId: input.parentId || null }),
-        ...(input.isActive !== undefined && { isActive: input.isActive })
+        ...(input.isActive !== undefined && { isActive: input.isActive }),
+        ...(input.showOnHome !== undefined && { showOnHome: Boolean(input.showOnHome) })
       },
       include: {
         parent: true,

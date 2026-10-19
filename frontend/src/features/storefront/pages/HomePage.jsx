@@ -27,7 +27,7 @@ import { SEO } from "../../../components/common/SEO.jsx";
 import { HeroBanner } from "../components/home/HeroBanner.jsx";
 import { CategoryIconStrip } from "../components/home/CategoryIconStrip.jsx";
 import { PromoBannerGrid } from "../components/home/PromoBannerGrid.jsx";
-import { FeaturedProductsSection } from "../components/home/FeaturedProductsSection.jsx";
+import { HomeCategoryProductSections } from "../components/home/HomeCategoryProductSections.jsx";
 import { NewLaunchesSection } from "../components/home/NewLaunchesSection.jsx";
 import { UserVideoReelsSection } from "../components/home/UserVideoReelsSection.jsx";
 import { ShopByCategoryGrid } from "../components/home/ShopByCategoryGrid.jsx";
@@ -123,15 +123,14 @@ export function HomePage() {
         <CategoryIconStrip className="bg-transparent" categories={categoryList} />
       </section>
 
-      {/* ── 3. Featured & Best Seller Products ── */}
-      <section className="bg-[#D5EBD5] border-b border-gray-100/90 py-4">
-        <FeaturedProductsSection
-          className="bg-transparent"
-          featuredProducts={featuredProducts}
-          bestSellers={bestSellers}
-          isLoading={loadingProducts}
-        />
-      </section>
+      {/* ── 3. Category Products One by One (Category-wise with Pagination) ── */}
+      <HomeCategoryProductSections
+        className="bg-[#D5EBD5] border-b border-gray-100/90 py-4"
+        categories={categoryList}
+        featuredProducts={featuredProducts}
+        isLoading={loadingProducts}
+        pageSize={10}
+      />
 
       {/* ── 4. Promo Banner 3-Grid (Candy White BG) ── */}
       <section className="py-8 bg-[#FAF9F6] border-b border-gray-200/60">

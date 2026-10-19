@@ -1,9 +1,9 @@
 import React from "react";
-import { FolderTree, Edit2, Trash2 } from "lucide-react";
+import { FolderTree, Edit2, Trash2, Home } from "lucide-react";
 import { Badge } from "@/components/ui/Badge.jsx";
 import { Button } from "@/components/ui/Button.jsx";
 
-export function CategoriesGrid({ categories, isLoading, onEdit, onDelete, searchTerm }) {
+export function CategoriesGrid({ categories, isLoading, onEdit, onDelete, onToggleShowOnHome, searchTerm }) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -52,6 +52,22 @@ export function CategoriesGrid({ categories, isLoading, onEdit, onDelete, search
                     <h4 className="font-bold text-text-primary text-sm leading-tight group-hover:text-brand-700 transition-colors">
                       {cat.name}
                     </h4>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleShowOnHome?.(cat);
+                      }}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold border transition-all cursor-pointer ${
+                        cat.showOnHome
+                          ? "bg-[#204B38] text-white border-[#204B38] shadow-xs"
+                          : "bg-white text-gray-500 hover:text-[#204B38] hover:border-[#204B38]/40 border-gray-200"
+                      }`}
+                      title={cat.showOnHome ? "Category shown on home page (click to remove)" : "Click to show category on home page"}
+                    >
+                      <Home className="w-2.5 h-2.5" />
+                      <span>{cat.showOnHome ? "Home: ON" : "Home: OFF"}</span>
+                    </button>
                     {cat.active === false && (
                       <Badge variant="warning" size="sm">
                         Inactive

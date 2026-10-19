@@ -235,6 +235,7 @@ model Category {
   children Category[] @relation("CategoryHierarchy")
 
   isActive Boolean @default(true)
+  showOnHome Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -243,6 +244,7 @@ model Category {
 
   @@index([parentId])
   @@index([isActive])
+  @@index([showOnHome])
   @@index([sortOrder])
 }
 

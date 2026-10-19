@@ -14,6 +14,7 @@ import {
   Sparkles,
   ArrowRight,
   CornerDownRight,
+  Home,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge.jsx";
 import { Button } from "@/components/ui/Button.jsx";
@@ -24,6 +25,7 @@ export function CategoryHierarchyView({
   onEdit,
   onDelete,
   onAddSubcategory,
+  onToggleShowOnHome,
   searchTerm = "",
   expandedCategories = {},
   onToggleExpand,
@@ -242,6 +244,23 @@ export function CategoryHierarchyView({
                       Parent Category
                     </Badge>
 
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleShowOnHome?.(parent);
+                      }}
+                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
+                        parent.showOnHome
+                          ? "bg-[#204B38] text-white border-[#204B38] shadow-xs hover:bg-[#18392B]"
+                          : "bg-white text-gray-500 hover:text-[#204B38] hover:border-[#204B38]/40 border-gray-200"
+                      }`}
+                      title={parent.showOnHome ? "Showing on Home Page (click to remove)" : "Click to show category on Home Page"}
+                    >
+                      <Home className="w-3 h-3" />
+                      <span>{parent.showOnHome ? "Home: Show" : "Home: Hide"}</span>
+                    </button>
+
                     {parent.active === false && (
                       <Badge variant="warning" size="sm" className="text-[10px]">
                         Inactive
@@ -356,6 +375,23 @@ export function CategoryHierarchyView({
                                 <h4 className="font-bold text-xs sm:text-sm text-text-primary group-hover:text-[#00875A] transition-colors truncate">
                                   {child.name}
                                 </h4>
+
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onToggleShowOnHome?.(child);
+                                  }}
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold border transition-all cursor-pointer ${
+                                    child.showOnHome
+                                      ? "bg-[#204B38] text-white border-[#204B38] shadow-xs hover:bg-[#18392B]"
+                                      : "bg-white text-gray-500 hover:text-[#204B38] hover:border-[#204B38]/40 border-gray-200"
+                                  }`}
+                                  title={child.showOnHome ? "Showing on Home Page (click to remove)" : "Click to show subcategory on Home Page"}
+                                >
+                                  <Home className="w-2.5 h-2.5" />
+                                  <span>{child.showOnHome ? "Home: Show" : "Home: Hide"}</span>
+                                </button>
 
                                 {child.isActive === false && (
                                   <Badge variant="warning" size="sm" className="text-[9px]">

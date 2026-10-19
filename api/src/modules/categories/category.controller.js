@@ -31,13 +31,16 @@ async function getCategoryInput(request, oldImageKey = null) {
         continue;
       }
 
-      input[part.fieldname] = part.fieldname === "isActive" || part.fieldname === "active" ? part.value === "true" : part.value;
+      input[part.fieldname] = part.fieldname === "isActive" || part.fieldname === "active" || part.fieldname === "showOnHome" ? part.value === "true" || part.value === true : part.value;
     }
   }
 
   const normalized = { ...input };
   if (normalized.active !== undefined && normalized.isActive === undefined) {
     normalized.isActive = Boolean(normalized.active);
+  }
+  if (normalized.showOnHome !== undefined) {
+    normalized.showOnHome = normalized.showOnHome === "true" || normalized.showOnHome === true;
   }
   if (normalized.sortOrder !== undefined) {
     normalized.sortOrder = Number(normalized.sortOrder) || 0;
@@ -56,6 +59,7 @@ export async function list(request, reply) {
     ...pagination,
     search: request.query.search,
     isActive: request.query.isActive,
+    showOnHome: request.query.showOnHome,
     parentId: request.query.parentId,
     rootOnly: request.query.rootOnly === true || request.query.rootOnly === "true",
     sortBy: request.query.sortBy,
