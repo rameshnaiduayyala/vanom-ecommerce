@@ -12,16 +12,24 @@ export function HomeCategoryProductSections({
   pageSize = 10,
   className = "",
 }) {
-  // Determine categories selected to show on home page
+  // Determine categories selected to show on home page (excluding categories with 0 items)
   const displayCategories = useMemo(() => {
     if (!Array.isArray(categories) || categories.length === 0) return [];
 
-    // Filter categories explicitly toggled as "showOnHome"
-    const selected = categories.filter((c) => Boolean(c.showOnHome));
+    const hasProducts = (c) => {
+      const count = c.count ?? c.directCount ?? c._count?.products;
+      if (count !== undefined && count !== null) {
+        return Number(count) > 0;
+      }
+      return true; // if count not provided upfront, let CategoryProductSection resolve it
+    };
 
-    // Fallback: If no category has showOnHome toggled yet, use top root categories
+    // Filter categories explicitly toggled as "showOnHome" that have products
+    const selected = categories.filter((c) => Boolean(c.showOnHome) && hasProducts(c));
+
+    // Fallback: If no category has showOnHome toggled yet, use top root categories that have products
     if (selected.length === 0) {
-      return categories.filter((c) => !c.parentId).slice(0, 4);
+      return categories.filter((c) => !c.parentId && hasProducts(c)).slice(0, 4);
     }
 
     return selected;
@@ -34,7 +42,7 @@ export function HomeCategoryProductSections({
   return (
     <section
       aria-label="Category Showcases"
-      className={`w-full flex flex-col ${className}`}
+      className={`w-full flex flex-col empty:hidden ${className}`}
     >
       {displayCategories.map((cat, idx) => (
         <CategoryProductSection
@@ -42,8 +50,8 @@ export function HomeCategoryProductSections({
           category={cat}
           pageSize={pageSize}
           fallbackProducts={featuredProducts}
-          hideIfEmpty={false}
-          className={idx % 2 === 1 ? "bg-white/40" : "bg-transparent"}
+          hideIfEmpty={true}
+          className="odd:bg-transparent even:bg-white/40"
         />
       ))}
     </section>

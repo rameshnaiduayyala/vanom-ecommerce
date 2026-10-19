@@ -35,12 +35,15 @@ export function CategoryProductSection({
   category,
   pageSize = 10,
   fallbackProducts = [],
-  hideIfEmpty = false,
+  hideIfEmpty = true,
   className = "",
 }) {
   const sectionRef = useRef(null);
 
   const categoryId = category?.id || category?.slug;
+
+  const declaredCount = category?.count ?? category?.directCount ?? category?._count?.products;
+  const isKnownEmpty = declaredCount !== undefined && declaredCount !== null && Number(declaredCount) === 0;
 
   const {
     products,
@@ -49,15 +52,15 @@ export function CategoryProductSection({
     currentPage,
     isLoading,
     goToPage,
-  } = useCategorySectionProducts(categoryId, {
+  } = useCategorySectionProducts(isKnownEmpty ? null : categoryId, {
     pageSize,
     fallbackProducts,
   });
 
   if (!category) return null;
 
-  // If hideIfEmpty is enabled and there are no items
-  if (hideIfEmpty && !isLoading && totalItems === 0) {
+  // If hideIfEmpty is enabled and there are no items in this category
+  if (hideIfEmpty && (isKnownEmpty || (!isLoading && (totalItems === 0 || products.length === 0)))) {
     return null;
   }
 

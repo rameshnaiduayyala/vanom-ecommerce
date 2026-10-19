@@ -124,15 +124,13 @@ export function HomePage() {
       </section>
 
       {/* ── 3. Category Products One by One (Category-wise with Pagination) ── */}
-      <section className="bg-[#D5EBD5] border-b border-gray-100/90 py-4">
-        <HomeCategoryProductSections
-          className="bg-transparent"
-          categories={categoryList}
-          featuredProducts={featuredProducts}
-          isLoading={loadingProducts}
-          pageSize={10}
-        />
-      </section>
+      <HomeCategoryProductSections
+        className="bg-[#D5EBD5] border-b border-gray-100/90 py-4"
+        categories={categoryList}
+        featuredProducts={featuredProducts}
+        isLoading={loadingProducts}
+        pageSize={10}
+      />
 
       {/* ── 4. Promo Banner 3-Grid (Candy White BG) ── */}
       <section className="py-8 bg-[#FAF9F6] border-b border-gray-200/60">
