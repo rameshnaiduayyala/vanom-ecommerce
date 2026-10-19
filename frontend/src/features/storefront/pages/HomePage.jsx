@@ -27,7 +27,7 @@ import { SEO } from "../../../components/common/SEO.jsx";
 import { HeroBanner } from "../components/home/HeroBanner.jsx";
 import { CategoryIconStrip } from "../components/home/CategoryIconStrip.jsx";
 import { PromoBannerGrid } from "../components/home/PromoBannerGrid.jsx";
-import { FeaturedProductsSection } from "../components/home/FeaturedProductsSection.jsx";
+import { HomeCategoryProductSections } from "../components/home/HomeCategoryProductSections.jsx";
 import { NewLaunchesSection } from "../components/home/NewLaunchesSection.jsx";
 import { UserVideoReelsSection } from "../components/home/UserVideoReelsSection.jsx";
 import { ShopByCategoryGrid } from "../components/home/ShopByCategoryGrid.jsx";
@@ -123,13 +123,14 @@ export function HomePage() {
         <CategoryIconStrip className="bg-transparent" categories={categoryList} />
       </section>
 
-      {/* ── 3. Featured & Best Seller Products ── */}
+      {/* ── 3. Category Products One by One (Category-wise with Pagination) ── */}
       <section className="bg-[#D5EBD5] border-b border-gray-100/90 py-4">
-        <FeaturedProductsSection
+        <HomeCategoryProductSections
           className="bg-transparent"
+          categories={categoryList}
           featuredProducts={featuredProducts}
-          bestSellers={bestSellers}
           isLoading={loadingProducts}
+          pageSize={10}
         />
       </section>
 

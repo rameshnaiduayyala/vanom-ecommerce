@@ -11,7 +11,8 @@ const properties = {
   parentId: { type: ["string", "null"] },
   sortOrder: { type: ["integer", "null"] },
   isActive: { type: "boolean" },
-  active: { type: "boolean" }
+  active: { type: "boolean" },
+  showOnHome: { type: "boolean" }
 };
 
 export async function categoryRoutes(fastify) {
@@ -38,6 +39,7 @@ export async function categoryRoutes(fastify) {
           limit: { type: "integer", minimum: 1, maximum: 100, default: 50 },
           search: { type: "string" },
           isActive: { type: "boolean" },
+          showOnHome: { type: "boolean" },
           parentId: { type: "string" },
           rootOnly: { type: "string" },
           sortBy: { type: "string" },

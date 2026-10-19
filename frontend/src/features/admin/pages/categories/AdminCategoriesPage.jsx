@@ -79,6 +79,14 @@ export function AdminCategoriesPage() {
     });
   };
 
+  const handleToggleShowOnHome = (cat) => {
+    if (!cat?.id) return;
+    updateMutation.mutate({
+      id: cat.id,
+      data: { showOnHome: !cat.showOnHome },
+    });
+  };
+
   const filteredCategories = categories.filter(
     (c) =>
       !searchTerm ||
@@ -134,6 +142,7 @@ export function AdminCategoriesPage() {
           onEdit={handleOpenEdit}
           onDelete={setDeletingCategory}
           onAddSubcategory={handleOpenAddSubcategory}
+          onToggleShowOnHome={handleToggleShowOnHome}
           searchTerm={searchTerm}
           expandedCategories={expandedCategories}
           onToggleExpand={handleToggleExpand}
@@ -144,6 +153,7 @@ export function AdminCategoriesPage() {
           isLoading={isLoading}
           onEdit={handleOpenEdit}
           onDelete={setDeletingCategory}
+          onToggleShowOnHome={handleToggleShowOnHome}
           searchTerm={searchTerm}
         />
       )}

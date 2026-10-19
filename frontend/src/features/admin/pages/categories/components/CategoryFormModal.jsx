@@ -20,6 +20,7 @@ export function CategoryFormModal({
     imageUrl: "",
     parentId: "",
     active: true,
+    showOnHome: false,
     sortOrder: 0,
   };
 
@@ -34,6 +35,7 @@ export function CategoryFormModal({
         imageUrl: editingCategory.imageUrl || "",
         parentId: editingCategory.parentId || "",
         active: editingCategory.active !== undefined ? editingCategory.active : true,
+        showOnHome: editingCategory.showOnHome !== undefined ? Boolean(editingCategory.showOnHome) : false,
         sortOrder: editingCategory.sortOrder || 0,
       });
     } else {
@@ -67,6 +69,7 @@ export function CategoryFormModal({
       imageUrl: formData.imageUrl?.trim() || undefined,
       parentId: formData.parentId || undefined,
       active: Boolean(formData.active),
+      showOnHome: Boolean(formData.showOnHome),
       sortOrder: Number(formData.sortOrder) || 0,
     });
   };
@@ -194,11 +197,16 @@ export function CategoryFormModal({
             placeholder="0"
           />
 
-          <div className="flex items-center pt-6">
+          <div className="flex flex-col sm:flex-row gap-3 pt-4 sm:pt-6">
             <Checkbox
-              label="Active & Visible in Storefront"
+              label="Active & Visible"
               checked={formData.active}
               onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+            />
+            <Checkbox
+              label="Show on Home Page"
+              checked={formData.showOnHome}
+              onChange={(e) => setFormData({ ...formData, showOnHome: e.target.checked })}
             />
           </div>
         </div>

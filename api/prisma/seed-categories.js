@@ -90,6 +90,7 @@ export async function seedCategories() {
         imageUrl: group.imageUrl,
         parentId: null,
         isActive: true,
+        showOnHome: group.showOnHome ?? true,
         sortOrder: group.sortOrder ?? parentIndex
       },
       create: {
@@ -98,6 +99,7 @@ export async function seedCategories() {
         imageUrl: group.imageUrl,
         parentId: null,
         isActive: true,
+        showOnHome: group.showOnHome ?? true,
         sortOrder: group.sortOrder ?? parentIndex
       }
     });
