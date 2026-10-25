@@ -105,6 +105,7 @@ export async function productRoutes(fastify) {
         properties: {
           page: { type: "integer", minimum: 1, default: 1 },
           limit: { type: "integer", minimum: 1, maximum: 100, default: 20 },
+          cursor: { type: "string" },
           search: { type: "string" },
           categoryId: { type: "string" },
           type: { type: "string", enum: ["SIMPLE", "VARIABLE"] },
