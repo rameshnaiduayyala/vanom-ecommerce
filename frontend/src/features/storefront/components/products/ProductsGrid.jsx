@@ -47,36 +47,12 @@ export function ProductsGrid({
   return (
     <div className="space-y-8">
       <div
-        className={`grid grid-cols-1 sm:grid-cols-2 ${
-          gridCols === "compact" ? "lg:grid-cols-4" : "lg:grid-cols-3"
-        } gap-4 sm:gap-6`}
+        className={`grid grid-cols-1 sm:grid-cols-2 ${gridCols === "compact" ? "lg:grid-cols-4" : "lg:grid-cols-3"
+          } gap-4 sm:gap-6`}
       >
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
-      </div>
-
-      {/* Bottom Enterprise Procurement CTA Banner */}
-      <div className="rounded-3xl bg-gradient-to-r from-[#064027] via-[#0B4F32] to-[#064027] text-white p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6 border border-emerald-700/30">
-        <div className="space-y-1 text-center sm:text-left">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#4ADE80]">
-            CUSTOM VOLUMES & RECURRING SUPPLY
-          </span>
-          <h3 className="text-lg sm:text-xl font-black text-white">
-            Looking for Bulk Logistics & Scheduled Enterprise Freight?
-          </h3>
-          <p className="text-xs text-emerald-100/80 max-w-xl">
-            Vanom provides itemized proformas, cross-border customs assistance, and scheduled pallet dispatches.
-          </p>
-        </div>
-
-        <Link
-          to={ROUTES.B2B.QUOTES}
-          className="shrink-0 px-6 py-3 rounded-xl bg-[#00875A] hover:bg-[#00744D] text-white font-bold text-xs shadow-lg transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap"
-        >
-          <span>Request B2B Quote</span>
-          <ArrowRight className="w-4 h-4" />
-        </Link>
       </div>
     </div>
   );

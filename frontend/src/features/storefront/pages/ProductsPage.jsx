@@ -24,8 +24,6 @@ export function ProductsPage() {
   const [inStockOnly, setInStockOnly] = useState(false);
   const [gridCols, setGridCols] = useState("standard");
 
-  const loadMoreRef = useRef(null);
-
   const { data: categories = [] } = useQuery({
     queryKey: ["category-tree"],
     queryFn: async () => {
@@ -114,29 +112,6 @@ export function ProductsPage() {
       return (a.name || "").localeCompare(b.name || "");
     });
   }, [rawCatList]);
-
-  // ── 400-pixel scroll prefetch threshold via IntersectionObserver ──
-  useEffect(() => {
-    const sentinel = loadMoreRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const first = entries[0];
-        if (first.isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      },
-      {
-        root: null,
-        rootMargin: "400px", // 400px prefetch threshold before reaching the bottom
-        threshold: 0,
-      }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Find active category details across roots and children
   const activeCategoryObj = useMemo(() => {
@@ -292,29 +267,29 @@ export function ProductsPage() {
               onClearFilters={handleClearFilters}
             />
 
-            {/* ── Infinite Scroll Sentinel & Accessible Load More Fallback ── */}
+            {/* ── Manual Load More Button Section ── */}
             {filteredProducts.length > 0 && (
-              <div className="py-6 flex flex-col items-center justify-center gap-3">
-                {/* 400px Scroll Pre-fetch Sentinel Anchor */}
-                <div ref={loadMoreRef} className="h-2 w-full pointer-events-none" aria-hidden="true" />
-
-                {isFetchingNextPage ? (
-                  <div className="flex items-center gap-2.5 px-6 py-3 rounded-2xl bg-white border border-[#DCE8DF] text-xs font-bold text-[#00875A] shadow-xs">
-                    <Loader2 className="w-4 h-4 animate-spin text-[#00875A]" />
-                    <span>Loading more organic products...</span>
-                  </div>
-                ) : hasNextPage ? (
+              <div className="py-8 flex flex-col items-center justify-center gap-3">
+                {hasNextPage ? (
                   <button
                     type="button"
                     onClick={() => fetchNextPage()}
-                    className="px-6 py-2.5 rounded-xl border border-[#00875A] bg-white text-[#00875A] hover:bg-[#00875A] hover:text-white transition-all text-xs font-bold shadow-xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#00875A]"
+                    disabled={isFetchingNextPage}
+                    className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-2xl bg-[#00875A] hover:bg-[#00744D] text-white transition-all text-xs sm:text-sm font-bold shadow-md hover:shadow-lg disabled:opacity-60 cursor-pointer active:scale-98"
                     aria-label="Load more products"
                   >
-                    Load More Products
+                    {isFetchingNextPage ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <span>Loading more products...</span>
+                      </>
+                    ) : (
+                      <span>Load More Products</span>
+                    )}
                   </button>
                 ) : (
-                  <p className="text-xs font-medium text-gray-400 select-none">
-                    You've reached the end of the catalog ({filteredProducts.length} products).
+                  <p className="text-xs font-semibold text-gray-500 select-none bg-white/70 px-4 py-2 rounded-xl border border-gray-200">
+                    Showing all {filteredProducts.length} products
                   </p>
                 )}
               </div>
