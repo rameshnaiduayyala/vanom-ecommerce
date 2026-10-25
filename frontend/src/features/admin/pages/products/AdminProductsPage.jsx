@@ -26,6 +26,7 @@ export function AdminProductsPage() {
     setSearch,
     selectedCategory,
     setSelectedCategory,
+    paginationProps,
     isProductModalOpen,
     setIsProductModalOpen,
     editingProduct,
@@ -88,32 +89,11 @@ export function AdminProductsPage() {
           onDeleteProduct={setDeletingProduct}
         />
 
-        {/* Pagination Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-          <div className="flex items-center gap-2 text-xs text-text-muted">
-            <span>Show</span>
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(e.target.value)}
-              className="px-2 py-1 bg-white border border-border rounded-lg text-xs text-text-primary font-medium focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer"
-            >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-            </select>
-            <span>items per page</span>
-          </div>
-
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalFilteredCount}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            itemName="products"
-          />
-        </div>
+        {/* Reusable Table Pagination */}
+        <Pagination
+          {...paginationProps}
+          itemName="products"
+        />
       </div>
 
       {/* Quick Edit/Add Modal */}

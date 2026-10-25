@@ -89,8 +89,8 @@ export const adminService = {
   },
 
   // Product Management (formatted for Admin Table/Grid)
-  getProducts: async () => {
-    const res = await apiClient.get("/products");
+  getProducts: async (params = {}) => {
+    const res = await apiClient.get("/products", { params });
     return formatAdminProducts(res);
   },
 

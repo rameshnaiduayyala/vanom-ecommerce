@@ -10,7 +10,7 @@ export function formatAdminProducts(res) {
     ? res.data
     : [];
 
-  return rawProducts.map((p) => {
+  const formatted = rawProducts.map((p) => {
     let catName = "General";
     let catId = "";
     if (p.categories && Array.isArray(p.categories) && p.categories.length > 0) {
@@ -70,6 +70,16 @@ export function formatAdminProducts(res) {
       },
     };
   });
+
+  // Preserve pagination metadata on formatted array for paginated API consumers
+  const meta = res?.pagination || res?.meta || null;
+  if (meta) {
+    formatted.pagination = meta;
+    formatted.meta = meta;
+  }
+  formatted.items = formatted;
+
+  return formatted;
 }
 
 /**
