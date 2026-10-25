@@ -193,6 +193,9 @@ export function useProducts() {
     }
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const productList = Array.isArray(products) ? products : (products?.items || []);
   const categoryList = Array.isArray(categories) ? categories : (categories?.items || []);
 
@@ -212,17 +215,48 @@ export function useProducts() {
     return matchesSearch && matchesCategory;
   });
 
+  const totalFilteredCount = filteredProducts.length;
+  const totalPages = Math.ceil(totalFilteredCount / pageSize) || 1;
+
+  // Paginated slice
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  const handleSearchChange = (val) => {
+    setSearch(val);
+    setCurrentPage(1);
+  };
+
+  const handleCategoryChange = (val) => {
+    setSelectedCategory(val);
+    setCurrentPage(1);
+  };
+
+  const handlePageSizeChange = (val) => {
+    setPageSize(Number(val));
+    setCurrentPage(1);
+  };
+
   return {
     products: productList,
     filteredProducts,
+    paginatedProducts,
+    totalFilteredCount,
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize: handlePageSizeChange,
+    totalPages,
     categories: categoryList,
     countries,
     loadingProducts,
     loadingCategories,
     search,
-    setSearch,
+    setSearch: handleSearchChange,
     selectedCategory,
-    setSelectedCategory,
+    setSelectedCategory: handleCategoryChange,
     isProductModalOpen,
     setIsProductModalOpen,
     editingProduct,
