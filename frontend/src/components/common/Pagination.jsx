@@ -14,6 +14,8 @@ import { cn } from "../../utils/cn.js";
  * @param {number} [props.siblingCount=1] - Number of page buttons shown on either side of active page
  * @param {boolean} [props.showItemCount=true] - Whether to show the "Showing X to Y of Z" label
  * @param {string} [props.itemName="products"] - Name of the item for the count label
+ * @param {Array<number>} [props.pageSizeOptions] - Optional page size options e.g. [10, 20, 50, 100]
+ * @param {Function} [props.onPageSizeChange] - Callback when page size changes: (newSize) => void
  * @param {string} [props.className=""] - Additional class names for wrapper
  */
 export function Pagination({
@@ -22,6 +24,8 @@ export function Pagination({
   onPageChange,
   totalItems,
   pageSize,
+  pageSizeOptions,
+  onPageSizeChange,
   siblingCount = 1,
   showItemCount = true,
   itemName = "products",
@@ -102,15 +106,35 @@ export function Pagination({
         className
       )}
     >
-      {/* ── Summary Count (Left) ── */}
-      {showItemCount && typeof totalItems === "number" && (
-        <div className="text-xs sm:text-sm text-gray-500 font-medium order-2 sm:order-1">
-          Showing{" "}
-          <span className="font-bold text-[#204B38]">{startIndex}</span> to{" "}
-          <span className="font-bold text-[#204B38]">{endIndex}</span> of{" "}
-          <span className="font-bold text-[#204B38]">{totalItems}</span> {itemName}
-        </div>
-      )}
+      {/* ── Summary Count & Optional Page Size (Left) ── */}
+      <div className="flex flex-wrap items-center gap-3 order-2 sm:order-1">
+        {showItemCount && typeof totalItems === "number" && (
+          <div className="text-xs sm:text-sm text-gray-500 font-medium">
+            Showing{" "}
+            <span className="font-bold text-[#204B38]">{startIndex}</span> to{" "}
+            <span className="font-bold text-[#204B38]">{endIndex}</span> of{" "}
+            <span className="font-bold text-[#204B38]">{totalItems}</span> {itemName}
+          </div>
+        )}
+
+        {Array.isArray(pageSizeOptions) && pageSizeOptions.length > 0 && onPageSizeChange && (
+          <div className="flex items-center gap-1.5 text-xs text-gray-500">
+            <span className="hidden sm:inline">Per page:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              aria-label="Items per page"
+              className="px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 hover:border-[#358B5B] focus:outline-none focus:ring-1 focus:ring-[#358B5B] cursor-pointer shadow-xs transition-colors"
+            >
+              {pageSizeOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
       {/* ── Controls (Right / Center) ── */}
       <div className="flex items-center gap-1.5 sm:gap-2 order-1 sm:order-2">

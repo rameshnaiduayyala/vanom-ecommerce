@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { toast } from "@/components/ui/Toast.jsx";
+import { useTablePagination } from "@/hooks/useTablePagination.js";
 
 export const DEFAULT_PRODUCT_FORM = {
   name: "",
@@ -193,9 +194,6 @@ export function useProducts() {
     }
   };
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
   const productList = Array.isArray(products) ? products : (products?.items || []);
   const categoryList = Array.isArray(categories) ? categories : (categories?.items || []);
 
@@ -215,28 +213,32 @@ export function useProducts() {
     return matchesSearch && matchesCategory;
   });
 
-  const totalFilteredCount = filteredProducts.length;
-  const totalPages = Math.ceil(totalFilteredCount / pageSize) || 1;
-
-  // Paginated slice
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    totalItems: totalFilteredCount,
+    pageSizeOptions,
+    paginatedData: paginatedProducts,
+    setCurrentPage,
+    setPageSize,
+    resetPage,
+    paginationProps,
+  } = useTablePagination({
+    data: filteredProducts,
+    initialPage: 1,
+    initialPageSize: 10,
+    pageSizeOptions: [10, 20, 50, 100],
+  });
 
   const handleSearchChange = (val) => {
     setSearch(val);
-    setCurrentPage(1);
+    resetPage();
   };
 
   const handleCategoryChange = (val) => {
     setSelectedCategory(val);
-    setCurrentPage(1);
-  };
-
-  const handlePageSizeChange = (val) => {
-    setPageSize(Number(val));
-    setCurrentPage(1);
+    resetPage();
   };
 
   return {
@@ -247,8 +249,10 @@ export function useProducts() {
     currentPage,
     setCurrentPage,
     pageSize,
-    setPageSize: handlePageSizeChange,
+    setPageSize,
+    pageSizeOptions,
     totalPages,
+    paginationProps,
     categories: categoryList,
     countries,
     loadingProducts,
