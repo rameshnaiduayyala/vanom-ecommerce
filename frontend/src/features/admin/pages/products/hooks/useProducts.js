@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { toast } from "@/components/ui/Toast.jsx";
@@ -30,7 +30,10 @@ export const DEFAULT_PRODUCT_FORM = {
 
 export function useProducts() {
   const queryClient = useQueryClient();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -38,9 +41,33 @@ export function useProducts() {
   const [deletingProduct, setDeletingProduct] = useState(null);
   const [productForm, setProductForm] = useState(DEFAULT_PRODUCT_FORM);
 
-  const { data: products = [], isLoading: loadingProducts } = useQuery({
-    queryKey: ["admin-products"],
-    queryFn: () => Api.admin.getProducts(),
+  // Debounce search query so user typing doesn't fire requests on each keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Server-side paginated product query with real total count
+  const { data: productsData = [], isLoading: loadingProducts } = useQuery({
+    queryKey: [
+      "admin-products",
+      {
+        page: currentPage,
+        limit: pageSize,
+        search: debouncedSearch,
+        categoryId: selectedCategory !== "ALL" ? selectedCategory : undefined,
+      },
+    ],
+    queryFn: () =>
+      Api.admin.getProducts({
+        page: currentPage,
+        limit: pageSize,
+        search: debouncedSearch || undefined,
+        categoryId: selectedCategory !== "ALL" ? selectedCategory : undefined,
+      }),
   });
 
   const { data: categories = [], isLoading: loadingCategories } = useQuery({
@@ -194,62 +221,68 @@ export function useProducts() {
     }
   };
 
-  const productList = Array.isArray(products) ? products : (products?.items || []);
+  const productList = Array.isArray(productsData)
+    ? productsData
+    : Array.isArray(productsData?.items)
+    ? productsData.items
+    : Array.isArray(productsData?.data)
+    ? productsData.data
+    : [];
+
   const categoryList = Array.isArray(categories) ? categories : (categories?.items || []);
 
-  const filteredProducts = productList.filter((p) => {
-    const matchesSearch =
-      !search ||
-      p.name?.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku?.toLowerCase().includes(search.toLowerCase()) ||
-      (typeof p.category === "string" && p.category?.toLowerCase().includes(search.toLowerCase()));
-
-    const matchesCategory =
-      selectedCategory === "ALL" ||
-      p.categoryId === selectedCategory ||
-      p.category === selectedCategory ||
-      (typeof p.category === "object" && p.category?.id === selectedCategory);
-
-    return matchesSearch && matchesCategory;
-  });
+  const totalCatalogCount =
+    productsData?.total ??
+    productsData?.meta?.total ??
+    productsData?.pagination?.total ??
+    productList.length;
 
   const {
-    currentPage,
-    pageSize,
     totalPages,
     totalItems: totalFilteredCount,
     pageSizeOptions,
     paginatedData: paginatedProducts,
-    setCurrentPage,
-    setPageSize,
+    setCurrentPage: setTablePage,
+    setPageSize: setTablePageSize,
     resetPage,
     paginationProps,
   } = useTablePagination({
-    data: filteredProducts,
-    initialPage: 1,
-    initialPageSize: 10,
+    data: productList,
+    initialPage: currentPage,
+    initialPageSize: pageSize,
     pageSizeOptions: [10, 20, 50, 100],
+    totalItems: totalCatalogCount,
+    onPageChange: (newPage) => setCurrentPage(newPage),
+    onPageSizeChange: (newSize) => {
+      setPageSize(newSize);
+      setCurrentPage(1);
+    },
   });
 
   const handleSearchChange = (val) => {
     setSearch(val);
-    resetPage();
   };
 
   const handleCategoryChange = (val) => {
     setSelectedCategory(val);
-    resetPage();
+    setCurrentPage(1);
   };
 
   return {
     products: productList,
-    filteredProducts,
-    paginatedProducts,
+    filteredProducts: productList,
+    paginatedProducts: productList,
     totalFilteredCount,
     currentPage,
-    setCurrentPage,
+    setCurrentPage: (p) => {
+      setCurrentPage(p);
+      setTablePage(p);
+    },
     pageSize,
-    setPageSize,
+    setPageSize: (s) => {
+      setPageSize(s);
+      setTablePageSize(s);
+    },
     pageSizeOptions,
     totalPages,
     paginationProps,

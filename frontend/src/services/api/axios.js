@@ -63,9 +63,14 @@ apiClient.interceptors.response.use(
     if (!response.config?.silent) {
       useUIStore.getState().decrementRequest();
     }
-    // Backend standard is ApiResponse.success(data) -> { success: true, data: { ... } }
+    // Backend standard is ApiResponse.success(data) -> { success: true, data: { ... }, meta?: { ... } }
     if (response.data && typeof response.data === "object" && "data" in response.data && "success" in response.data) {
-      return response.data.data;
+      const payload = response.data.data;
+      if (response.data.meta && payload && typeof payload === "object") {
+        payload.meta = response.data.meta;
+        payload.pagination = response.data.meta;
+      }
+      return payload;
     }
     return response.data;
   },
