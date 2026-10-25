@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Package, Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button.jsx";
+import { Pagination } from "@/components/common/Pagination.jsx";
 import { ViewProductModal } from "@/features/admin/pages/components/ViewProductModal.jsx";
 import { useProducts } from "./hooks/useProducts.js";
 import { ProductFilterBar } from "./components/ProductFilterBar.jsx";
@@ -13,6 +14,13 @@ export function AdminProductsPage() {
   const {
     products,
     filteredProducts,
+    paginatedProducts,
+    totalFilteredCount,
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalPages,
     categories,
     search,
     setSearch,
@@ -74,11 +82,38 @@ export function AdminProductsPage() {
 
         {/* Products Table */}
         <ProductsTable
-          products={filteredProducts}
+          products={paginatedProducts}
           onViewProduct={setViewingProduct}
           onEditProduct={openEditProduct}
           onDeleteProduct={setDeletingProduct}
         />
+
+        {/* Pagination Bar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+          <div className="flex items-center gap-2 text-xs text-text-muted">
+            <span>Show</span>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(e.target.value)}
+              className="px-2 py-1 bg-white border border-border rounded-lg text-xs text-text-primary font-medium focus:outline-none focus:ring-1 focus:ring-brand-500 cursor-pointer"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span>items per page</span>
+          </div>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalFilteredCount}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            itemName="products"
+          />
+        </div>
       </div>
 
       {/* Quick Edit/Add Modal */}
