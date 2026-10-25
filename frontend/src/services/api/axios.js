@@ -20,7 +20,7 @@ apiClient.interceptors.request.use(
     if (!config.silent) {
       const customMessage =
         config.loadingText ||
-        (config.method === "get" ? "Retrieving live data..." : "Submitting changes...");
+        (config.method === "get" ? "Retrieving data..." : "Submitting changes...");
       useUIStore.getState().incrementRequest(customMessage);
     }
 
