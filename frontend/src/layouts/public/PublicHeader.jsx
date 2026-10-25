@@ -365,7 +365,7 @@ export function PublicHeader() {
     <>
       <header className="sticky top-0 z-40 bg-[#F7F2DF] border-b border-[#ebdcb0] shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
         {/* ─── Main Bar (Logo, Search with Category Selector, Wishlist, Account, Cart) ─── */}
-        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-[72px] flex items-center justify-between gap-1 sm:gap-6 relative">
+        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-[72px] flex items-center justify-between gap-2 sm:gap-4 lg:gap-6 relative">
           {/* Left: Mobile Menu Trigger & Logo */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0 z-10">
             <button
@@ -377,23 +377,23 @@ export function PublicHeader() {
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Logo on Desktop */}
-            <Link to={ROUTES.HOME} className="hidden lg:flex items-center py-1">
+            {/* Logo on Medium/Desktop screens */}
+            <Link to={ROUTES.HOME} className="hidden sm:flex items-center py-1">
               <img
                 src="/logo.png"
                 alt="Vanom"
-                className="h-11 sm:h-13 w-auto object-contain hover:scale-102 transition-transform duration-200"
+                className="h-9 sm:h-11 lg:h-13 w-auto object-contain hover:scale-102 transition-transform duration-200"
               />
             </Link>
           </div>
 
-          {/* Mobile Logo (Centered on small screens) */}
-          <div className="lg:hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto max-w-[130px] sm:max-w-[160px]">
+          {/* Mobile Portrait Logo (Centered only on small mobile < sm) */}
+          <div className="sm:hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto max-w-[120px]">
             <Link to={ROUTES.HOME} className="flex items-center py-1">
               <img
                 src="/logo.png"
                 alt="Vanom"
-                className="h-8 sm:h-10 w-auto max-w-full object-contain"
+                className="h-8 w-auto max-w-full object-contain"
               />
             </Link>
           </div>
@@ -510,7 +510,7 @@ export function PublicHeader() {
           </form>
 
           {/* Right Action Links */}
-          <div className="flex items-center gap-1 sm:gap-5 shrink-0 z-10">
+          <div className="flex items-center gap-1 sm:gap-2.5 lg:gap-4 shrink-0 z-10">
             {/* Mobile Search Icon Toggle */}
             <button
               type="button"
@@ -525,12 +525,12 @@ export function PublicHeader() {
               )}
             </button>
 
-            {/* Country / Currency Selector (Desktop) */}
+            {/* Country / Currency Selector (Visible in Mobile Landscape & Desktop) */}
             <div className="relative hidden sm:block" ref={countryDropdownRef}>
               <button
                 type="button"
                 onClick={() => setShowCountryDropdown((prev) => !prev)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#ebdcb0] bg-white/70 hover:bg-white hover:border-[#358B5B] text-gray-800 text-xs font-semibold transition-all shadow-2xs cursor-pointer select-none"
+                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg border border-[#ebdcb0] bg-white/70 hover:bg-white hover:border-[#358B5B] text-gray-800 text-xs font-semibold transition-all shadow-2xs cursor-pointer select-none"
                 title="Change Country & Currency"
               >
                 <img
@@ -544,7 +544,7 @@ export function PublicHeader() {
                 />
                 <span className="hidden" style={{ display: "none" }}>{country.flag}</span>
                 <span className="font-bold text-[11px] text-gray-900">{country.code}</span>
-                <span className="text-[10px] text-gray-500 font-normal">({country.symbol})</span>
+                <span className="text-[10px] text-gray-500 font-normal hidden lg:inline">({country.symbol})</span>
                 <ChevronDown className={`w-3 h-3 text-gray-500 transition-transform duration-200 ${showCountryDropdown ? "rotate-180" : ""}`} />
               </button>
 
@@ -595,38 +595,39 @@ export function PublicHeader() {
             {/* Wishlist */}
             <Link
               to={ROUTES.WISHLIST || "/wishlist"}
-              className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors group cursor-pointer"
+              className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors group cursor-pointer"
             >
               <Heart className="w-[18px] h-[18px] text-gray-600 group-hover:text-[#003D2B] transition-colors" />
-              <span>Wishlist</span>
+              <span className="hidden lg:inline">Wishlist</span>
             </Link>
 
+            {/* Account / Sign In */}
             {/* Account / Sign In */}
             <div className="relative" ref={userRef}>
               {isAuthenticated ? (
                 <>
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="p-1.5 sm:px-1.5 sm:py-1 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors cursor-pointer"
+                    className="p-1.5 md:px-2 md:py-1 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors cursor-pointer"
                   >
                     <User className="w-[19px] h-[19px] text-gray-600" />
-                    <span className="hidden sm:inline truncate max-w-[90px]">
+                    <span className="hidden md:inline truncate max-w-[90px]">
                       {user?.firstName || "Account"}
                     </span>
                     {isSuperAdmin ? (
-                      <span className="hidden sm:inline-block text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-100 text-rose-800">
+                      <span className="hidden lg:inline-block text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-100 text-rose-800">
                         Super Admin
                       </span>
                     ) : isAdmin ? (
-                      <span className="hidden sm:inline-block text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-100 text-rose-800">
+                      <span className="hidden lg:inline-block text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-100 text-rose-800">
                         Admin
                       </span>
                     ) : isB2B ? (
-                      <span className="hidden sm:inline-block text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
+                      <span className="hidden lg:inline-block text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
                         B2B
                       </span>
                     ) : null}
-                    <ChevronDown className="w-3 h-3 text-gray-400 hidden sm:inline" />
+                    <ChevronDown className="w-3 h-3 text-gray-400 hidden md:inline" />
                   </button>
 
                   {showUserMenu && (
@@ -742,10 +743,10 @@ export function PublicHeader() {
               ) : (
                 <Link
                   to={ROUTES.LOGIN}
-                  className="p-1.5 sm:px-0 flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors group cursor-pointer"
+                  className="p-1.5 md:px-2 flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors group cursor-pointer"
                 >
                   <User className="w-[19px] h-[19px] text-gray-600 group-hover:text-[#003D2B] transition-colors" />
-                  <span className="hidden sm:inline">Sign In</span>
+                  <span className="hidden md:inline">Sign In</span>
                 </Link>
               )}
             </div>
@@ -753,7 +754,7 @@ export function PublicHeader() {
             {/* Cart with Counter Badge */}
             <button
               onClick={openCart}
-              className="p-1.5 sm:px-0 flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors relative cursor-pointer group"
+              className="p-1.5 md:px-2 flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors relative cursor-pointer group"
             >
               <div className="relative">
                 <ShoppingCart className="w-[19px] h-[19px] text-gray-600 group-hover:text-[#003D2B] transition-colors" />
@@ -761,7 +762,7 @@ export function PublicHeader() {
                   {cart?.itemCount || 0}
                 </span>
               </div>
-              <span className="hidden sm:inline">Cart</span>
+              <span className="hidden md:inline">Cart</span>
             </button>
           </div>
         </div>
