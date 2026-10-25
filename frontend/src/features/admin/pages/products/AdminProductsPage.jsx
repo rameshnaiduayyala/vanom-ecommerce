@@ -78,7 +78,7 @@ export function AdminProductsPage() {
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
           categories={categories}
-          totalProductsCount={products.length}
+          totalProductsCount={totalFilteredCount}
         />
 
         {/* Products Table */}

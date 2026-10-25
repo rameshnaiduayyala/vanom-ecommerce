@@ -72,10 +72,11 @@ export function formatAdminProducts(res) {
   });
 
   // Preserve pagination metadata on formatted array for paginated API consumers
-  const meta = res?.pagination || res?.meta || null;
+  const meta = res?.pagination || res?.meta || rawProducts?.pagination || rawProducts?.meta || null;
   if (meta) {
     formatted.pagination = meta;
     formatted.meta = meta;
+    formatted.total = meta.total;
   }
   formatted.items = formatted;
 

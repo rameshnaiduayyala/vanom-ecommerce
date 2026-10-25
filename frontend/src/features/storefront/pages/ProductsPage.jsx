@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 import { Api } from "@/services/api/api-client.js";
 import { useCountryStore } from "../../../stores/country.store.js";
 import { SEO } from "../../../components/common/SEO.jsx";
@@ -8,6 +9,8 @@ import { ProductsHeaderBar } from "../components/products/ProductsHeaderBar.jsx"
 import { ProductsSidebar } from "../components/products/ProductsSidebar.jsx";
 import { MobileCategoryTabs } from "../components/products/MobileCategoryTabs.jsx";
 import { ProductsGrid } from "../components/products/ProductsGrid.jsx";
+
+const PAGE_SIZE = 20;
 
 export function ProductsPage() {
   const navigate = useNavigate();
@@ -39,14 +42,59 @@ export function ProductsPage() {
 
   const totalCatalogCount = allCatalogData?.total ?? allCatalogData?.meta?.total ?? 0;
 
-  const { data: productsData, isLoading } = useQuery({
-    queryKey: ["products-list", currentCategory, currentSearch, country.code],
-    queryFn: () =>
-      Api.catalog.getProducts({
+  // ── Infinite Query with 20 products per page and cursor pagination ──
+  const {
+    data: infiniteData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useInfiniteQuery({
+    queryKey: ["products-infinite", currentCategory, currentSearch, country.code],
+    queryFn: async ({ pageParam = null }) => {
+      const params = {
+        limit: PAGE_SIZE,
+        ...(pageParam ? { cursor: pageParam } : {}),
         ...(currentCategory ? { categoryId: currentCategory } : {}),
         ...(currentSearch ? { search: currentSearch } : {}),
-      }),
+      };
+      return Api.catalog.getProducts(params);
+    },
+    getNextPageParam: (lastPage) => {
+      // Check cursor returned in metadata
+      const nextCursor =
+        lastPage?.meta?.nextCursor ??
+        lastPage?.pagination?.nextCursor ??
+        lastPage?.nextCursor ??
+        null;
+      if (nextCursor) return nextCursor;
+
+      // Fallback: If 20 items returned, use ID of last item as next cursor
+      const items = Array.isArray(lastPage?.items)
+        ? lastPage.items
+        : Array.isArray(lastPage?.data)
+        ? lastPage.data
+        : Array.isArray(lastPage)
+        ? lastPage
+        : [];
+      if (items.length === PAGE_SIZE) {
+        return items[items.length - 1]?.id || null;
+      }
+      return undefined;
+    },
+    initialPageParam: null,
   });
+
+  // Flatten items from all fetched pages
+  const rawProducts = useMemo(() => {
+    if (!infiniteData?.pages) return [];
+    return infiniteData.pages.flatMap((page) => {
+      if (Array.isArray(page?.items)) return page.items;
+      if (Array.isArray(page?.data)) return page.data;
+      if (Array.isArray(page)) return page;
+      return [];
+    });
+  }, [infiniteData]);
 
   const rawCatList = Array.isArray(categories)
     ? categories
@@ -56,20 +104,14 @@ export function ProductsPage() {
     ? categories.data
     : [];
 
-  const catList = [...rawCatList].sort((a, b) => {
-    const orderA = a.sortOrder !== undefined && a.sortOrder !== null ? Number(a.sortOrder) : 0;
-    const orderB = b.sortOrder !== undefined && b.sortOrder !== null ? Number(b.sortOrder) : 0;
-    if (orderA !== orderB) return orderA - orderB;
-    return (a.name || "").localeCompare(b.name || "");
-  });
-
-  const rawProducts = Array.isArray(productsData?.items)
-    ? productsData.items
-    : Array.isArray(productsData?.data)
-    ? productsData.data
-    : Array.isArray(productsData)
-    ? productsData
-    : [];
+  const catList = useMemo(() => {
+    return [...rawCatList].sort((a, b) => {
+      const orderA = a.sortOrder !== undefined && a.sortOrder !== null ? Number(a.sortOrder) : 0;
+      const orderB = b.sortOrder !== undefined && b.sortOrder !== null ? Number(b.sortOrder) : 0;
+      if (orderA !== orderB) return orderA - orderB;
+      return (a.name || "").localeCompare(b.name || "");
+    });
+  }, [rawCatList]);
 
   // Find active category details across roots and children
   const activeCategoryObj = useMemo(() => {
@@ -217,13 +259,41 @@ export function ProductsPage() {
             onClearCategory={handleClearCategory}
           />
 
-          <div className="lg:col-span-9">
+          <div className="lg:col-span-9 space-y-6">
             <ProductsGrid
               products={filteredProducts}
               isLoading={isLoading}
               gridCols={gridCols}
               onClearFilters={handleClearFilters}
             />
+
+            {/* ── Manual Load More Button Section ── */}
+            {filteredProducts.length > 0 && (
+              <div className="py-8 flex flex-col items-center justify-center gap-3">
+                {hasNextPage ? (
+                  <button
+                    type="button"
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-2xl bg-[#00875A] hover:bg-[#00744D] text-white transition-all text-xs sm:text-sm font-bold shadow-md hover:shadow-lg disabled:opacity-60 cursor-pointer active:scale-98"
+                    aria-label="Load more products"
+                  >
+                    {isFetchingNextPage ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <span>Loading more products...</span>
+                      </>
+                    ) : (
+                      <span>Load More Products</span>
+                    )}
+                  </button>
+                ) : (
+                  <p className="text-xs font-semibold text-gray-500 select-none bg-white/70 px-4 py-2 rounded-xl border border-gray-200">
+                    Showing all {filteredProducts.length} products
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

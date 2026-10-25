@@ -66,7 +66,8 @@ export async function list(request, reply) {
     meta: getPaginationMeta(
       pagination.page,
       pagination.limit,
-      result.total
+      result.total,
+      result.nextCursor
     )
   });
 }

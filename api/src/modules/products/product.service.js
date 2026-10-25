@@ -217,7 +217,7 @@ export async function createProduct(input) {
   }
 }
 
-export async function listProducts({ page, limit, skip, search, categoryId, type, isActive, isNew, isFeatured, isTrending, isBestSeller }) {
+export async function listProducts({ page, limit, skip, cursor, search, categoryId, type, isActive, isNew, isFeatured, isTrending, isBestSeller }) {
   const where = {
     isActive: isActive !== undefined ? isActive : true,
     deletedAt: null,
@@ -243,18 +243,29 @@ export async function listProducts({ page, limit, skip, search, categoryId, type
     ...(isBestSeller !== undefined ? { isBestSeller } : {})
   };
 
+  const queryArgs = {
+    where,
+    take: limit,
+    orderBy: { createdAt: "desc" },
+    include: productInclude
+  };
+
+  if (cursor) {
+    queryArgs.cursor = { id: cursor };
+    queryArgs.skip = 1; // Skip the cursor itself
+  } else if (skip) {
+    queryArgs.skip = skip;
+  }
+
   const [items, total] = await prisma.$transaction([
-    prisma.product.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: "desc" },
-      include: productInclude
-    }),
+    prisma.product.findMany(queryArgs),
     prisma.product.count({ where })
   ]);
 
-  return { items: items.map(serializeProduct), total };
+  const serializedItems = items.map(serializeProduct);
+  const nextCursor = serializedItems.length === limit ? serializedItems[serializedItems.length - 1]?.id : null;
+
+  return { items: serializedItems, total, nextCursor };
 }
 
 export async function getProductById(idOrSlug) {
