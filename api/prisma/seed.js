@@ -4,6 +4,15 @@ import { seedCategories } from "./seed-categories.js";
 
 const prisma = new PrismaClient();
 
+// Safely delete from a table — skips if table doesn't exist in DB yet
+async function safeDelete(deletePromise) {
+  try {
+    await deletePromise;
+  } catch {
+    // Table may not exist yet (no migration), skip silently
+  }
+}
+
 async function main() {
   // Ensure schema compatibility for dynamic columns (e.g. weight, unitPrice, sortOrder) on remote databases
   const columnMigrations = [
@@ -32,74 +41,70 @@ async function main() {
   console.log("========================================================");
 
   // 1. Unlink foreign-key relations on User to prevent cyclic constraint violations
-  try {
-    await prisma.user.updateMany({
-      data: {
-        bulkBusinessId: null,
-        organizationId: null,
-        countryId: null
-      }
-    });
-  } catch (err) {
-    console.warn("Notice unlinking user relations:", err.message);
-  }
+  await safeDelete(prisma.user.updateMany({
+    data: {
+      bulkBusinessId: null,
+      organizationId: null,
+      countryId: null
+    }
+  }));
 
-  // 2. Delete all records in strict reverse-dependency order
-  await prisma.shippoWebhookEvent.deleteMany({});
-  await prisma.shipmentItem.deleteMany({});
-  await prisma.shippingRateSnapshot.deleteMany({});
-  await prisma.shipment.deleteMany({});
-  await prisma.invoice.deleteMany({});
+  // 2. Delete all records in strict reverse-dependency order (safeDelete skips missing tables)
+  await safeDelete(prisma.shippoWebhookEvent.deleteMany({}));
+  await safeDelete(prisma.shipmentItem.deleteMany({}));
+  await safeDelete(prisma.shippingRateSnapshot.deleteMany({}));
+  await safeDelete(prisma.shipment.deleteMany({}));
+  await safeDelete(prisma.invoice.deleteMany({}));
 
-  await prisma.bulkOrderItem.deleteMany({});
-  await prisma.bulkOrder.deleteMany({});
-  await prisma.bulkCartItem.deleteMany({});
-  await prisma.bulkCart.deleteMany({});
-  await prisma.bulkAddress.deleteMany({});
+  await safeDelete(prisma.bulkOrderItem.deleteMany({}));
+  await safeDelete(prisma.bulkOrder.deleteMany({}));
+  await safeDelete(prisma.bulkCartItem.deleteMany({}));
+  await safeDelete(prisma.bulkCart.deleteMany({}));
+  await safeDelete(prisma.bulkAddress.deleteMany({}));
 
-  await prisma.orderItem.deleteMany({});
-  await prisma.orderAddress.deleteMany({});
-  await prisma.order.deleteMany({});
+  await safeDelete(prisma.orderItem.deleteMany({}));
+  await safeDelete(prisma.orderAddress.deleteMany({}));
+  await safeDelete(prisma.order.deleteMany({}));
 
-  await prisma.cartItem.deleteMany({});
-  await prisma.cart.deleteMany({});
+  await safeDelete(prisma.cartItem.deleteMany({}));
+  await safeDelete(prisma.cart.deleteMany({}));
 
-  await prisma.inventoryTransferItem.deleteMany({});
-  await prisma.inventoryTransfer.deleteMany({});
-  await prisma.inventoryTransaction.deleteMany({});
-  await prisma.inventory.deleteMany({});
-  await prisma.warehouse.deleteMany({});
+  await safeDelete(prisma.inventoryTransferItem.deleteMany({}));
+  await safeDelete(prisma.inventoryTransfer.deleteMany({}));
+  await safeDelete(prisma.inventoryTransaction.deleteMany({}));
+  await safeDelete(prisma.inventory.deleteMany({}));
+  await safeDelete(prisma.warehouse.deleteMany({}));
 
-  await prisma.review.deleteMany({});
-  await prisma.productVariantCountry.deleteMany({});
-  await prisma.productCountry.deleteMany({});
-  await prisma.productImage.deleteMany({});
-  await prisma.productVariant.deleteMany({});
-  await prisma.product.deleteMany({});
+  await safeDelete(prisma.review.deleteMany({}));
+  await safeDelete(prisma.productVariantCountry.deleteMany({}));
+  await safeDelete(prisma.productCountry.deleteMany({}));
+  await safeDelete(prisma.productImage.deleteMany({}));
+  await safeDelete(prisma.productVariant.deleteMany({}));
+  await safeDelete(prisma.product.deleteMany({}));
 
-  await prisma.bulkPricingTier.deleteMany({});
-  await prisma.bulkVariantCountryPrice.deleteMany({});
-  await prisma.bulkProductCountryPrice.deleteMany({});
-  await prisma.bulkProductVariant.deleteMany({});
-  await prisma.bulkProductImage.deleteMany({});
-  await prisma.bulkProduct.deleteMany({});
-  await prisma.bulkBusiness.deleteMany({});
+  await safeDelete(prisma.bulkPricingTier.deleteMany({}));
+  await safeDelete(prisma.bulkVariantCountryPrice.deleteMany({}));
+  await safeDelete(prisma.bulkProductCountryPrice.deleteMany({}));
+  await safeDelete(prisma.bulkProductVariant.deleteMany({}));
+  await safeDelete(prisma.bulkProductImage.deleteMany({}));
+  await safeDelete(prisma.bulkProduct.deleteMany({}));
+  await safeDelete(prisma.bulkBusiness.deleteMany({}));
 
-  await prisma.bannerCountry.deleteMany({});
-  await prisma.banner.deleteMany({});
-  await prisma.coupon.deleteMany({});
-  await prisma.category.deleteMany({});
-  await prisma.brand.deleteMany({});
-  await prisma.contactMessage.deleteMany({});
-  await prisma.storeSetting.deleteMany({});
-  await prisma.file.deleteMany({});
+  await safeDelete(prisma.bannerCountry.deleteMany({}));
+  await safeDelete(prisma.banner.deleteMany({}));
+  await safeDelete(prisma.coupon.deleteMany({}));
+  await safeDelete(prisma.category.deleteMany({}));
+  await safeDelete(prisma.brand.deleteMany({}));
+  await safeDelete(prisma.contactMessage.deleteMany({}));
+  await safeDelete(prisma.storeSetting.deleteMany({}));
+  await safeDelete(prisma.file.deleteMany({}));
 
-  await prisma.passwordResetToken.deleteMany({});
-  await prisma.emailVerificationToken.deleteMany({});
-  await prisma.user.deleteMany({});
-  await prisma.organization.deleteMany({});
-  await prisma.country.deleteMany({});
-  await prisma.currency.deleteMany({});
+  await safeDelete(prisma.passwordResetToken.deleteMany({}));
+  await safeDelete(prisma.emailVerificationToken.deleteMany({}));
+  await safeDelete(prisma.user.deleteMany({}));
+  await safeDelete(prisma.organization.deleteMany({}));
+  await safeDelete(prisma.country.deleteMany({}));
+  await safeDelete(prisma.currency.deleteMany({}));
 
   console.log("✅ Database completely sanitized. Zero residual application records.");
 
