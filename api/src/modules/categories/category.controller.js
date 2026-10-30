@@ -12,14 +12,19 @@ async function getCategoryInput(request, oldImageKey = null) {
     input = {};
     for await (const part of request.parts()) {
       if (part.type === "file") {
-        if (part.fieldname !== "image") {
-          throw new AppError("Only the image file field is supported", HTTP_STATUS.BAD_REQUEST, "INVALID_UPLOAD_FIELD");
+        if (part.fieldname === "image") {
+          const file = oldImageKey
+            ? await replaceFile("categories", part, oldImageKey)
+            : await request.server.uploadFile("categories", part);
+          input.imageUrl = file.storageKey;
+          continue;
+        } else if (part.fieldname === "banner" || part.fieldname === "categoryBannerImage") {
+          const file = await request.server.uploadFile("categories/banners", part);
+          input.categoryBannerImage = file.storageKey;
+          continue;
+        } else {
+          throw new AppError("Unsupported file field: " + part.fieldname, HTTP_STATUS.BAD_REQUEST, "INVALID_UPLOAD_FIELD");
         }
-        const file = oldImageKey
-          ? await replaceFile("categories", part, oldImageKey)
-          : await request.server.uploadFile("categories", part);
-        input.imageUrl = file.storageKey;
-        continue;
       }
 
       if (part.fieldname === "data") {

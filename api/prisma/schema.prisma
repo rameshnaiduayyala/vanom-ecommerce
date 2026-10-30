@@ -228,6 +228,7 @@ model Category {
   slug String @unique
 
   imageUrl String?
+  categoryBannerImage String?
   sortOrder Int      @default(0)
 
   parentId String?

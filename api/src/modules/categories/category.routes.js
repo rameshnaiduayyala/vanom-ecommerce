@@ -8,6 +8,7 @@ const properties = {
   slug: { type: "string", minLength: 2, maxLength: 220 },
   description: { type: ["string", "null"] },
   imageUrl: { type: ["string", "null"], maxLength: 2000 },
+  categoryBannerImage: { type: ["string", "null"], maxLength: 2000 },
   parentId: { type: ["string", "null"] },
   sortOrder: { type: ["integer", "null"] },
   isActive: { type: "boolean" },

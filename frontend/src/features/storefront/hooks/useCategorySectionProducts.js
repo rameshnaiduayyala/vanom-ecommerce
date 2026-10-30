@@ -4,17 +4,32 @@ import { Api } from "@/services/api/api-client.js";
 import { useCountryStore } from "../../../stores/country.store.js";
 
 /**
- * useCategorySectionProducts — Custom Hook (Separation of Concerns)
+ * useCategorySectionProducts — Custom Hook
  * Manages data fetching, normalized product list, and independent pagination for a single category block.
+ * Supports activeSubcategoryId switching.
  *
- * @param {string} categoryId - ID or slug of the category
+ * @param {string} categoryId - ID or slug of the category (parent or active subcategory)
  * @param {Object} [options]
  * @param {number} [options.pageSize=10] - Number of products per page
  * @param {Array} [options.fallbackProducts=[]] - Optional fallback products if available in parent
+ * @param {Array} [options.subcategories=[]] - Subcategories of this parent category
  */
-export function useCategorySectionProducts(categoryId, { pageSize = 10, fallbackProducts = [] } = {}) {
+export function useCategorySectionProducts(
+  categoryId,
+  { pageSize = 10, fallbackProducts = [], subcategories = [] } = {}
+) {
   const { country } = useCountryStore();
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedSubcategoryId, setSelectedSubcategoryId] = useState(null);
+
+  // Active category target: if a subcategory pill is active, fetch for it; otherwise fetch for the main parent category
+  const activeCategoryId = selectedSubcategoryId || categoryId;
+
+  // Reset page when subcategory tab changes
+  const handleSelectSubcategory = (subId) => {
+    setSelectedSubcategoryId(subId);
+    setCurrentPage(1);
+  };
 
   // Normalize product lists from API
   const normalizeList = (raw) =>
@@ -26,14 +41,14 @@ export function useCategorySectionProducts(categoryId, { pageSize = 10, fallback
       ? raw
       : [];
 
-  // Query products specifically for this category
+  // Query products specifically for this category or active subcategory
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["category-section-products", categoryId, country.code],
+    queryKey: ["category-section-products", activeCategoryId, country.code],
     queryFn: async () => {
-      if (!categoryId) return null;
+      if (!activeCategoryId) return null;
       try {
         const res = await Api.catalog.getProducts({
-          categoryId,
+          categoryId: activeCategoryId,
           limit: 60,
         });
         return res;
@@ -41,7 +56,7 @@ export function useCategorySectionProducts(categoryId, { pageSize = 10, fallback
         return null;
       }
     },
-    enabled: Boolean(categoryId),
+    enabled: Boolean(activeCategoryId),
     staleTime: 3 * 60 * 1000,
   });
 
@@ -55,13 +70,15 @@ export function useCategorySectionProducts(categoryId, { pageSize = 10, fallback
     if (Array.isArray(fallbackProducts) && fallbackProducts.length > 0) {
       return fallbackProducts.filter(
         (p) =>
-          p.categoryId === categoryId ||
-          p.category?.id === categoryId ||
-          p.category?.slug === categoryId
+          p.categoryId === activeCategoryId ||
+          p.category?.id === activeCategoryId ||
+          p.category?.slug === activeCategoryId ||
+          p.category?.parentId === activeCategoryId ||
+          p.category?.parent?.slug === activeCategoryId
       );
     }
     return [];
-  }, [data, fallbackProducts, categoryId]);
+  }, [data, fallbackProducts, activeCategoryId]);
 
   const totalItems = allProducts.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
@@ -93,6 +110,8 @@ export function useCategorySectionProducts(categoryId, { pageSize = 10, fallback
     pageSize,
     isLoading,
     isFetching,
+    selectedSubcategoryId,
+    setSelectedSubcategory: handleSelectSubcategory,
     goToPage,
     nextPage: () => goToPage(currentPage + 1),
     prevPage: () => goToPage(currentPage - 1),

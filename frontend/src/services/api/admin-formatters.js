@@ -102,6 +102,7 @@ export function formatAdminCategories(res) {
       slug: c.slug || "",
       description: typeof c.description === "string" ? c.description : "",
       imageUrl: c.imageUrl || (c.imageAsset ? `/api/v1/files/${c.imageAsset.storageKey}` : ""),
+      categoryBannerImage: c.categoryBannerImage || "",
       active: c.isActive !== undefined ? Boolean(c.isActive) : (c.active !== undefined ? Boolean(c.active) : true),
       sortOrder: c.sortOrder !== undefined && c.sortOrder !== null ? Number(c.sortOrder) : 0,
       parentId: c.parentId || null,

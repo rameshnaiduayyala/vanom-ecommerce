@@ -56,6 +56,7 @@ export const ROUTES = {
     PRODUCT_EDIT: "/admin/products/:id/edit",
     BULK_PRODUCTS: "/admin/bulk-products",
     CATEGORIES: "/admin/categories",
+    ADVERTISEMENTS: "/admin/advertisements",
     BULK_CATEGORIES: "/admin/bulk-categories",
     BRANDS: "/admin/brands",
     INVENTORY: "/admin/inventory",
