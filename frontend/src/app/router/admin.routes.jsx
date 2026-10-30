@@ -68,6 +68,11 @@ const AdminCompaniesPage = lazy(() =>
     default: m.AdminCompaniesPage || m.default,
   }))
 );
+const AdminAdvertisementsPage = lazy(() =>
+  import("../../features/admin/pages/marketing/AdminAdvertisementsPage.jsx").then((m) => ({
+    default: m.AdminAdvertisementsPage || m.default,
+  }))
+);
 const AdminCategoriesPage = lazy(() =>
   import("../../features/admin/pages/categories/AdminCategoriesPage.jsx").then((m) => ({
     default: m.AdminCategoriesPage || m.default,
@@ -145,6 +150,7 @@ export const adminRoutes = {
     { path: "products/new", element: <AdminAddProductPage /> },
     { path: "bulk-products", element: <AdminBulkProductsPage /> },
     { path: "categories", element: <AdminCategoriesPage /> },
+    { path: "advertisements", element: <AdminAdvertisementsPage /> },
     { path: "bulk-categories", element: <AdminBulkCategoriesPage /> },
     { path: "brands", element: <AdminBrandsPage /> },
     { path: "inventory", element: <AdminInventoryPage /> },

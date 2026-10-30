@@ -1,4 +1,5 @@
 import {
+  Megaphone,
   LayoutDashboard,
   ShoppingCart,
   Package,
@@ -87,6 +88,12 @@ export const ADMIN_NAV_CONFIG = [
     label: "Categories",
     icon: FolderTree,
     path: ROUTES.ADMIN.CATEGORIES,
+  },
+  {
+    id: "retail-advertisements",
+    label: "Advertisements",
+    icon: Megaphone,
+    path: ROUTES.ADMIN.ADVERTISEMENTS,
   },
   {
     id: "retail-brands",
