@@ -1,0 +1,47 @@
+<mj-text font-size="20px" font-weight="bold" color="#0B4627" padding="0 0 4px 0">
+  New Customer Inquiry
+</mj-text>
+
+<mj-text font-size="12px" color="#718096" padding="0 0 16px 0">
+  Received via {{storeName}} Contact Form
+</mj-text>
+
+<mj-raw>
+  <div class="info-box">
+    <table style="width: 100%; font-size: 13px; color: #2D3748; border-collapse: collapse;">
+      <tr>
+        <td style="padding: 6px 0; width: 30%; font-weight: bold; color: #718096; text-transform: uppercase;">Customer:</td>
+        <td style="padding: 6px 0; font-weight: 600;">{{name}}</td>
+      </tr>
+      <tr>
+        <td style="padding: 6px 0; font-weight: bold; color: #718096; text-transform: uppercase;">Email:</td>
+        <td style="padding: 6px 0;"><a href="mailto:{{email}}" class="link-text">{{email}}</a></td>
+      </tr>
+      {{#if phone}}
+      <tr>
+        <td style="padding: 6px 0; font-weight: bold; color: #718096; text-transform: uppercase;">Phone:</td>
+        <td style="padding: 6px 0;">{{phone}}</td>
+      </tr>
+      {{/if}}
+      <tr>
+        <td style="padding: 6px 0; font-weight: bold; color: #718096; text-transform: uppercase;">Subject:</td>
+        <td style="padding: 6px 0; font-weight: 600;">{{subject}}</td>
+      </tr>
+    </table>
+  </div>
+</mj-raw>
+
+<mj-text font-size="12px" font-weight="bold" color="#718096" text-transform="uppercase" padding="16px 0 6px 0">
+  Message:
+</mj-text>
+
+<mj-raw>
+  <div style="background-color: #F7FAFC; border-left: 4px solid #0B4627; padding: 14px 18px; margin-bottom: 20px; font-style: italic; white-space: pre-wrap; font-size: 14px; color: #2D3748;">
+    {{message}}
+  </div>
+</mj-raw>
+
+<mj-button background-color="#0B4627" color="#ffffff" font-size="14px" font-weight="bold" border-radius="6px" href="{{adminPortalUrl}}" align="left" padding="12px 0 0 0">
+  View in Admin Portal
+</mj-button>
+

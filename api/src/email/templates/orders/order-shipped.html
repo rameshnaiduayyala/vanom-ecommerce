@@ -1,0 +1,18 @@
+<mj-text font-size="22px" font-weight="bold" color="#0F2B1C" padding="0 0 16px 0">
+  Your Order Has Shipped!
+</mj-text>
+
+<mj-text padding="0 0 12px 0">
+  Great news! Your order <strong>#{{orderId}}</strong> has been dispatched and is on its way.
+</mj-text>
+
+{{#if trackingUrl}}
+  <mj-button background-color="#0B4627" color="#ffffff" font-size="14px" font-weight="bold" border-radius="6px" href="{{trackingUrl}}" align="left" padding="16px 0 20px 0">
+    Track Shipment
+  </mj-button>
+
+  <mj-text font-size="13px" color="#718096" padding="0">
+    Tracking link: <a href="{{trackingUrl}}" class="link-text">{{trackingUrl}}</a>
+  </mj-text>
+{{/if}}
+

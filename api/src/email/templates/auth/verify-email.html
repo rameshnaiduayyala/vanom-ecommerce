@@ -1,0 +1,41 @@
+<mj-text font-size="22px" font-weight="bold" color="#0F2B1C" padding="0 0 16px 0">
+  {{#if isB2B}}Welcome to Vanom Wholesale!{{else}}Welcome to Vanom!{{/if}}
+</mj-text>
+
+<mj-text padding="0 0 12px 0">
+  {{#if firstName}}Hello {{firstName}},{{else}}Hello,{{/if}}
+</mj-text>
+
+<mj-text padding="0 0 16px 0">
+  Thank you for registering {{#if isB2B}}your business on Vanom Wholesale{{else}}an account on Vanom{{/if}}. Please verify your email address to activate your account.
+</mj-text>
+
+{{#if isB2B}}
+  {{#if businessName}}
+    <mj-raw>
+      <div class="info-box">
+        <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: bold; color: #2B6CB0; text-transform: uppercase;">
+          Registered Business Profile
+        </p>
+        <table style="width: 100%; font-size: 13px; color: #4A5568; border-collapse: collapse;">
+          <tr><td style="padding: 4px 0; font-weight: 600; width: 40%;">Business Name:</td><td style="padding: 4px 0; color: #1A202C;">{{businessName}}</td></tr>
+          {{#if businessEmail}}<tr><td style="padding: 4px 0; font-weight: 600;">Business Email:</td><td style="padding: 4px 0; color: #1A202C;">{{businessEmail}}</td></tr>{{/if}}
+          {{#if businessPhone}}<tr><td style="padding: 4px 0; font-weight: 600;">Phone:</td><td style="padding: 4px 0; color: #1A202C;">{{businessPhone}}</td></tr>{{/if}}
+          {{#if registrationNumber}}<tr><td style="padding: 4px 0; font-weight: 600;">Reg No:</td><td style="padding: 4px 0; color: #1A202C;">{{registrationNumber}}</td></tr>{{/if}}
+          {{#if taxRegistrationNumber}}<tr><td style="padding: 4px 0; font-weight: 600;">Tax / VAT:</td><td style="padding: 4px 0; color: #1A202C;">{{taxRegistrationNumber}}</td></tr>{{/if}}
+          {{#if address}}<tr><td style="padding: 4px 0; font-weight: 600;">Address:</td><td style="padding: 4px 0; color: #1A202C;">{{address}}</td></tr>{{/if}}
+        </table>
+      </div>
+    </mj-raw>
+  {{/if}}
+{{/if}}
+
+<mj-button background-color="#0B4627" color="#ffffff" font-size="14px" font-weight="bold" border-radius="6px" href="{{verifyUrl}}" align="left" padding="16px 0 20px 0">
+  Verify Email Address
+</mj-button>
+
+<mj-text font-size="13px" color="#718096" padding="0">
+  If you cannot click the button above, paste this URL into your browser:<br />
+  <a href="{{verifyUrl}}" class="link-text">{{verifyUrl}}</a>
+</mj-text>
+
