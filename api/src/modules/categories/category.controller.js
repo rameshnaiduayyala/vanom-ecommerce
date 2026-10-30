@@ -18,8 +18,10 @@ async function getCategoryInput(request, oldImageKey = null) {
             : await request.server.uploadFile("categories", part);
           input.imageUrl = file.storageKey;
           continue;
-        } else if (part.fieldname === "banner" || part.fieldname === "categoryBannerImage") {
+        } else if (part.fieldname === "banner" || part.fieldname === "categoryBannerImage" || part.fieldname === "categoryBannerImages") {
           const file = await request.server.uploadFile("categories/banners", part);
+          if (!input.categoryBannerImages) input.categoryBannerImages = [];
+          input.categoryBannerImages.push(file.storageKey);
           input.categoryBannerImage = file.storageKey;
           continue;
         } else {
@@ -49,6 +51,16 @@ async function getCategoryInput(request, oldImageKey = null) {
   }
   if (normalized.sortOrder !== undefined) {
     normalized.sortOrder = Number(normalized.sortOrder) || 0;
+  }
+  if (Array.isArray(normalized.categoryBannerImages)) {
+    normalized.categoryBannerImage = normalized.categoryBannerImages.length > 0
+      ? (normalized.categoryBannerImages.length === 1 ? normalized.categoryBannerImages[0] : JSON.stringify(normalized.categoryBannerImages))
+      : null;
+  } else if (Array.isArray(normalized.categoryBannerImage)) {
+    normalized.categoryBannerImages = normalized.categoryBannerImage;
+    normalized.categoryBannerImage = normalized.categoryBannerImages.length > 0
+      ? (normalized.categoryBannerImages.length === 1 ? normalized.categoryBannerImages[0] : JSON.stringify(normalized.categoryBannerImages))
+      : null;
   }
   return normalized;
 }
