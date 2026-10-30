@@ -14,6 +14,36 @@ function handleCategoryError(error) {
   throw error;
 }
 
+export function formatCategoryOutput(category) {
+  if (!category) return category;
+  let bannerImages = [];
+  if (category.categoryBannerImage) {
+    const raw = String(category.categoryBannerImage).trim();
+    if (raw.startsWith("[") && raw.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) bannerImages = parsed.filter(Boolean);
+      } catch {
+        bannerImages = [category.categoryBannerImage];
+      }
+    } else if (raw) {
+      bannerImages = [category.categoryBannerImage];
+    }
+  }
+
+  let formattedChildren = category.children;
+  if (Array.isArray(category.children)) {
+    formattedChildren = category.children.map(formatCategoryOutput);
+  }
+
+  return {
+    ...category,
+    categoryBannerImages: bannerImages,
+    categoryBannerImage: bannerImages[0] || category.categoryBannerImage || null,
+    ...(formattedChildren !== undefined && { children: formattedChildren })
+  };
+}
+
 export async function createCategory(input) {
   try {
     if (input.parentId) {
@@ -23,12 +53,19 @@ export async function createCategory(input) {
       }
     }
 
-    return await prisma.category.create({
+    let bannerImageVal = input.categoryBannerImage;
+    if (Array.isArray(input.categoryBannerImages)) {
+      bannerImageVal = input.categoryBannerImages.length > 0
+        ? (input.categoryBannerImages.length === 1 ? input.categoryBannerImages[0] : JSON.stringify(input.categoryBannerImages))
+        : null;
+    }
+
+    const created = await prisma.category.create({
       data: {
         name: input.name,
         slug: input.slug ?? slugify(input.name),
         imageUrl: input.imageUrl ?? null,
-        categoryBannerImage: input.categoryBannerImage ?? null,
+        categoryBannerImage: bannerImageVal ?? null,
         sortOrder: input.sortOrder !== undefined ? Number(input.sortOrder) : 0,
         parentId: input.parentId ?? null,
         isActive: input.isActive ?? true,
@@ -39,6 +76,8 @@ export async function createCategory(input) {
         children: true
       }
     });
+
+    return formatCategoryOutput(created);
   } catch (error) {
     handleCategoryError(error);
   }
@@ -113,7 +152,7 @@ export async function listCategories({ page, limit, skip, search, isActive, show
   ]);
 
   return {
-    items: items.map((cat) => ({
+    items: items.map((cat) => formatCategoryOutput({
       ...cat,
       sortOrder: cat.sortOrder ?? 0,
       count: cat._count?.products ?? 0,
@@ -168,13 +207,13 @@ export async function getCategoryTree() {
 
     const totalChildrenProductCount = childrenWithCounts.reduce((acc, sub) => acc + (sub.count || 0), 0);
 
-    return {
+    return formatCategoryOutput({
       ...cat,
       sortOrder: cat.sortOrder ?? 0,
       directCount: directProductCount,
       count: directProductCount + totalChildrenProductCount,
       children: childrenWithCounts
-    };
+    });
   });
 }
 
@@ -197,12 +236,12 @@ export async function getCategoryById(id) {
     }
   });
   if (!category) throw new AppError(MESSAGES.CATEGORY_NOT_FOUND, HTTP_STATUS.NOT_FOUND, "CATEGORY_NOT_FOUND");
-  return {
+  return formatCategoryOutput({
     ...category,
     sortOrder: category.sortOrder ?? 0,
     count: category._count?.products ?? 0,
     subcategoriesCount: category._count?.children ?? 0
-  };
+  });
 }
 
 export async function updateCategory(id, input) {
@@ -212,13 +251,20 @@ export async function updateCategory(id, input) {
       throw new AppError("Category cannot be its own parent", HTTP_STATUS.BAD_REQUEST, "INVALID_PARENT_CATEGORY");
     }
 
-    return await prisma.category.update({
+    let bannerImageVal = input.categoryBannerImage;
+    if (Array.isArray(input.categoryBannerImages)) {
+      bannerImageVal = input.categoryBannerImages.length > 0
+        ? (input.categoryBannerImages.length === 1 ? input.categoryBannerImages[0] : JSON.stringify(input.categoryBannerImages))
+        : null;
+    }
+
+    const updated = await prisma.category.update({
       where: { id },
       data: {
         ...(input.name !== undefined && { name: input.name }),
         ...(input.slug !== undefined && { slug: input.slug }),
         ...(input.imageUrl !== undefined && { imageUrl: input.imageUrl }),
-        ...(input.categoryBannerImage !== undefined && { categoryBannerImage: input.categoryBannerImage }),
+        ...((input.categoryBannerImage !== undefined || input.categoryBannerImages !== undefined) && { categoryBannerImage: bannerImageVal }),
         ...(input.sortOrder !== undefined && { sortOrder: Number(input.sortOrder) || 0 }),
         ...(input.parentId !== undefined && { parentId: input.parentId || null }),
         ...(input.isActive !== undefined && { isActive: input.isActive }),
@@ -229,6 +275,8 @@ export async function updateCategory(id, input) {
         children: true
       }
     });
+
+    return formatCategoryOutput(updated);
   } catch (error) {
     handleCategoryError(error);
   }
