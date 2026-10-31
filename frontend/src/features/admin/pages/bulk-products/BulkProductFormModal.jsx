@@ -2,8 +2,9 @@ import React, { useState, useEffect, lazy, Suspense } from "react";
 import { Modal } from "@/components/ui/Modal.jsx";
 import { Button } from "@/components/ui/Button.jsx";
 import { Input, Select } from "@/components/ui/Input.jsx";
-import { Plus, Trash2, Globe2, FileText, Scale, Image as ImageIcon } from "lucide-react";
+import { Plus, Trash2, Globe2, FileText, Scale, Image as ImageIcon, Video, Film, UploadCloud, X } from "lucide-react";
 import { FileUploadDropzone } from "@/components/common/FileUploadDropzone.jsx";
+import { isVideoUrl } from "@/utils/image.js";
 import { DEFAULT_BULK_FORM, SUPPORTED_B2B_COUNTRIES } from "./constants.js";
 
 const TiptapEditor = lazy(() =>
@@ -273,66 +274,130 @@ export function BulkProductFormModal({
               </Suspense>
             </div>
 
-            {/* Product Image */}
-            <div className="md:col-span-2 space-y-2">
-              <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <ImageIcon className="w-3.5 h-3.5 text-[#00875A]" />
-                Product Image
-              </label>
-              {form.images && form.images[0] ? (
-                <div className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <img
-                      src={typeof form.images[0] === "string" ? form.images[0] : form.images[0]?.url}
-                      alt="Product Preview"
-                      className="w-14 h-14 rounded-lg object-cover border border-slate-200 shrink-0 bg-white shadow-2xs"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=60";
-                      }}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <span className="text-xs font-bold text-slate-800 block">Uploaded Product Image</span>
-                      <span className="text-[10px] font-mono text-slate-400 truncate block mt-0.5 max-w-xs sm:max-w-md">
-                        {typeof form.images[0] === "string" ? form.images[0] : form.images[0]?.url}
-                      </span>
-                    </div>
-                  </div>
+            {/* Product Media Gallery: Images & Videos */}
+            <div className="md:col-span-2 space-y-3 bg-slate-50/70 p-4 rounded-2xl border border-slate-200">
+              <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <UploadCloud className="w-4 h-4 text-[#00875A]" />
+                  <span>Wholesale Media Gallery (Images &amp; Videos)</span>
+                </label>
+                <span className="text-[11px] font-semibold text-slate-500 font-mono">
+                  {(form.images || []).length} media items
+                </span>
+              </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <FileUploadDropzone
-                      folder="bulk-products"
-                      compact={true}
-                      onUploadSuccess={(url) => setForm((prev) => ({ ...prev, images: [url] }))}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setForm((prev) => ({ ...prev, images: [] }))}
-                      className="p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
-                      title="Remove image"
+              {/* Media Upload Dropzone */}
+              <FileUploadDropzone
+                folder="bulk-products"
+                multiple={true}
+                accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,video/ogg"
+                onUploadSuccess={(urlsOrUrl) => {
+                  const newUrls = Array.isArray(urlsOrUrl) ? urlsOrUrl : [urlsOrUrl];
+                  setForm((prev) => ({
+                    ...prev,
+                    images: [...(prev.images || []), ...newUrls.filter(Boolean)],
+                  }));
+                }}
+                label="Click or drop wholesale photos &amp; videos here"
+                hint="High-resolution images (JPG, PNG, WebP) and Product Videos (MP4, WebM)"
+              />
+
+              {/* Media Items Preview Grid */}
+              <div className="flex flex-wrap gap-3 pt-1">
+                {(form.images || []).map((mediaUrl, index) => {
+                  const urlStr = typeof mediaUrl === "string" ? mediaUrl : mediaUrl?.url || "";
+                  const isVid = isVideoUrl(urlStr);
+
+                  return (
+                    <div
+                      key={index}
+                      className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-xl overflow-hidden border border-slate-200 bg-white group shadow-2xs shrink-0"
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <FileUploadDropzone
-                  folder="bulk-products"
-                  multiple={false}
-                  onUploadSuccess={(url) => setForm((prev) => ({ ...prev, images: [url] }))}
-                  label="Click or drop wholesale product image"
-                  hint="High-resolution image (JPG, PNG, WebP)"
-                />
-              )}
+                      {isVid ? (
+                        <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center p-2 text-white">
+                          <Film className="w-6 h-6 text-emerald-400 mb-1" />
+                          <span className="text-[10px] font-bold font-mono tracking-tight text-center truncate max-w-full">
+                            Video #{index + 1}
+                          </span>
+                        </div>
+                      ) : (
+                        <img
+                          src={urlStr}
+                          alt={`Product media ${index + 1}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&auto=format&fit=crop&q=60";
+                          }}
+                        />
+                      )}
 
-              <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            images: (prev.images || []).filter((_, i) => i !== index),
+                          }))
+                        }
+                        className="absolute top-1.5 right-1.5 p-1 bg-black/75 hover:bg-rose-600 text-white rounded-md opacity-0 group-hover:opacity-100 transition-all cursor-pointer shadow-xs"
+                        title="Remove media"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+
+                      {index === 0 ? (
+                        <span className="absolute bottom-1.5 left-1.5 bg-[#006B3C] text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-2xs">
+                          Cover
+                        </span>
+                      ) : (
+                        <span className="absolute bottom-1.5 left-1.5 bg-black/60 text-white text-[9px] font-medium px-1.5 py-0.5 rounded shadow-2xs">
+                          #{index + 1}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Paste Direct URL */}
+              <div className="flex gap-2 pt-1">
                 <input
                   type="url"
-                  value={typeof form.images?.[0] === "string" ? form.images[0] : form.images?.[0]?.url || ""}
-                  onChange={(e) => setForm((prev) => ({ ...prev, images: e.target.value ? [e.target.value] : [] }))}
-                  placeholder="Or paste direct image URL (https://...)"
-                  className="w-full px-3 py-1.5 text-xs bg-slate-50/50 border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:border-[#00875A] focus:bg-white"
+                  placeholder="Or paste direct image / video URL (https://...)"
+                  className="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:border-[#00875A]"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const val = e.target.value.trim();
+                      if (val) {
+                        setForm((prev) => ({
+                          ...prev,
+                          images: [...(prev.images || []), val],
+                        }));
+                        e.target.value = "";
+                      }
+                    }
+                  }}
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    const input = e.currentTarget.previousElementSibling;
+                    const val = input?.value?.trim();
+                    if (val) {
+                      setForm((prev) => ({
+                        ...prev,
+                        images: [...(prev.images || []), val],
+                      }));
+                      input.value = "";
+                    }
+                  }}
+                >
+                  Add URL
+                </Button>
               </div>
             </div>
           </div>
