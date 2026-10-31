@@ -401,56 +401,13 @@ export function ProductGallery({
           onMouseUp={handleMouseUp}
         >
           {/* Top Control Bar */}
-          <div className="w-full px-4 sm:px-6 py-3.5 flex items-center justify-between text-slate-800 border-b border-slate-200/80 bg-white/80 backdrop-blur-md z-10 shadow-2xs">
+          <div className="w-full px-4 sm:px-6 py-3.5 flex items-center justify-between text-slate-800 bg-white">
             {/* Title & Counter */}
             <div className="flex items-center gap-3 min-w-0">
-              <span className="text-xs sm:text-sm font-bold text-slate-800 truncate max-w-xs sm:max-w-md">
-                {title}
-              </span>
-              {gallery.length > 1 && (
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-[#003D2B] border border-slate-200">
-                  {viewerIndex + 1} / {gallery.length}
-                </span>
-              )}
             </div>
 
             {/* Action Buttons: Zoom & Close */}
             <div className="flex items-center gap-2">
-              {/* Zoom Controls */}
-              <div className="flex items-center bg-slate-100/90 rounded-xl p-0.5 border border-slate-200">
-                <button
-                  type="button"
-                  onClick={handleZoomOut}
-                  disabled={zoomLevel <= 1}
-                  className="p-1.5 hover:bg-white rounded-lg text-slate-600 hover:text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                  title="Zoom Out (-)"
-                >
-                  <ZoomOut className="w-4 h-4" />
-                </button>
-                <span className="text-[11px] font-bold px-2 text-[#003D2B]">
-                  {Math.round(zoomLevel * 100)}%
-                </span>
-                <button
-                  type="button"
-                  onClick={handleZoomIn}
-                  disabled={zoomLevel >= 3}
-                  className="p-1.5 hover:bg-white rounded-lg text-slate-600 hover:text-slate-900 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                  title="Zoom In (+)"
-                >
-                  <ZoomIn className="w-4 h-4" />
-                </button>
-                {zoomLevel > 1 && (
-                  <button
-                    type="button"
-                    onClick={handleResetZoom}
-                    className="p-1.5 hover:bg-white rounded-lg text-slate-500 hover:text-slate-900 transition-colors border-l border-slate-200 ml-0.5 cursor-pointer"
-                    title="Reset Zoom (0)"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-
               {/* Close Button */}
               <button
                 type="button"
