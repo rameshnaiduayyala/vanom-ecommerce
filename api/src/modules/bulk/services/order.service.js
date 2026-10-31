@@ -65,85 +65,91 @@ export async function create(userId, input) {
 
   const total = Math.round((subtotal - discount + shippingCharges + tax) * 100) / 100;
 
-  const order = await prisma.$transaction(async (tx) => {
-    // Verify and decrement stock inside a serialised transaction
-    for (const r of resolved) {
-      const countryCode = input.countryCode.toUpperCase();
+  const order = await prisma.$transaction(
+    async (tx) => {
+      // Verify and decrement stock inside a serialised transaction
+      for (const r of resolved) {
+        const countryCode = input.countryCode.toUpperCase();
 
-      const current = r.variant
-        ? await tx.bulkVariantCountryPrice.findUnique({
-            where: { variantId_countryCode: { variantId: r.variant.id, countryCode } }
-          })
-        : await tx.bulkProductCountryPrice.findUnique({
-            where: { productId_countryCode: { productId: r.product.id, countryCode } }
-          });
+        const current = r.variant
+          ? await tx.bulkVariantCountryPrice.findUnique({
+              where: { variantId_countryCode: { variantId: r.variant.id, countryCode } }
+            })
+          : await tx.bulkProductCountryPrice.findUnique({
+              where: { productId_countryCode: { productId: r.product.id, countryCode } }
+            });
 
-      if (!current || current.stock < r.item.quantity) {
-        fail("Stock changed; please review your cart", "BULK_STOCK_CHANGED", HTTP_STATUS.CONFLICT);
+        if (!current || current.stock < r.item.quantity) {
+          fail("Stock changed; please review your cart", "BULK_STOCK_CHANGED", HTTP_STATUS.CONFLICT);
+        }
+
+        await (r.variant
+          ? tx.bulkVariantCountryPrice
+          : tx.bulkProductCountryPrice
+        ).update({
+          where: { id: current.id },
+          data: { stock: { decrement: r.item.quantity } }
+        });
       }
 
-      await (r.variant
-        ? tx.bulkVariantCountryPrice
-        : tx.bulkProductCountryPrice
-      ).update({
-        where: { id: current.id },
-        data: { stock: { decrement: r.item.quantity } }
+      const shippingAddress = input.shippingAddress || {
+        contactName: business.contactPersonName || business.businessName || "Bulk Procurement",
+        phone: business.businessPhone || "+1-000-000-0000",
+        addressLine1: business.address || "Corporate Office HQ",
+        city: "Commercial Hub",
+        postalCode: "00000",
+        countryCode: input.countryCode.toUpperCase()
+      };
+
+      return tx.bulkOrder.create({
+        data: {
+          orderNumber: generateOrderNumber(),
+          businessId: business.id,
+          countryCode: input.countryCode.toUpperCase(),
+          currencyCode: resolved[0].price.currencyCode,
+          subtotal,
+          discount,
+          shippingCharges,
+          tax,
+          total,
+          shippingAddress,
+          items: {
+            create: resolved.map((r) => {
+              const variantWeight = r.variant?.weight ?? r.variant?.attributes?.weight ?? null;
+              const variantWeightUnit = r.variant?.weightUnit ?? r.variant?.attributes?.unit ?? "kg";
+              const img = r.product.images?.[0]?.url || r.product.images?.[0]?.mediaAssetId || null;
+
+              return {
+                productId: r.product.id,
+                variantId: r.variant?.id ?? null,
+                productName: r.product.name,
+                description: r.product.description ?? null,
+                sku: r.variant?.sku ?? r.product.sku,
+                weight: variantWeight,
+                weightUnit: variantWeightUnit,
+                imageUrl: img,
+                quantity: r.item.quantity,
+                unitPrice: r.unitPrice,
+                appliedTier: r.tier ? {
+                  minQuantity: r.tier.minQuantity,
+                  maxQuantity: r.tier.maxQuantity,
+                  price: r.unitPrice
+                } : null,
+                currencyCode: r.price.currencyCode,
+                countryCode: input.countryCode.toUpperCase(),
+                total: r.total
+              };
+            })
+          }
+        },
+        include: orderInclude
       });
+    },
+    {
+      maxWait: 10000, // 10 seconds to acquire connection from pooler
+      timeout: 30000  // 30 seconds transaction execution window for Neon
     }
-
-    const shippingAddress = input.shippingAddress || {
-      contactName: business.contactPersonName || business.businessName || "Bulk Procurement",
-      phone: business.businessPhone || "+1-000-000-0000",
-      addressLine1: business.address || "Corporate Office HQ",
-      city: "Commercial Hub",
-      postalCode: "00000",
-      countryCode: input.countryCode.toUpperCase()
-    };
-
-    return tx.bulkOrder.create({
-      data: {
-        orderNumber: generateOrderNumber(),
-        businessId: business.id,
-        countryCode: input.countryCode.toUpperCase(),
-        currencyCode: resolved[0].price.currencyCode,
-        subtotal,
-        discount,
-        shippingCharges,
-        tax,
-        total,
-        shippingAddress,
-        items: {
-          create: resolved.map((r) => {
-            const variantWeight = r.variant?.weight ?? r.variant?.attributes?.weight ?? null;
-            const variantWeightUnit = r.variant?.weightUnit ?? r.variant?.attributes?.unit ?? "kg";
-            const img = r.product.images?.[0]?.url || r.product.images?.[0]?.mediaAssetId || null;
-
-            return {
-              productId: r.product.id,
-              variantId: r.variant?.id ?? null,
-              productName: r.product.name,
-              description: r.product.description ?? null,
-              sku: r.variant?.sku ?? r.product.sku,
-              weight: variantWeight,
-              weightUnit: variantWeightUnit,
-              imageUrl: img,
-              quantity: r.item.quantity,
-              unitPrice: r.unitPrice,
-              appliedTier: r.tier ? {
-                minQuantity: r.tier.minQuantity,
-                maxQuantity: r.tier.maxQuantity,
-                price: r.unitPrice
-              } : null,
-              currencyCode: r.price.currencyCode,
-              countryCode: input.countryCode.toUpperCase(),
-              total: r.total
-            };
-          })
-        }
-      },
-      include: orderInclude
-    });
-  });
+  );
 
   // Non-fatal cart cleanup after successful checkout
   try {
