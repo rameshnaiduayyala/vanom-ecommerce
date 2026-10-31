@@ -9,7 +9,13 @@ import { resolveProductImageUrl, FALLBACK_PRODUCT_IMAGE } from "@/utils/image.js
 /**
  * Single Wholesale Product Card
  */
-export function B2BProductCard({ product, targetCountryCode, currencyCode, currencySymbol }) {
+export function B2BProductCard({
+  product,
+  targetCountryCode,
+  currencyCode,
+  currencySymbol,
+  onOrderClick,
+}) {
   const variants = Array.isArray(product.variants) && product.variants.length > 0
     ? product.variants.filter((v) => v.isActive !== false)
     : [];
@@ -41,6 +47,13 @@ export function B2BProductCard({ product, targetCountryCode, currencyCode, curre
 
   const productImage = resolveProductImageUrl(product);
 
+  const handleActionClick = (e) => {
+    if (onOrderClick) {
+      e.preventDefault();
+      onOrderClick(product);
+    }
+  };
+
   return (
     <div className="rounded-2xl bg-white border border-slate-200/90 hover:border-[#006B3C]/50 hover:shadow-md transition-all flex flex-col justify-between overflow-hidden shadow-xs group h-full">
       <div>
@@ -58,6 +71,16 @@ export function B2BProductCard({ product, targetCountryCode, currencyCode, curre
               e.target.src = FALLBACK_PRODUCT_IMAGE;
             }}
           />
+          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap">
+            <span className="bg-white/95 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-xs font-mono">
+              {variants.length > 0 ? `${variants.length} Weights` : "Wholesale"}
+            </span>
+            {product.brand && (
+              <span className="bg-slate-900/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-lg shadow-xs">
+                {product.brand}
+              </span>
+            )}
+          </div>
         </Link>
 
         <div className="p-4 sm:p-5 space-y-3">
@@ -114,15 +137,19 @@ export function B2BProductCard({ product, targetCountryCode, currencyCode, curre
 
       {/* Card Action */}
       <div className="p-4 sm:p-5 pt-0">
-        <Link to={`${ROUTES.B2B.BULK_ORDER}?productId=${product.id}`} className="block">
-          <Button variant="primary" size="sm" className="w-full font-bold shadow-xs" icon={Boxes}>
-            Add to Bulk Order Sheet
-          </Button>
-        </Link>
+        <Button
+          type="button"
+          variant="primary"
+          size="sm"
+          onClick={handleActionClick}
+          className="w-full font-bold shadow-xs cursor-pointer bg-[#006B3C] hover:bg-emerald-700 text-white"
+          icon={Boxes}
+        >
+          Add to Bulk Order Sheet
+        </Button>
       </div>
     </div>
   );
 }
 
 export default B2BProductCard;
-

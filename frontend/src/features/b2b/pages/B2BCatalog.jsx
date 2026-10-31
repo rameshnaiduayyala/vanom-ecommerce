@@ -16,12 +16,16 @@ import { Button } from "../../../components/ui/Button.jsx";
 import { Skeleton, EmptyState } from "../../../components/ui/Alert.jsx";
 import { B2BProductCard } from "../components/B2BProductCard.jsx";
 import { B2BSubcategorySection } from "../components/B2BSubcategorySection.jsx";
+import { AddToBulkOrderModal } from "../components/AddToBulkOrderModal.jsx";
 
 export function B2BCatalog() {
   const { country } = useCountryStore();
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [selectedBrand, setSelectedBrand] = useState("ALL");
+
+  // Modal State for "Add to Bulk Order Sheet"
+  const [selectedProductForOrder, setSelectedProductForOrder] = useState(null);
 
   const targetCountryCode = (country.code || "US").toUpperCase();
   const currencyCode = targetCountryCode === "CA" ? "CAD" : "USD";
@@ -235,48 +239,68 @@ export function B2BCatalog() {
 
   const isLoading = loadingProducts || loadingCategories;
 
+  const handleOpenOrderModal = (product) => {
+    setSelectedProductForOrder(product);
+  };
+
+  const handleCloseOrderModal = () => {
+    setSelectedProductForOrder(null);
+  };
+
   return (
     <div className="space-y-6">
       {/* ── Catalog Header ── */}
-   <div className="bg-white rounded-2xl px-6 py-4 border border-slate-200/80 shadow-xs flex flex-row items-center justify-between gap-4">
-  {/* Title */}
-  <div className="shrink-0">
-    <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight whitespace-nowrap">
-      Wholesale &amp; Bulk Catalog
-    </h1>
-  </div>
+      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              Wholesale &amp; Bulk Catalog
+            </h1>
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#006B3C]">
+              B2B Enterprise
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Browse private wholesale commodities organized category-wise with volume-tiered commercial pricing.
+          </p>
+        </div>
 
-  {/* Filters */}
-  <div className="flex items-center flex-nowrap gap-2.5 ml-auto">
-    {/* Brand Filter */}
-    {brands.length > 0 && (
-      <select
-        value={selectedBrand}
-        onChange={(e) => setSelectedBrand(e.target.value)}
-        className="shrink-0 px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:border-[#006B3C] focus:bg-white focus:outline-none cursor-pointer"
-      >
-        <option value="ALL">All Brands ({brands.length})</option>
-        {brands.map((b) => (
-          <option key={b.id} value={b.name}>
-            {b.name}
-          </option>
-        ))}
-      </select>
-    )}
+        <div className="flex items-center flex-wrap gap-2.5">
+          {/* Brand Filter */}
+          {brands.length > 0 && (
+            <select
+              value={selectedBrand}
+              onChange={(e) => setSelectedBrand(e.target.value)}
+              className="px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:border-[#006B3C] focus:bg-white focus:outline-none cursor-pointer"
+            >
+              <option value="ALL">All Brands ({brands.length})</option>
+              {brands.map((b) => (
+                <option key={b.id} value={b.name}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          )}
 
-    {/* Search Box */}
-    <div className="relative w-72 shrink-0">
-      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search SKU, commodity, brand..."
-        className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder:text-slate-400 focus:border-[#006B3C] focus:bg-white focus:outline-none"
-      />
-    </div>
-  </div>
-</div>
+          {/* Search Box */}
+          <div className="relative max-w-xs w-full">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search SKU, commodity, brand..."
+              className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder:text-slate-400 focus:border-[#006B3C] focus:bg-white focus:outline-none"
+            />
+          </div>
+
+          <Link to={ROUTES.B2B.BULK_ORDER}>
+            <Button variant="primary" size="sm" icon={Boxes} className="font-bold shadow-xs">
+              Open Bulk Order Matrix
+            </Button>
+          </Link>
+        </div>
+      </div>
 
       {/* ── Category Quick Filter Strip ── */}
       <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1 px-1">
@@ -400,6 +424,7 @@ export function B2BCatalog() {
                       targetCountryCode={targetCountryCode}
                       currencyCode={currencyCode}
                       currencySymbol={currencySymbol}
+                      onOrderClick={handleOpenOrderModal}
                     />
                   ))}
                 </div>
@@ -421,6 +446,7 @@ export function B2BCatalog() {
                         targetCountryCode={targetCountryCode}
                         currencyCode={currencyCode}
                         currencySymbol={currencySymbol}
+                        onOrderClick={handleOpenOrderModal}
                       />
                     ))}
                   </div>
@@ -429,6 +455,18 @@ export function B2BCatalog() {
             </section>
           ))}
         </div>
+      )}
+
+      {/* Interactive Modal: Ask how many and variant */}
+      {selectedProductForOrder && (
+        <AddToBulkOrderModal
+          isOpen={Boolean(selectedProductForOrder)}
+          onClose={handleCloseOrderModal}
+          product={selectedProductForOrder}
+          targetCountryCode={targetCountryCode}
+          currencyCode={currencyCode}
+          currencySymbol={currencySymbol}
+        />
       )}
     </div>
   );

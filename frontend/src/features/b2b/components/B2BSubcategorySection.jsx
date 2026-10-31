@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, FolderTree } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { ROUTES } from "../../../constants/routes.js";
 import { B2BProductCard } from "./B2BProductCard.jsx";
 
@@ -14,6 +14,7 @@ export function B2BSubcategorySection({
   targetCountryCode,
   currencyCode,
   currencySymbol,
+  onOrderClick,
 }) {
   if (!products || products.length === 0) return null;
 
@@ -62,7 +63,7 @@ export function B2BSubcategorySection({
         </Link>
       </div>
 
-      {/* ── Vertical Product Cards Grid (Matching B2C Vertical Display) ── */}
+      {/* ── Vertical Product Cards Grid ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
         {products.map((product) => (
           <B2BProductCard
@@ -71,6 +72,7 @@ export function B2BSubcategorySection({
             targetCountryCode={targetCountryCode}
             currencyCode={currencyCode}
             currencySymbol={currencySymbol}
+            onOrderClick={onOrderClick}
           />
         ))}
       </div>
@@ -79,4 +81,3 @@ export function B2BSubcategorySection({
 }
 
 export default B2BSubcategorySection;
-
