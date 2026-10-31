@@ -12,6 +12,18 @@ export function formatImageUrl(url) {
   return `${SERVER_ORIGIN}${cleanPath}`;
 }
 
+export function isVideoUrl(url) {
+  if (!url || typeof url !== "string") return false;
+  const clean = url.split("?")[0].toLowerCase();
+  return (
+    clean.endsWith(".mp4") ||
+    clean.endsWith(".webm") ||
+    clean.endsWith(".mov") ||
+    clean.endsWith(".ogg") ||
+    clean.endsWith(".m4v")
+  );
+}
+
 export function resolveProductImageUrl(product) {
   if (!product) return FALLBACK_PRODUCT_IMAGE;
 
@@ -19,11 +31,16 @@ export function resolveProductImageUrl(product) {
   let rawUrl = null;
 
   if (Array.isArray(product.images) && product.images.length > 0) {
-    const first = product.images[0];
-    if (typeof first === "string") {
-      rawUrl = first;
-    } else if (first) {
-      rawUrl = first.url || first.mediaAsset?.url || first.mediaAsset?.path || first.mediaAssetId || first.file?.url;
+    const imgItem =
+      product.images.find((img) => {
+        const u = typeof img === "string" ? img : img.url || img.mediaAsset?.url || img.mediaAssetId;
+        return u && !isVideoUrl(u);
+      }) || product.images[0];
+
+    if (typeof imgItem === "string") {
+      rawUrl = imgItem;
+    } else if (imgItem) {
+      rawUrl = imgItem.url || imgItem.mediaAsset?.url || imgItem.mediaAsset?.path || imgItem.mediaAssetId || imgItem.file?.url;
     }
   }
 

@@ -8,7 +8,7 @@ import { optimizeImage } from "./image.js";
 import { AppError } from "../errors/app-error.js";
 import { HTTP_STATUS } from "../../constants/http-status.js";
 
-const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".pdf"]);
+const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".pdf", ".mp4", ".webm", ".mov", ".ogg"]);
 
 function safeExtension(filename) {
   const extension = extname(filename || "").toLowerCase();
@@ -46,6 +46,27 @@ function validateBufferMagicNumbers(buffer, mimeType) {
     buffer.toString("ascii", 8, 12) === "WEBP";
   // PDF: %PDF-
   const isPdf = buffer.toString("ascii", 0, 5).startsWith("%PDF-");
+  // MP4: ftyp in first 12 bytes
+  const isMp4 =
+    buffer.length >= 12 &&
+    (buffer.toString("ascii", 4, 8) === "ftyp" || buffer.toString("ascii", 4, 8) === "moov");
+  // WebM: 1A 45 DF A3
+  const isWebm =
+    buffer.length >= 4 &&
+    buffer[0] === 0x1a &&
+    buffer[1] === 0x45 &&
+    buffer[2] === 0xdf &&
+    buffer[3] === 0xa3;
+  // QuickTime (mov)
+  const isQuicktime =
+    buffer.length >= 8 &&
+    (buffer.toString("ascii", 4, 8) === "moov" ||
+      buffer.toString("ascii", 4, 8) === "mdat" ||
+      buffer.toString("ascii", 4, 8) === "wide" ||
+      buffer.toString("ascii", 4, 8) === "free" ||
+      buffer.toString("ascii", 4, 8) === "ftyp");
+  // OGG: OggS
+  const isOgg = buffer.toString("ascii", 0, 4) === "OggS";
 
   if (mimeType === "image/png" && !isPng) {
     throw new AppError("File content signature does not match image/png", HTTP_STATUS.BAD_REQUEST, "FILE_SIGNATURE_MISMATCH");
@@ -59,9 +80,21 @@ function validateBufferMagicNumbers(buffer, mimeType) {
   if (mimeType === "application/pdf" && !isPdf) {
     throw new AppError("File content signature does not match application/pdf", HTTP_STATUS.BAD_REQUEST, "FILE_SIGNATURE_MISMATCH");
   }
+  if (mimeType === "video/mp4" && !isMp4) {
+    throw new AppError("File content signature does not match video/mp4", HTTP_STATUS.BAD_REQUEST, "FILE_SIGNATURE_MISMATCH");
+  }
+  if (mimeType === "video/webm" && !isWebm) {
+    throw new AppError("File content signature does not match video/webm", HTTP_STATUS.BAD_REQUEST, "FILE_SIGNATURE_MISMATCH");
+  }
+  if ((mimeType === "video/quicktime" || mimeType === "video/mov") && !isQuicktime && !isMp4) {
+    throw new AppError("File content signature does not match QuickTime video", HTTP_STATUS.BAD_REQUEST, "FILE_SIGNATURE_MISMATCH");
+  }
+  if (mimeType === "video/ogg" && !isOgg) {
+    throw new AppError("File content signature does not match video/ogg", HTTP_STATUS.BAD_REQUEST, "FILE_SIGNATURE_MISMATCH");
+  }
 
-  if (!isPng && !isJpeg && !isWebp && !isPdf) {
-    throw new AppError("File format not supported. Only verified JPEG, PNG, WebP, and PDF files are allowed.", HTTP_STATUS.BAD_REQUEST, "UNSUPPORTED_FILE_SIGNATURE");
+  if (!isPng && !isJpeg && !isWebp && !isPdf && !isMp4 && !isWebm && !isQuicktime && !isOgg) {
+    throw new AppError("File format not supported. Only verified JPEG, PNG, WebP, PDF, and Video files (MP4, WebM, MOV, OGG) are allowed.", HTTP_STATUS.BAD_REQUEST, "UNSUPPORTED_FILE_SIGNATURE");
   }
 }
 

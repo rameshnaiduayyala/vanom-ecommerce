@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { useCountryStore } from "../../../stores/country.store.js";
-import { formatPrice } from "../../../utils/formatters.js";
 import { ROUTES } from "../../../constants/routes.js";
 import {
   Search,
@@ -12,139 +11,12 @@ import {
   Layers,
   ArrowRight,
   FolderTree,
-  CheckCircle,
 } from "lucide-react";
 import { Button } from "../../../components/ui/Button.jsx";
 import { Skeleton, EmptyState } from "../../../components/ui/Alert.jsx";
-import { resolveProductImageUrl, FALLBACK_PRODUCT_IMAGE } from "@/utils/image.js";
-
-/**
- * Single Wholesale Product Card
- */
-function B2BProductCard({ product, targetCountryCode, currencyCode, currencySymbol }) {
-  const variants = Array.isArray(product.variants) && product.variants.length > 0
-    ? product.variants.filter((v) => v.isActive !== false)
-    : [];
-
-  // Find starting wholesale price across weight variants
-  let startingPrice = null;
-  if (variants.length > 0) {
-    const prices = variants
-      .map((v) => {
-        const cp = v.countryPrices?.find(
-          (p) => p.countryCode?.toUpperCase() === targetCountryCode
-        );
-        return cp?.unitPrice !== undefined ? Number(cp.unitPrice) : null;
-      })
-      .filter((p) => p !== null && !isNaN(p) && p > 0);
-
-    if (prices.length > 0) {
-      startingPrice = Math.min(...prices);
-    }
-  }
-
-  if (startingPrice === null) {
-    const cp = product.countryPrices?.find(
-      (p) => p.countryCode?.toUpperCase() === targetCountryCode
-    );
-    startingPrice =
-      cp?.unitPrice !== undefined ? Number(cp.unitPrice) : product.basePriceUSD || 30.0;
-  }
-
-  const productImage = resolveProductImageUrl(product);
-
-  return (
-    <div className="rounded-2xl bg-white border border-slate-200/90 hover:border-[#006B3C]/50 hover:shadow-md transition-all flex flex-col justify-between overflow-hidden shadow-xs group">
-      <div>
-        {/* Image and Weight Variant Badge */}
-        <Link
-          to={`${ROUTES.B2B.CATALOG}/${product.slug || product.id}`}
-          className="block aspect-16/9 bg-slate-100 overflow-hidden relative"
-        >
-          <img
-            src={productImage}
-            alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = FALLBACK_PRODUCT_IMAGE;
-            }}
-          />
-          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap">
-            <span className="bg-white/95 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-xs font-mono">
-              {variants.length > 0 ? `${variants.length} Weights` : "Wholesale"}
-            </span>
-            {product.brand && (
-              <span className="bg-slate-900/80 text-white text-[10px] font-medium px-2 py-0.5 rounded-lg shadow-xs">
-                {product.brand}
-              </span>
-            )}
-          </div>
-        </Link>
-
-        <div className="p-4 sm:p-5 space-y-3">
-          <div>
-            <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
-              {product.category || product.categoryName || "Wholesale Commodity"}
-            </span>
-            <Link to={`${ROUTES.B2B.CATALOG}/${product.slug || product.id}`} className="block">
-              <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#006B3C] transition-colors leading-snug mt-0.5 line-clamp-1">
-                {product.name}
-              </h3>
-            </Link>
-            <p className="text-xs text-slate-400 font-mono mt-0.5">SKU: {product.sku}</p>
-          </div>
-
-          {/* Weight Variants Options Preview */}
-          {variants.length > 0 && (
-            <div className="space-y-1.5">
-              <span className="text-[11px] text-slate-500 font-medium block">
-                Available Weights:
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {variants.map((v, idx) => {
-                  const weightStr = v.name || `${v.weight}${v.weightUnit || "kg"}`;
-                  const cp = v.countryPrices?.find(
-                    (p) => p.countryCode?.toUpperCase() === targetCountryCode
-                  );
-                  const price = cp?.unitPrice !== undefined ? Number(cp.unitPrice) : null;
-
-                  return (
-                    <span
-                      key={v.id || idx}
-                      className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-semibold font-mono"
-                    >
-                      {weightStr}{" "}
-                      {price !== null &&
-                        `(${formatPrice(price, currencyCode, currencySymbol)})`}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Pricing Summary */}
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
-            <span className="text-slate-500 font-medium">Starting Price:</span>
-            <span className="font-black text-emerald-800 text-base font-mono">
-              {formatPrice(startingPrice, currencyCode, currencySymbol)}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Card Action */}
-      <div className="p-4 sm:p-5 pt-0">
-        <Link to={`${ROUTES.B2B.BULK_ORDER}?productId=${product.id}`} className="block">
-          <Button variant="primary" size="sm" className="w-full font-bold shadow-xs" icon={Boxes}>
-            Add to Bulk Order Sheet
-          </Button>
-        </Link>
-      </div>
-    </div>
-  );
-}
+import { B2BProductCard } from "../components/B2BProductCard.jsx";
+import { B2BSubcategorySection } from "../components/B2BSubcategorySection.jsx";
+import { AddToBulkOrderModal } from "../components/AddToBulkOrderModal.jsx";
 
 export function B2BCatalog() {
   const { country } = useCountryStore();
@@ -152,20 +24,43 @@ export function B2BCatalog() {
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [selectedBrand, setSelectedBrand] = useState("ALL");
 
+  // Modal State for "Add to Bulk Order Sheet"
+  const [selectedProductForOrder, setSelectedProductForOrder] = useState(null);
+
   const targetCountryCode = (country.code || "US").toUpperCase();
   const currencyCode = targetCountryCode === "CA" ? "CAD" : "USD";
   const currencySymbol = targetCountryCode === "CA" ? "CA$" : "$";
 
   // Load dedicated B2B Bulk Products from separate BulkProduct database table
-  const { data: bulkProducts = [], isLoading } = useQuery({
+  const { data: bulkProducts = [], isLoading: loadingProducts } = useQuery({
     queryKey: ["b2b-catalog-bulk-products", search],
     queryFn: () => Api.b2b.getBulkProducts({ search }),
   });
 
   // Load shared Master Categories tree
-  const { data: categories = [] } = useQuery({
-    queryKey: ["shared-categories"],
-    queryFn: () => Api.catalog.getCategories(),
+  const { data: rawCategories = [], isLoading: loadingCategories } = useQuery({
+    queryKey: ["shared-categories-tree"],
+    queryFn: async () => {
+      try {
+        const treeRes = await Api.catalog.getCategoryTree();
+        const tree = Array.isArray(treeRes?.data)
+          ? treeRes.data
+          : Array.isArray(treeRes)
+          ? treeRes
+          : [];
+        if (tree.length > 0) return tree;
+      } catch {
+        // Fallback to flat categories list
+      }
+      const flatRes = await Api.catalog.getCategories();
+      return Array.isArray(flatRes?.data)
+        ? flatRes.data
+        : Array.isArray(flatRes?.items)
+        ? flatRes.items
+        : Array.isArray(flatRes)
+        ? flatRes
+        : [];
+    },
   });
 
   // Load Brands
@@ -181,14 +76,45 @@ export function B2BCatalog() {
     },
   });
 
-  // Helper function to match a product to a category
+  // Ensure hierarchical category structure (root categories with children)
+  const categoryTree = useMemo(() => {
+    if (!Array.isArray(rawCategories) || rawCategories.length === 0) return [];
+
+    // Check if it already has children hierarchy
+    const hasChildren = rawCategories.some(
+      (c) => Array.isArray(c.children) && c.children.length > 0
+    );
+    if (hasChildren) {
+      return rawCategories.filter((c) => !c.parentId);
+    }
+
+    // Build tree from flat array if needed
+    const roots = [];
+    const map = new Map();
+    rawCategories.forEach((c) => {
+      map.set(c.id, { ...c, children: [] });
+    });
+
+    rawCategories.forEach((c) => {
+      const item = map.get(c.id);
+      if (c.parentId && map.has(c.parentId)) {
+        map.get(c.parentId).children.push(item);
+      } else {
+        roots.push(item);
+      }
+    });
+
+    return roots;
+  }, [rawCategories]);
+
+  // Helper function to match a product to a category/subcategory
   const matchProductCategory = (product, targetCat) => {
     if (!targetCat) return false;
     const catId = targetCat.id;
-    const catName = targetCat.name?.toLowerCase();
-    const catSlug = targetCat.slug?.toLowerCase();
+    const catName = targetCat.name?.toLowerCase().trim();
+    const catSlug = targetCat.slug?.toLowerCase().trim();
 
-    const prodCat = (product.category || product.categoryName || "").toLowerCase();
+    const prodCat = (product.category || product.categoryName || "").toLowerCase().trim();
     const prodCatId = product.categoryId;
 
     return (
@@ -199,11 +125,11 @@ export function B2BCatalog() {
     );
   };
 
-  // Group wholesale products category-wise
-  const categoryGroups = useMemo(() => {
+  // Group wholesale products into root categories and subcategories
+  const categorizedSections = useMemo(() => {
     if (!Array.isArray(bulkProducts) || bulkProducts.length === 0) return [];
 
-    // Filter by Brand first if selected
+    // 1. Filter by Brand first if selected
     const brandFiltered = bulkProducts.filter((product) => {
       if (selectedBrand === "ALL") return true;
       const matchedBrand = brands.find(
@@ -214,7 +140,7 @@ export function B2BCatalog() {
       return prodBrand === brandName || prodBrand.includes(brandName);
     });
 
-    // Filter by Search Term
+    // 2. Filter by Search Term
     const searchFiltered = brandFiltered.filter((product) => {
       if (!search) return true;
       const q = search.toLowerCase();
@@ -226,33 +152,53 @@ export function B2BCatalog() {
       );
     });
 
-    // 1. Group products by known categories
-    const groups = [];
     const assignedProductIds = new Set();
+    const sections = [];
 
-    categories.forEach((cat) => {
-      // Find all products matching this category
-      const matchingProducts = searchFiltered.filter((prod) =>
-        matchProductCategory(prod, cat)
+    // 3. Process each root category in the tree
+    categoryTree.forEach((rootCat) => {
+      const subcategories = Array.isArray(rootCat.children) ? rootCat.children : [];
+      const subcategorySections = [];
+
+      // Match products for each child subcategory
+      subcategories.forEach((subCat) => {
+        const subProducts = searchFiltered.filter((p) => matchProductCategory(p, subCat));
+        if (subProducts.length > 0) {
+          subProducts.forEach((p) => assignedProductIds.add(p.id));
+          subcategorySections.push({
+            subcategory: subCat,
+            products: subProducts,
+          });
+        }
+      });
+
+      // Match products directly belonging to root category
+      const rootDirectProducts = searchFiltered.filter(
+        (p) => !assignedProductIds.has(p.id) && matchProductCategory(p, rootCat)
       );
+      if (rootDirectProducts.length > 0) {
+        rootDirectProducts.forEach((p) => assignedProductIds.add(p.id));
+      }
 
-      if (matchingProducts.length > 0) {
-        matchingProducts.forEach((p) => assignedProductIds.add(p.id));
-        groups.push({
-          id: cat.id,
-          name: cat.name,
-          slug: cat.slug,
-          description: cat.description,
-          imageUrl: cat.imageUrl,
-          products: matchingProducts,
+      // If either subcategories or root direct products exist, add to sections
+      if (subcategorySections.length > 0 || rootDirectProducts.length > 0) {
+        const allCategoryProducts = [
+          ...subcategorySections.flatMap((s) => s.products),
+          ...rootDirectProducts,
+        ];
+
+        sections.push({
+          category: rootCat,
+          subcategories: subcategorySections,
+          directProducts: rootDirectProducts,
+          totalProductsCount: allCategoryProducts.length,
         });
       }
     });
 
-    // 2. Uncategorized or custom named categories
+    // 4. Products that did not match master categories (Uncategorized or Custom categories)
     const unassigned = searchFiltered.filter((p) => !assignedProductIds.has(p.id));
     if (unassigned.length > 0) {
-      // Further group unassigned by their string category name
       const customCategoryMap = new Map();
       unassigned.forEach((prod) => {
         const catLabel = prod.category || prod.categoryName || "Other Wholesale Commodities";
@@ -263,35 +209,47 @@ export function B2BCatalog() {
       });
 
       customCategoryMap.forEach((prods, catLabel) => {
-        groups.push({
-          id: `custom-${catLabel}`,
-          name: catLabel,
-          slug: catLabel.toLowerCase().replace(/[\s\W-]+/g, "-"),
-          description: "Curated wholesale products",
-          imageUrl: null,
-          products: prods,
+        sections.push({
+          category: {
+            id: `custom-${catLabel}`,
+            name: catLabel,
+            slug: catLabel.toLowerCase().replace(/[\s\W-]+/g, "-"),
+            description: "Curated wholesale commodities",
+            imageUrl: null,
+          },
+          subcategories: [],
+          directProducts: prods,
+          totalProductsCount: prods.length,
         });
       });
     }
 
-    // Filter groups if a single category is specifically chosen in the filter pill/dropdown
+    // 5. Filter by selected category pill
     if (selectedCategory !== "ALL") {
-      return groups.filter(
-        (g) => g.id === selectedCategory || g.slug === selectedCategory
+      return sections.filter(
+        (s) =>
+          s.category.id === selectedCategory ||
+          s.category.slug === selectedCategory ||
+          s.category.name === selectedCategory
       );
     }
 
-    return groups;
-  }, [bulkProducts, categories, brands, selectedCategory, selectedBrand, search]);
+    return sections;
+  }, [bulkProducts, categoryTree, brands, selectedCategory, selectedBrand, search]);
 
-  const totalFilteredCount = categoryGroups.reduce(
-    (sum, g) => sum + g.products.length,
-    0
-  );
+  const isLoading = loadingProducts || loadingCategories;
+
+  const handleOpenOrderModal = (product) => {
+    setSelectedProductForOrder(product);
+  };
+
+  const handleCloseOrderModal = () => {
+    setSelectedProductForOrder(null);
+  };
 
   return (
     <div className="space-y-6">
-      {/* ── Catalog Header Banner ── */}
+      {/* ── Catalog Header ── */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -359,7 +317,7 @@ export function B2BCatalog() {
           <span>All Categories</span>
         </button>
 
-        {categories.map((cat) => {
+        {categoryTree.map((cat) => {
           const isSelected = selectedCategory === cat.id || selectedCategory === cat.slug;
           return (
             <button
@@ -385,14 +343,14 @@ export function B2BCatalog() {
         })}
       </div>
 
-      {/* ── Category-Wise Products Sections ── */}
+      {/* ── Category-Wise Sections (Vertical Grid without Banners) ── */}
       {isLoading ? (
         <div className="space-y-8">
           {[1, 2].map((group) => (
             <div key={group} className="space-y-4">
               <Skeleton className="h-8 w-48 rounded-lg bg-slate-200" />
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3].map((n) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                {[1, 2, 3, 4].map((n) => (
                   <Skeleton
                     key={n}
                     className="h-80 rounded-2xl bg-white border border-slate-200"
@@ -402,7 +360,7 @@ export function B2BCatalog() {
             </div>
           ))}
         </div>
-      ) : categoryGroups.length === 0 ? (
+      ) : categorizedSections.length === 0 ? (
         <EmptyState
           icon={Package}
           title="No wholesale commodities found"
@@ -410,63 +368,105 @@ export function B2BCatalog() {
           className="text-slate-600 bg-white border border-slate-200 rounded-2xl p-10"
         />
       ) : (
-        <div className="space-y-10">
-          {categoryGroups.map((group) => (
-            <section key={group.id} className="space-y-4">
-              {/* Category Header Row */}
-              <div className="flex items-center justify-between pb-2 border-b border-slate-200/80">
+        <div className="space-y-12">
+          {categorizedSections.map(({ category, subcategories, directProducts, totalProductsCount }) => (
+            <section
+              key={category.id}
+              className="space-y-6 bg-white/70 p-5 sm:p-7 rounded-3xl border border-slate-200/90 shadow-2xs"
+            >
+              {/* Main Category Header Row */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
                 <div className="flex items-center gap-3">
-                  {group.imageUrl ? (
+                  {category.imageUrl ? (
                     <img
-                      src={group.imageUrl}
-                      alt={group.name}
-                      className="w-8 h-8 rounded-lg object-cover border border-slate-200 bg-white shrink-0"
+                      src={category.imageUrl}
+                      alt={category.name}
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-cover border border-slate-200 bg-white shrink-0 shadow-2xs"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-lg bg-emerald-50 text-[#006B3C] font-bold text-xs flex items-center justify-center border border-emerald-200 shrink-0">
-                      <FolderTree className="w-4 h-4" />
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-50 text-[#006B3C] font-black text-sm flex items-center justify-center border border-emerald-200 shrink-0">
+                      <FolderTree className="w-5 h-5" />
                     </div>
                   )}
 
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-                        {group.name}
+                      <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                        {category.name}
                       </h2>
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                        {group.products.length} {group.products.length === 1 ? "item" : "items"}
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono">
+                        {totalProductsCount} {totalProductsCount === 1 ? "item" : "items"}
                       </span>
                     </div>
-                    {group.description && (
-                      <p className="text-xs text-slate-500 line-clamp-1">{group.description}</p>
+                    {category.description && (
+                      <p className="text-xs text-slate-500 line-clamp-1">{category.description}</p>
                     )}
                   </div>
                 </div>
 
                 <Link
-                  to={`${ROUTES.B2B.BULK_ORDER}?category=${encodeURIComponent(group.name)}`}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-[#006B3C] hover:underline"
+                  to={`${ROUTES.B2B.BULK_ORDER}?category=${encodeURIComponent(category.name)}`}
+                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#006B3C] hover:text-emerald-700 transition-colors"
                 >
                   <span>Order Entire Category</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
 
-              {/* Product Cards Grid for this category */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {group.products.map((product) => (
-                  <B2BProductCard
-                    key={product.id}
-                    product={product}
-                    targetCountryCode={targetCountryCode}
-                    currencyCode={currencyCode}
-                    currencySymbol={currencySymbol}
-                  />
-                ))}
-              </div>
+              {/* Subcategories Vertical Sections */}
+              {subcategories.length > 0 && (
+                <div className="space-y-8">
+                  {subcategories.map(({ subcategory, products }) => (
+                    <B2BSubcategorySection
+                      key={subcategory.id}
+                      subcategory={subcategory}
+                      products={products}
+                      targetCountryCode={targetCountryCode}
+                      currencyCode={currencyCode}
+                      currencySymbol={currencySymbol}
+                      onOrderClick={handleOpenOrderModal}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Direct products if any (or if category has no subcategories) */}
+              {directProducts.length > 0 && (
+                <div className="space-y-4 pt-2">
+                  {subcategories.length > 0 && (
+                    <h4 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                      More in {category.name}
+                    </h4>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                    {directProducts.map((product) => (
+                      <B2BProductCard
+                        key={product.id}
+                        product={product}
+                        targetCountryCode={targetCountryCode}
+                        currencyCode={currencyCode}
+                        currencySymbol={currencySymbol}
+                        onOrderClick={handleOpenOrderModal}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
           ))}
         </div>
+      )}
+
+      {/* Interactive Modal: Ask how many and variant */}
+      {selectedProductForOrder && (
+        <AddToBulkOrderModal
+          isOpen={Boolean(selectedProductForOrder)}
+          onClose={handleCloseOrderModal}
+          product={selectedProductForOrder}
+          targetCountryCode={targetCountryCode}
+          currencyCode={currencyCode}
+          currencySymbol={currencySymbol}
+        />
       )}
     </div>
   );

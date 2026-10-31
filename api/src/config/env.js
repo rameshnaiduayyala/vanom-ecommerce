@@ -38,11 +38,11 @@ export const env = {
   uploadDir: process.env.UPLOAD_DIR || "uploads",
   assetDir: process.env.ASSET_DIR || "assets",
   assetPublicUrl: process.env.ASSET_PUBLIC_URL || `${process.env.APP_URL || "http://localhost:3000"}/assets`,
-  uploadMaxFileSize: Number(process.env.UPLOAD_MAX_FILE_SIZE) || 10 * 1024 * 1024,
+  uploadMaxFileSize: Number(process.env.UPLOAD_MAX_FILE_SIZE) || 100 * 1024 * 1024,
   imageMaxWidth: Number(process.env.IMAGE_MAX_WIDTH) || 1920,
   imageMaxHeight: Number(process.env.IMAGE_MAX_HEIGHT) || 1920,
   imageWebpQuality: Number(process.env.IMAGE_WEBP_QUALITY) || 82,
-  uploadAllowedMimeTypes: (process.env.UPLOAD_ALLOWED_MIME_TYPES || "image/jpeg,image/png,image/webp,application/pdf")
+  uploadAllowedMimeTypes: (process.env.UPLOAD_ALLOWED_MIME_TYPES || "image/jpeg,image/png,image/webp,application/pdf,video/mp4,video/webm,video/quicktime,video/ogg")
     .split(",").map((value) => value.trim()).filter(Boolean),
   s3Bucket: process.env.S3_BUCKET,
   s3Region: process.env.S3_REGION || "auto",

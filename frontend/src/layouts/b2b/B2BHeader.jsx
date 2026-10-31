@@ -34,27 +34,12 @@ export function B2BHeader({ onToggleSidebar, searchQuery, onSearchChange }) {
             <MenuIcon className="w-4 h-4" />
           </button>
         )}
-
-        {/* Global Search */}
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-          <input
-            type="text"
-            value={searchValue}
-            onChange={handleSearchChange}
-            placeholder="Search wholesale commodities, SKUs, RFQs..."
-            className="w-full pl-9 pr-14 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-[#006B3C] focus:bg-white transition-all text-slate-800 placeholder-slate-400"
-          />
-          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-xs hidden sm:inline">
-            Ctrl + K
-          </span>
-        </div>
       </div>
 
       {/* ── Right Header Actions ── */}
       <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
         {/* Credit Line Chip */}
-        <B2BCreditBadge />
+        {/* <B2BCreditBadge /> */}
 
         {/* Regional Currency Picker */}
         <B2BCurrencyPicker />

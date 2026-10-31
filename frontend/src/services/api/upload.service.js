@@ -17,6 +17,8 @@ export const uploadService = {
       headers: {
         "Content-Type": "multipart/form-data"
       },
+      // 10 minutes timeout for large video and high-resolution files
+      timeout: 10 * 60 * 1000,
       onUploadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
           const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -59,6 +61,8 @@ export const uploadService = {
       headers: {
         "Content-Type": "multipart/form-data"
       },
+      // 15 minutes timeout for multiple large videos
+      timeout: 15 * 60 * 1000,
       onUploadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
           const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);

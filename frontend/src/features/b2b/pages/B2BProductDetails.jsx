@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
@@ -24,7 +24,8 @@ import { Button } from "../../../components/ui/Button.jsx";
 import { Badge } from "../../../components/ui/Badge.jsx";
 import { Spinner } from "../../../components/ui/Alert.jsx";
 import { TiptapViewer } from "@/components/common/TiptapViewer.jsx";
-import { resolveProductImageUrl, FALLBACK_PRODUCT_IMAGE } from "@/utils/image.js";
+import { ProductGallery } from "@/features/storefront/components/products/ProductGallery.jsx";
+import { formatImageUrl, resolveProductImageUrl, FALLBACK_PRODUCT_IMAGE } from "@/utils/image.js";
 
 export function B2BProductDetails() {
   const { slug } = useParams();
@@ -48,7 +49,33 @@ export function B2BProductDetails() {
   });
 
   const [selectedVariantId, setSelectedVariantId] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(10);
+
+  // Reconstitute complete gallery of images and videos
+  const gallery = useMemo(() => {
+    if (!product) return [];
+    const list = [];
+
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      product.images.forEach((img) => {
+        let u = null;
+        if (typeof img === "string") {
+          u = img;
+        } else if (img) {
+          u = img.url || img.mediaAsset?.url || img.mediaAssetId || img.file?.url;
+        }
+        if (u) list.push(formatImageUrl(u));
+      });
+    }
+
+    if (list.length === 0) {
+      const fallback = resolveProductImageUrl(product);
+      if (fallback) list.push(fallback);
+    }
+
+    return list;
+  }, [product]);
 
   if (isLoading) {
     return (
@@ -102,7 +129,6 @@ export function B2BProductDetails() {
 
   const safeQuantity = Math.max(1, parseInt(quantity, 10) || 1);
   const lineTotal = unitPrice * safeQuantity;
-  const productImage = resolveProductImageUrl(product);
   const activeWeightLabel = activeVariant?.name || (activeVariant?.weight ? `${activeVariant.weight}${activeVariant.weightUnit || "kg"}` : "Standard");
   const activeSku = activeVariant?.sku || product.sku;
 
@@ -125,28 +151,19 @@ export function B2BProductDetails() {
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Cols: Details & Weight Variant Matrix */}
+        {/* Left 2 Cols: Gallery, Identity & Weight Variant Matrix */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Header Card with Image & Identity */}
-          <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col md:flex-row gap-6 items-start">
-            <div className="w-full md:w-56 aspect-square rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 relative">
-              <img
-                src={productImage}
-                alt={product.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = FALLBACK_PRODUCT_IMAGE;
-                }}
-              />
-              <div className="absolute top-2.5 left-2.5">
-                <span className="bg-white/95 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-md shadow-2xs font-mono">
-                  {variants.length} Weight Options
-                </span>
-              </div>
-            </div>
+          {/* Header Card with Product Gallery (Images & Videos) & Identity */}
+          <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-6">
+            {/* Gallery with Zoom and Video Playback */}
+            <ProductGallery
+              gallery={gallery}
+              selectedImage={selectedImage}
+              onSelectImage={setSelectedImage}
+              title={product.name}
+            />
 
-            <div className="space-y-3 flex-1">
+            <div className="space-y-3 pt-2 border-t border-slate-100">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold px-2.5 py-1 rounded-lg font-mono">
                   SKU: {activeSku}
@@ -161,6 +178,9 @@ export function B2BProductDetails() {
                     {product.category}
                   </span>
                 )}
+                <span className="bg-emerald-100/70 text-[#006B3C] border border-emerald-200 text-xs font-bold px-2.5 py-1 rounded-lg font-mono">
+                  {variants.length} Weight Options
+                </span>
               </div>
 
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
@@ -181,7 +201,7 @@ export function B2BProductDetails() {
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
                 <Scale className="w-4 h-4 text-emerald-600" />
-                Select Weight & Wholesale Price Option
+                Select Weight &amp; Wholesale Price Option
               </h3>
               <span className="text-xs text-slate-400 font-medium">Click weight to update price</span>
             </div>

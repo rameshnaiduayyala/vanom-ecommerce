@@ -11,6 +11,11 @@ import { env } from "./config/env.js";
 export async function buildApp() {
   const fastify = Fastify({
     logger: true,
+    // Enterprise video & large file streaming timeouts (15 minutes)
+    connectionTimeout: 15 * 60 * 1000,
+    keepAliveTimeout: 10 * 60 * 1000,
+    requestTimeout: 15 * 60 * 1000,
+    bodyLimit: 150 * 1024 * 1024,
     routerOptions: {
       maxParamLength: 500
     },

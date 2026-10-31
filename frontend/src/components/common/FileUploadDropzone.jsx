@@ -19,10 +19,10 @@ import { useFileUpload } from "@/features/common/hooks/useFileUpload.js";
 export function FileUploadDropzone({
   folder = "general",
   multiple = false,
-  accept = "image/jpeg,image/png,image/webp,image/gif",
+  accept = "image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,video/ogg",
   onUploadSuccess,
   label = "Click or drag files here to upload",
-  hint = "Supports JPG, PNG, WebP (auto-optimized and returns direct URL)",
+  hint = "Supports JPG, PNG, WebP & Videos (MP4, WebM)",
   className = "",
   compact = false,
   children

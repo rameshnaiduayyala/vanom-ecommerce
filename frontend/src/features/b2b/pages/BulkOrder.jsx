@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import { useCountryStore } from "../../../stores/country.store.js";
 import { useAuthStore } from "../../../stores/auth.store.js";
+import { useBulkOrderStore } from "../../../stores/bulk-order.store.js";
 import { formatPrice } from "../../../utils/formatters.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { toast } from "../../../components/ui/Toast.jsx";
@@ -64,9 +65,14 @@ export function BulkOrder() {
     queryFn: () => Api.b2b.getBulkProducts(),
   });
 
-  /* ─── State ─── */
-  const [notes, setNotes] = useState("");
-  const [rows, setRows] = useState([]);
+  /* ─── State from Persistent Store (Survives Refresh & Navigation) ─── */
+  const {
+    rows,
+    notes,
+    setRows,
+    setNotes,
+    clearOrderSheet,
+  } = useBulkOrderStore();
 
   // Bottom Add Row state
   const [bottomProductToAdd, setBottomProductToAdd] = useState("");
@@ -161,15 +167,24 @@ export function BulkOrder() {
     });
   }, [targetCountryCode, currencyCode, bulkProducts]);
 
-  /* ─── URL pre-populate ─── */
+  /* ─── URL pre-populate (only once per query parameter set) ─── */
+  const lastProcessedUrlQueryRef = useRef(null);
+
   useEffect(() => {
     if (requestedProductId && bulkProducts.length > 0) {
+      const querySignature = `${requestedProductId}_${requestedVariantId || ""}_${requestedQty || ""}`;
+      if (lastProcessedUrlQueryRef.current === querySignature) return;
+
       const prod = bulkProducts.find((p) => p.id === requestedProductId);
       if (prod) {
+        lastProcessedUrlQueryRef.current = querySignature;
         const variant = requestedVariantId
           ? prod.variants?.find((v) => v.id === requestedVariantId)
           : prod.variants?.[0];
         handleAddLine(prod, variant, requestedQty ? Math.max(1, parseInt(requestedQty, 10)) : 10);
+
+        // Clean query params so refresh doesn't re-add duplicate quantities
+        navigate(ROUTES.B2B.BULK_ORDER, { replace: true });
       }
     }
   }, [requestedProductId, requestedVariantId, requestedQty, bulkProducts]);
@@ -305,6 +320,7 @@ export function BulkOrder() {
       queryClient.invalidateQueries({ queryKey: ["b2b-bulk-orders-list"] });
       queryClient.invalidateQueries({ queryKey: ["b2b-orders"] });
       toast.success("Order Placed", `PO ${data?.orderNumber || "—"} submitted.`);
+      clearOrderSheet();
       navigate(ROUTES.B2B.ORDERS);
     },
     onError: (err) => toast.error("Submission Failed", err.message || "Failed to submit order."),
@@ -369,9 +385,23 @@ export function BulkOrder() {
               )}
             </div>
             {rows.length > 0 && (
-              <span className="text-[10px] text-slate-400 font-mono">
-                {totalUnits.toLocaleString()} units · {formatPrice(totalSubtotal, currencyCode, currencySymbol)}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] text-slate-400 font-mono">
+                  {totalUnits.toLocaleString()} units · {formatPrice(totalSubtotal, currencyCode, currencySymbol)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm("Are you sure you want to clear all items from your order sheet?")) {
+                      clearOrderSheet();
+                      toast.info("Cleared", "Wholesale order sheet cleared.");
+                    }
+                  }}
+                  className="text-[11px] text-rose-600 hover:text-rose-700 hover:underline font-semibold cursor-pointer"
+                >
+                  Clear All
+                </button>
+              </div>
             )}
           </div>
 
