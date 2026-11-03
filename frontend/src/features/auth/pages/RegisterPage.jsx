@@ -19,13 +19,21 @@ export function RegisterPage() {
   } = useRegisterForm();
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center bg-[#F8FAF9] px-4 py-12">
+    <div className="relative min-h-[92vh] flex items-center justify-center px-4 py-12 overflow-hidden">
+      {/* ── Background Image Layer (Natural Colors, Subtle Botanical Backdrop) ── */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/vanom-login-bg.webp')" }}
+      />
+      {/* ── Seamless Multi-Stop Dark-Green Gradient & Vignette ── */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#06140b]/70 via-[#07190e]/80 to-[#040d07]/90" />
+
       <SEO
         title="Create Retail Customer Account | Vanom"
         description="Create your Vanom customer account for fast checkout, order tracking, and exclusive discounts."
         noindex={true}
       />
-      <div className="w-full max-w-md space-y-6">
+      <div className="relative z-10 w-full max-w-xl space-y-6">
         {/* Header */}
         <AuthHeader
           title="Create Your Account"

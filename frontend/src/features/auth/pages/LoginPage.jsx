@@ -24,7 +24,7 @@ export function LoginPage() {
   } = useLoginForm();
 
   return (
-    <div className="relative min-h-[92vh] flex items-center justify-center px-4 py-12 overflow-hidden">
+    <div className="relative min-h-[92vh] flex items-center justify-center px-4 py-10 overflow-hidden">
       {/* ── Background Image Layer (Natural Colors, Subtle Botanical Backdrop) ── */}
       <div
         className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
