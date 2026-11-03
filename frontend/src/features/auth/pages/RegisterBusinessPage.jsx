@@ -1,9 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, AlertCircle } from "lucide-react";
+import { AlertCircle, User, Building2, Check } from "lucide-react";
 import { ROUTES } from "@/constants/routes.js";
 import { SEO } from "@/components/common/SEO.jsx";
-import PublicFooter from "@/layouts/public/PublicFooter.jsx";
 import { useBusinessRegistration } from "../hooks/useBusinessRegistration.js";
 import { BusinessValueProps } from "../components/business/BusinessValueProps.jsx";
 import { BusinessRegistrationStepper } from "../components/business/BusinessRegistrationStepper.jsx";
@@ -33,51 +32,72 @@ export function RegisterBusinessPage() {
   );
 
   return (
-    <div className="w-screen bg-[#F8FAF9] text-[#1E2922] flex flex-col justify-between overflow-x-hidden lg:overflow-hidden font-sans">
+    <div className="relative min-h-[92vh] flex items-center justify-center py-10 sm:py-16 px-4 sm:px-6 lg:px-8 overflow-hidden bg-[#e8eedd]">
+      {/* ── Background Landscape Image ── */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/vanom-login-bg.webp')" }}
+      />
+
+      {/* ── Soft Natural Vignette Gradient ── */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#dbe5d1]/65 via-[#eaf0e2]/30 to-transparent" />
+
       <SEO
         title="Vanom Wholesale & Commercial Registration | Enterprise Portal"
         description="Register your business entity on Vanom. Unlock pallet wholesale pricing, Net-30 credit lines, and container logistics."
       />
 
-      {/* ─── Compact Top Header ─── */}
-      <header className="h-14 sm:h-16 px-4 sm:px-8 border-b border-[#E2EAE5] bg-[#F7F2DF] backdrop-blur-md flex items-center justify-between shrink-0 z-20">
-        <Link to={ROUTES.HOME} className="flex items-center gap-2.5">
-          <img
-            src="/logo.png"
-            alt="Vanom"
-            className="h-8 sm:h-9 w-auto object-contain"
-          />
-          <span className="text-[7px] font-black tracking-wider uppercase bg-[#E6F4EA] text-[#00875A] px-2.5 py-0.5 rounded-full border border-[#00875A]/20">
-            Wholesale
-          </span>
-        </Link>
-
-        <div className="flex items-center gap-4 text-xs font-semibold">
-          <Link
-            to={ROUTES.HOME}
-            className="flex items-center gap-1 text-[#5E7D67] hover:text-[#0F2B1C] transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Back to Store</span>
-          </Link>
-          <span className="text-[#DCE8DF]">|</span>
-          <Link
-            to={ROUTES.LOGIN}
-            className="px-3 py-1.5 rounded-lg border border-[#DCE8DF] hover:border-[#00875A] text-[#0F2B1C] hover:text-[#00875A] bg-white transition-all text-xs font-bold"
-          >
-            Sign In
-          </Link>
-        </div>
-      </header>
-
-      {/* ─── Split View Main Body ─── */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-8 py-4 lg:py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center overflow-hidden">
-        {/* Left Column: Value Proposition */}
+      {/* ── Main Two-Column Container (Top-Aligned Matching Register Page) ── */}
+      <div className="relative z-10 max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+        {/* Left Column: Value Proposition & Brand Header */}
         <BusinessValueProps />
 
         {/* Right Column: 2-Step Registration Form Card */}
-        <div className="lg:col-span-7 h-full flex flex-col justify-center">
-          <div className="p-5 sm:p-7 rounded-3xl bg-white border border-[#DCE8DF] shadow-xl shadow-emerald-950/[0.04] relative">
+        <div className="lg:col-span-7 flex justify-center lg:justify-end">
+          <div className="bg-white rounded-3xl sm:rounded-[32px] p-6 sm:p-9 shadow-2xl shadow-emerald-950/15 border border-slate-100 max-w-xl w-full">
+            {/* ── Top Account Type Switcher (Retail Customer vs Business / Wholesale) ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+              {/* Inactive / Link: Retail Customer */}
+              <Link
+                to={ROUTES.REGISTER}
+                className="p-3 sm:p-3.5 rounded-2xl bg-slate-50/60 hover:bg-slate-100/80 border border-slate-200 transition-all flex items-center justify-between gap-3 group cursor-pointer"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-600 group-hover:text-[#006B3C] flex items-center justify-center shrink-0 transition-colors shadow-2xs">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-800 leading-tight truncate group-hover:text-[#006B3C] transition-colors">
+                      Retail Customer
+                    </p>
+                    <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
+                      For personal shopping
+                    </p>
+                  </div>
+                </div>
+              </Link>
+
+              {/* Active: Business / Wholesale */}
+              <div className="p-3 sm:p-3.5 rounded-2xl bg-emerald-50/70 border-2 border-[#006B3C] flex items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 text-[#006B3C] flex items-center justify-center shrink-0">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-900 leading-tight truncate">
+                      Business / Wholesale
+                    </p>
+                    <p className="text-[11px] text-slate-500 font-medium truncate mt-0.5">
+                      For stores, distributors & bulk
+                    </p>
+                  </div>
+                </div>
+                <div className="w-5 h-5 rounded-full bg-[#006B3C] text-white flex items-center justify-center shrink-0">
+                  <Check className="w-3 h-3 stroke-[3]" />
+                </div>
+              </div>
+            </div>
+
             {/* Stepper Header */}
             <BusinessRegistrationStepper
               step={step}
@@ -90,7 +110,7 @@ export function RegisterBusinessPage() {
 
             {/* Error Message Banner */}
             {errorMessage && (
-              <div className="mb-3.5 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+              <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
                 <span>{errorMessage}</span>
               </div>
@@ -114,27 +134,21 @@ export function RegisterBusinessPage() {
               />
             )}
 
-            {/* Bottom Switch Links */}
-            <div className="flex items-center justify-between pt-3 border-t border-[#E8EDE9] text-xs text-[#5E7D67] mt-3">
-              <p>
-                Need personal shopping?{" "}
-                <Link to={ROUTES.REGISTER} className="text-[#00875A] font-bold hover:underline">
-                  Retail Account
-                </Link>
-              </p>
-              <p>
-                Existing user?{" "}
-                <Link to={ROUTES.LOGIN} className="text-[#00875A] font-bold hover:underline">
+            {/* Already have an account? Sign In footer */}
+            <div className="mt-6 pt-4 border-t border-slate-100 text-center">
+              <p className="text-xs text-slate-500 font-medium">
+                Already registered with Vanom?{" "}
+                <Link
+                  to={ROUTES.LOGIN}
+                  className="font-bold text-[#006B3C] hover:text-[#00522E] hover:underline transition-colors"
+                >
                   Sign In
                 </Link>
               </p>
             </div>
           </div>
         </div>
-      </main>
-
-      {/* Footer */}
-      <PublicFooter />
+      </div>
     </div>
   );
 }
