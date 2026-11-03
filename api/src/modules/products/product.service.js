@@ -1,4 +1,4 @@
-import { prisma } from "../../config/prisma.js";
+﻿import { prisma } from "../../config/prisma.js";
 import { AppError } from "../../common/errors/app-error.js";
 import { HTTP_STATUS } from "../../constants/http-status.js";
 import { MESSAGES } from "../../constants/messages.js";
@@ -286,9 +286,14 @@ export async function listProducts({ page, limit, skip, cursor, search, category
     deletedAt: null,
     ...(search ? {
       OR: [
-        { name: { contains: search, mode: "insensitive" } },
-        { slug: { contains: search, mode: "insensitive" } },
-        { sku: { contains: search, mode: "insensitive" } }
+        { name:        { contains: search, mode: "insensitive" } },
+        { slug:        { contains: search, mode: "insensitive" } },
+        { sku:         { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { brand:    { name: { contains: search, mode: "insensitive" } } },
+        { category: { name: { contains: search, mode: "insensitive" } } },
+        { variants: { some: { sku:  { contains: search, mode: "insensitive" } } } },
+        { variants: { some: { name: { contains: search, mode: "insensitive" } } } }
       ]
     } : {}),
     ...(categoryId ? {
