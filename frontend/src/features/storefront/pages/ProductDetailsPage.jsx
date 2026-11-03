@@ -197,24 +197,12 @@ export function ProductDetailsPage() {
     ].filter(Boolean);
   }, [product, deliveryInfoText, returnPolicyText, warrantyInfoText, brandName, categoryName, rating]);
 
-  // Features list
+  // Features list (only return if explicitly provided on product)
   const features = useMemo(() => {
     if (product?.features && Array.isArray(product.features) && product.features.length > 0) {
       return product.features;
     }
-    if (product?.description) {
-      return [
-        product.description,
-        "Certified pure organic formulation with zero artificial additives",
-        "Directly sourced and batch-tested for superior quality & potency",
-        "Secure eco-friendly food-grade packaging",
-      ];
-    }
-    return [
-      "Certified pure organic formulation with zero artificial additives",
-      "Directly sourced and batch-tested for superior quality & potency",
-      "Secure eco-friendly food-grade packaging",
-    ];
+    return [];
   }, [product]);
 
   // Available Stock
@@ -592,12 +580,14 @@ export function ProductDetailsPage() {
           {/* Key Highlights */}
           <ProductHighlightsGrid highlights={highlights} />
 
-          {/* Description + Specs */}
-          <ProductSpecifications
-            description={product?.description || ""}
-            features={features}
-            specifications={specifications}
-          />
+          {/* Description + Specs (only show if description or real features exist) */}
+          {(Boolean(product?.description?.trim()) || features.length > 0) && (
+            <ProductSpecifications
+              description={product?.description || ""}
+              features={features}
+              specifications={specifications}
+            />
+          )}
 
           {/* Related Products */}
           <RelatedProductsSection relatedProducts={relatedList} category={product?.category} />
