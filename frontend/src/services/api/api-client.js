@@ -1,4 +1,4 @@
-import { authService } from "./auth.service.js";
+﻿import { authService } from "./auth.service.js";
 import { userService } from "./user.service.js";
 import { companyService } from "./company.service.js";
 import { catalogService } from "./catalog.service.js";
@@ -18,6 +18,7 @@ import { storeService } from "./store.service.js";
 import { contactService } from "./contact.service.js";
 import { checkoutService } from "./checkout.service.js";
 import { shippingService } from "./shipping.service.js";
+import { searchService } from "./search.service.js";
 
 export { authService } from "./auth.service.js";
 export { userService } from "./user.service.js";
@@ -27,6 +28,7 @@ export { cartService } from "./cart.service.js";
 export { orderService } from "./order.service.js";
 export { checkoutService } from "./checkout.service.js";
 export { shippingService } from "./shipping.service.js";
+export { searchService } from "./search.service.js";
 export { b2bService } from "./b2b.service.js";
 export { adminService } from "./admin.service.js";
 export { bannerService } from "./banner.service.js";
@@ -48,6 +50,7 @@ export const Api = {
   cart: cartService,
   orders: orderService,
   checkout: checkoutService,
+  search: searchService,
   shipping: shippingService,
   b2b: b2bService,
   admin: adminService,

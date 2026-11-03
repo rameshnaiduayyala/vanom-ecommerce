@@ -1,4 +1,4 @@
-import { productRoutes } from "../modules/products/product.routes.js";
+﻿import { productRoutes } from "../modules/products/product.routes.js";
 import { userRoutes } from "../modules/users/user.routes.js";
 import { addressRoutes } from "../modules/users/address.routes.js";
 import { authRoutes } from "../modules/auth/auth.routes.js";
@@ -20,6 +20,7 @@ import { contactRoutes } from "../modules/contact/contact.routes.js";
 import { paymentRoutes } from "../modules/payments/payment.routes.js";
 import { inventoryRoutes } from "../modules/inventory/inventory.routes.js";
 import { shippingRoutes } from "../modules/shipping/shipping.routes.js";
+import { searchRoutes } from "../modules/search/search.routes.js";
 
 export async function registerRoutes(fastify) {
   await fastify.register(shippingRoutes, {
@@ -47,7 +48,7 @@ export async function registerRoutes(fastify) {
     prefix: "/api/v1"
   });
   fastify.get("/api/products/search", async (request, reply) => {
-    const { search } = await import("../modules/products/product.controller.js");
+    const { search } = await import("../modules/search/search.controller.js");
     return search(request, reply);
   });
   await fastify.register(userRoutes, {

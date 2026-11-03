@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+﻿import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
@@ -116,6 +116,7 @@ export function PublicHeader() {
   const [expandedMobileCategories, setExpandedMobileCategories] = useState({});
 
   const searchContainerRef = useRef(null);
+  const searchRequestIdRef = useRef(0);
   const mobileSearchContainerRef = useRef(null);
   const mobileSearchInputRef = useRef(null);
   const categoryDropdownRef = useRef(null);
@@ -139,9 +140,10 @@ export function PublicHeader() {
     }
 
     const abortController = new AbortController();
+    const reqId = ++searchRequestIdRef.current;
     setIsSearching(true);
 
-    Api.catalog.searchProducts(
+    Api.search.searchCatalog(
       {
         q: debouncedQuery,
         categoryId: selectedCategory.slug || undefined,
@@ -151,6 +153,8 @@ export function PublicHeader() {
       { signal: abortController.signal }
     )
       .then((res) => {
+        // Discard stale response if a newer request has been made
+        if (reqId !== searchRequestIdRef.current) return;
         let data = { products: [], categories: [], total: 0 };
         if (res && Array.isArray(res.products)) {
           data = res;
@@ -178,6 +182,13 @@ export function PublicHeader() {
   useEffect(() => {
     setActiveIndex(-1);
   }, [searchResults]);
+
+  // Sync search input from URL (?search= or ?q=) when navigating to products page
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const urlSearch = params.get("search") || params.get("q") || "";
+    setSearchQuery(urlSearch);
+  }, [location.search]);
 
   const saveRecentSearch = (term) => {
     const clean = term?.trim();
