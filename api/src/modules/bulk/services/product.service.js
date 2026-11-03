@@ -91,7 +91,11 @@ function buildProductData(input) {
 // ─── Public Service Functions ─────────────────────────────────────────────────
 
 export async function list(query = {}) {
-  const { page, limit, skip } = getPagination(query);
+  const isAll = query.all === true || query.all === "true" || Number(query.limit) >= 1000;
+  const pagination = isAll ? null : getPagination(query);
+  const page = pagination?.page ?? 1;
+  const limit = pagination?.limit ?? (isAll ? 1000 : 20);
+  const skip = pagination?.skip ?? 0;
 
   const where = {
     deletedAt: null,
@@ -101,7 +105,9 @@ export async function list(query = {}) {
           OR: [
             { name: { contains: query.search, mode: "insensitive" } },
             { sku: { contains: query.search, mode: "insensitive" } },
-            { slug: { contains: query.search, mode: "insensitive" } }
+            { slug: { contains: query.search, mode: "insensitive" } },
+            { category: { contains: query.search, mode: "insensitive" } },
+            { brand: { contains: query.search, mode: "insensitive" } }
           ]
         }
       : {}),
@@ -120,15 +126,14 @@ export async function list(query = {}) {
   const [items, total] = await prisma.$transaction([
     prisma.bulkProduct.findMany({
       where,
-      skip,
-      take: limit,
+      ...(isAll ? {} : { skip, take: limit }),
       orderBy: { createdAt: "desc" },
       include: productInclude
     }),
     prisma.bulkProduct.count({ where })
   ]);
 
-  return { items, total, page, limit };
+  return { items, total, page, limit: isAll ? total : limit };
 }
 
 export async function getById(idOrSlug) {

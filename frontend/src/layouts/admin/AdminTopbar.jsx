@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Search, HelpCircle, Bell, Eye, Menu as MenuIcon } from "lucide-react";
+import { Search, HelpCircle, Bell, Store, Menu as MenuIcon } from "lucide-react";
 import { ROUTES } from "../../constants/routes.js";
 import { AdminProfileDropdown } from "./AdminProfileDropdown.jsx";
 
@@ -41,13 +41,15 @@ export function AdminTopbar({
 
       {/* Right Header Actions */}
       <div className="flex items-center gap-2.5 sm:gap-4 shrink-0">
-        {/* View Store Button */}
+        {/* View Store Button with Store Icon */}
         <Link
           to={ROUTES.HOME}
           target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-950 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+          title="Open Storefront in New Tab"
         >
-          <Eye className="w-3.5 h-3.5 text-slate-500" />
+          <Store className="w-3.5 h-3.5 text-slate-600" />
           <span className="hidden md:inline">View Store</span>
         </Link>
 

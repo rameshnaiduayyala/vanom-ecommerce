@@ -33,7 +33,9 @@ export async function getDashboardMetrics(timeRange = "30d") {
     todayOrdersCount,
     todayUsersCount,
     todayOrdersList,
-    ordersList
+    ordersList,
+    categoriesWithCount,
+    topSellingOrderItems
   ] = await prisma.$transaction([
     prisma.product.count({ where: { isActive: true } }),
     prisma.order.count({ where: orderWhere }),
@@ -51,8 +53,26 @@ export async function getDashboardMetrics(timeRange = "30d") {
       take: 50,
       orderBy: { createdAt: "desc" },
       include: {
-        user: { select: { firstName: true, lastName: true, email: true } }
+        user: { select: { firstName: true, lastName: true, email: true } },
+        organization: { select: { name: true } },
+        items: { select: { quantity: true, total: true, productName: true } }
       }
+    }),
+    prisma.category.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        _count: { select: { products: true } }
+      },
+      take: 6,
+      orderBy: { products: { _count: "desc" } }
+    }),
+    prisma.orderItem.groupBy({
+      by: ["productId", "productName"],
+      _sum: { quantity: true, total: true },
+      orderBy: { _sum: { quantity: "desc" } },
+      take: 5
     })
   ]);
 
@@ -64,19 +84,24 @@ export async function getDashboardMetrics(timeRange = "30d") {
     return sum + Number(o.total || 0);
   }, 0);
 
-  // Dynamic revenue series generation tailored to timeRange
+  // Exact revenue series calculated directly from actual ordersList
   let revenueSeries = [];
   if (timeRange === "today") {
-    // Hourly buckets for today (00:00 to current hour)
+    // Hourly buckets for today (00:00, 04:00, 08:00, 12:00, 16:00, 20:00)
     const hours = [0, 4, 8, 12, 16, 20];
     revenueSeries = hours.map((hr) => {
-      const bucketOrders = ordersList.filter((o) => new Date(o.createdAt).getHours() <= hr);
+      const bucketOrders = ordersList.filter((o) => {
+        const h = new Date(o.createdAt).getHours();
+        return h >= hr && h < hr + 4;
+      });
       const rev = bucketOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+      const b2bOrders = bucketOrders.filter((o) => Boolean(o.organizationId));
+      const b2bRev = b2bOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
       return {
         month: `${String(hr).padStart(2, "0")}:00`,
-        revenue: rev || (hr * 120),
-        orders: bucketOrders.length || Math.floor(hr / 2),
-        b2b: Math.round(rev * 0.65) || (hr * 80)
+        revenue: Math.round(rev * 100) / 100,
+        orders: bucketOrders.length,
+        b2b: Math.round(b2bRev * 100) / 100
       };
     });
   } else if (timeRange === "7d") {
@@ -88,49 +113,92 @@ export async function getDashboardMetrics(timeRange = "30d") {
     revenueSeries = last7Days.map(({ label, dateStr }) => {
       const dayOrders = ordersList.filter((o) => new Date(o.createdAt).toISOString().slice(0, 10) === dateStr);
       const rev = dayOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+      const b2bRev = dayOrders.filter((o) => Boolean(o.organizationId)).reduce((sum, o) => sum + Number(o.total || 0), 0);
       return {
         month: label,
-        revenue: rev || 12500,
-        orders: dayOrders.length || 18,
-        b2b: Math.round(rev * 0.7) || 8500
+        revenue: Math.round(rev * 100) / 100,
+        orders: dayOrders.length,
+        b2b: Math.round(b2bRev * 100) / 100
       };
     });
   } else if (timeRange === "30d") {
-    const weeks = ["Week 1", "Week 2", "Week 3", "Week 4"];
-    revenueSeries = weeks.map((w, idx) => {
-      const rev = Math.round(totalRevenue * (0.2 + idx * 0.08)) || (35000 + idx * 12000);
+    // 4 rolling 7-day windows in the past 30 days
+    revenueSeries = [0, 1, 2, 3].map((wIdx) => {
+      const windowStart = new Date(now.getTime() - (4 - wIdx) * 7 * 24 * 60 * 60 * 1000);
+      const windowEnd = new Date(now.getTime() - (3 - wIdx) * 7 * 24 * 60 * 60 * 1000);
+      const windowOrders = ordersList.filter((o) => {
+        const t = new Date(o.createdAt).getTime();
+        return t >= windowStart.getTime() && t < windowEnd.getTime();
+      });
+      const rev = windowOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+      const b2bRev = windowOrders.filter((o) => Boolean(o.organizationId)).reduce((sum, o) => sum + Number(o.total || 0), 0);
       return {
-        month: w,
-        revenue: rev,
-        orders: Math.round(ordersCount * (0.2 + idx * 0.08)) || (240 + idx * 80),
-        b2b: Math.round(rev * 0.68)
+        month: `Week ${wIdx + 1}`,
+        revenue: Math.round(rev * 100) / 100,
+        orders: windowOrders.length,
+        b2b: Math.round(b2bRev * 100) / 100
       };
     });
   } else {
-    // Default 1y or 90d monthly series
+    // 90d / 1y monthly groupings calculated directly from orders
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const currentMonthIdx = now.getMonth();
-    const count = timeRange === "90d" ? 3 : 8;
+    const count = timeRange === "90d" ? 3 : 12;
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
     revenueSeries = Array.from({ length: count }, (_, i) => {
-      const mIdx = (currentMonthIdx - (count - 1 - i) + 12) % 12;
-      const baseRev = Math.max(20000, totalRevenue ? Math.round(totalRevenue / count) * (i + 1) : (42000 + i * 14000));
+      const targetMonthDate = new Date(currentYear, currentMonth - (count - 1 - i), 1);
+      const mIdx = targetMonthDate.getMonth();
+      const y = targetMonthDate.getFullYear();
+      const monthOrders = ordersList.filter((o) => {
+        const d = new Date(o.createdAt);
+        return d.getMonth() === mIdx && d.getFullYear() === y;
+      });
+      const rev = monthOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+      const b2bRev = monthOrders.filter((o) => Boolean(o.organizationId)).reduce((sum, o) => sum + Number(o.total || 0), 0);
       return {
         month: months[mIdx],
-        revenue: baseRev,
-        orders: Math.round(baseRev / 120),
-        b2b: Math.round(baseRev * 0.72)
+        revenue: Math.round(rev * 100) / 100,
+        orders: monthOrders.length,
+        b2b: Math.round(b2bRev * 100) / 100
       };
     });
   }
 
-  // Live Category Distribution breakdown
-  const categoryDistribution = [
-    { name: "Organic Superfoods", value: 38, color: "#358B5B" },
-    { name: "Cold Pressed Oils", value: 24, color: "#204B38" },
-    { name: "Herbal Kadhas & Teas", value: 20, color: "#D9A514" },
-    { name: "Spices & Pantry", value: 12, color: "#008C52" },
-    { name: "Bulk Value Combos", value: 6, color: "#94A3B8" }
-  ];
+  // Real Category Distribution breakdown calculated directly from categories & products
+  const categoryColors = ["#006B3C", "#008F5A", "#D97706", "#2563EB", "#7C3AED", "#64748B"];
+  const categoryDistribution = categoriesWithCount.map((c, idx) => ({
+    name: c.name,
+    value: c._count.products,
+    color: categoryColors[idx % categoryColors.length]
+  }));
+
+  // Real Top Selling Products from database aggregation
+  const topProductIds = topSellingOrderItems.map((item) => item.productId).filter(Boolean);
+  const productsById = topProductIds.length > 0
+    ? await prisma.product.findMany({
+        where: { id: { in: topProductIds } },
+        select: {
+          id: true,
+          name: true,
+          basePrice: true,
+          images: { select: { url: true }, take: 1 },
+          category: { select: { name: true } }
+        }
+      })
+    : [];
+
+  const topProducts = topSellingOrderItems.map((item) => {
+    const prod = productsById.find((p) => p.id === item.productId);
+    return {
+      id: item.productId,
+      name: item.productName || prod?.name || "Product",
+      category: prod?.category?.name || "Commodity",
+      image: prod?.images?.[0]?.url || null,
+      unitsSold: item._sum.quantity || 0,
+      revenue: Number(item._sum.total || 0).toFixed(2)
+    };
+  });
 
   return {
     timeRange,
@@ -147,10 +215,12 @@ export async function getDashboardMetrics(timeRange = "30d") {
     },
     revenueSeries,
     categoryDistribution,
+    topProducts,
     recentOrders: ordersList.slice(0, 10).map((o) => ({
       id: o.id,
       orderNumber: o.id.slice(0, 8).toUpperCase(),
       customerName: `${o.user?.firstName || ""} ${o.user?.lastName || ""}`.trim() || o.user?.email || "Customer",
+      type: o.organizationId ? "B2B Wholesale" : "B2C Retail",
       total: Number(o.total || 0),
       currency: o.currencyCode || "USD",
       status: o.status,

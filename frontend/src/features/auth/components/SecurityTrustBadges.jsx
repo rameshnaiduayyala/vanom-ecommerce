@@ -6,14 +6,14 @@ export function SecurityTrustBadges({
   secondLabel = "Buyer Protection",
 }) {
   return (
-    <div className="flex items-center justify-center gap-4 text-[11px] text-[#5E7D67] pt-2">
+    <div className="flex items-center justify-center gap-4 text-[11px] text-emerald-200/70 pt-2">
       <div className="flex items-center gap-1.5">
-        <LockKeyhole className="w-3.5 h-3.5 text-[#00875A]" />
+        <LockKeyhole className="w-3.5 h-3.5 text-emerald-400" />
         <span>{firstLabel}</span>
       </div>
       <span>•</span>
       <div className="flex items-center gap-1.5">
-        <CheckCircle2 className="w-3.5 h-3.5 text-[#00875A]" />
+        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
         <span>{secondLabel}</span>
       </div>
     </div>

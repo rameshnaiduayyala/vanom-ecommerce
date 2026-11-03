@@ -13,7 +13,8 @@ export const pageQuery = {
   type: "object",
   properties: {
     page: { type: "integer", minimum: 1 },
-    limit: { type: "integer", minimum: 1, maximum: 100 },
+    limit: { type: "integer", minimum: 1, maximum: 1000 },
+    all: { type: "boolean" },
     search: { type: "string" },
     category: { type: "string" },
     categoryId: { type: "string" },

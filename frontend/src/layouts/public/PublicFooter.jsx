@@ -36,9 +36,16 @@ export function PublicFooter() {
   ].filter((s) => s.href);
 
   return (
-    <footer className="bg-[#246B52] text-white border-t border-[rgb(60,170,130)] mt-auto select-none overflow-hidden">
+    <footer className="relative bg-[#246B52] text-white border-t border-[rgb(60,170,130)] mt-auto select-none overflow-hidden">
+      {/* ── Background Image Layer ── */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/vanom-footer-bg.webp')" }}
+      />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#246B52]/80 via-[#246B52]/70 to-[#1B5641]/85" />
 
-      {/* ── 1. Brand Strip ── */}
+      <div className="relative z-10">
+        {/* ── 1. Brand Strip ── */}
       <div className="border-b border-white/10">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 py-10">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
@@ -197,12 +204,12 @@ export function PublicFooter() {
             </div>
           </div>
 
-
         </div>
+      </div>
       </div>
 
       {/* ── 3. Bottom Bar ── */}
-      <div className="border-t border-white/10 bg-[#1B5641]">
+      <div className="relative z-10 border-t border-white/10 bg-[#1B5641]/95 backdrop-blur-xs">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-white/60">
           <span>© {currentYear} {legalName}. All rights reserved.</span>
 
@@ -227,7 +234,6 @@ export function PublicFooter() {
           </div>
         </div>
       </div>
-
     </footer>
   );
 }
