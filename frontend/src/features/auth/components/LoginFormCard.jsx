@@ -19,7 +19,7 @@ export function LoginFormCard({
   return (
     <form
       onSubmit={onSubmit}
-      className="p-6 sm:p-8 rounded-3xl bg-white border border-[#DCE8DF] shadow-xl shadow-emerald-950/[0.04] space-y-4"
+      className="p-6 sm:p-8 rounded-3xl bg-white/95 backdrop-blur-md border border-white/20 shadow-2xl shadow-black/40 space-y-4"
     >
       {/* Error Message Text Banner */}
       {errorMessage && (

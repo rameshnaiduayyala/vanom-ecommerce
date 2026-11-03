@@ -20,7 +20,7 @@ export function AuthHeader({ title, subtitle, badgeText }) {
         </div>
       )}
       {subtitle && (
-        <p className="text-xs text-[#5E7D67] max-w-sm mx-auto leading-relaxed">
+        <p className="text-xs text-emerald-200/80 max-w-sm mx-auto leading-relaxed drop-shadow-xs">
           {subtitle}
         </p>
       )}

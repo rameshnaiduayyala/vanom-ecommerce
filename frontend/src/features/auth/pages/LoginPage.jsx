@@ -24,13 +24,21 @@ export function LoginPage() {
   } = useLoginForm();
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center bg-[#F8FAF9] px-4 py-12">
+    <div className="relative min-h-[92vh] flex items-center justify-center px-4 py-12 overflow-hidden">
+      {/* ── Background Image Layer (Natural Colors, Subtle Botanical Backdrop) ── */}
+      <div
+        className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/vanom-login-bg.webp')" }}
+      />
+      {/* ── Seamless Multi-Stop Dark-Green Gradient & Vignette ── */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#06140b]/70 via-[#07190e]/80 to-[#040d07]/90" />
+
       <SEO
         title="Sign In | Vanom"
         description="Sign in to your Vanom account to access your orders, wholesale quotes, and account dashboard."
         noindex={true}
       />
-      <div className="max-w-md w-full space-y-5">
+      <div className="relative z-10 max-w-md w-full space-y-5">
         {/* Header */}
         <AuthHeader
           subtitle="Access your global retail orders, procurement quotes & enterprise account"
