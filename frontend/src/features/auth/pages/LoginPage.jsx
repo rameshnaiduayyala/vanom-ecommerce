@@ -44,13 +44,6 @@ export function LoginPage() {
           subtitle="Access your global retail orders, procurement quotes & enterprise account"
         />
 
-        {/* Quick 1-Click Login Bar */}
-        <QuickLoginSwitcher
-          onQuickLogin={handleQuickLogin}
-          onFillCredentials={handleFillCredentials}
-          loading={loading}
-        />
-
         {/* Login Form Card */}
         <LoginFormCard
           email={email}
