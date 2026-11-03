@@ -72,15 +72,6 @@ export async function list(request, reply) {
   });
 }
 
-export async function highlights(request, reply) {
-  const pagination = getPagination(request.query);
-  const result = await productService.listHighlightedProducts(request.params.type, pagination);
-  return sendSuccess(reply, {
-    message: MESSAGES.PRODUCTS_FETCHED,
-    data: result.items,
-    meta: getPaginationMeta(pagination.page, pagination.limit, result.total)
-  });
-}
 
 export async function getById(request, reply) {
   const product = await productService.getProductById(request.params.id);
@@ -135,6 +126,17 @@ export async function updateVariant(request, reply) {
 export async function deleteVariant(request, reply) {
   await productService.deleteVariant(request.params.productId, request.params.id);
   return sendSuccess(reply, { message: MESSAGES.VARIANT_DELETED, data: null });
+}
+
+export async function highlights(request, reply) {
+  const pagination = getPagination(request.query);
+  const result = await productService.listHighlightedProducts(request.params.type, pagination);
+
+  return sendSuccess(reply, {
+    message: MESSAGES.PRODUCTS_FETCHED,
+    data: result.items,
+    meta: getPaginationMeta(pagination.page, pagination.limit, result.total)
+  });
 }
 
 export async function search(request, reply) {

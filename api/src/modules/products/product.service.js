@@ -34,12 +34,44 @@ function serializeCountryPricing(entry) {
   };
 }
 
+function cleanHighlightMetadata(obj) {
+  if (!obj || typeof obj !== "object") return obj;
+  const {
+    description,
+    deletedAt,
+    deliveryInfo,
+    returnPolicy,
+    warrantyInfo,
+    keyHighlights,
+    weight,
+    weightUnit,
+    length,
+    width,
+    height,
+    dimensionUnit,
+    ...rest
+  } = obj;
+  return rest;
+}
+
 function serializeProduct(product) {
   return {
     ...product,
     countries: product.countries?.map(serializeCountryPricing) ?? [],
     variants: product.variants?.map((variant) => ({
       ...variant,
+      countries: variant.countries?.map(serializeCountryPricing) ?? []
+    })) ?? []
+  };
+}
+
+function serializeHighlightedProduct(product) {
+  const cleaned = cleanHighlightMetadata(product);
+  return {
+    ...cleaned,
+    countries: product.countries?.map(serializeCountryPricing) ?? [],
+    variants: product.variants?.map((variant) => ({
+      ...cleanHighlightMetadata(variant),
       countries: variant.countries?.map(serializeCountryPricing) ?? []
     })) ?? []
   };
@@ -215,6 +247,37 @@ export async function createProduct(input) {
     }
     throw error;
   }
+}
+
+const highlightFlags = {
+  new: "isNew",
+  featured: "isFeatured",
+  trending: "isTrending",
+  "best-seller": "isBestSeller"
+};
+
+export async function listHighlightedProducts(type, { page, limit, skip }) {
+  const flag = highlightFlags[type];
+  if (!flag) {
+    throw new AppError("Invalid product highlight type", HTTP_STATUS.BAD_REQUEST, "INVALID_HIGHLIGHT_TYPE");
+  }
+
+  const where = { isActive: true, deletedAt: null, [flag]: true };
+  const [items, total] = await prisma.$transaction([
+    prisma.product.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      include: productInclude
+    }),
+    prisma.product.count({ where })
+  ]);
+
+  return {
+    items: items.map(serializeHighlightedProduct),
+    total
+  };
 }
 
 export async function listProducts({ page, limit, skip, cursor, search, categoryId, type, isActive, isNew, isFeatured, isTrending, isBestSeller }) {
@@ -514,26 +577,6 @@ export async function updateProduct(id, input) {
   }
 }
 
-const highlightFlags = {
-  new: "isNew",
-  featured: "isFeatured",
-  trending: "isTrending",
-  "best-seller": "isBestSeller"
-};
-
-export async function listHighlightedProducts(type, { page, limit, skip }) {
-  const flag = highlightFlags[type];
-  if (!flag) {
-    throw new AppError("Invalid product highlight type", HTTP_STATUS.BAD_REQUEST, "INVALID_HIGHLIGHT_TYPE");
-  }
-
-  const where = { isActive: true, [flag]: true };
-  const [items, total] = await prisma.$transaction([
-    prisma.product.findMany({ where, skip, take: limit, orderBy: { createdAt: "desc" }, include: productInclude }),
-    prisma.product.count({ where })
-  ]);
-  return { items: items.map(serializeProduct), total };
-}
 
 export async function deleteProduct(id) {
   // Find product by id or slug
