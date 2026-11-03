@@ -365,9 +365,9 @@ export function PublicHeader() {
     <>
       <header className="sticky top-0 z-40 bg-[#F7F2DF] border-b border-[#ebdcb0] shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
         {/* ─── Main Bar (Logo, Search with Category Selector, Wishlist, Account, Cart) ─── */}
-        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-[72px] flex items-center justify-between gap-2 sm:gap-4 lg:gap-6 relative">
+        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 lg:h-[68px] flex items-center gap-2 lg:gap-4 relative">
           {/* Left: Mobile Menu Trigger & Logo */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0 z-10">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
@@ -378,31 +378,28 @@ export function PublicHeader() {
             </button>
 
             {/* Logo on Medium/Desktop screens */}
-            <Link to={ROUTES.HOME} className="hidden sm:flex items-center py-1">
+            <Link to={ROUTES.HOME} className="hidden lg:flex items-center py-1">
               <img
                 src="/logo.png"
                 alt="Vanom"
-                className="h-9 sm:h-11 lg:h-13 w-auto object-contain hover:scale-102 transition-transform duration-200"
+                className="h-8 sm:h-9 lg:h-11 w-auto object-contain hover:scale-102 transition-transform duration-200"
               />
             </Link>
           </div>
 
-          {/* Mobile Portrait Logo (Centered only on small mobile < sm) */}
-          <div className="sm:hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto max-w-[120px]">
-            <Link to={ROUTES.HOME} className="flex items-center py-1">
-              <img
-                src="/logo.png"
-                alt="Vanom"
-                className="h-8 w-auto max-w-full object-contain"
-              />
-            </Link>
-          </div>
+          {/* Logo — absolutely centered on mobile & tablet (< lg) */}
+          <Link
+            to={ROUTES.HOME}
+            className="lg:hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center pointer-events-auto z-0"
+          >
+            <img src="/logo.png" alt="Vanom" className="h-8 sm:h-9 w-auto object-contain" />
+          </Link>
 
           {/* Center Search with Integrated Dynamic Category Dropdown */}
           <form
             ref={searchContainerRef}
             onSubmit={handleSearch}
-            className="hidden md:flex flex-1 max-w-2xl items-center border border-gray-300 rounded-lg overflow-visible bg-white focus-within:border-[#003D2B] focus-within:ring-1 focus-within:ring-[#003D2B] transition-all relative h-[42px]"
+            className="hidden lg:flex flex-1 mx-4 xl:mx-6 max-w-2xl items-center border border-gray-300 rounded-lg overflow-visible bg-white focus-within:border-[#003D2B] focus-within:ring-1 focus-within:ring-[#003D2B] transition-all relative h-[42px]"
           >
             {/* Category Dropdown Pill */}
             <div className="relative h-full" ref={categoryDropdownRef}>
@@ -510,12 +507,12 @@ export function PublicHeader() {
           </form>
 
           {/* Right Action Links */}
-          <div className="flex items-center gap-1 sm:gap-2.5 lg:gap-4 shrink-0 z-10">
+          <div className="ml-auto flex items-center gap-1 sm:gap-2 lg:gap-3 shrink-0">
             {/* Mobile Search Icon Toggle */}
             <button
               type="button"
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-              className="md:hidden p-1.5 rounded-lg text-gray-700 hover:text-[#358B5B] hover:bg-black/5 transition-colors cursor-pointer"
+              className="lg:hidden p-1.5 rounded-lg text-gray-700 hover:text-[#358B5B] hover:bg-black/5 transition-colors cursor-pointer"
               aria-label="Toggle search"
             >
               {mobileSearchOpen ? (
@@ -526,11 +523,11 @@ export function PublicHeader() {
             </button>
 
             {/* Country / Currency Selector (Visible in Mobile Landscape & Desktop) */}
-            <div className="relative hidden sm:block" ref={countryDropdownRef}>
+            <div className="relative hidden sm:block shrink-0" ref={countryDropdownRef}>
               <button
                 type="button"
                 onClick={() => setShowCountryDropdown((prev) => !prev)}
-                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg border border-[#ebdcb0] bg-white/70 hover:bg-white hover:border-[#358B5B] text-gray-800 text-xs font-semibold transition-all shadow-2xs cursor-pointer select-none"
+                className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border border-[#ebdcb0] bg-white/70 hover:bg-white hover:border-[#358B5B] text-gray-800 text-xs font-semibold transition-all shadow-2xs cursor-pointer select-none shrink-0"
                 title="Change Country & Currency"
               >
                 <img
@@ -595,7 +592,7 @@ export function PublicHeader() {
             {/* Wishlist */}
             <Link
               to={ROUTES.WISHLIST || "/wishlist"}
-              className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors group cursor-pointer"
+              className="hidden lg:flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors group cursor-pointer"
             >
               <Heart className="w-[18px] h-[18px] text-gray-600 group-hover:text-[#003D2B] transition-colors" />
               <span className="hidden lg:inline">Wishlist</span>
@@ -608,10 +605,10 @@ export function PublicHeader() {
                 <>
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="p-1.5 md:px-2 md:py-1 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors cursor-pointer"
+                    className="p-1.5 lg:px-2 lg:py-1 rounded-xl flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors cursor-pointer"
                   >
                     <User className="w-[19px] h-[19px] text-gray-600" />
-                    <span className="hidden md:inline truncate max-w-[90px]">
+                    <span className="hidden lg:inline truncate max-w-[90px]">
                       {user?.firstName || "Account"}
                     </span>
                     {isSuperAdmin ? (
@@ -627,7 +624,7 @@ export function PublicHeader() {
                         B2B
                       </span>
                     ) : null}
-                    <ChevronDown className="w-3 h-3 text-gray-400 hidden md:inline" />
+                    <ChevronDown className="w-3 h-3 text-gray-400 hidden lg:inline" />
                   </button>
 
                   {showUserMenu && (
@@ -743,10 +740,10 @@ export function PublicHeader() {
               ) : (
                 <Link
                   to={ROUTES.LOGIN}
-                  className="p-1.5 md:px-2 flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors group cursor-pointer"
+                  className="p-1.5 lg:px-2 flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors group cursor-pointer"
                 >
                   <User className="w-[19px] h-[19px] text-gray-600 group-hover:text-[#003D2B] transition-colors" />
-                  <span className="hidden md:inline">Sign In</span>
+                  <span className="hidden lg:inline">Sign In</span>
                 </Link>
               )}
             </div>
@@ -754,7 +751,7 @@ export function PublicHeader() {
             {/* Cart with Counter Badge */}
             <button
               onClick={openCart}
-              className="p-1.5 md:px-2 flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors relative cursor-pointer group"
+              className="p-1.5 lg:px-2 flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-[#003D2B] transition-colors relative cursor-pointer group"
             >
               <div className="relative">
                 <ShoppingCart className="w-[19px] h-[19px] text-gray-600 group-hover:text-[#003D2B] transition-colors" />
@@ -762,14 +759,14 @@ export function PublicHeader() {
                   {cart?.itemCount || 0}
                 </span>
               </div>
-              <span className="hidden md:inline">Cart</span>
+              <span className="hidden lg:inline">Cart</span>
             </button>
           </div>
         </div>
 
         {/* Mobile Expandable Search Bar */}
         {mobileSearchOpen && (
-          <div className="md:hidden px-4 pb-3 pt-2 bg-[#FFF7DD] border-t border-[#ebdcb0]/60 animate-in slide-in-from-top-2 duration-150 relative">
+          <div className="lg:hidden px-4 pb-3 pt-2 bg-[#FFF7DD] border-t border-[#ebdcb0]/60 animate-in slide-in-from-top-2 duration-150 relative">
             <form
               ref={mobileSearchContainerRef}
               onSubmit={handleSearch}
