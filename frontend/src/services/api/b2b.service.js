@@ -1,7 +1,7 @@
-import { apiClient } from "./axios.js";
+﻿import { apiClient } from "./axios.js";
 
 export const b2bService = {
-  // ── Bulk Business Account Management ──
+  // â”€â”€ Bulk Business Account Management â”€â”€
   getCompany: async () => {
     return apiClient.get("/bulk/business/me");
   },
@@ -34,9 +34,9 @@ export const b2bService = {
     return apiClient.put("/bulk/business/me", payload);
   },
 
-  // ── Dedicated Bulk Catalog (Volume Tier Pricing) ──
+  // â”€â”€ Dedicated Bulk Catalog (Volume Tier Pricing) â”€â”€
   getBulkProducts: async (params = {}) => {
-    const res = await apiClient.get("/bulk/products", { params });
+    const res = await apiClient.get("/bulk/products", { params: { all: true, limit: 1000, ...params } });
     return Array.isArray(res) ? res : res?.items || [];
   },
 
@@ -44,7 +44,7 @@ export const b2bService = {
     return apiClient.get(`/bulk/products/${id}`);
   },
 
-  // ── Admin Bulk Product Management ──
+  // â”€â”€ Admin Bulk Product Management â”€â”€
   createBulkProduct: async (payload) => {
     return apiClient.post("/admin/bulk/products", payload);
   },
@@ -57,7 +57,7 @@ export const b2bService = {
     return apiClient.delete(`/admin/bulk/products/${id}`);
   },
 
-  // ── Bulk Cart ──
+  // â”€â”€ Bulk Cart â”€â”€
   getBulkCart: async (params = {}) => {
     return apiClient.get("/bulk/cart", { params });
   },
@@ -74,7 +74,7 @@ export const b2bService = {
     return apiClient.delete(`/bulk/cart/items/${itemId}`);
   },
 
-  // ── Bulk Orders & Checkout ──
+  // â”€â”€ Bulk Orders & Checkout â”€â”€
   createBulkOrder: async (payload) => {
     return apiClient.post("/bulk/orders", payload);
   },
@@ -88,7 +88,7 @@ export const b2bService = {
     return apiClient.get(`/bulk/orders/${id}`);
   },
 
-  // ── Admin Bulk Review & Operations ──
+  // â”€â”€ Admin Bulk Review & Operations â”€â”€
   listAdminBusinesses: async (params = {}) => {
     return apiClient.get("/admin/bulk/businesses", { params });
   },
@@ -126,7 +126,7 @@ export const b2bService = {
     return apiClient.patch(`/admin/bulk/orders/${id}/status`, payload);
   },
 
-  // ── Business Addresses ──
+  // â”€â”€ Business Addresses â”€â”€
   listAddresses: async () => {
     return apiClient.get("/bulk/addresses");
   },
@@ -135,7 +135,7 @@ export const b2bService = {
     return apiClient.post("/bulk/addresses", payload);
   },
 
-  // ── Invoices & PDFKit Exports ──
+  // â”€â”€ Invoices & PDFKit Exports â”€â”€
   getBulkOrderInvoicePdf: async (orderId) => {
     return apiClient.get(`/bulk/orders/${orderId}/invoice`, { responseType: "blob" });
   },

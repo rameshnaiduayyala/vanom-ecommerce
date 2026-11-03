@@ -111,18 +111,25 @@ export function B2BCatalog() {
   const matchProductCategory = (product, targetCat) => {
     if (!targetCat) return false;
     const catId = targetCat.id;
-    const catName = targetCat.name?.toLowerCase().trim();
-    const catSlug = targetCat.slug?.toLowerCase().trim();
+    const catName = (targetCat.name || "").toLowerCase().trim();
+    const catSlug = (targetCat.slug || "").toLowerCase().trim();
 
     const prodCat = (product.category || product.categoryName || "").toLowerCase().trim();
     const prodCatId = product.categoryId;
 
-    return (
-      prodCatId === catId ||
-      prodCat === catName ||
-      prodCat === catSlug ||
-      (catName && prodCat.includes(catName))
-    );
+    if (prodCatId && catId && prodCatId === catId) return true;
+    if (prodCat && (prodCat === catName || prodCat === catSlug)) return true;
+
+    // Fuzzy clean comparison (ignore punctuation like &, -, _)
+    const cleanProdCat = prodCat.replace(/[&/\\#,+()$~%.'":*?<>{}_-]/g, " ").replace(/\s+/g, " ").trim();
+    const cleanCatName = catName.replace(/[&/\\#,+()$~%.'":*?<>{}_-]/g, " ").replace(/\s+/g, " ").trim();
+    const cleanCatSlug = catSlug.replace(/[&/\\#,+()$~%.'":*?<>{}_-]/g, " ").replace(/\s+/g, " ").trim();
+
+    if (cleanProdCat && (cleanProdCat === cleanCatName || cleanProdCat === cleanCatSlug)) return true;
+    if (cleanCatName && cleanProdCat.includes(cleanCatName)) return true;
+    if (cleanProdCat && cleanCatName.includes(cleanProdCat)) return true;
+
+    return false;
   };
 
   // Group wholesale products into root categories and subcategories
@@ -255,7 +262,7 @@ export function B2BCatalog() {
         <div
           className="pointer-events-none absolute inset-y-0 right-0 w-full md:w-[50%] lg:w-[42%] bg-no-repeat bg-right-center bg-cover opacity-90 sm:opacity-95"
           style={{
-            backgroundImage: "url('/b2b-catelog-section.png')",
+            backgroundImage: "url('/b2b-catelog-section.webp')",
           }}
         />
 

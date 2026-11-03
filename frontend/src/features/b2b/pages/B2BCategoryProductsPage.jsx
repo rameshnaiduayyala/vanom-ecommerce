@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { Button } from "../../../components/ui/Button.jsx";
 import { Skeleton, EmptyState } from "../../../components/ui/Alert.jsx";
+import { Pagination } from "@/components/common/Pagination.jsx";
+import { useTablePagination } from "@/hooks/useTablePagination.js";
 import { B2BProductCard } from "../components/B2BProductCard.jsx";
 import { AddToBulkOrderModal } from "../components/AddToBulkOrderModal.jsx";
 
@@ -113,11 +115,18 @@ export function B2BCategoryProductsPage() {
       // 1. Category match
       const pCatId = p.categoryId;
       const pCat = (p.category || p.categoryName || "").toLowerCase().trim();
+      const cleanProdCat = pCat.replace(/[&/\\#,+()$~%.'":*?<>{}_-]/g, " ").replace(/\s+/g, " ").trim();
+      const cleanTargetName = (targetName || "").replace(/[&/\\#,+()$~%.'":*?<>{}_-]/g, " ").replace(/\s+/g, " ").trim();
+      const cleanTargetSlug = (targetSlug || "").replace(/[&/\\#,+()$~%.'":*?<>{}_-]/g, " ").replace(/\s+/g, " ").trim();
+
       const matchesCat =
-        pCatId === targetId ||
+        (pCatId && targetId && pCatId === targetId) ||
         pCat === targetSlug ||
         pCat === targetName ||
-        (targetName && pCat.includes(targetName));
+        (cleanTargetName && cleanProdCat === cleanTargetName) ||
+        (cleanTargetSlug && cleanProdCat === cleanTargetSlug) ||
+        (cleanTargetName && cleanProdCat.includes(cleanTargetName)) ||
+        (cleanProdCat && cleanTargetName.includes(cleanProdCat));
 
       if (!matchesCat) return false;
 
@@ -140,6 +149,23 @@ export function B2BCategoryProductsPage() {
       return true;
     });
   }, [bulkProducts, currentCategory, selectedBrand, search]);
+
+  // Setup pagination same as Admin Products
+  const {
+    paginatedData: paginatedProducts,
+    paginationProps,
+    resetPage,
+  } = useTablePagination({
+    data: filteredProducts,
+    initialPage: 1,
+    initialPageSize: 20,
+    pageSizeOptions: [10, 20, 50, 100],
+  });
+
+  // Reset to first page when search or brand changes
+  React.useEffect(() => {
+    resetPage();
+  }, [search, selectedBrand, resetPage]);
 
   const isLoading = loadingProducts || loadingCategories;
 
@@ -250,17 +276,27 @@ export function B2BCategoryProductsPage() {
           }}
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-          {filteredProducts.map((product) => (
-            <B2BProductCard
-              key={product.id}
-              product={product}
-              targetCountryCode={targetCountryCode}
-              currencyCode={currencyCode}
-              currencySymbol={currencySymbol}
-              onOrderClick={setSelectedProductForOrder}
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {paginatedProducts.map((product) => (
+              <B2BProductCard
+                key={product.id}
+                product={product}
+                targetCountryCode={targetCountryCode}
+                currencyCode={currencyCode}
+                currencySymbol={currencySymbol}
+                onOrderClick={setSelectedProductForOrder}
+              />
+            ))}
+          </div>
+
+          {/* Reusable Enterprise Pagination identical to /admin/products */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs px-4 py-1">
+            <Pagination
+              {...paginationProps}
+              itemName="wholesale products"
             />
-          ))}
+          </div>
         </div>
       )}
 

@@ -11,6 +11,8 @@ import {
 import { Button } from "@/components/ui/Button.jsx";
 import { Select } from "@/components/ui/Input.jsx";
 import { ConfirmDialog } from "@/components/ui/Alert.jsx";
+import { Pagination } from "@/components/common/Pagination.jsx";
+import { useTablePagination } from "@/hooks/useTablePagination.js";
 
 import { BulkProductList } from "./BulkProductList.jsx";
 import { BulkProductFormModal } from "./BulkProductFormModal.jsx";
@@ -132,6 +134,23 @@ export function AdminBulkProductsPage() {
     return matchesSearch && matchesCategory && matchesBrand;
   });
 
+  // Pagination setup identical to /admin/products
+  const {
+    paginatedData: paginatedProducts,
+    paginationProps,
+    resetPage,
+  } = useTablePagination({
+    data: filteredProducts,
+    initialPage: 1,
+    initialPageSize: 20,
+    pageSizeOptions: [10, 20, 50, 100],
+  });
+
+  // Reset page when search or category/brand filter changes
+  React.useEffect(() => {
+    resetPage();
+  }, [search, selectedCategory, selectedBrand, resetPage]);
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -206,10 +225,16 @@ export function AdminBulkProductsPage() {
 
       {/* Bulk Products Table Component */}
       <BulkProductList
-        products={filteredProducts}
+        products={paginatedProducts}
         onView={(p) => setViewingProduct(p)}
         onEdit={(p) => handleOpenEdit(p)}
         onDelete={(p) => setDeletingProduct(p)}
+      />
+
+      {/* Reusable Table Pagination (identical to /admin/products) */}
+      <Pagination
+        {...paginationProps}
+        itemName="bulk products"
       />
 
       {/* Add / Edit Form Modal Component */}
