@@ -401,7 +401,7 @@ export function ProductGallery({
                   title="Open full-screen viewer"
                 >
                   <Maximize2 className="w-4 h-4 text-emerald-700" />
-                  <span className="hidden sm:inline">Enlarge</span>
+                
                 </button>
               </div>
             ) : (
@@ -462,54 +462,14 @@ export function ProductGallery({
           onMouseUp={handleMouseUp}
         >
           {/* Top Control Bar */}
-          <div className="w-full py-3.5 px-6 bg-white/90 border-b border-slate-200/80 flex items-center justify-between gap-4 z-10 shadow-2xs">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-black text-slate-800 tracking-tight">
-                {title || "Product Media"}
-              </span>
-              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono">
-                {viewerIndex + 1} / {gallery.length}
-              </span>
-              {isActiveViewerVideo && (
-                <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
-                  Video
-                </span>
-              )}
+          <div className="w-full py-3.5 px-6 bg-white flex items-center justify-between gap-4 z-10">
+            <div className="flex items-center">
+          
             </div>
 
             {/* Viewer Zoom & Close Tools */}
-            <div className="flex items-center gap-2">
-              {!isActiveViewerVideo && (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleZoomIn}
-                    disabled={zoomLevel >= 3}
-                    className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-30 cursor-pointer shadow-2xs"
-                    title="Zoom in (+)"
-                  >
-                    <ZoomIn className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleZoomOut}
-                    disabled={zoomLevel <= 1}
-                    className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-30 cursor-pointer shadow-2xs"
-                    title="Zoom out (-)"
-                  >
-                    <ZoomOut className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleResetZoom}
-                    disabled={zoomLevel === 1 && panPosition.x === 0 && panPosition.y === 0}
-                    className="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 disabled:opacity-30 cursor-pointer shadow-2xs"
-                    title="Reset Zoom (0)"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                  </button>
-                </>
-              )}
+            <div className="flex items-center">
+      
               <button
                 type="button"
                 onClick={closeViewer}

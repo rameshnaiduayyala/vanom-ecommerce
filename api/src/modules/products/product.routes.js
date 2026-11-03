@@ -119,12 +119,15 @@ export async function productRoutes(fastify) {
     }
   }, controller.list);
 
-  fastify.get("/products/highlights/:type", {
+
+    fastify.get("/products/highlights/:type", {
     schema: {
       params: {
         type: "object",
         required: ["type"],
-        properties: { type: { type: "string", enum: ["new", "featured", "trending", "best-seller"] } }
+        properties: {
+          type: { type: "string", enum: ["new", "featured", "trending", "best-seller"] }
+        }
       },
       querystring: {
         type: "object",

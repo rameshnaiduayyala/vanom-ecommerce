@@ -5,7 +5,10 @@ import TiptapViewer from "@/components/common/TiptapViewer";
  * Dedicated Product Overview & Description Section (Tiptap View)
  */
 export function ProductDescriptionSection({ description = "", features = [] }) {
-  if (!description && (!features || features.length === 0)) {
+  const hasDesc = Boolean(description && typeof description === "string" && description.trim().length > 0);
+  const hasFeatures = Boolean(features && Array.isArray(features) && features.length > 0);
+
+  if (!hasDesc && !hasFeatures) {
     return null;
   }
 
@@ -34,6 +37,13 @@ export function ProductDescriptionSection({ description = "", features = [] }) {
  * Backward compatibility wrapper
  */
 export function ProductSpecifications({ description = "", features = [], specifications = {} }) {
+  const hasDesc = Boolean(description && typeof description === "string" && description.trim().length > 0);
+  const hasFeatures = Boolean(features && Array.isArray(features) && features.length > 0);
+
+  if (!hasDesc && !hasFeatures) {
+    return null;
+  }
+
   return (
     <div className="space-y-6">
       <ProductDescriptionSection description={description} features={features} />

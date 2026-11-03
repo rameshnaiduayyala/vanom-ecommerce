@@ -64,9 +64,12 @@ export function ProductDetailsPage() {
     }
   }, [product, selectedVariantId]);
 
-  const { data: allProducts = [] } = useQuery({
-    queryKey: ["all-products-for-rel"],
-    queryFn: () => Api.catalog.getProducts(),
+  const targetCategoryId = product?.categoryId || product?.category?.id || null;
+
+  const { data: categoryProducts = [] } = useQuery({
+    queryKey: ["related-category-products", targetCategoryId],
+    queryFn: () => Api.catalog.getProducts(targetCategoryId ? { categoryId: targetCategoryId, limit: 12 } : { limit: 12 }),
+    enabled: !!product,
   });
 
   const selectedVariantObj = useMemo(() => {
@@ -194,24 +197,12 @@ export function ProductDetailsPage() {
     ].filter(Boolean);
   }, [product, deliveryInfoText, returnPolicyText, warrantyInfoText, brandName, categoryName, rating]);
 
-  // Features list
+  // Features list (only return if explicitly provided on product)
   const features = useMemo(() => {
     if (product?.features && Array.isArray(product.features) && product.features.length > 0) {
       return product.features;
     }
-    if (product?.description) {
-      return [
-        product.description,
-        "Certified pure organic formulation with zero artificial additives",
-        "Directly sourced and batch-tested for superior quality & potency",
-        "Secure eco-friendly food-grade packaging",
-      ];
-    }
-    return [
-      "Certified pure organic formulation with zero artificial additives",
-      "Directly sourced and batch-tested for superior quality & potency",
-      "Secure eco-friendly food-grade packaging",
-    ];
+    return [];
   }, [product]);
 
   // Available Stock
@@ -240,12 +231,37 @@ export function ProductDetailsPage() {
     return specs;
   }, [product, title, brandName, categoryName, deliveryInfoText, returnPolicyText, warrantyInfoText, availableStock]);
 
-  // Related items
+  // Related items - show only that category related products
   const relatedList = useMemo(() => {
-    const raw = Array.isArray(allProducts?.items) ? allProducts.items : Array.isArray(allProducts) ? allProducts : [];
-    const filtered = raw.filter((p) => p.slug !== slug && p.id !== product?.id && p.id !== slug);
+    const raw = Array.isArray(categoryProducts?.items)
+      ? categoryProducts.items
+      : Array.isArray(categoryProducts?.data)
+      ? categoryProducts.data
+      : Array.isArray(categoryProducts)
+      ? categoryProducts
+      : [];
+
+    const currentCatId = product?.categoryId || product?.category?.id;
+    const currentCatSlug = product?.category?.slug;
+
+    const filtered = raw.filter((p) => {
+      // Exclude current active product
+      if (p.slug === slug || p.id === product?.id || p.id === slug) return false;
+
+      // Filter only matching category
+      if (currentCatId) {
+        const itemCatId = p.categoryId || p.category?.id;
+        const itemCatSlug = p.category?.slug;
+        return (
+          itemCatId === currentCatId ||
+          (currentCatSlug && (itemCatSlug === currentCatSlug || p.category === currentCatSlug))
+        );
+      }
+      return true;
+    });
+
     return filtered.slice(0, 5);
-  }, [allProducts, slug, product]);
+  }, [categoryProducts, slug, product]);
 
   const handleAddToCart = () => {
     if (isOutOfStock) {
@@ -564,15 +580,17 @@ export function ProductDetailsPage() {
           {/* Key Highlights */}
           <ProductHighlightsGrid highlights={highlights} />
 
-          {/* Description + Specs */}
-          <ProductSpecifications
-            description={product?.description || ""}
-            features={features}
-            specifications={specifications}
-          />
+          {/* Description + Specs (only show if description or real features exist) */}
+          {(Boolean(product?.description?.trim()) || features.length > 0) && (
+            <ProductSpecifications
+              description={product?.description || ""}
+              features={features}
+              specifications={specifications}
+            />
+          )}
 
           {/* Related Products */}
-          <RelatedProductsSection relatedProducts={relatedList} />
+          <RelatedProductsSection relatedProducts={relatedList} category={product?.category} />
 
           {/* Store Trust Strip */}
           <StoreTrustBadges />

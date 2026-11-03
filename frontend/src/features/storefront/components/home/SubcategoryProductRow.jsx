@@ -137,7 +137,7 @@ export function SubcategoryProductRow({
       </div>
 
       {/* ── Product Carousel Container with Floating Side Arrow ── */}
-      <div className="relative group/carousel">
+      <div className="relative group/carousel overflow-hidden px-0.5">
         {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -165,15 +165,15 @@ export function SubcategoryProductRow({
                 setIsEnd(swiper.isEnd);
               }}
               modules={[Navigation, FreeMode]}
-              freeMode={{ enabled: true, momentum: true }}
-              spaceBetween={14}
+              freeMode={{ enabled: false }}
+              spaceBetween={12}
               slidesPerView={2}
               breakpoints={{
-                480: { slidesPerView: 2.3, spaceBetween: 14 },
-                640: { slidesPerView: 3, spaceBetween: 16 },
-                768: { slidesPerView: 3.5, spaceBetween: 18 },
-                1024: { slidesPerView: 4.2, spaceBetween: 18 },
-                1280: { slidesPerView: 5, spaceBetween: 20 },
+                480: { slidesPerView: 2, spaceBetween: 12 },
+                640: { slidesPerView: 3, spaceBetween: 14 },
+                768: { slidesPerView: 3, spaceBetween: 16 },
+                1024: { slidesPerView: 4, spaceBetween: 16 },
+                1280: { slidesPerView: 5, spaceBetween: 18 },
               }}
               className="!py-1"
             >
@@ -192,7 +192,7 @@ export function SubcategoryProductRow({
                 type="button"
                 onClick={() => swiperRef.current?.slideNext()}
                 aria-label="Next slide"
-                className="absolute -right-2 sm:-right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-gray-200/90 text-[#204B38] shadow-md flex items-center justify-center hover:bg-[#204B38] hover:text-white transition-all cursor-pointer active:scale-95"
+                className="absolute right-1 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border border-gray-200/90 text-[#204B38] shadow-md flex items-center justify-center hover:bg-[#204B38] hover:text-white transition-all cursor-pointer active:scale-95"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -204,7 +204,7 @@ export function SubcategoryProductRow({
                 type="button"
                 onClick={() => swiperRef.current?.slidePrev()}
                 aria-label="Previous slide"
-                className="absolute -left-2 sm:-left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-gray-200/90 text-[#204B38] shadow-md flex items-center justify-center hover:bg-[#204B38] hover:text-white transition-all cursor-pointer active:scale-95"
+                className="absolute left-1 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border border-gray-200/90 text-[#204B38] shadow-md flex items-center justify-center hover:bg-[#204B38] hover:text-white transition-all cursor-pointer active:scale-95"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>

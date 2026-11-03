@@ -3,15 +3,20 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { ProductCard } from "../ProductCard.jsx";
 
-export function RelatedProductsSection({ relatedProducts = [] }) {
+export function RelatedProductsSection({ relatedProducts = [], category = null }) {
   if (!relatedProducts || relatedProducts.length === 0) return null;
+
+  const categorySlug = category?.slug || (typeof category === "string" ? category : null);
+  const viewAllUrl = categorySlug ? `/category/${categorySlug}` : "/products";
 
   return (
     <div className="space-y-4 pt-6 border-t border-gray-200">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold text-gray-900">You may also like</h3>
+        <h3 className="text-lg font-bold text-gray-900">
+          Related Products
+        </h3>
         <Link
-          to="/products"
+          to={viewAllUrl}
           className="text-xs font-bold text-[#006B3C] hover:text-[#003D2B] flex items-center gap-1 transition-colors"
         >
           <span>View All</span>
