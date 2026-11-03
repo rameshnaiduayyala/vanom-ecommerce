@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+﻿import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -20,6 +20,7 @@ export function B2BSubcategoryRow({
   targetCountryCode,
   currencyCode,
   currencySymbol,
+  onOrderClick,
 }) {
   const swiperRef = useRef(null);
   const [isBeginning, setIsBeginning] = useState(true);
@@ -31,9 +32,9 @@ export function B2BSubcategoryRow({
   const subcategoryImage =
     subcategory?.imageUrl || subcategory?.image || subcategory?.thumbnail;
 
-  const bulkOrderCategoryLink = `${ROUTES.B2B.BULK_ORDER}?category=${encodeURIComponent(
-    subcategoryName
-  )}`;
+  const categoryIdentifier = subcategory?.slug || subcategory?.id || subcategoryName;
+  const viewAllCategoryLink = `/b2b/catalog/category/${encodeURIComponent(categoryIdentifier)}`;
+
 
   return (
     <div className="w-full space-y-3 pt-2">
@@ -65,7 +66,7 @@ export function B2BSubcategoryRow({
 
         <div className="flex items-center gap-3">
           <Link
-            to={bulkOrderCategoryLink}
+            to={viewAllCategoryLink}
             className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-[#006B3C] hover:text-emerald-700 transition-colors"
           >
             <span>View All</span>
@@ -168,6 +169,7 @@ export function B2BSubcategoryRow({
                   targetCountryCode={targetCountryCode}
                   currencyCode={currencyCode}
                   currencySymbol={currencySymbol}
+                  onOrderClick={onOrderClick}
                 />
               </div>
             </SwiperSlide>

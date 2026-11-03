@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+﻿import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
@@ -15,7 +15,7 @@ import {
 import { Button } from "../../../components/ui/Button.jsx";
 import { Skeleton, EmptyState } from "../../../components/ui/Alert.jsx";
 import { B2BProductCard } from "../components/B2BProductCard.jsx";
-import { B2BSubcategorySection } from "../components/B2BSubcategorySection.jsx";
+import { B2BSubcategoryRow } from "../components/B2BSubcategoryRow.jsx";
 import { AddToBulkOrderModal } from "../components/AddToBulkOrderModal.jsx";
 
 export function B2BCatalog() {
@@ -403,21 +403,13 @@ export function B2BCatalog() {
                     )}
                   </div>
                 </div>
-
-                <Link
-                  to={`${ROUTES.B2B.BULK_ORDER}?category=${encodeURIComponent(category.name)}`}
-                  className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#006B3C] hover:text-emerald-700 transition-colors"
-                >
-                  <span>Order Entire Category</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
               </div>
 
-              {/* Subcategories Vertical Sections */}
+              {/* Subcategories Horizontal Carousels */}
               {subcategories.length > 0 && (
-                <div className="space-y-8">
+                <div className="space-y-6">
                   {subcategories.map(({ subcategory, products }) => (
-                    <B2BSubcategorySection
+                    <B2BSubcategoryRow
                       key={subcategory.id}
                       subcategory={subcategory}
                       products={products}
@@ -432,24 +424,19 @@ export function B2BCatalog() {
 
               {/* Direct products if any (or if category has no subcategories) */}
               {directProducts.length > 0 && (
-                <div className="space-y-4 pt-2">
-                  {subcategories.length > 0 && (
-                    <h4 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                      More in {category.name}
-                    </h4>
-                  )}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                    {directProducts.map((product) => (
-                      <B2BProductCard
-                        key={product.id}
-                        product={product}
-                        targetCountryCode={targetCountryCode}
-                        currencyCode={currencyCode}
-                        currencySymbol={currencySymbol}
-                        onOrderClick={handleOpenOrderModal}
-                      />
-                    ))}
-                  </div>
+                <div className="pt-2">
+                  <B2BSubcategoryRow
+                    subcategory={{
+                      id: `${category.id}-direct`,
+                      name: subcategories.length > 0 ? `More in ${category.name}` : category.name,
+                      imageUrl: category.imageUrl,
+                    }}
+                    products={directProducts}
+                    targetCountryCode={targetCountryCode}
+                    currencyCode={currencyCode}
+                    currencySymbol={currencySymbol}
+                    onOrderClick={handleOpenOrderModal}
+                  />
                 </div>
               )}
             </section>

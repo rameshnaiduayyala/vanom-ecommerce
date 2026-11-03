@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from "react";
+﻿import React, { lazy, Suspense } from "react";
 import { Navigate } from "react-router-dom";
 import { B2BRoute } from "../guards/ProtectedRoute.jsx";
 import { RouteErrorBoundary } from "../../components/common/RouteErrorBoundary.jsx";
@@ -15,6 +15,11 @@ const B2BDashboard = lazy(() =>
 const B2BCatalog = lazy(() =>
   import("../../features/b2b/pages/B2BCatalog.jsx").then((m) => ({
     default: m.B2BCatalog || m.default,
+  }))
+);
+const B2BCategoryProductsPage = lazy(() =>
+  import("../../features/b2b/pages/B2BCategoryProductsPage.jsx").then((m) => ({
+    default: m.B2BCategoryProductsPage || m.default,
   }))
 );
 const B2BProductDetails = lazy(() =>
@@ -72,6 +77,7 @@ export const b2bRoutes = {
     { index: true, element: <Navigate to="/b2b/dashboard" replace /> },
     { path: "dashboard", element: <B2BDashboard /> },
     { path: "catalog", element: <B2BCatalog /> },
+    { path: "catalog/category/:categorySlug", element: <B2BCategoryProductsPage /> },
     { path: "catalog/:slug", element: <B2BProductDetails /> },
     { path: "bulk-order", element: <BulkOrder /> },
     { path: "quotes", element: <Quotes /> },
