@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
@@ -249,59 +249,69 @@ export function B2BCatalog() {
 
   return (
     <div className="space-y-6">
-      {/* ── Catalog Header ── */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Wholesale &amp; Bulk Catalog
-            </h1>
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#006B3C]">
-              B2B Enterprise
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Browse private wholesale commodities organized category-wise with volume-tiered commercial pricing.
-          </p>
-        </div>
+      {/* ── Catalog Header (Powered by /b2b-catelog-section.png) ── */}
+      <div className="relative isolate overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs">
+        {/* Decorative background image */}
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 w-full md:w-[50%] lg:w-[42%] bg-no-repeat bg-right-center bg-cover opacity-90 sm:opacity-95"
+          style={{
+            backgroundImage: "url('/b2b-catelog-section.png')",
+          }}
+        />
 
-        <div className="flex items-center flex-wrap gap-2.5">
-          {/* Brand Filter */}
-          {brands.length > 0 && (
-            <select
-              value={selectedBrand}
-              onChange={(e) => setSelectedBrand(e.target.value)}
-              className="px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:border-[#006B3C] focus:bg-white focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">All Brands ({brands.length})</option>
-              {brands.map((b) => (
-                <option key={b.id} value={b.name}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          )}
+        {/* Gradient overlay for text readability */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white via-white/95 via-45% sm:via-55% to-white/20 sm:to-transparent" />
 
-          {/* Search Box */}
-          <div className="relative max-w-xs w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search SKU, commodity, brand..."
-              className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder:text-slate-400 focus:border-[#006B3C] focus:bg-white focus:outline-none"
-            />
+        {/* Header Content */}
+        <div className="relative z-10 p-5 sm:p-7 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div className="max-w-xl">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 tracking-tight">
+                Wholesale Catalog
+              </h1>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1.5 font-medium leading-relaxed">
+              Browse private wholesale commodities organized category-wise with volume-tiered commercial pricing and direct bulk ordering.
+            </p>
           </div>
 
-          <Link to={ROUTES.B2B.BULK_ORDER}>
-            <Button variant="primary" size="sm" icon={Boxes} className="font-bold shadow-xs">
-              Open Bulk Order Matrix
-            </Button>
-          </Link>
+          <div className="flex items-center flex-wrap gap-2.5">
+            {/* Brand Filter */}
+            {brands.length > 0 && (
+              <select
+                value={selectedBrand}
+                onChange={(e) => setSelectedBrand(e.target.value)}
+                className="px-3.5 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 bg-white/95 text-slate-800 focus:border-[#006B3C] focus:bg-white focus:outline-none cursor-pointer shadow-2xs"
+              >
+                <option value="ALL">All Brands ({brands.length})</option>
+                {brands.map((b) => (
+                  <option key={b.id} value={b.name}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* Search Box */}
+            <div className="relative max-w-xs w-full sm:w-60">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search commodity, brand..."
+                className="w-full pl-9 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white/95 text-slate-800 placeholder:text-slate-400 focus:border-[#006B3C] focus:bg-white focus:outline-none shadow-2xs"
+              />
+            </div>
+
+            <Link to={ROUTES.B2B.BULK_ORDER}>
+              <Button variant="primary" size="sm" icon={Boxes} className="font-bold shadow-xs whitespace-nowrap bg-[#006B3C] hover:bg-emerald-700">
+                Open Bulk Order Matrix
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
-
       {/* ── Category Quick Filter Strip ── */}
       <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1 px-1">
         <button

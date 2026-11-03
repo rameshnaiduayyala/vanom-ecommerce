@@ -149,15 +149,15 @@ export function B2BSubcategoryRow({
             setIsEnd(swiper.isEnd);
           }}
           spaceBetween={16}
-          slidesPerView={1.2}
+          slidesPerView={1}
           freeMode={{ enabled: true, momentum: true }}
           grabCursor={true}
           breakpoints={{
-            480: { slidesPerView: 1.5, spaceBetween: 16 },
-            640: { slidesPerView: 2.2, spaceBetween: 16 },
-            768: { slidesPerView: 2.6, spaceBetween: 18 },
-            1024: { slidesPerView: 3.2, spaceBetween: 20 },
-            1280: { slidesPerView: 3.8, spaceBetween: 22 },
+            480: { slidesPerView: 2, spaceBetween: 14 },
+            768: { slidesPerView: 3, spaceBetween: 16 },
+            1024: { slidesPerView: 4, spaceBetween: 16 },
+            1280: { slidesPerView: 5, spaceBetween: 16 },
+            1536: { slidesPerView: 5, spaceBetween: 18 },
           }}
           className="pb-2 pt-1"
         >

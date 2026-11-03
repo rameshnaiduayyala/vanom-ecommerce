@@ -180,7 +180,7 @@ export function B2BProductCard({
           className="w-full py-2.5 px-3 rounded-xl bg-[#006B3C] hover:bg-[#00542F] active:scale-[0.99] text-white text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs hover:shadow-md"
         >
           <Boxes className="w-4 h-4" />
-          <span>Add to Bulk Order Sheet</span>
+          <span>Add to sheet</span>
         </button>
       </div>
     </div>
