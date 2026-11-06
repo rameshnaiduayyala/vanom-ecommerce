@@ -2,7 +2,6 @@ import React from "react";
 import { formatPrice } from "../../../utils/formatters.js";
 import { Lock } from "lucide-react";
 import { CartOrderSummary } from "./CartOrderSummary.jsx";
-import { CartTaxEstimator } from "./CartTaxEstimator.jsx";
 import { CartCoupon } from "./CartCoupon.jsx";
 import { CartTrustBadges } from "./CartTrustBadges.jsx";
 
@@ -12,10 +11,6 @@ export function CartSummary({
   selectedSubtotal,
   totalSavings,
   finalTotal,
-  estimatedShipping,
-  estimatedTax,
-  taxData,
-  isCalculatingTax,
   // coupon
   couponCode,
   setCouponCode,
@@ -24,9 +19,6 @@ export function CartSummary({
   couponError,
   onApplyCoupon,
   onRemoveCoupon,
-  // tax destination
-  destination,
-  setDestination,
   // misc
   country,
   hasSelectedOutOfStock,
@@ -41,7 +33,7 @@ export function CartSummary({
         <div>
           <div className="flex items-baseline justify-between text-base font-normal text-gray-900">
             <span className="font-semibold text-gray-800">
-              Grand Total ({selectedCount} {selectedCount === 1 ? "item" : "items"}):
+              Subtotal ({selectedCount} {selectedCount === 1 ? "item" : "items"}):
             </span>
             <span className="text-2xl font-black text-gray-900">
               {formatPrice(finalTotal, country.currency, country.symbol)}
@@ -81,19 +73,7 @@ export function CartSummary({
           totalSavings={totalSavings}
           appliedCoupon={appliedCoupon}
           couponDiscount={couponDiscount}
-          estimatedShipping={estimatedShipping}
-          estimatedTax={estimatedTax}
-          taxData={taxData}
-          isCalculatingTax={isCalculatingTax}
           country={country}
-        />
-
-        {/* Tax estimator */}
-        <CartTaxEstimator
-          country={country}
-          destination={destination}
-          setDestination={setDestination}
-          isCalculatingTax={isCalculatingTax}
         />
 
         {/* Coupon */}
