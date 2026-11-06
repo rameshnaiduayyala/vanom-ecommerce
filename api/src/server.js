@@ -21,6 +21,7 @@ async function start() {
         port,
         host: "0.0.0.0"
       });
+      console.log(`Server listening on port ${port}`);
       app.log.info(`Server listening on port ${port}`);
     }
   } catch (error) {
