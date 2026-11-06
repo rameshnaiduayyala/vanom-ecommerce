@@ -389,7 +389,7 @@ export async function processCheckout({
         stripeTaxRes
       };
     }, {
-      timeout: 15000
+      timeout: 30000
     });
 
   // ── 8. Create Stripe PaymentIntent ────────────────────────────────────────
@@ -413,13 +413,10 @@ export async function processCheckout({
     }
   });
 
-  // Pre-initialize draft invoice snapshot for audit integrity
-  try {
-    const { issueInvoiceForOrder } = await import("../invoice/invoice.service.js");
-    await issueInvoiceForOrder({ orderId: order.id });
-  } catch (invErr) {
-    console.warn("[Invoice] Pre-issuing draft invoice on checkout:", invErr.message);
-  }
+  // Pre-initialize draft invoice snapshot asynchronously in background so checkout response is instant
+  import("../invoice/invoice.service.js")
+    .then(({ issueInvoiceForOrder }) => issueInvoiceForOrder({ orderId: order.id }))
+    .catch((invErr) => console.warn("[Invoice] Pre-issuing draft invoice on checkout:", invErr.message));
 
   // ── 9. Return Stripe clientSecret & Order Reference ───────────────────────
   const orderNumber = `ORD-${order.id.slice(0, 8).toUpperCase()}`;

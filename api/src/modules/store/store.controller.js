@@ -102,7 +102,8 @@ export async function getPublic(request, reply) {
       defaultCurrency: store.defaultCurrency,
       freeShippingThreshold: store.freeShippingThreshold,
       standardShippingFee: store.standardShippingFee,
-      taxRatePercentage: store.taxRatePercentage
+      taxRatePercentage: store.taxRatePercentage,
+      metadata: store.metadata || null
     }
   });
 }
