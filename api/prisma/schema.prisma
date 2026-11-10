@@ -141,6 +141,7 @@ model User {
   emailVerificationTokens EmailVerificationToken[]
   inventoryTransactions  InventoryTransaction[]
   inventoryTransfers    InventoryTransfer[]
+  auditLogs             AuditLog[]
 
   @@index([countryId])
   @@index([bulkBusinessId])
@@ -1574,6 +1575,31 @@ model ShippoWebhookEvent {
   @@index([eventType])
   @@index([trackingNumber])
 }
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  actorId     String?
+  actorEmail  String?
+  actorRole   String?
+  action      String
+  entityType  String
+  entityId    String?
+  description String?
+  ipAddress   String?
+  userAgent   String?
+  beforeData  Json?
+  afterData   Json?
+  metadata    Json?
+
+  user        User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+}
+
 
 
 

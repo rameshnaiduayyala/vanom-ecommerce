@@ -7,6 +7,7 @@ import {
   ExternalLink,
   Package,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge.jsx";
 import { ROUTES } from "@/constants/routes.js";
@@ -15,18 +16,30 @@ export function DashboardRecentActivity({
   recentOrders = [],
   topProducts = [],
   pendingApps = [],
+  isLoading = false,
+  isFetching = false,
 }) {
+  const isInitialLoading = isLoading;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       {/* ── Left Column (7 cols): Recent Orders Table ── */}
       <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
               <ShoppingBag className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900 tracking-tight">Recent Orders</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-slate-900 tracking-tight">Recent Orders</h3>
+                {isFetching && !isInitialLoading && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#006B3C] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                    <Loader2 className="w-2.5 h-2.5 animate-spin text-[#006B3C]" />
+                    Syncing
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-slate-500 font-medium">Live customer & wholesale transactions</p>
             </div>
           </div>
@@ -53,7 +66,31 @@ export function DashboardRecentActivity({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {recentOrders.length > 0 ? (
+              {isInitialLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="py-3">
+                      <div className="h-4 bg-slate-200 rounded w-20 mb-1" />
+                      <div className="h-3 bg-slate-100 rounded w-12" />
+                    </td>
+                    <td className="py-3">
+                      <div className="h-4 bg-slate-200 rounded w-28" />
+                    </td>
+                    <td className="py-3">
+                      <div className="h-5 bg-slate-100 rounded-md w-12" />
+                    </td>
+                    <td className="py-3">
+                      <div className="h-4 bg-slate-200 rounded w-16" />
+                    </td>
+                    <td className="py-3">
+                      <div className="h-5 bg-slate-100 rounded-md w-20" />
+                    </td>
+                    <td className="py-3 text-right">
+                      <div className="h-4 bg-slate-100 rounded w-14 ml-auto" />
+                    </td>
+                  </tr>
+                ))
+              ) : recentOrders.length > 0 ? (
                 recentOrders.map((ord) => {
                   const displayId =
                     ord.orderNumber || (ord.id ? `#${ord.id.slice(0, 8).toUpperCase()}` : "#ORDER");
@@ -141,7 +178,7 @@ export function DashboardRecentActivity({
                           className="font-bold text-[#006B3C] hover:underline text-xs inline-flex items-center gap-0.5"
                         >
                           <span>Details</span>
-                          <ChevronRight className="w-3 h-3" />
+                          <ChevronRight className="w-3.5 h-3.5" />
                         </Link>
                       </td>
                     </tr>
@@ -165,11 +202,19 @@ export function DashboardRecentActivity({
         <div className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
                 <Sparkles className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900 tracking-tight">Top Selling Products</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold text-slate-900 tracking-tight">Top Selling Products</h3>
+                  {isFetching && !isInitialLoading && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#006B3C] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                      <Loader2 className="w-2.5 h-2.5 animate-spin text-[#006B3C]" />
+                      Syncing
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-slate-500 font-medium">Ranked volume by sales performance</p>
               </div>
             </div>
@@ -184,7 +229,24 @@ export function DashboardRecentActivity({
           </div>
 
           <div className="space-y-3">
-            {topProducts.length > 0 ? (
+            {isInitialLoading ? (
+              Array.from({ length: 4 }).map((_, idx) => (
+                <div key={idx} className="flex items-center justify-between gap-3 p-2.5 rounded-xl animate-pulse">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-5 h-4 bg-slate-200 rounded" />
+                    <div className="w-10 h-10 rounded-xl bg-slate-200 shrink-0" />
+                    <div className="space-y-1.5 min-w-0">
+                      <div className="h-3.5 bg-slate-200 rounded w-32" />
+                      <div className="h-2.5 bg-slate-100 rounded w-20" />
+                    </div>
+                  </div>
+                  <div className="text-right space-y-1 shrink-0">
+                    <div className="h-3.5 bg-slate-200 rounded w-16 ml-auto" />
+                    <div className="h-2.5 bg-slate-100 rounded w-20 ml-auto" />
+                  </div>
+                </div>
+              ))
+            ) : topProducts.length > 0 ? (
               topProducts.map((p, idx) => {
                 const img =
                   p.image ||
@@ -240,8 +302,10 @@ export function DashboardRecentActivity({
           </div>
         </div>
 
-        {/* Pending Verification Applications Notice if any */}
-        {pendingApps.length > 0 && (
+        {/* Pending Verification Applications Notice if any or skeleton */}
+        {isInitialLoading ? (
+          <div className="h-16 bg-slate-100 animate-pulse rounded-2xl" />
+        ) : pendingApps.length > 0 ? (
           <div className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-2xs">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-2xs">
@@ -264,7 +328,7 @@ export function DashboardRecentActivity({
               Review
             </Link>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

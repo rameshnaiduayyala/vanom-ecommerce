@@ -39,14 +39,14 @@ export function useAdminInventory() {
     queryFn: () => Api.admin.getInventorySummary(),
   });
 
-  // 4. Catalog Products Query
+  // 4. Catalog Products Query (Lightweight lookup for dropdowns & inventory resolution)
   const {
     data: rawProducts = [],
     isLoading: isProductsLoading,
     refetch: refetchProducts,
   } = useQuery({
-    queryKey: ["admin-products-catalog"],
-    queryFn: () => Api.admin.getProducts(),
+    queryKey: ["admin-products-dropdown"],
+    queryFn: () => Api.admin.getProductsDropdown({ limit: 500 }),
   });
 
   const rawItems = Array.isArray(rawInventory)

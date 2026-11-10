@@ -13,10 +13,11 @@ export function useDashboardMetrics() {
     refetchOnWindowFocus: true,
   });
 
-  // Query actual active products count
+  // Lightweight query only if activeCatalogItems is not present in metrics
   const { data: productsData } = useQuery({
-    queryKey: ["admin-products"],
-    queryFn: () => Api.admin.getProducts(),
+    queryKey: ["admin-products-count-fallback"],
+    queryFn: () => Api.admin.getProductsDropdown({ limit: 1 }),
+    enabled: metrics?.activeCatalogItems == null,
   });
 
   const productList = useMemo(() => {

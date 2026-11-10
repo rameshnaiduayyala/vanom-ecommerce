@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { TokenStorage } from "@/services/storage/token.storage.js";
+import { authService } from "@/services/api/auth.service.js";
 
 export const useAuthStore = create(
   persist(
@@ -65,6 +66,7 @@ export const useAuthStore = create(
       },
 
       logout: () => {
+        authService.logout().catch(() => {});
         TokenStorage.clear();
         set({
           user: null,

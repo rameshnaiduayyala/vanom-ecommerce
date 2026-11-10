@@ -12,8 +12,8 @@ export const adminService = {
     return apiClient.get("/admin/reports");
   },
 
-  getAuditLogs: async () => {
-    return apiClient.get("/admin/audit-logs");
+  getAuditLogs: async (params = {}) => {
+    return apiClient.get("/admin/audit-logs", { params });
   },
 
   getPayments: async () => {
@@ -92,6 +92,11 @@ export const adminService = {
   getProducts: async (params = {}) => {
     const res = await apiClient.get("/products", { params });
     return formatAdminProducts(res);
+  },
+
+  getProductsDropdown: async (params = {}) => {
+    const res = await apiClient.get("/products/dropdown", { params });
+    return Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
   },
 
   createProduct: async (productData) => {

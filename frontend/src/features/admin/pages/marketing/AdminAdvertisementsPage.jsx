@@ -47,13 +47,10 @@ export function AdminAdvertisementsPage() {
     queryFn: () => storeService.getStoreSettings(),
   });
 
-  // Fetch Products for the Link picker
+  // Fetch Products for the Link picker using fast lightweight dropdown API
   const { data: productsData } = useQuery({
-    queryKey: ["admin-products-picker"],
-    queryFn: async () => {
-      const res = await catalogService.getProducts({ limit: 100 });
-      return Array.isArray(res?.data) ? res.data : Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : [];
-    },
+    queryKey: ["admin-products-dropdown"],
+    queryFn: () => catalogService.getProductsDropdown({ limit: 500 }),
     staleTime: 5 * 60 * 1000,
   });
 

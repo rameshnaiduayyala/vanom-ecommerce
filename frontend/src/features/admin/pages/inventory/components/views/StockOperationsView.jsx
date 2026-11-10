@@ -12,6 +12,7 @@ import {
   FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button.jsx";
+import { ProductSearchableDropdown } from "@/components/common/ProductSearchableDropdown.jsx";
 
 export function StockOperationsView({
   warehouses = [],
@@ -258,24 +259,16 @@ export function StockOperationsView({
 
                 {/* Product / Variant Selector */}
                 <div>
-                  <label className="block text-xs font-semibold text-text-primary mb-1">
-                    Product / SKU *
-                  </label>
-                  <select
+                  <ProductSearchableDropdown
+                    label="Product / SKU"
+                    items={selectables}
                     value={inwardKey || (selectedInwardItem?.id || "")}
-                    onChange={(e) => setInwardKey(e.target.value)}
-                    className="w-full text-xs rounded-xl border border-border p-2.5 bg-white focus:border-emerald-600 focus:outline-none"
+                    onChange={(val) => setInwardKey(val)}
+                    showImage={true}
+                    showStock={true}
+                    placeholder="Search product or SKU to inward..."
                     required
-                  >
-                    {selectables.map((item) => (
-                      <option
-                        key={item.id || `${item.productId}_${item.variantId || "simple"}`}
-                        value={item.id || `${item.productId}_${item.variantId || "simple"}`}
-                      >
-                        {item.name} ({item.sku}) [Current: {item.currentStock || 0}]
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 {/* Quantity */}
@@ -503,21 +496,16 @@ export function StockOperationsView({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Target Variant / Product */}
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-text-primary mb-1">
-                    Product / Variant *
-                  </label>
-                  <select
+                  <ProductSearchableDropdown
+                    label="Product / Variant"
+                    items={allVariants}
                     value={adjustTargetId || (selectedAdjustVariant?.id || "")}
-                    onChange={(e) => setAdjustTargetId(e.target.value)}
-                    className="w-full text-xs rounded-xl border border-border p-2.5 bg-white focus:border-amber-600 focus:outline-none"
+                    onChange={(val) => setAdjustTargetId(val)}
+                    showImage={true}
+                    showStock={true}
+                    placeholder="Search product or variant to adjust..."
                     required
-                  >
-                    {allVariants.map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.name} ({v.sku}) - Physical: {v.stock} | Depot: {v.warehouse?.code || "GLOBAL"}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 {/* Adjustment Mode */}

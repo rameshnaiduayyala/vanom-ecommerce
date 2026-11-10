@@ -1,5 +1,5 @@
 import React from "react";
-import { Calendar } from "lucide-react";
+import { Calendar, Loader2 } from "lucide-react";
 import { useDashboardMetrics } from "./hooks/useDashboardMetrics.js";
 import { DashboardKpiCards } from "./components/DashboardKpiCards.jsx";
 import { DashboardRevenueChart } from "./components/DashboardRevenueChart.jsx";
@@ -22,6 +22,7 @@ export function AdminDashboardPage() {
   const {
     metrics,
     isLoading,
+    isFetching,
     timeRange,
     setTimeRange,
     productsCount,
@@ -37,9 +38,17 @@ export function AdminDashboardPage() {
       {/* ── Dashboard Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-            Dashboard
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+              Dashboard
+            </h1>
+            {isFetching && !isLoading && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-[#006B3C] text-[11px] font-bold border border-emerald-200/80 shadow-2xs animate-pulse">
+                <Loader2 className="w-3 h-3 animate-spin text-[#006B3C]" />
+                <span>Refreshing...</span>
+              </span>
+            )}
+          </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
             Monitor sales, orders, buyers and catalog performance across B2B & B2C.
           </p>
@@ -77,14 +86,21 @@ export function AdminDashboardPage() {
         metrics={metrics}
         productsCount={productsCount}
         isLoading={isLoading}
+        isFetching={isFetching}
       />
 
       {/* ── Analytics Section: Two-Column Layout ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        <DashboardRevenueChart series={revenueData} />
+        <DashboardRevenueChart
+          series={revenueData}
+          isLoading={isLoading}
+          isFetching={isFetching}
+        />
         <DashboardCategoryChart
           distribution={categoryData}
           totalCount={productsCount}
+          isLoading={isLoading}
+          isFetching={isFetching}
         />
       </div>
 
@@ -93,6 +109,8 @@ export function AdminDashboardPage() {
         recentOrders={recentOrders}
         topProducts={topProducts}
         pendingApps={pendingApps}
+        isLoading={isLoading}
+        isFetching={isFetching}
       />
     </div>
   );

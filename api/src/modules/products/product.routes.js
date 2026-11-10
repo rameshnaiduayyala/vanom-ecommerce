@@ -154,6 +154,34 @@ export async function productRoutes(fastify) {
     }
   }, controller.search);
 
+  fastify.get("/products/dropdown", {
+    schema: {
+      querystring: {
+        type: "object",
+        properties: {
+          search: { type: "string" },
+          categoryId: { type: "string" },
+          isActive: { type: ["boolean", "string"] },
+          limit: { type: "integer", minimum: 1, maximum: 1000, default: 200 }
+        }
+      }
+    }
+  }, controller.getDropdown);
+
+  fastify.get("/products/lookup", {
+    schema: {
+      querystring: {
+        type: "object",
+        properties: {
+          search: { type: "string" },
+          categoryId: { type: "string" },
+          isActive: { type: ["boolean", "string"] },
+          limit: { type: "integer", minimum: 1, maximum: 1000, default: 200 }
+        }
+      }
+    }
+  }, controller.getDropdown);
+
   fastify.get("/products/:id", {
     schema: { params: idParams }
   }, controller.getById);

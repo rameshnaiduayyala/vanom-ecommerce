@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/Modal.jsx";
 import { Button } from "@/components/ui/Button.jsx";
 import { FileUploadDropzone } from "@/components/common/FileUploadDropzone.jsx";
+import { ProductSearchableDropdown } from "@/components/common/ProductSearchableDropdown.jsx";
 import {
   Link as LinkIcon,
   Trash2,
@@ -106,13 +107,12 @@ export function HeroBannerFormModal({
     }));
   };
 
-  const handleProductSelect = (productId) => {
-    const prod = products.find((p) => p.id === productId);
-    const slug = prod ? prod.slug : productId;
+  const handleProductSelect = (productId, selectedProduct) => {
+    const slug = selectedProduct?.slug || selectedProduct?.raw?.slug || products.find((p) => p.id === productId)?.slug || productId;
     setFormData((prev) => ({
       ...prev,
       selectedProductId: productId,
-      ctaLink: `/products/${slug}`,
+      ctaLink: slug ? `/products/${slug}` : "/products",
     }));
   };
 
@@ -251,25 +251,19 @@ export function HeroBannerFormModal({
             </button>
           </div>
 
-          {/* Conditional Dropdown for Product */}
+          {/* Searchable Dropdown for Product */}
           {formData.linkType === "product" && (
             <div className="space-y-1">
               <span className="text-[11px] font-bold text-slate-700">Select Target Product</span>
-              <select
+              <ProductSearchableDropdown
                 value={formData.selectedProductId}
-                onChange={(e) => handleProductSelect(e.target.value)}
-                className="w-full text-xs px-3 py-2.5 rounded-xl border border-emerald-300 bg-white font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-[#00875A] cursor-pointer"
-              >
-                {products.length === 0 ? (
-                  <option value="">No products available</option>
-                ) : (
-                  products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} {p.sku ? `(${p.sku})` : ""}
-                    </option>
-                  ))
-                )}
-              </select>
+                onChange={(productId, product) => handleProductSelect(productId, product)}
+                products={products}
+                showImage={true}
+                showPrice={true}
+                showStock={false}
+                placeholder="Search by product name, SKU..."
+              />
             </div>
           )}
 
