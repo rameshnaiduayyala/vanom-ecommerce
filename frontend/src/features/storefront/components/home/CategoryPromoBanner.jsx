@@ -78,106 +78,110 @@ export function CategoryPromoBanner({
 
   const ctaText = banner?.ctaText || "Shop Now";
 
-  // ── Single Banner Image Mode (Full Image, Never Cropped) ──
+  // ── Single Banner Image Mode (Renders 100% exact real image dimensions, never stretched or cropped) ──
   if (bannerImages.length === 1) {
     return (
       <section
-        className={`group relative w-full overflow-hidden rounded-xl sm:rounded-2xl bg-transparent transition-all duration-300 ${className}`}
+        className={`w-full overflow-hidden transition-all duration-300 ${className}`}
       >
         <Link
           to={ctaLink}
           aria-label={`${ctaText} - ${categoryName}`}
-          className="relative block w-full overflow-hidden rounded-xl sm:rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+          className="relative block w-full overflow-hidden rounded-xl sm:rounded-2xl shadow-2xs hover:shadow-md transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
         >
           <img
             src={bannerImages[0]}
             alt={categoryName}
             loading="lazy"
-            className="block w-full h-auto rounded-xl sm:rounded-2xl transition-transform duration-500 group-hover:scale-[1.008]"
+            decoding="async"
+            className="block w-full h-auto rounded-xl sm:rounded-2xl transition-transform duration-500 group-hover:scale-[1.006]"
           />
         </Link>
       </section>
     );
   }
 
-  // ── Multiple Banner Images: Auto-scrolling Carousel (Full Images, Never Cropped) ──
+  // ── Multiple Banner Images: Auto-scrolling Carousel (Renders 100% exact real image dimensions) ──
   return (
     <section
-      className={`group relative w-full overflow-hidden rounded-xl sm:rounded-2xl bg-transparent transition-all duration-300 shadow-2xs hover:shadow-md select-none ${className}`}
+      className={`w-full overflow-hidden select-none transition-all duration-300 ${className}`}
     >
-      <Swiper
-        modules={[Autoplay]}
-        autoHeight={true}
-        onSwiper={(swiper) => {
-          swiperRef.current = swiper;
-        }}
-        onSlideChange={(swiper) => {
-          setActiveSlide(swiper.realIndex);
-        }}
-        autoplay={{
-          delay: 3800,
-          disableOnInteraction: false,
-          pauseOnMouseEnter: true,
-        }}
-        loop={true}
-        speed={700}
-        className="w-full rounded-xl sm:rounded-2xl overflow-hidden"
-      >
-        {bannerImages.map((imgUrl, idx) => (
-          <SwiperSlide key={idx} className="w-full !h-auto">
-            <Link
-              to={ctaLink}
-              aria-label={`${ctaText} - ${categoryName} (Banner ${idx + 1})`}
-              className="relative block w-full overflow-hidden rounded-xl sm:rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
-            >
-              <img
-                src={imgUrl}
-                alt={`${categoryName} banner ${idx + 1}`}
-                loading={idx === 0 ? "eager" : "lazy"}
-                className="block w-full h-auto rounded-xl sm:rounded-2xl transition-transform duration-500 group-hover:scale-[1.008]"
-              />
-            </Link>
-          </SwiperSlide>
-        ))}
-      </Swiper>
-
-      {/* Navigation Arrows (Visible on desktop hover) */}
-      <button
-        type="button"
-        onClick={() => swiperRef.current?.slidePrev()}
-        aria-label="Previous banner"
-        className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 items-center justify-center rounded-full bg-black/35 hover:bg-black/65 text-white backdrop-blur-md shadow-md border border-white/20 opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer hidden sm:flex active:scale-95"
-      >
-        <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-      </button>
-
-      <button
-        type="button"
-        onClick={() => swiperRef.current?.slideNext()}
-        aria-label="Next banner"
-        className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 items-center justify-center rounded-full bg-black/35 hover:bg-black/65 text-white backdrop-blur-md shadow-md border border-white/20 opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer hidden sm:flex active:scale-95"
-      >
-        <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-      </button>
-
-      {/* Centered Pagination Pill */}
-      {bannerImages.length > 1 && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-black/35 backdrop-blur-md shadow-xs pointer-events-auto">
-          {bannerImages.map((_, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => swiperRef.current?.slideToLoop(idx)}
-              className={`rounded-full transition-all duration-300 cursor-pointer ${
-                activeSlide === idx
-                  ? "w-5 h-1.5 bg-white shadow-xs"
-                  : "w-1.5 h-1.5 bg-white/50 hover:bg-white/80"
-              }`}
-              aria-label={`Go to slide ${idx + 1}`}
-            />
+      <div className="relative w-full">
+        <Swiper
+          modules={[Autoplay]}
+          autoHeight={true}
+          onSwiper={(swiper) => {
+            swiperRef.current = swiper;
+          }}
+          onSlideChange={(swiper) => {
+            setActiveSlide(swiper.realIndex);
+          }}
+          autoplay={{
+            delay: 3800,
+            disableOnInteraction: false,
+            pauseOnMouseEnter: true,
+          }}
+          loop={true}
+          speed={700}
+          className="w-full rounded-xl sm:rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-shadow [&_.swiper-slide]:!h-auto"
+        >
+          {bannerImages.map((imgUrl, idx) => (
+            <SwiperSlide key={idx} className="w-full !h-auto">
+              <Link
+                to={ctaLink}
+                aria-label={`${ctaText} - ${categoryName} (Banner ${idx + 1})`}
+                className="relative block w-full overflow-hidden rounded-xl sm:rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+              >
+                <img
+                  src={imgUrl}
+                  alt={`${categoryName} banner ${idx + 1}`}
+                  loading={idx === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  className="block w-full h-auto rounded-xl sm:rounded-2xl transition-transform duration-500 group-hover:scale-[1.006]"
+                />
+              </Link>
+            </SwiperSlide>
           ))}
-        </div>
-      )}
+        </Swiper>
+
+        {/* Navigation Arrows (Visible on desktop hover) */}
+        <button
+          type="button"
+          onClick={() => swiperRef.current?.slidePrev()}
+          aria-label="Previous banner"
+          className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-8 sm:h-8 items-center justify-center rounded-full bg-black/35 hover:bg-black/65 text-white backdrop-blur-md shadow-md border border-white/20 opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer hidden sm:flex active:scale-95"
+        >
+          <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => swiperRef.current?.slideNext()}
+          aria-label="Next banner"
+          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-8 sm:h-8 items-center justify-center rounded-full bg-black/35 hover:bg-black/65 text-white backdrop-blur-md shadow-md border border-white/20 opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer hidden sm:flex active:scale-95"
+        >
+          <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        </button>
+
+        {/* Centered Pagination Pill */}
+        {bannerImages.length > 1 && (
+          <div className="absolute bottom-2 sm:bottom-2.5 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-md shadow-xs pointer-events-auto">
+            {bannerImages.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => swiperRef.current?.slideToLoop(idx)}
+                className={`rounded-full transition-all duration-300 cursor-pointer ${
+                  activeSlide === idx
+                    ? "w-4 sm:w-5 h-1 sm:h-1.5 bg-[#F9BC15] shadow-xs"
+                    : "w-1.5 h-1 sm:h-1.5 bg-white/50 hover:bg-white/80"
+                }`}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </section>
   );
 }

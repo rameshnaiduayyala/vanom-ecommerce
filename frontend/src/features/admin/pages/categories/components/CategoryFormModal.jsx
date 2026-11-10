@@ -255,7 +255,7 @@ export function CategoryFormModal({
           </div>
 
           <p className="text-[11px] text-slate-500">
-            Upload multiple banner images. If 2 or more banners are added, they will automatically scroll on the home page showcase. Recommended: <strong>1440x360 or 1200x300</strong> (4:1 / 21:9 landscape).
+            Upload multiple banner images. If 2 or more banners are added, they will automatically scroll on the home page showcase. Recommended: <strong>4000 px (width) × 800 px (height)</strong> (5:1 wide slim banner).
           </p>
 
           {/* List of current banner slides */}
@@ -344,7 +344,7 @@ export function CategoryFormModal({
                   ? "Upload Additional Banner Slides"
                   : "Upload Banner Artworks (Select 1 or more files)"
               }
-              hint="Select multiple images at once (WebP / JPG / PNG)"
+              hint="Recommended: 4000 px (width) × 800 px (height) (WebP / JPG / PNG)"
             />
 
             <div className="flex gap-2">
