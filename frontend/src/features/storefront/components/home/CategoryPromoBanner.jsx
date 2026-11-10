@@ -78,11 +78,11 @@ export function CategoryPromoBanner({
 
   const ctaText = banner?.ctaText || "Shop Now";
 
-  // ── Single Banner Image Mode (Smart compact height, 100% full uncropped image) ──
+  // ── Single Banner Image Mode (Renders 100% exact real image dimensions, never stretched or cropped) ──
   if (bannerImages.length === 1) {
     return (
       <section
-        className={`group relative w-full overflow-hidden rounded-xl sm:rounded-2xl transition-all duration-300 ${className}`}
+        className={`w-full overflow-hidden transition-all duration-300 ${className}`}
       >
         <Link
           to={ctaLink}
@@ -101,10 +101,10 @@ export function CategoryPromoBanner({
     );
   }
 
-  // ── Multiple Banner Images: Auto-scrolling Carousel (Smart compact height, 100% full uncropped image) ──
+  // ── Multiple Banner Images: Auto-scrolling Carousel (Renders 100% exact real image dimensions) ──
   return (
     <section
-      className={`group relative w-full overflow-hidden rounded-xl sm:rounded-2xl select-none transition-all duration-300 ${className}`}
+      className={`w-full overflow-hidden select-none transition-all duration-300 ${className}`}
     >
       <div className="relative w-full">
         <Swiper
@@ -123,7 +123,7 @@ export function CategoryPromoBanner({
           }}
           loop={true}
           speed={700}
-          className="w-full rounded-xl sm:rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-shadow"
+          className="w-full rounded-xl sm:rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-shadow [&_.swiper-slide]:!h-auto"
         >
           {bannerImages.map((imgUrl, idx) => (
             <SwiperSlide key={idx} className="w-full !h-auto">

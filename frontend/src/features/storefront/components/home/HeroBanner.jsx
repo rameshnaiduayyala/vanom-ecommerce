@@ -48,18 +48,16 @@ export function HeroBanner({ banners = [] }) {
   }
 
   return (
-    <div className="relative w-full overflow-hidden bg-slate-900 select-none">
+    <div className="relative w-full overflow-hidden select-none">
       <div className="relative w-full">
         {slides.map((s, idx) => (
           <Link
             key={s.id || idx}
             to={s.ctaLink || ROUTES.PRODUCTS || "/products"}
             className={`w-full cursor-pointer transition-opacity duration-700 ease-in-out ${
-              idx === 0 ? "relative block" : "absolute inset-0"
-            } ${
               idx === current
-                ? "opacity-100 z-10 pointer-events-auto"
-                : "opacity-0 z-0 pointer-events-none"
+                ? "relative block opacity-100 z-10 pointer-events-auto"
+                : "hidden opacity-0 z-0 pointer-events-none"
             }`}
           >
             <img
