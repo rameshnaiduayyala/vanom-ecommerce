@@ -5,6 +5,8 @@ import { formatDate } from "@/utils/formatters.js";
 import { Badge } from "@/components/ui/Badge.jsx";
 import { Button } from "@/components/ui/Button.jsx";
 import { Modal } from "@/components/ui/Modal.jsx";
+import { Pagination } from "@/components/common/Pagination.jsx";
+import { useTablePagination } from "@/hooks/useTablePagination.js";
 import {
   ShieldCheck,
   Search,
@@ -26,13 +28,15 @@ export function AdminAuditLogsPage() {
 
   const { data: logsData = [], isLoading } = useQuery({
     queryKey: ["admin-audit-logs"],
-    queryFn: () => Api.admin.getAuditLogs(),
+    queryFn: () => Api.admin.getAuditLogs({ limit: 100 }),
   });
 
   const rawLogs = Array.isArray(logsData)
     ? logsData
     : Array.isArray(logsData?.items)
     ? logsData.items
+    : Array.isArray(logsData?.data)
+    ? logsData.data
     : [];
 
   // Helper formatting for readable descriptions
@@ -103,6 +107,17 @@ export function AdminAuditLogsPage() {
 
   const uniqueActions = Array.from(new Set(rawLogs.map((l) => (l.action || "").toUpperCase()))).filter(Boolean);
   const uniqueEntities = Array.from(new Set(rawLogs.map((l) => (l.entityType || "").toUpperCase()))).filter(Boolean);
+
+  const {
+    paginatedData: displayedLogs,
+    paginationProps,
+  } = useTablePagination({
+    data: filteredLogs,
+    initialPage: 1,
+    initialPageSize: 15,
+    pageSizeOptions: [10, 15, 25, 50, 100],
+    itemName: "audit logs",
+  });
 
   return (
     <div className="space-y-6">
@@ -190,7 +205,7 @@ export function AdminAuditLogsPage() {
                   </td>
                 </tr>
               ) : (
-                filteredLogs.map((log, idx) => {
+                displayedLogs.map((log, idx) => {
                   const actorEmail = log.actor?.email || log.actorId || "System Daemon";
                   const actorName = log.actor?.firstName
                     ? `${log.actor.firstName} ${log.actor.lastName || ""}`
@@ -253,6 +268,14 @@ export function AdminAuditLogsPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* ── Table Pagination ── */}
+        <div className="border-t border-border px-4 py-1 bg-white">
+          <Pagination
+            {...paginationProps}
+            itemName="audit logs"
+          />
         </div>
       </div>
 

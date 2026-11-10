@@ -1,4 +1,4 @@
-﻿import { prisma } from "../../config/prisma.js";
+import { prisma } from "../../config/prisma.js";
 import { AppError } from "../../common/errors/app-error.js";
 import { HTTP_STATUS } from "../../constants/http-status.js";
 import { MESSAGES } from "../../constants/messages.js";
@@ -569,6 +569,9 @@ export async function updateProduct(id, input) {
       }
 
       return serializeProduct(product);
+    }, {
+      maxWait: 10000, // 10s wait to acquire connection from pooler
+      timeout: 25000  // 25s transaction execution window for cloud database
     });
   } catch (error) {
     if (error.code === "P2002") {
@@ -623,6 +626,9 @@ export async function deleteProduct(id) {
         deletedAt: new Date()
       }
     });
+  }, {
+    maxWait: 10000,
+    timeout: 25000
   });
 }
 

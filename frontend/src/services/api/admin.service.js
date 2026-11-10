@@ -12,8 +12,8 @@ export const adminService = {
     return apiClient.get("/admin/reports");
   },
 
-  getAuditLogs: async () => {
-    return apiClient.get("/admin/audit-logs");
+  getAuditLogs: async (params = {}) => {
+    return apiClient.get("/admin/audit-logs", { params });
   },
 
   getPayments: async () => {

@@ -248,39 +248,79 @@ export async function getReports() {
   };
 }
 
-export async function getAuditLogs() {
+export async function getAuditLogs(params = {}) {
   try {
+    const page = Math.max(Number(params.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(params.limit) || 20, 1), 100);
+    const skip = (page - 1) * limit;
+
+    const where = {};
+    if (params.search && typeof params.search === "string" && params.search.trim()) {
+      const q = params.search.trim();
+      where.OR = [
+        { action: { contains: q, mode: "insensitive" } },
+        { entityType: { contains: q, mode: "insensitive" } },
+        { actorEmail: { contains: q, mode: "insensitive" } },
+        { entityId: { contains: q, mode: "insensitive" } },
+        { description: { contains: q, mode: "insensitive" } }
+      ];
+    }
+    if (params.action && params.action !== "ALL") {
+      where.action = params.action.toUpperCase();
+    }
+    if (params.entityType && params.entityType !== "ALL") {
+      where.entityType = params.entityType;
+    }
+
     if (typeof prisma.auditLog?.findMany === "function") {
-      const logs = await prisma.auditLog.findMany({
-        take: 200,
-        orderBy: { createdAt: "desc" },
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              firstName: true,
-              lastName: true,
-              role: true
+      const [logs, total] = await Promise.all([
+        prisma.auditLog.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: "desc" },
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                role: true
+              }
             }
           }
-        }
-      });
-      return logs.map((l) => ({
+        }),
+        prisma.auditLog.count({ where })
+      ]);
+
+      const items = logs.map((l) => ({
         ...l,
         actor: l.user || (l.actorEmail ? { email: l.actorEmail, role: l.actorRole } : null)
       }));
+
+      return {
+        items,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      };
     }
+
+    // Fallback raw query support if prisma client is mid-reload
+    const totalRaw = await prisma.$queryRawUnsafe(`SELECT COUNT(*)::int as count FROM "AuditLog"`);
+    const total = Number(totalRaw?.[0]?.count || 0);
 
     const rawLogs = await prisma.$queryRawUnsafe(`
       SELECT a.*, u.email as "userEmail", u."firstName", u."lastName", u.role as "userRole"
       FROM "AuditLog" a
       LEFT JOIN "User" u ON a."actorId" = u.id
       ORDER BY a."createdAt" DESC
-      LIMIT 200
-    `);
+      LIMIT $1 OFFSET $2
+    `, limit, skip);
 
-    return rawLogs.map((l) => ({
+    const items = rawLogs.map((l) => ({
       ...l,
       actor: l.userEmail
         ? {
@@ -292,9 +332,23 @@ export async function getAuditLogs() {
           }
         : (l.actorEmail ? { email: l.actorEmail, role: l.actorRole } : null)
     }));
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
   } catch (error) {
     console.error("[GET_AUDIT_LOGS_ERROR]:", error.message);
-    return [];
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      limit: 20,
+      totalPages: 1
+    };
   }
 }
 

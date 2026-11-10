@@ -22,11 +22,17 @@ export async function getReports(request, reply) {
 }
 
 export async function getAuditLogs(request, reply) {
-  const data = await adminService.getAuditLogs();
+  const data = await adminService.getAuditLogs(request.query || {});
   return sendSuccess(reply, {
     statusCode: HTTP_STATUS.OK,
     message: "Audit logs fetched successfully",
-    data
+    data: data.items,
+    meta: {
+      page: data.page,
+      limit: data.limit,
+      total: data.total,
+      totalPages: data.totalPages
+    }
   });
 }
 
