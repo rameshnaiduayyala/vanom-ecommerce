@@ -6,7 +6,15 @@ import { Badge } from "@/components/ui/Badge.jsx";
 import { Button } from "@/components/ui/Button.jsx";
 import { Modal } from "@/components/ui/Modal.jsx";
 import { DataTable } from "@/components/ui/DataTable.jsx";
-import { ShieldCheck, ShieldAlert, Eye } from "lucide-react";
+import {
+  ShieldCheck,
+  ShieldAlert,
+  Eye,
+  Globe,
+  Laptop,
+  Smartphone,
+  MapPin,
+} from "lucide-react";
 
 export function AdminAuditLogsPage() {
   const [actionFilter, setActionFilter] = useState("ALL");
@@ -72,6 +80,30 @@ export function AdminAuditLogsPage() {
     }
   };
 
+  const parseDevice = (log) => {
+    if (log.device) return log.device;
+    if (log.metadata?.device) return log.metadata.device;
+    const ua = log.userAgent;
+    if (!ua) return "—";
+
+    let os = "OS";
+    if (/windows/i.test(ua)) os = "Windows";
+    else if (/iphone/i.test(ua)) os = "iOS (iPhone)";
+    else if (/ipad/i.test(ua)) os = "iPadOS";
+    else if (/macintosh|mac os/i.test(ua)) os = "macOS";
+    else if (/android/i.test(ua)) os = "Android";
+    else if (/linux/i.test(ua)) os = "Linux";
+
+    let browser = "Browser";
+    if (/edg\//i.test(ua)) browser = "Edge";
+    else if (/opr\/|opera/i.test(ua)) browser = "Opera";
+    else if (/chrome|crios/i.test(ua)) browser = "Chrome";
+    else if (/firefox|fxios/i.test(ua)) browser = "Firefox";
+    else if (/safari/i.test(ua)) browser = "Safari";
+
+    return `${browser} on ${os}`;
+  };
+
   // Normalise logs with convenient flat fields for search & sorting
   const formattedLogs = useMemo(() => {
     return rawLogs.map((log) => {
@@ -82,11 +114,17 @@ export function AdminAuditLogsPage() {
         : "";
       const computedDescription =
         log.description || formatActionDescription(log);
+      const deviceStr = parseDevice(log);
+      const locationStr = log.location || log.metadata?.location || "—";
+      const ipStr = log.ipAddress || log.metadata?.ipAddress || "127.0.0.1";
 
       return {
         ...log,
         actorEmail,
         actorName,
+        deviceStr,
+        locationStr,
+        ipStr,
         searchableActor: `${actorName} ${actorEmail}`.trim(),
         computedDescription,
       };
@@ -198,12 +236,43 @@ export function AdminAuditLogsPage() {
       },
       {
         key: "ipAddress",
-        header: "IP / Client",
+        header: "IP Address",
         sortable: true,
         render: (row) => (
-          <span className="text-text-muted font-mono text-[11px]">
-            {row.ipAddress || "127.0.0.1"}
-          </span>
+          <div className="flex items-center gap-1.5 font-mono text-[11px] text-slate-700">
+            <Globe className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <span>{row.ipStr}</span>
+          </div>
+        ),
+      },
+      {
+        key: "deviceStr",
+        header: "Device / Browser",
+        sortable: true,
+        render: (row) => {
+          const isMobile = /mobile|iphone|android|tablet|ipad/i.test(row.deviceStr || "");
+          const Icon = isMobile ? Smartphone : Laptop;
+          return (
+            <div className="flex items-center gap-1.5 text-xs text-slate-800 max-w-[190px]">
+              <Icon className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              <span className="truncate font-medium" title={row.deviceStr}>
+                {row.deviceStr}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        key: "locationStr",
+        header: "Location",
+        sortable: true,
+        render: (row) => (
+          <div className="flex items-center gap-1.5 text-xs text-slate-700 max-w-[160px]">
+            <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+            <span className="truncate font-medium" title={row.locationStr}>
+              {row.locationStr}
+            </span>
+          </div>
         ),
       },
       {
@@ -290,7 +359,9 @@ export function AdminAuditLogsPage() {
           "entityType",
           "entityId",
           "computedDescription",
-          "ipAddress",
+          "ipStr",
+          "deviceStr",
+          "locationStr",
         ]}
         actions={filterToolbarActions}
         pagination={true}
@@ -310,13 +381,13 @@ export function AdminAuditLogsPage() {
       >
         {inspectingLog && (
           <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-surface-muted border border-border">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 rounded-xl bg-surface-muted border border-border">
               <div>
                 <span className="text-[10px] text-text-muted font-bold uppercase block">
                   Actor
                 </span>
                 <span className="font-bold text-text-primary">
-                  {inspectingLog.actor?.email || inspectingLog.actorId}
+                  {inspectingLog.actor?.email || inspectingLog.actorEmail || inspectingLog.actorId}
                 </span>
               </div>
               <div>
@@ -340,9 +411,35 @@ export function AdminAuditLogsPage() {
               </div>
               <div>
                 <span className="text-[10px] text-text-muted font-bold uppercase block">
+                  IP Address
+                </span>
+                <div className="flex items-center gap-1.5 font-mono text-slate-800">
+                  <Globe className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{inspectingLog.ipStr || inspectingLog.ipAddress || "127.0.0.1"}</span>
+                </div>
+              </div>
+              <div>
+                <span className="text-[10px] text-text-muted font-bold uppercase block">
+                  Device / Browser
+                </span>
+                <span className="font-medium text-slate-800" title={inspectingLog.deviceStr}>
+                  {inspectingLog.deviceStr || inspectingLog.device || "—"}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] text-text-muted font-bold uppercase block">
+                  Location
+                </span>
+                <div className="flex items-center gap-1.5 text-slate-800">
+                  <MapPin className="w-3.5 h-3.5 text-rose-500" />
+                  <span className="font-medium">{inspectingLog.locationStr || inspectingLog.location || "—"}</span>
+                </div>
+              </div>
+              <div className="sm:col-span-3">
+                <span className="text-[10px] text-text-muted font-bold uppercase block">
                   Timestamp
                 </span>
-                <span>
+                <span className="font-medium text-slate-700">
                   {new Date(inspectingLog.createdAt).toLocaleString()}
                 </span>
               </div>

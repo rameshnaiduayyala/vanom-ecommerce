@@ -559,6 +559,9 @@ export async function getAuditLogs(params = {}) {
 
       const items = logs.map((l) => ({
         ...l,
+        device: l.device || l.metadata?.device || null,
+        location: l.location || l.metadata?.location || null,
+        ipAddress: l.ipAddress || l.metadata?.ipAddress || null,
         actor: l.user || (l.actorEmail ? { email: l.actorEmail, role: l.actorRole } : null)
       }));
 
@@ -585,6 +588,9 @@ export async function getAuditLogs(params = {}) {
 
     const items = rawLogs.map((l) => ({
       ...l,
+      device: l.device || l.metadata?.device || null,
+      location: l.location || l.metadata?.location || null,
+      ipAddress: l.ipAddress || l.metadata?.ipAddress || null,
       actor: l.userEmail
         ? {
             id: l.actorId,

@@ -19,46 +19,50 @@ export async function login(request, reply) {
   );
 
   const role = String(result.user?.role || "USER").toUpperCase();
-  const isAdminOrStaff = role !== "USER";
+  const isStaff = role !== "USER";
+  const userEmail = result.user?.email || request.body.email;
 
-  // Only audit administrative/staff logins, NOT regular public consumer users
-  if (isAdminOrStaff) {
-    await logAuditEvent({
-      request,
-      actorId: result.user?.id || null,
-      actorEmail: result.user?.email || request.body.email,
-      actorRole: role,
-      action: "ADMIN_LOGIN",
-      entityType: "Session",
-      entityId: result.user?.id || null,
-      description: `Staff / Admin ${result.user?.email || request.body.email} (${role}) logged in`,
-      metadata: {
-        role,
-        hasCompany: Boolean(result.user?.bulkBusinessId || result.user?.organizationId)
-      }
-    });
-  }
+  // Audit login with IP, Device, and Location tracking
+  await logAuditEvent({
+    request,
+    actorId: result.user?.id || null,
+    actorEmail: userEmail,
+    actorRole: role,
+    action: isStaff ? "ADMIN_LOGIN" : "USER_LOGIN",
+    entityType: "Session",
+    entityId: result.user?.id || null,
+    description: isStaff
+      ? `Staff / Admin ${userEmail} (${role}) logged in`
+      : `User ${userEmail} logged in`,
+    metadata: {
+      role,
+      hasCompany: Boolean(result.user?.bulkBusinessId || result.user?.organizationId),
+      loginAt: new Date().toISOString()
+    }
+  });
 
   return sendSuccess(reply, { message: MESSAGES.AUTH_LOGIN_SUCCESS, data: result });
 }
 
 export async function logout(request, reply) {
   const role = String(request.user?.role || "USER").toUpperCase();
-  const isAdminOrStaff = role !== "USER";
+  const isStaff = role !== "USER";
+  const userEmail = request.user?.email || request.user?.sub || "User";
 
-  // Only audit administrative/staff logouts, NOT regular public consumer users
-  if (isAdminOrStaff) {
-    await logAuditEvent({
-      request,
-      action: "ADMIN_LOGOUT",
-      entityType: "Session",
-      entityId: request.user?.sub || null,
-      description: `Staff / Admin ${request.user?.email || request.user?.sub || "Unknown"} (${role}) logged out`,
-      metadata: {
-        role
-      }
-    });
-  }
+  // Audit logout with IP, Device, and Location tracking
+  await logAuditEvent({
+    request,
+    action: isStaff ? "ADMIN_LOGOUT" : "USER_LOGOUT",
+    entityType: "Session",
+    entityId: request.user?.sub || null,
+    description: isStaff
+      ? `Staff / Admin ${userEmail} (${role}) logged out`
+      : `User ${userEmail} logged out`,
+    metadata: {
+      role,
+      logoutAt: new Date().toISOString()
+    }
+  });
 
   return sendSuccess(reply, { message: "Logged out successfully", data: null });
 }
