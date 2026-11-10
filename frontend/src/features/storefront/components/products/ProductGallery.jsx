@@ -234,7 +234,7 @@ export function ProductGallery({
                   type="button"
                   onClick={() => onSelectImage(idx)}
                   onMouseEnter={() => !isVid && onSelectImage(idx)}
-                  className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl border p-1 bg-white flex items-center justify-center overflow-hidden transition-all cursor-pointer shadow-2xs shrink-0 ${
+                  className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl border bg-transparent flex items-center justify-center overflow-hidden transition-all cursor-pointer shadow-2xs shrink-0 ${
                     isSelected
                       ? "border-[#003D2B] ring-2 ring-[#003D2B]/30 scale-102"
                       : "border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100"
@@ -250,7 +250,7 @@ export function ProductGallery({
                     <img
                       src={mediaUrl}
                       alt={`Thumb ${idx + 1}`}
-                      className="w-full h-full object-contain pointer-events-none"
+                      className="w-full h-full object-cover pointer-events-none"
                     />
                   )}
                 </button>
@@ -264,8 +264,8 @@ export function ProductGallery({
           {/* Main Media Box */}
           <div
             ref={mainImageContainerRef}
-            className={`bg-white rounded-3xl sm:rounded-2xl border border-gray-200/90 relative aspect-square sm:aspect-[4/3] md:aspect-square w-full max-h-[520px] shadow-sm group overflow-hidden touch-pan-y ${
-              isCurrentVideo ? "cursor-default" : "cursor-crosshair"
+            className={`rounded-3xl sm:rounded-2xl border border-gray-200/90 relative aspect-square sm:aspect-[4/3] md:aspect-square w-full max-h-[520px] shadow-sm group overflow-hidden touch-pan-y ${
+              isCurrentVideo ? "cursor-default bg-black" : "cursor-crosshair bg-transparent"
             }`}
             onMouseEnter={handleContainerMouseEnter}
             onMouseMove={handleContainerMouseMove}
@@ -285,7 +285,7 @@ export function ProductGallery({
                       controls
                       autoPlay
                       playsInline
-                      className="w-full h-full max-h-[520px] object-contain"
+                      className="w-full h-full max-h-[520px] object-cover"
                     />
                   </div>
                 ) : (
@@ -297,7 +297,7 @@ export function ProductGallery({
                     {gallery.map((mediaUrl, idx) => (
                       <div
                         key={idx}
-                        className="w-full h-full flex-none flex items-center justify-center p-2 sm:p-4"
+                        className="w-full h-full flex-none overflow-hidden"
                         title="Click to expand view"
                       >
                         {isVideoUrl(mediaUrl) ? (
@@ -305,14 +305,14 @@ export function ProductGallery({
                             <video
                               src={mediaUrl}
                               controls
-                              className="w-full h-full object-contain"
+                              className="w-full h-full object-cover"
                             />
                           </div>
                         ) : (
                           <img
                             src={mediaUrl}
                             alt={`${title} - view ${idx + 1}`}
-                            className="w-full h-full object-contain select-none pointer-events-none"
+                            className="w-full h-full object-cover select-none pointer-events-none"
                             loading={idx === 0 ? "eager" : "lazy"}
                             draggable={false}
                           />
@@ -522,7 +522,7 @@ export function ProductGallery({
                 <img
                   src={activeViewerMedia}
                   alt={`${title} - view ${viewerIndex + 1}`}
-                  className="max-h-[72vh] max-w-[85vw] object-contain drop-shadow-xl rounded-xl pointer-events-none"
+                  className="max-h-[72vh] max-w-[85vw] object-contain pointer-events-none"
                 />
               )}
             </div>
@@ -555,7 +555,7 @@ export function ProductGallery({
                       setZoomLevel(1);
                       setPanPosition({ x: 0, y: 0 });
                     }}
-                    className={`w-13 h-13 sm:w-14 sm:h-14 rounded-xl border-2 p-1 bg-white flex items-center justify-center overflow-hidden transition-all cursor-pointer shrink-0 shadow-2xs ${
+                    className={`w-13 h-13 sm:w-14 sm:h-14 rounded-xl border-2 bg-transparent flex items-center justify-center overflow-hidden transition-all cursor-pointer shrink-0 shadow-2xs ${
                       viewerIndex === idx
                         ? "border-[#003D2B] ring-2 ring-[#003D2B]/30 scale-105 opacity-100"
                         : "border-slate-200 hover:border-slate-400 opacity-60 hover:opacity-100"
@@ -570,7 +570,7 @@ export function ProductGallery({
                       <img
                         src={mediaUrl}
                         alt={`Preview ${idx + 1}`}
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-cover"
                       />
                     )}
                   </button>
