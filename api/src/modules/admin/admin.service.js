@@ -366,15 +366,14 @@ export async function getProfitLossReport(params = {}) {
       const itemRev = Number(item.total || (unitPrice * qty));
 
       // Real Buying / Cost Price calculation:
-      // Check variant.costPrice -> product.costPrice -> fallback to estimated ratio
-      let unitCost;
+      // Strictly uses actual costPrice from database; no estimated fallbacks
+      let unitCost = 0;
       if (item.variant?.costPrice != null) {
         unitCost = Number(item.variant.costPrice);
       } else if (item.product?.costPrice != null) {
         unitCost = Number(item.product.costPrice);
       } else {
-        const fallbackRef = item.product?.basePrice != null ? Number(item.product.basePrice) : unitPrice;
-        unitCost = Math.max(fallbackRef * 0.65, 0);
+        unitCost = 0;
       }
       const itemCogs = unitCost * qty;
 
@@ -433,7 +432,7 @@ export async function getProfitLossReport(params = {}) {
         ? Number(it.variant.costPrice)
         : it.product?.costPrice != null
         ? Number(it.product.costPrice)
-        : (Number(it.product?.basePrice || it.unitPrice || 0) * 0.65);
+        : 0;
       return sum + (itemCost * (it.quantity || 1));
     }, 0);
     const orderExp = (orderTotal * 0.029 + 0.30) + 8.5;

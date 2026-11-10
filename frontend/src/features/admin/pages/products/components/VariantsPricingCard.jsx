@@ -43,6 +43,7 @@ export function VariantsPricingCard({
                 <th className="py-3 px-3">Option / Size</th>
                 <th className="py-3 px-2">SKU Code</th>
                 <th className="py-3 px-2">Weight ({(formData.weightUnit || 'lb').toUpperCase()})</th>
+                <th className="py-3 px-2 bg-emerald-100/70 text-emerald-950 font-bold">Buying Cost ($)</th>
                 <th className="py-3 px-2 bg-emerald-50/70 text-emerald-950">🇺🇸 Price ($)*</th>
                 <th className="py-3 px-2 bg-emerald-50/70 text-emerald-800">Old ($)</th>
                 <th className="py-3 px-2 bg-emerald-50/90 text-emerald-950 font-black">US Stock</th>
@@ -81,6 +82,16 @@ export function VariantsPricingCard({
                       onChange={(e) => updateVariantRow(v.id, "weight", parseFloat(e.target.value) || 0)}
                       placeholder="1.0"
                       className="w-full px-2 py-1.5 text-xs bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-[#358B5B] text-slate-700 font-medium"
+                    />
+                  </td>
+                  <td className="py-2.5 px-1 w-24 bg-emerald-50/40">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={v.cost_price || ""}
+                      onChange={(e) => updateVariantRow(v.id, "cost_price", e.target.value)}
+                      placeholder="18.50"
+                      className="w-full px-2 py-1.5 text-xs bg-white border border-emerald-300 rounded-lg focus:outline-none focus:border-[#358B5B] font-medium text-slate-800"
                     />
                   </td>
                   <td className="py-2.5 px-1 w-24 bg-emerald-50/20">

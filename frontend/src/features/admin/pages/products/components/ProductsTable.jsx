@@ -144,6 +144,11 @@ export function ProductsTable({
                         <span className="font-bold text-slate-900">
                           ${Number(priceUsd).toFixed(2)}
                         </span>
+                        {/* {p.costPrice != null && (
+                          <div className="text-[10px] text-slate-500 font-medium">
+                            Cost: ${Number(p.costPrice).toFixed(2)}
+                          </div>
+                        )} */}
                         <div className="text-[10px] text-emerald-700 font-semibold">
                           {stockUs} in stock
                         </div>

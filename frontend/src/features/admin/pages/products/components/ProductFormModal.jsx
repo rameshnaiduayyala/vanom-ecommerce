@@ -103,7 +103,23 @@ export function ProductFormModal({
           <h4 className="text-xs font-bold uppercase tracking-wider text-brand-700 border-b border-border pb-1">
             2. Multi-Currency Pricing
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            {/* <div className="p-3.5 rounded-xl bg-purple-50/50 border border-purple-200/70 space-y-2">
+              <span className="text-xs font-bold text-purple-900 block">Buying / Cost Price ($ USD)</span>
+              <Input
+                type="number"
+                step="0.01"
+                value={productForm.costPrice ?? ""}
+                onChange={(e) =>
+                  setProductForm({
+                    ...productForm,
+                    costPrice: e.target.value,
+                  })
+                }
+                placeholder="21.50"
+              />
+            </div> */}
+
             <div className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-200/70 space-y-2">
               <span className="text-xs font-bold text-emerald-900 block">🇺🇸 USA Price ($ USD) *</span>
               <Input
