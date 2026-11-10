@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Modal } from "@/components/ui/Modal.jsx";
 import { Button } from "@/components/ui/Button.jsx";
 import { Input, Select } from "@/components/ui/Input.jsx";
+import { ProductSearchableDropdown } from "@/components/common/ProductSearchableDropdown.jsx";
 
 import { Package } from "lucide-react";
 
@@ -63,22 +64,22 @@ export function StockAdjustmentModal({
       maxWidth="max-w-2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-        <Select
+        <ProductSearchableDropdown
           label="Target Product / Variant"
+          items={variants}
           value={formData.variantId || formData.productId}
-          onChange={(e) => {
-            const chosen = variants.find((v) => v.id === e.target.value);
+          onChange={(val, chosen) => {
             setFormData({
               ...formData,
-              variantId: e.target.value,
-              productId: chosen?.productId || e.target.value,
+              variantId: val,
+              productId: chosen?.productId || chosen?.raw?.productId || val,
             });
           }}
-          options={variants.map((v) => ({
-            label: `${v.name} (${v.sku})`,
-            value: v.id,
-          }))}
+          showImage={true}
+          showStock={true}
+          showPrice={false}
           required
+          placeholder="Search and select product or variant..."
         />
 
         {selectedVar && (

@@ -92,6 +92,13 @@ export async function list(request, reply) {
   });
 }
 
+export async function getDropdown(request, reply) {
+  const items = await productService.getProductsDropdown(request.query || {});
+  return sendSuccess(reply, {
+    message: "Dropdown products fetched successfully",
+    data: items
+  });
+}
 
 export async function getById(request, reply) {
   const product = await productService.getProductById(request.params.id);

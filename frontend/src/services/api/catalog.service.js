@@ -5,6 +5,11 @@ export const catalogService = {
     return apiClient.get("/products", { params });
   },
 
+  getProductsDropdown: async (params = {}) => {
+    const res = await apiClient.get("/products/dropdown", { params });
+    return Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+  },
+
   getProductBySlug: async (slug) => {
     return apiClient.get(`/products/${slug}`);
   },

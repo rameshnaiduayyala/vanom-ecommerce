@@ -94,6 +94,11 @@ export const adminService = {
     return formatAdminProducts(res);
   },
 
+  getProductsDropdown: async (params = {}) => {
+    const res = await apiClient.get("/products/dropdown", { params });
+    return Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+  },
+
   createProduct: async (productData) => {
     return apiClient.post("/products", productData);
   },

@@ -336,6 +336,103 @@ export async function listProducts({ page, limit, skip, cursor, search, category
   return { items: serializedItems, total, nextCursor };
 }
 
+/**
+ * Ultra-lightweight product dropdown/lookup query
+ * Returns minimal fields (id, name, sku, slug, basePrice, stock, category, primary image, variants)
+ * Designed for blazing fast selects/comboboxes with zero heavy serialization.
+ */
+export async function getProductsDropdown(params = {}) {
+  const { search, categoryId, isActive = true, limit = 200 } = params;
+
+  const where = {
+    deletedAt: null,
+    ...(isActive !== undefined && isActive !== "all"
+      ? { isActive: isActive === true || isActive === "true" }
+      : {}),
+    ...(categoryId
+      ? {
+          OR: [
+            { categoryId },
+            { category: { slug: categoryId } },
+            { category: { parentId: categoryId } }
+          ]
+        }
+      : {}),
+    ...(search && typeof search === "string" && search.trim()
+      ? {
+          OR: [
+            { name: { contains: search.trim(), mode: "insensitive" } },
+            { sku: { contains: search.trim(), mode: "insensitive" } },
+            { slug: { contains: search.trim(), mode: "insensitive" } },
+            { variants: { some: { sku: { contains: search.trim(), mode: "insensitive" } } } },
+            { variants: { some: { name: { contains: search.trim(), mode: "insensitive" } } } }
+          ]
+        }
+      : {})
+  };
+
+  const maxLimit = Math.min(Math.max(Number(limit) || 200, 1), 1000);
+
+  const products = await prisma.product.findMany({
+    where,
+    take: maxLimit,
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      sku: true,
+      slug: true,
+      type: true,
+      basePrice: true,
+      stock: true,
+      isActive: true,
+      categoryId: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true
+        }
+      },
+      images: {
+        take: 1,
+        orderBy: { sortOrder: "asc" },
+        select: {
+          url: true
+        }
+      },
+      variants: {
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          stock: true
+        }
+      }
+    }
+  });
+
+  return products.map((p) => ({
+    id: p.id,
+    name: p.name,
+    sku: p.sku || "",
+    slug: p.slug,
+    type: p.type || "SIMPLE",
+    basePrice: p.basePrice != null ? Number(p.basePrice) : null,
+    stock: p.stock ?? 0,
+    isActive: p.isActive,
+    categoryId: p.categoryId,
+    categoryName: p.category?.name || null,
+    image: p.images?.[0]?.url || null,
+    variants: (p.variants || []).map((v) => ({
+      id: v.id,
+      name: v.name || "",
+      sku: v.sku || "",
+      stock: v.stock ?? 0
+    }))
+  }));
+}
+
 export async function getProductById(idOrSlug) {
   const product = await prisma.product.findFirst({
     where: {

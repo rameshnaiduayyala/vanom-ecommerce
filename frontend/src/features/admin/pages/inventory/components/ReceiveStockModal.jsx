@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { X, ArrowDownToLine, Warehouse, Package, Truck, FileText, Search } from "lucide-react";
 import { Button } from "@/components/ui/Button.jsx";
+import { ProductSearchableDropdown } from "@/components/common/ProductSearchableDropdown.jsx";
 
 export function ReceiveStockModal({
   isOpen,
@@ -159,45 +160,21 @@ export function ReceiveStockModal({
               </span>
             </div>
 
-            {/* Quick Filter Search inside modal */}
-            {selectables.length > 5 && (
-              <div className="relative mb-2">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-                <input
-                  type="text"
-                  placeholder="Filter products by name or SKU..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full text-xs rounded-lg border border-border pl-8 pr-3 py-1.5 bg-surface-muted/50 focus:border-[#00875A] focus:outline-none"
-                />
-              </div>
-            )}
-
-            <select
+            <ProductSearchableDropdown
+              items={selectables}
               value={selectedKey}
-              onChange={(e) => {
-                setSelectedKey(e.target.value);
-                const chosen = selectables.find(
-                  (s) => (s.id || `${s.productId}_${s.variantId || "simple"}`) === e.target.value
-                );
-                if (chosen?.warehouseId && !warehouseId) {
-                  setWarehouseId(chosen.warehouseId);
+              onChange={(val, chosen) => {
+                setSelectedKey(val);
+                if (chosen?.raw?.warehouseId && !warehouseId) {
+                  setWarehouseId(chosen.raw.warehouseId);
                 }
               }}
-              required
-              className="w-full text-xs rounded-xl border border-border bg-white px-3 py-2.5 focus:border-[#00875A] focus:outline-none"
-            >
-              <option value="">-- Choose Product or Variant to Inward --</option>
-              {filteredSelectables.map((item) => {
-                const key = item.id || `${item.productId}_${item.variantId || "simple"}`;
-                const whTag = item.warehouseCode ? ` [${item.warehouseCode}]` : "";
-                return (
-                  <option key={key} value={key}>
-                    {item.name} | SKU: {item.sku}{whTag} (Current Stock: {item.currentStock ?? 0})
-                  </option>
-                );
-              })}
-            </select>
+              showImage={true}
+              showStock={true}
+              showPrice={false}
+              placeholder="-- Choose Product or Variant to Inward --"
+              searchPlaceholder="Filter products by name or SKU..."
+            />
           </div>
 
           {/* Quantity */}
