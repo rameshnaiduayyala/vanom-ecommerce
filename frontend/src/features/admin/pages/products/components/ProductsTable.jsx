@@ -1,16 +1,23 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Eye, Edit2, Trash2 } from "lucide-react";
+import { Eye, Edit2, Trash2, Loader2, PackageSearch } from "lucide-react";
 import { Badge } from "@/components/ui/Badge.jsx";
 
 export function ProductsTable({
   products = [],
+  isLoading = false,
+  isFetching = false,
   onViewProduct,
   onEditProduct,
   onDeleteProduct,
 }) {
   return (
-    <div className="rounded-2xl bg-white border border-border overflow-hidden shadow-2xs">
+    <div className="relative rounded-2xl bg-white border border-border overflow-hidden shadow-2xs">
+      {/* Background Fetching Bar Indicator */}
+      {isFetching && !isLoading && (
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-[#00875A] animate-pulse z-10" />
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs text-text-primary">
           <thead className="bg-surface-muted text-text-secondary text-[11px] uppercase font-semibold border-b border-border">
@@ -26,10 +33,57 @@ export function ProductsTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {products.length === 0 ? (
+            {isLoading || (isFetching && products.length === 0) ? (
+              Array.from({ length: 6 }).map((_, idx) => (
+                <tr key={`skeleton-${idx}`} className="animate-pulse bg-white">
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-lg bg-slate-200/80 shrink-0" />
+                      <div className="space-y-1.5 flex-1">
+                        <div className="h-3.5 bg-slate-200/80 rounded w-36" />
+                        <div className="h-2.5 bg-slate-100 rounded w-20" />
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <div className="h-3 bg-slate-200/70 rounded w-20 font-mono" />
+                  </td>
+                  <td className="p-4">
+                    <div className="h-5 bg-slate-200/60 rounded-full w-20" />
+                  </td>
+                  <td className="p-4">
+                    <div className="h-4 bg-slate-200/60 rounded w-16" />
+                  </td>
+                  <td className="p-4 space-y-1">
+                    <div className="h-3.5 bg-slate-200/80 rounded w-16" />
+                    <div className="h-2.5 bg-slate-100 rounded w-20" />
+                  </td>
+                  <td className="p-4 space-y-1">
+                    <div className="h-3.5 bg-slate-200/80 rounded w-16" />
+                    <div className="h-2.5 bg-slate-100 rounded w-20" />
+                  </td>
+                  <td className="p-4">
+                    <div className="h-3.5 bg-slate-200/80 rounded w-16" />
+                  </td>
+                  <td className="p-4 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <div className="w-7 h-7 bg-slate-200/60 rounded-lg" />
+                      <div className="w-7 h-7 bg-slate-200/60 rounded-lg" />
+                      <div className="w-7 h-7 bg-slate-200/60 rounded-lg" />
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : products.length === 0 ? (
               <tr>
-                <td colSpan="8" className="p-8 text-center text-text-muted">
-                  No products match the selected criteria.
+                <td colSpan="8" className="p-12 text-center text-text-muted">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <PackageSearch className="w-8 h-8 text-slate-300" />
+                    <p className="font-semibold text-slate-700">No products found</p>
+                    <p className="text-[11px] text-slate-400">
+                      Try adjusting your search query or category filters.
+                    </p>
+                  </div>
                 </td>
               </tr>
             ) : (

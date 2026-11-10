@@ -52,7 +52,11 @@ export function useProducts() {
   }, [search]);
 
   // Server-side paginated product query with real total count
-  const { data: productsData = [], isLoading: loadingProducts } = useQuery({
+  const {
+    data: productsData = [],
+    isLoading: loadingProducts,
+    isFetching: fetchingProducts,
+  } = useQuery({
     queryKey: [
       "admin-products",
       {
@@ -292,6 +296,9 @@ export function useProducts() {
     categories: categoryList,
     countries,
     loadingProducts,
+    fetchingProducts,
+    isLoading: loadingProducts,
+    isFetching: fetchingProducts,
     loadingCategories,
     search,
     setSearch: handleSearchChange,
