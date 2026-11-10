@@ -17,6 +17,7 @@ export const INITIAL_PRODUCT_FORM_DATA = {
   is_new: true,
   is_best_seller: false,
   images: ["https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80"],
+  cost_price: "",
   price_usd: "",
   old_price_usd: "",
   stock_usd: "60",
@@ -45,6 +46,7 @@ export const INITIAL_PRODUCT_FORM_DATA = {
       sku: "",
       variant_name: "500g Pack",
       weight: 0.5,
+      cost_price: "",
       price_usd: "18.00",
       old_price_usd: "25.00",
       stock_usd: "30",
@@ -59,6 +61,7 @@ export const INITIAL_PRODUCT_FORM_DATA = {
       sku: "",
       variant_name: "1 KG Pack",
       weight: 1.0,
+      cost_price: "",
       price_usd: "35.00",
       old_price_usd: "50.00",
       stock_usd: "60",
@@ -169,6 +172,12 @@ export function useAddProductForm() {
                 width: v.width !== null && v.width !== undefined ? String(v.width) : "",
                 height: v.height !== null && v.height !== undefined ? String(v.height) : "",
                 dimension_unit: v.dimensionUnit || "in",
+                cost_price:
+                  v.costPrice != null
+                    ? String(v.costPrice)
+                    : v.cost_price != null
+                    ? String(v.cost_price)
+                    : "",
                 price_usd:
                   vUs?.price !== null && vUs?.price !== undefined
                     ? String(vUs.price)
@@ -297,6 +306,7 @@ export function useAddProductForm() {
                   "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80",
               ],
         price_usd: resolvedPriceUsd,
+        cost_price: p.costPrice != null ? String(p.costPrice) : p.cost_price ? String(p.cost_price) : "",
         old_price_usd: resolvedOldPriceUsd,
         stock_usd: resolvedStockUsd,
         price_cad: resolvedPriceCad,
@@ -371,6 +381,7 @@ export function useAddProductForm() {
           sku: "",
           variant_name: `Option ${newIdx}`,
           weight: 1.0,
+          cost_price: "",
           price_usd: "",
           old_price_usd: "",
           stock_usd: "30",
@@ -529,6 +540,10 @@ export function useAddProductForm() {
             sku: v.sku.trim() || `${mainSku}-V${i + 1}`,
             name: v.variant_name.trim() || `Variant ${i + 1}`,
             stock: vStock,
+            costPrice:
+              v.cost_price !== "" && v.cost_price !== undefined && v.cost_price !== null
+                ? parseFloat(v.cost_price)
+                : null,
             isActive: v.status !== "INACTIVE",
             weight: v.weight !== "" && v.weight !== undefined && v.weight !== null ? parseFloat(v.weight) : null,
             weightUnit: v.weight_unit || "lb",
@@ -641,6 +656,7 @@ export function useAddProductForm() {
       isActive: formData.status !== "INACTIVE",
       images: cleanImages,
       basePrice: baseUsdPrice,
+      costPrice: formData.cost_price !== "" && formData.cost_price !== undefined && formData.cost_price !== null ? parseFloat(formData.cost_price) : null,
       stock: totalStock,
       sku: mainSku,
       warehouseId: formData.warehouse_id || null,

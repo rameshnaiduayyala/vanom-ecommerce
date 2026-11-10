@@ -13,10 +13,19 @@ export async function getMetrics(request, reply) {
 }
 
 export async function getReports(request, reply) {
-  const data = await adminService.getReports();
+  const data = await adminService.getReports(request.query || {});
   return sendSuccess(reply, {
     statusCode: HTTP_STATUS.OK,
     message: "Admin reports fetched successfully",
+    data
+  });
+}
+
+export async function getProfitLoss(request, reply) {
+  const data = await adminService.getProfitLossReport(request.query || {});
+  return sendSuccess(reply, {
+    statusCode: HTTP_STATUS.OK,
+    message: "Profit and loss report generated successfully",
     data
   });
 }

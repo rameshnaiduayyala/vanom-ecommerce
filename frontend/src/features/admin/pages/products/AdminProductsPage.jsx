@@ -42,6 +42,8 @@ export function AdminProductsPage() {
     deleteProductMutation,
     warehouses,
     isSubmitting,
+    loadingProducts,
+    fetchingProducts,
   } = useProducts();
 
   return (
@@ -84,6 +86,8 @@ export function AdminProductsPage() {
         {/* Products Table */}
         <ProductsTable
           products={paginatedProducts}
+          isLoading={loadingProducts}
+          isFetching={fetchingProducts}
           onViewProduct={setViewingProduct}
           onEditProduct={openEditProduct}
           onDeleteProduct={setDeletingProduct}

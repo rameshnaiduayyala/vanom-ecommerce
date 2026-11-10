@@ -21,6 +21,7 @@ import {
   Mail,
   Truck,
   HardDrive,
+  TrendingUp,
 } from "lucide-react";
 import { ROUTES } from "./routes.js";
 
@@ -205,6 +206,12 @@ export const ADMIN_NAV_CONFIG = [
     icon: CreditCard,
     path: ROUTES.ADMIN.PAYMENTS,
   },
+  // {
+  //   id: "profit-loss-reports",
+  //   label: "Profit & Loss Reports",
+  //   icon: TrendingUp,
+  //   path: ROUTES.ADMIN.REPORTS,
+  // },
   {
     id: "system-audit",
     label: "Audit & Security",

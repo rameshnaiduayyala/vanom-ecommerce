@@ -102,6 +102,7 @@ function variantCreateData(variant) {
     name: variant.name ?? null,
     attributes: variant.attributes ?? null,
     stock: variant.stock ?? 0,
+    costPrice: variant.costPrice !== undefined && variant.costPrice !== null && variant.costPrice !== "" ? Number(variant.costPrice) : null,
     isActive: variant.isActive ?? true,
     weight: variant.weight !== undefined && variant.weight !== null && variant.weight !== "" ? Number(variant.weight) : null,
     weightUnit: variant.weightUnit ?? "lb",
@@ -126,6 +127,7 @@ export async function createProduct(input) {
         description: input.description ?? null,
         type: productType,
         basePrice: input.basePrice ?? null,
+        costPrice: input.costPrice !== undefined && input.costPrice !== null && input.costPrice !== "" ? Number(input.costPrice) : null,
         sku: input.sku ?? null,
         stock: input.stock ?? 0,
         brandId: input.brandId ?? null,
@@ -384,6 +386,7 @@ export async function getProductsDropdown(params = {}) {
       slug: true,
       type: true,
       basePrice: true,
+      costPrice: true,
       stock: true,
       isActive: true,
       categoryId: true,
@@ -406,7 +409,8 @@ export async function getProductsDropdown(params = {}) {
           id: true,
           name: true,
           sku: true,
-          stock: true
+          stock: true,
+          costPrice: true
         }
       }
     }
@@ -419,6 +423,7 @@ export async function getProductsDropdown(params = {}) {
     slug: p.slug,
     type: p.type || "SIMPLE",
     basePrice: p.basePrice != null ? Number(p.basePrice) : null,
+    costPrice: p.costPrice != null ? Number(p.costPrice) : null,
     stock: p.stock ?? 0,
     isActive: p.isActive,
     categoryId: p.categoryId,
@@ -428,7 +433,8 @@ export async function getProductsDropdown(params = {}) {
       id: v.id,
       name: v.name || "",
       sku: v.sku || "",
-      stock: v.stock ?? 0
+      stock: v.stock ?? 0,
+      costPrice: v.costPrice != null ? Number(v.costPrice) : null
     }))
   }));
 }
@@ -479,6 +485,7 @@ export async function updateProduct(id, input) {
           ...(input.description !== undefined && { description: input.description }),
           ...(input.type !== undefined && { type: input.type }),
           ...(input.basePrice !== undefined && { basePrice: input.basePrice }),
+          ...(input.costPrice !== undefined && { costPrice: input.costPrice !== null && input.costPrice !== "" ? Number(input.costPrice) : null }),
           ...(input.sku !== undefined && { sku: input.sku }),
           ...(input.stock !== undefined && { stock: input.stock }),
           ...(input.brandId !== undefined && { brandId: input.brandId }),

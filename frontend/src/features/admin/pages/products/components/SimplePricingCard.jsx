@@ -6,6 +6,12 @@ export function SimplePricingCard({ formData, setFormData }) {
   const caStock = parseInt(formData.stock_cad, 10) || 0;
   const totalStock = usStock + caStock;
 
+  const sellPrice = parseFloat(formData.price_usd) || 0;
+  const costPrice = parseFloat(formData.cost_price) || 0;
+  const unitProfit = sellPrice > 0 && costPrice > 0 ? sellPrice - costPrice : null;
+  const marginPct =
+    sellPrice > 0 && costPrice > 0 ? ((unitProfit / sellPrice) * 100).toFixed(1) : null;
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs hover:shadow-sm transition-shadow space-y-4">
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -64,6 +70,36 @@ export function SimplePricingCard({ formData, setFormData }) {
               />
             </div>
           </div>
+
+          {/* Supplier / Acquisition Cost (COGS) for P&L tracking */}
+          {/* <div className="space-y-1 pt-1">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-semibold text-emerald-900">
+                Buying / Cost Price ($ USD)
+              </label>
+              {marginPct !== null && (
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    parseFloat(marginPct) >= 30
+                      ? "bg-emerald-100 text-emerald-800"
+                      : parseFloat(marginPct) >= 15
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-rose-100 text-rose-800"
+                  }`}
+                >
+                  {marginPct}% margin (+${unitProfit.toFixed(2)})
+                </span>
+              )}
+            </div>
+            <input
+              type="number"
+              step="0.01"
+              value={formData.cost_price || ""}
+              onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+              placeholder="e.g. 21.50 (supplier buying cost)"
+              className="w-full px-3 py-2 text-sm bg-white border border-emerald-300 rounded-lg focus:outline-none focus:border-[#358B5B] font-medium text-slate-800"
+            />
+          </div> */}
 
           <div className="space-y-1 pt-2 border-t border-emerald-200/50">
             <label className="text-[11px] font-semibold text-emerald-900 flex items-center justify-between">

@@ -83,6 +83,11 @@ const AdminAuditLogsPage = lazy(() =>
     default: m.AdminAuditLogsPage || m.default,
   }))
 );
+const AdminProfitLossPage = lazy(() =>
+  import("../../features/admin/pages/reports/AdminProfitLossPage.jsx").then((m) => ({
+    default: m.AdminProfitLossPage || m.default,
+  }))
+);
 const AdminInventoryPage = lazy(() =>
   import("../../features/admin/pages/inventory/AdminInventoryPage.jsx").then((m) => ({
     default: m.AdminInventoryPage || m.default,
@@ -160,7 +165,7 @@ export const adminRoutes = {
     { path: "bulk-orders", element: <AdminBulkOrdersPage /> },
     { path: "quotes", element: <AdminQuotesPage /> },
     { path: "payments", element: <AdminPaymentsPage /> },
-    { path: "reports", element: <Navigate to="/admin/dashboard" replace /> },
+    { path: "reports", element: <AdminProfitLossPage /> },
     { path: "audit-logs", element: <AdminAuditLogsPage /> },
     { path: "shipments", element: <AdminShipmentsPage /> },
     { path: "store", element: <AdminStoreSettingsPage /> },

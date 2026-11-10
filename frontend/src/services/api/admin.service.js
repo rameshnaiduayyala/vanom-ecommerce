@@ -8,8 +8,12 @@ export const adminService = {
     return apiClient.get("/admin/metrics", { params });
   },
 
-  getReports: async () => {
-    return apiClient.get("/admin/reports");
+  getReports: async (params = {}) => {
+    return apiClient.get("/admin/reports", { params });
+  },
+
+  getProfitLossReport: async (params = {}) => {
+    return apiClient.get("/admin/reports/profit-loss", { params });
   },
 
   getAuditLogs: async (params = {}) => {
