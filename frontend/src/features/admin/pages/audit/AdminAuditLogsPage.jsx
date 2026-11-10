@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge.jsx";
 import { Button } from "@/components/ui/Button.jsx";
 import { Modal } from "@/components/ui/Modal.jsx";
 import { DataTable } from "@/components/ui/DataTable.jsx";
+import { DateRangePicker } from "@/components/common/DateRangePicker.jsx";
 import {
   ShieldCheck,
   ShieldAlert,
@@ -20,10 +21,24 @@ export function AdminAuditLogsPage() {
   const [actionFilter, setActionFilter] = useState("ALL");
   const [entityFilter, setEntityFilter] = useState("ALL");
   const [inspectingLog, setInspectingLog] = useState(null);
+  const [dateRange, setDateRange] = useState({
+    preset: "all",
+    startDate: "",
+    endDate: "",
+  });
 
   const { data: logsData = [], isLoading } = useQuery({
-    queryKey: ["admin-audit-logs"],
-    queryFn: () => Api.admin.getAuditLogs({ limit: 100 }),
+    queryKey: ["admin-audit-logs", dateRange],
+    queryFn: () =>
+      Api.admin.getAuditLogs({
+        limit: 100,
+        startDate: dateRange.startDate || undefined,
+        endDate: dateRange.endDate || undefined,
+        timeRange:
+          dateRange.preset !== "custom" && dateRange.preset !== "all"
+            ? dateRange.preset
+            : undefined,
+      }),
   });
 
   const rawLogs = Array.isArray(logsData)
@@ -147,7 +162,7 @@ export function AdminAuditLogsPage() {
     [rawLogs],
   );
 
-  // Apply Action and Entity filters before passing to DataTable
+  // Apply Action, Entity, and Date filters before passing to DataTable
   const filteredData = useMemo(() => {
     return formattedLogs.filter((log) => {
       const matchesAction =
@@ -158,9 +173,39 @@ export function AdminAuditLogsPage() {
         entityFilter === "ALL" ||
         (log.entityType || "").toUpperCase() === entityFilter.toUpperCase();
 
-      return matchesAction && matchesEntity;
+      // Client-side date filtering safety (handles cached/preset/custom ranges)
+      let matchesDate = true;
+      if (dateRange.startDate || dateRange.endDate) {
+        const logDate = new Date(log.createdAt);
+        if (dateRange.startDate && !isNaN(logDate.getTime())) {
+          const start = new Date(dateRange.startDate);
+          start.setHours(0, 0, 0, 0);
+          if (logDate < start) matchesDate = false;
+        }
+        if (dateRange.endDate && !isNaN(logDate.getTime())) {
+          const end = new Date(dateRange.endDate);
+          end.setHours(23, 59, 59, 999);
+          if (logDate > end) matchesDate = false;
+        }
+      } else if (dateRange.preset && dateRange.preset !== "all") {
+        const logDate = new Date(log.createdAt);
+        const now = new Date();
+        if (dateRange.preset === "today") {
+          const startOfToday = new Date(now);
+          startOfToday.setHours(0, 0, 0, 0);
+          if (logDate < startOfToday) matchesDate = false;
+        } else if (dateRange.preset === "7d") {
+          const past7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          if (logDate < past7) matchesDate = false;
+        } else if (dateRange.preset === "30d") {
+          const past30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          if (logDate < past30) matchesDate = false;
+        }
+      }
+
+      return matchesAction && matchesEntity && matchesDate;
     });
-  }, [formattedLogs, actionFilter, entityFilter]);
+  }, [formattedLogs, actionFilter, entityFilter, dateRange]);
 
   // Reusable DataTable Column Definitions
   const columns = useMemo(
@@ -298,7 +343,15 @@ export function AdminAuditLogsPage() {
 
   // Filter actions integrated into DataTable toolbar
   const filterToolbarActions = (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2.5">
+      <DateRangePicker
+        preset={dateRange.preset}
+        startDate={dateRange.startDate}
+        endDate={dateRange.endDate}
+        onChange={(newRange) => setDateRange(newRange)}
+        showInlinePills={true}
+      />
+
       <select
         value={actionFilter}
         onChange={(e) => setActionFilter(e.target.value)}

@@ -535,6 +535,30 @@ export async function getAuditLogs(params = {}) {
       where.entityType = params.entityType;
     }
 
+    // Date Range Filtering (Custom Start/End Dates or Presets)
+    if (params.startDate || params.endDate) {
+      where.createdAt = {};
+      if (params.startDate) {
+        where.createdAt.gte = new Date(params.startDate);
+      }
+      if (params.endDate) {
+        const end = new Date(params.endDate);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt.lte = end;
+      }
+    } else if (params.timeRange) {
+      const now = new Date();
+      if (params.timeRange === "today") {
+        const startOfToday = new Date(now);
+        startOfToday.setHours(0, 0, 0, 0);
+        where.createdAt = { gte: startOfToday };
+      } else if (params.timeRange === "7d" || params.timeRange === "1w") {
+        where.createdAt = { gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) };
+      } else if (params.timeRange === "30d" || params.timeRange === "1m") {
+        where.createdAt = { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) };
+      }
+    }
+
     if (typeof prisma.auditLog?.findMany === "function") {
       const [logs, total] = await Promise.all([
         prisma.auditLog.findMany({
