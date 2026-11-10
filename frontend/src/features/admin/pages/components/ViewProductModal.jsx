@@ -50,6 +50,68 @@ export function ViewProductModal({ productId, isOpen, onClose }) {
 
   const variants = Array.isArray(product?.variants) ? product.variants : [];
 
+  const usCountry = Array.isArray(product?.countries)
+    ? product.countries.find(
+        (c) =>
+          c.currency === "USD" ||
+          c.country?.code === "US" ||
+          c.country?.name === "United States" ||
+          c.country === "United States"
+      )
+    : null;
+
+  const caCountry = Array.isArray(product?.countries)
+    ? product.countries.find(
+        (c) =>
+          c.currency === "CAD" ||
+          c.country?.code === "CA" ||
+          c.country?.name === "Canada" ||
+          c.country === "Canada"
+      )
+    : null;
+
+  const priceUsd =
+    usCountry?.price != null
+      ? Number(usCountry.price)
+      : product?.basePrice != null
+      ? Number(product.basePrice)
+      : product?.price_usd != null
+      ? Number(product.price_usd)
+      : product?.priceUS != null
+      ? Number(product.priceUS)
+      : 0;
+
+  const priceCad =
+    caCountry?.price != null
+      ? Number(caCountry.price)
+      : product?.price_cad != null
+      ? Number(product.price_cad)
+      : product?.priceCA != null
+      ? Number(product.priceCA)
+      : priceUsd > 0
+      ? Number((priceUsd * 1.35).toFixed(2))
+      : 0;
+
+  const rawCostPrice =
+    product?.costPrice != null
+      ? Number(product.costPrice)
+      : product?.cost_price != null
+      ? Number(product.cost_price)
+      : null;
+
+  const costPrice =
+    rawCostPrice !== null && !isNaN(rawCostPrice) && rawCostPrice > 0
+      ? rawCostPrice
+      : null;
+
+  const totalStock =
+    ((usCountry?.stock ?? 0) + (caCountry?.stock ?? 0)) ||
+    (product?.stock_quantity ?? product?.stock ?? 0);
+
+  const unitProfit = priceUsd > 0 && costPrice !== null ? priceUsd - costPrice : null;
+  const marginPct =
+    priceUsd > 0 && costPrice !== null ? ((unitProfit / priceUsd) * 100).toFixed(1) : null;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -60,7 +122,7 @@ export function ViewProductModal({ productId, isOpen, onClose }) {
       {isLoading ? (
         <div className="py-12 text-center text-xs text-text-muted flex flex-col items-center justify-center gap-2">
           <div className="w-6 h-6 border-2 border-[#00875A] border-t-transparent rounded-full animate-spin" />
-          <span>Fetching live product data from API...</span>
+          <span>Loading product details</span>
         </div>
       ) : isError || !product ? (
         <div className="py-10 text-center text-xs text-red-600 flex flex-col items-center justify-center gap-2">
@@ -133,29 +195,73 @@ export function ViewProductModal({ productId, isOpen, onClose }) {
             <div className="p-3.5 rounded-xl bg-surface-muted border border-border space-y-1">
               <span className="text-[10px] uppercase font-bold text-text-muted">Available Stock</span>
               <div className="text-base font-black text-emerald-700">
-                {(product.stock_quantity ?? product.stock ?? 100).toLocaleString()} <span className="text-[10px] font-normal text-text-muted">Units</span>
+                {totalStock.toLocaleString()}{" "}
+                <span className="text-[10px] font-normal text-text-muted">Units</span>
               </div>
+              {(usCountry?.stock !== undefined || caCountry?.stock !== undefined) && (
+                <div className="text-[10px] text-text-muted font-mono font-medium">
+                  {usCountry?.stock ?? 0} US / {caCountry?.stock ?? 0} CA
+                </div>
+              )}
             </div>
 
             <div className="p-3.5 rounded-xl bg-surface-muted border border-border space-y-1">
-              <span className="text-[10px] uppercase font-bold text-text-muted">USD Retail Price</span>
-              <div className="text-base font-black text-slate-900">
-                ${product.price_usd ?? product.priceUS ?? product.pricing?.US?.retailPrice ?? "0.00"}
+              <span className="text-[10px] uppercase font-bold text-text-muted flex items-center justify-between">
+                <span>USD Retail Price</span>
+                <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100/80 px-1 py-0.2 rounded">
+                  🇺🇸 USD
+                </span>
+              </span>
+              <div className="text-base font-black text-slate-900 font-mono">
+                ${priceUsd > 0 ? priceUsd.toFixed(2) : "0.00"}
               </div>
+              {usCountry?.oldPrice && (
+                <span className="text-[10px] text-text-muted line-through font-mono">
+                  ${Number(usCountry.oldPrice).toFixed(2)}
+                </span>
+              )}
             </div>
 
             <div className="p-3.5 rounded-xl bg-surface-muted border border-border space-y-1">
-              <span className="text-[10px] uppercase font-bold text-text-muted">CAD Retail Price</span>
-              <div className="text-base font-black text-blue-900">
-                CA${product.price_cad ?? product.priceCA ?? product.pricing?.CA?.retailPrice ?? "0.00"}
+              <span className="text-[10px] uppercase font-bold text-text-muted flex items-center justify-between">
+                <span>CAD Retail Price</span>
+                <span className="text-[9px] font-bold text-blue-800 bg-blue-100/80 px-1 py-0.2 rounded">
+                  🇨🇦 CAD
+                </span>
+              </span>
+              <div className="text-base font-black text-blue-900 font-mono">
+                CA${priceCad > 0 ? priceCad.toFixed(2) : "0.00"}
               </div>
+              {caCountry?.oldPrice && (
+                <span className="text-[10px] text-text-muted line-through font-mono">
+                  CA${Number(caCountry.oldPrice).toFixed(2)}
+                </span>
+              )}
             </div>
 
             <div className="p-3.5 rounded-xl bg-surface-muted border border-border space-y-1">
-              <span className="text-[10px] uppercase font-bold text-text-muted">Total Variants</span>
-              <div className="text-base font-black text-[#00875A]">
-                {variants.length > 0 ? variants.length : 1}
+              <span className="text-[10px] uppercase font-bold text-text-muted flex items-center justify-between">
+                <span>Buying / Cost Price</span>
+                {marginPct !== null && (
+                  <span
+                    className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
+                      parseFloat(marginPct) >= 30
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {marginPct}%
+                  </span>
+                )}
+              </span>
+              <div className="text-base font-black text-purple-950 font-mono">
+                {costPrice != null ? `$${costPrice.toFixed(2)}` : "—"}
               </div>
+              {unitProfit !== null && (
+                <span className="text-[10px] text-emerald-700 font-semibold">
+                  +${unitProfit.toFixed(2)} unit profit
+                </span>
+              )}
             </div>
           </div>
 
@@ -166,35 +272,105 @@ export function ViewProductModal({ productId, isOpen, onClose }) {
                 <Layers className="w-3.5 h-3.5 text-[#00875A]" />
                 Product Variants Breakdown ({variants.length})
               </h5>
-              <div className="border border-border rounded-xl overflow-hidden text-xs bg-white">
+              <div className="border border-border rounded-xl overflow-hidden text-xs bg-white shadow-2xs">
                 <table className="w-full text-left">
                   <thead className="bg-surface-muted text-[11px] uppercase font-semibold text-text-secondary border-b border-border">
                     <tr>
                       <th className="p-3">Variant Option</th>
                       <th className="p-3">SKU</th>
                       <th className="p-3">Weight</th>
-                      <th className="p-3">USD Price</th>
-                      <th className="p-3">CAD Price</th>
+                      <th className="p-3 bg-purple-50/60 text-purple-950"></th>
+                      <th className="p-3 bg-emerald-50/60 text-emerald-950">USD Price</th>
+                      <th className="p-3 bg-blue-50/60 text-blue-950">CAD Price</th>
                       <th className="p-3">Stock Units</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border font-medium">
-                    {variants.map((v, i) => (
-                      <tr key={v.id || i} className="hover:bg-surface-muted/50">
-                        <td className="p-3 font-bold text-text-primary">
-                          {v.variant_name || v.name || `Option ${i + 1}`}
-                        </td>
-                        <td className="p-3 font-mono text-text-muted">{v.sku || "N/A"}</td>
-                        <td className="p-3">{v.weight ? `${v.weight} KG` : "1.0 KG"}</td>
-                        <td className="p-3 font-bold text-slate-900">${v.price_usd || product.price_usd || 0}</td>
-                        <td className="p-3 font-bold text-blue-900">CA${v.price_cad || (Number(v.price_usd || product.price_usd || 0) * 1.35).toFixed(2)}</td>
-                        <td className="p-3">
-                          <span className="font-bold text-emerald-700">
-                            {(v.stock_quantity ?? v.stock ?? 50).toLocaleString()}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {variants.map((v, i) => {
+                      const vUs = Array.isArray(v.countries)
+                        ? v.countries.find(
+                            (c) =>
+                              c.currency === "USD" ||
+                              c.country?.code === "US" ||
+                              c.country?.name === "United States" ||
+                              c.country === "United States"
+                          )
+                        : null;
+                      const vCa = Array.isArray(v.countries)
+                        ? v.countries.find(
+                            (c) =>
+                              c.currency === "CAD" ||
+                              c.country?.code === "CA" ||
+                              c.country?.name === "Canada" ||
+                              c.country === "Canada"
+                          )
+                        : null;
+
+                      const vPriceUsd =
+                        vUs?.price != null
+                          ? Number(vUs.price)
+                          : v.price_usd != null
+                          ? Number(v.price_usd)
+                          : priceUsd;
+
+                      const vPriceCad =
+                        vCa?.price != null
+                          ? Number(vCa.price)
+                          : v.price_cad != null
+                          ? Number(v.price_cad)
+                          : vPriceUsd > 0
+                          ? Number((vPriceUsd * 1.35).toFixed(2))
+                          : 0;
+
+                      const rawVCostPrice =
+                        v.costPrice != null
+                          ? Number(v.costPrice)
+                          : v.cost_price != null
+                          ? Number(v.cost_price)
+                          : null;
+
+                      const vCostPrice =
+                        rawVCostPrice !== null && !isNaN(rawVCostPrice) && rawVCostPrice > 0
+                          ? rawVCostPrice
+                          : null;
+
+                      const vStock =
+                        ((vUs?.stock || 0) + (vCa?.stock || 0)) ||
+                        (v.stock_quantity ?? v.stock ?? 0);
+
+                      return (
+                        <tr key={v.id || i} className="hover:bg-surface-muted/50">
+                          <td className="p-3 font-bold text-text-primary">
+                            {v.variant_name || v.name || `Option ${i + 1}`}
+                          </td>
+                          <td className="p-3 font-mono text-text-muted">{v.sku || "N/A"}</td>
+                          <td className="p-3">
+                            {v.weight
+                              ? `${v.weight} ${(v.weightUnit || product.weightUnit || "lb").toUpperCase()}`
+                              : "—"}
+                          </td>
+                          <td className="p-3 font-mono text-purple-900 bg-purple-50/20">
+                            {vCostPrice != null ? `$${vCostPrice.toFixed(2)}` : "—"}
+                          </td>
+                          <td className="p-3 font-bold text-slate-900 bg-emerald-50/20 font-mono">
+                            ${vPriceUsd > 0 ? vPriceUsd.toFixed(2) : "0.00"}
+                          </td>
+                          <td className="p-3 font-bold text-blue-900 bg-blue-50/20 font-mono">
+                            CA${vPriceCad > 0 ? vPriceCad.toFixed(2) : "0.00"}
+                          </td>
+                          <td className="p-3">
+                            <span className="font-bold text-emerald-700 font-mono">
+                              {vStock.toLocaleString()}
+                            </span>
+                            {(vUs?.stock !== undefined || vCa?.stock !== undefined) && (
+                              <span className="text-[10px] text-text-muted ml-1.5 font-normal">
+                                ({vUs?.stock ?? 0} US / {vCa?.stock ?? 0} CA)
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
