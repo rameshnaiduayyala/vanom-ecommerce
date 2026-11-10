@@ -8,14 +8,22 @@ export async function getDashboardMetrics(timeRange = "30d") {
   let rangeStartDate = null;
   if (timeRange === "today") {
     rangeStartDate = startOfToday;
+  } else if (timeRange === "3d") {
+    rangeStartDate = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
   } else if (timeRange === "7d") {
     rangeStartDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  } else if (timeRange === "15d") {
+    rangeStartDate = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
   } else if (timeRange === "30d") {
     rangeStartDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  } else if (timeRange === "60d") {
+    rangeStartDate = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
   } else if (timeRange === "90d") {
     rangeStartDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
   } else if (timeRange === "1y") {
     rangeStartDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+  } else if (timeRange === "all") {
+    rangeStartDate = null;
   }
 
   const orderWhere = rangeStartDate ? { createdAt: { gte: rangeStartDate } } : {};
@@ -104,13 +112,14 @@ export async function getDashboardMetrics(timeRange = "30d") {
         b2b: Math.round(b2bRev * 100) / 100
       };
     });
-  } else if (timeRange === "7d") {
+  } else if (timeRange === "3d" || timeRange === "7d") {
+    const numDays = timeRange === "3d" ? 3 : 7;
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(now.getTime() - (6 - i) * 24 * 60 * 60 * 1000);
+    const lastNDays = Array.from({ length: numDays }, (_, i) => {
+      const d = new Date(now.getTime() - (numDays - 1 - i) * 24 * 60 * 60 * 1000);
       return { label: days[d.getDay()], dateStr: d.toISOString().slice(0, 10) };
     });
-    revenueSeries = last7Days.map(({ label, dateStr }) => {
+    revenueSeries = lastNDays.map(({ label, dateStr }) => {
       const dayOrders = ordersList.filter((o) => new Date(o.createdAt).toISOString().slice(0, 10) === dateStr);
       const rev = dayOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
       const b2bRev = dayOrders.filter((o) => Boolean(o.organizationId)).reduce((sum, o) => sum + Number(o.total || 0), 0);
@@ -121,11 +130,13 @@ export async function getDashboardMetrics(timeRange = "30d") {
         b2b: Math.round(b2bRev * 100) / 100
       };
     });
-  } else if (timeRange === "30d") {
-    // 4 rolling 7-day windows in the past 30 days
-    revenueSeries = [0, 1, 2, 3].map((wIdx) => {
-      const windowStart = new Date(now.getTime() - (4 - wIdx) * 7 * 24 * 60 * 60 * 1000);
-      const windowEnd = new Date(now.getTime() - (3 - wIdx) * 7 * 24 * 60 * 60 * 1000);
+  } else if (timeRange === "15d" || timeRange === "30d") {
+    // 3 to 4 rolling windows in the past 15 or 30 days
+    const windowDays = timeRange === "15d" ? 5 : 7;
+    const numWindows = timeRange === "15d" ? 3 : 4;
+    revenueSeries = Array.from({ length: numWindows }, (_, wIdx) => {
+      const windowStart = new Date(now.getTime() - (numWindows - wIdx) * windowDays * 24 * 60 * 60 * 1000);
+      const windowEnd = new Date(now.getTime() - (numWindows - 1 - wIdx) * windowDays * 24 * 60 * 60 * 1000);
       const windowOrders = ordersList.filter((o) => {
         const t = new Date(o.createdAt).getTime();
         return t >= windowStart.getTime() && t < windowEnd.getTime();
@@ -133,16 +144,16 @@ export async function getDashboardMetrics(timeRange = "30d") {
       const rev = windowOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
       const b2bRev = windowOrders.filter((o) => Boolean(o.organizationId)).reduce((sum, o) => sum + Number(o.total || 0), 0);
       return {
-        month: `Week ${wIdx + 1}`,
+        month: timeRange === "15d" ? `Days ${wIdx * 5 + 1}-${(wIdx + 1) * 5}` : `Week ${wIdx + 1}`,
         revenue: Math.round(rev * 100) / 100,
         orders: windowOrders.length,
         b2b: Math.round(b2bRev * 100) / 100
       };
     });
   } else {
-    // 90d / 1y monthly groupings calculated directly from orders
+    // 60d / 90d / 1y / all monthly groupings calculated directly from orders
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const count = timeRange === "90d" ? 3 : 12;
+    const count = timeRange === "60d" ? 2 : timeRange === "90d" ? 3 : 12;
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
@@ -157,7 +168,7 @@ export async function getDashboardMetrics(timeRange = "30d") {
       const rev = monthOrders.reduce((sum, o) => sum + Number(o.total || 0), 0);
       const b2bRev = monthOrders.filter((o) => Boolean(o.organizationId)).reduce((sum, o) => sum + Number(o.total || 0), 0);
       return {
-        month: months[mIdx],
+        month: count <= 6 ? `${months[mIdx]} ${String(y).slice(-2)}` : months[mIdx],
         revenue: Math.round(rev * 100) / 100,
         orders: monthOrders.length,
         b2b: Math.round(b2bRev * 100) / 100

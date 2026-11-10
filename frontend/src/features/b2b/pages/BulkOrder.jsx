@@ -24,7 +24,10 @@ import {
   X,
   AlertTriangle,
 } from "lucide-react";
-import { resolveProductImageUrl, FALLBACK_PRODUCT_IMAGE } from "@/utils/image.js";
+import {
+  resolveProductImageUrl,
+  FALLBACK_PRODUCT_IMAGE,
+} from "@/utils/image.js";
 
 /* ─── Small UI atoms ─── */
 function CountryBadge({ code }) {
@@ -56,23 +59,24 @@ export function BulkOrder() {
   const queryClient = useQueryClient();
 
   const targetCountryCode = (country.code || "US").toUpperCase();
-  const currencyCode = country.currency || (targetCountryCode === "CA" ? "CAD" : "USD");
-  const currencySymbol = country.symbol || (targetCountryCode === "CA" ? "CA$" : "$");
+  const currencyCode =
+    country.currency || (targetCountryCode === "CA" ? "CAD" : "USD");
+  const currencySymbol =
+    country.symbol || (targetCountryCode === "CA" ? "CA$" : "$");
 
   /* ─── Data ─── */
-  const { data: bulkProducts = [], isLoading: loadingProducts, refetch } = useQuery({
+  const {
+    data: bulkProducts = [],
+    isLoading: loadingProducts,
+    refetch,
+  } = useQuery({
     queryKey: ["b2b-bulk-products"],
     queryFn: () => Api.b2b.getBulkProducts(),
   });
 
   /* ─── State from Persistent Store (Survives Refresh & Navigation) ─── */
-  const {
-    rows,
-    notes,
-    setRows,
-    setNotes,
-    clearOrderSheet,
-  } = useBulkOrderStore();
+  const { rows, notes, setRows, setNotes, clearOrderSheet } =
+    useBulkOrderStore();
 
   // Bottom Add Row state
   const [bottomProductToAdd, setBottomProductToAdd] = useState("");
@@ -86,7 +90,12 @@ export function BulkOrder() {
   const [insertQuantity, setInsertQuantity] = useState(10);
 
   /* ─── Pricing Resolver ─── */
-  function resolveUnitPrice(prod, variant, countryCode = targetCountryCode, quantity = 10) {
+  function resolveUnitPrice(
+    prod,
+    variant,
+    countryCode = targetCountryCode,
+    quantity = 10,
+  ) {
     if (!prod) return 0;
     const cCode = (countryCode || "US").toUpperCase();
     const prices = variant ? variant.countryPrices : prod.countryPrices;
@@ -94,18 +103,25 @@ export function BulkOrder() {
     if (cp) {
       if (cp.tiers?.length) {
         const matchingTier = cp.tiers
-          .filter((t) => quantity >= t.minQuantity && (t.maxQuantity == null || quantity <= t.maxQuantity))
+          .filter(
+            (t) =>
+              quantity >= t.minQuantity &&
+              (t.maxQuantity == null || quantity <= t.maxQuantity),
+          )
           .sort((a, b) => b.minQuantity - a.minQuantity)[0];
         if (matchingTier?.price != null) return Number(matchingTier.price);
       }
-      if (cp.unitPrice !== undefined && cp.unitPrice !== null) return Number(cp.unitPrice);
+      if (cp.unitPrice !== undefined && cp.unitPrice !== null)
+        return Number(cp.unitPrice);
       if (cp.tiers?.[0]?.price != null) return Number(cp.tiers[0].price);
     }
     return Number(prod.basePriceUSD || 0);
   }
 
   /* ─── Derived ─── */
-  const bottomChosenProduct = bulkProducts.find((p) => p.id === bottomProductToAdd);
+  const bottomChosenProduct = bulkProducts.find(
+    (p) => p.id === bottomProductToAdd,
+  );
   const bottomVariants = Array.isArray(bottomChosenProduct?.variants)
     ? bottomChosenProduct.variants.filter((v) => v.isActive !== false)
     : [];
@@ -113,10 +129,17 @@ export function BulkOrder() {
     ? bottomVariants.find((v) => v.id === bottomVariantToAdd)
     : bottomVariants[0] || null;
   const bottomUnitPrice = bottomChosenProduct
-    ? resolveUnitPrice(bottomChosenProduct, bottomChosenVariant, targetCountryCode, bottomQuantity)
+    ? resolveUnitPrice(
+        bottomChosenProduct,
+        bottomChosenVariant,
+        targetCountryCode,
+        bottomQuantity,
+      )
     : 0;
 
-  const insertChosenProduct = bulkProducts.find((p) => p.id === insertProductToAdd);
+  const insertChosenProduct = bulkProducts.find(
+    (p) => p.id === insertProductToAdd,
+  );
   const insertVariants = Array.isArray(insertChosenProduct?.variants)
     ? insertChosenProduct.variants.filter((v) => v.isActive !== false)
     : [];
@@ -124,7 +147,12 @@ export function BulkOrder() {
     ? insertVariants.find((v) => v.id === insertVariantToAdd)
     : insertVariants[0] || null;
   const insertUnitPrice = insertChosenProduct
-    ? resolveUnitPrice(insertChosenProduct, insertChosenVariant, targetCountryCode, insertQuantity)
+    ? resolveUnitPrice(
+        insertChosenProduct,
+        insertChosenVariant,
+        targetCountryCode,
+        insertQuantity,
+      )
     : 0;
 
   /* ─── Dynamic Country Price Recalculation ─── */
@@ -144,8 +172,17 @@ export function BulkOrder() {
       const updated = prevRows.map((r) => {
         const prod = bulkProducts.find((p) => p.id === r.productId);
         const variant = prod?.variants?.find((v) => v.id === r.variantId);
-        const newUnitPrice = resolveUnitPrice(prod, variant, targetCountryCode, r.quantity);
-        if (newUnitPrice !== r.unitPrice || r.currencyCode !== currencyCode || r.countryCode !== targetCountryCode) {
+        const newUnitPrice = resolveUnitPrice(
+          prod,
+          variant,
+          targetCountryCode,
+          r.quantity,
+        );
+        if (
+          newUnitPrice !== r.unitPrice ||
+          r.currencyCode !== currencyCode ||
+          r.countryCode !== targetCountryCode
+        ) {
           changed = true;
           return {
             ...r,
@@ -160,7 +197,7 @@ export function BulkOrder() {
       if (changed && countryChanged) {
         toast.info(
           "Prices Recalculated",
-          `Updated line items to ${targetCountryCode} pricing (${currencyCode}).`
+          `Updated line items to ${targetCountryCode} pricing (${currencyCode}).`,
         );
       }
       return changed ? updated : prevRows;
@@ -181,7 +218,11 @@ export function BulkOrder() {
         const variant = requestedVariantId
           ? prod.variants?.find((v) => v.id === requestedVariantId)
           : prod.variants?.[0];
-        handleAddLine(prod, variant, requestedQty ? Math.max(1, parseInt(requestedQty, 10)) : 10);
+        handleAddLine(
+          prod,
+          variant,
+          requestedQty ? Math.max(1, parseInt(requestedQty, 10)) : 10,
+        );
 
         // Clean query params so refresh doesn't re-add duplicate quantities
         navigate(ROUTES.B2B.BULK_ORDER, { replace: true });
@@ -189,7 +230,12 @@ export function BulkOrder() {
     }
   }, [requestedProductId, requestedVariantId, requestedQty, bulkProducts]);
 
-  const handleAddLine = (prod, variant = null, initialQuantity = 10, insertAtIndex = null) => {
+  const handleAddLine = (
+    prod,
+    variant = null,
+    initialQuantity = 10,
+    insertAtIndex = null,
+  ) => {
     const variantId = variant?.id || null;
     const rowKey = `${prod.id}_${variantId || "default"}`;
     const existingIndex = rows.findIndex((r) => r.rowKey === rowKey);
@@ -197,14 +243,28 @@ export function BulkOrder() {
     if (existingIndex >= 0) {
       const newRows = [...rows];
       newRows[existingIndex].quantity += initialQuantity;
-      newRows[existingIndex].unitPrice = resolveUnitPrice(prod, variant, targetCountryCode, newRows[existingIndex].quantity);
+      newRows[existingIndex].unitPrice = resolveUnitPrice(
+        prod,
+        variant,
+        targetCountryCode,
+        newRows[existingIndex].quantity,
+      );
       setRows(newRows);
       toast.info("Quantity Updated", `Increased qty for ${prod.name}.`);
       return;
     }
 
-    const unitPrice = resolveUnitPrice(prod, variant, targetCountryCode, initialQuantity);
-    const weightLabel = variant?.name || (variant?.weight ? `${variant.weight}${variant.weightUnit || "kg"}` : "Standard");
+    const unitPrice = resolveUnitPrice(
+      prod,
+      variant,
+      targetCountryCode,
+      initialQuantity,
+    );
+    const weightLabel =
+      variant?.name ||
+      (variant?.weight
+        ? `${variant.weight}${variant.weightUnit || "kg"}`
+        : "Standard");
 
     const newRow = {
       rowKey,
@@ -222,14 +282,21 @@ export function BulkOrder() {
       countryCode: targetCountryCode,
     };
 
-    if (typeof insertAtIndex === "number" && insertAtIndex >= 0 && insertAtIndex <= rows.length) {
+    if (
+      typeof insertAtIndex === "number" &&
+      insertAtIndex >= 0 &&
+      insertAtIndex <= rows.length
+    ) {
       const newRows = [...rows];
       newRows.splice(insertAtIndex, 0, newRow);
       setRows(newRows);
     } else {
       setRows((prev) => [...prev, newRow]);
     }
-    toast.success("Added", `${prod.name} — ${weightLabel} @ ${formatPrice(unitPrice, currencyCode, currencySymbol)}`);
+    toast.success(
+      "Added",
+      `${prod.name} — ${weightLabel} @ ${formatPrice(unitPrice, currencyCode, currencySymbol)}`,
+    );
   };
 
   const handleBottomAdd = () => {
@@ -242,7 +309,12 @@ export function BulkOrder() {
 
   const handleInsertAdd = (index) => {
     if (!insertChosenProduct) return;
-    handleAddLine(insertChosenProduct, insertChosenVariant, insertQuantity, index + 1);
+    handleAddLine(
+      insertChosenProduct,
+      insertChosenVariant,
+      insertQuantity,
+      index + 1,
+    );
     setInsertAfterIdx(null);
     setInsertProductToAdd("");
     setInsertVariantToAdd("");
@@ -251,10 +323,18 @@ export function BulkOrder() {
 
   const handleAddAllVariants = (prod, defaultQty = 10) => {
     if (!prod) return;
-    const variants = Array.isArray(prod.variants) ? prod.variants.filter((v) => v.isActive !== false) : [];
-    if (variants.length === 0) { handleAddLine(prod, null, defaultQty); return; }
+    const variants = Array.isArray(prod.variants)
+      ? prod.variants.filter((v) => v.isActive !== false)
+      : [];
+    if (variants.length === 0) {
+      handleAddLine(prod, null, defaultQty);
+      return;
+    }
     variants.forEach((v) => handleAddLine(prod, v, defaultQty));
-    toast.success("All Weights Added", `Added ${variants.length} variants for ${prod.name}.`);
+    toast.success(
+      "All Weights Added",
+      `Added ${variants.length} variants for ${prod.name}.`,
+    );
   };
 
   const handleQuantityChange = (index, qty) => {
@@ -265,7 +345,12 @@ export function BulkOrder() {
       if (!r) return prevRows;
       const prod = bulkProducts.find((p) => p.id === r.productId);
       const variant = prod?.variants?.find((v) => v.id === r.variantId);
-      const newUnitPrice = resolveUnitPrice(prod, variant, targetCountryCode, parsedQty);
+      const newUnitPrice = resolveUnitPrice(
+        prod,
+        variant,
+        targetCountryCode,
+        parsedQty,
+      );
       newRows[index] = {
         ...r,
         quantity: parsedQty,
@@ -275,15 +360,24 @@ export function BulkOrder() {
     });
   };
 
-  const handleRemoveRow = (index) => setRows(rows.filter((_, i) => i !== index));
+  const handleRemoveRow = (index) =>
+    setRows(rows.filter((_, i) => i !== index));
 
   const handleExportCSV = () => {
-    if (rows.length === 0) { toast.error("Empty Order", "Add products first."); return; }
+    if (rows.length === 0) {
+      toast.error("Empty Order", "Add products first.");
+      return;
+    }
     const headers = "SKU,Product,Weight,Qty,Unit Price,Currency,Line Total\n";
     const body = rows
-      .map((r) => `"${r.sku}","${r.name.replace(/"/g, '""')}","${r.weightLabel}",${r.quantity},${r.unitPrice},"${r.currencyCode}",${(r.unitPrice * r.quantity).toFixed(2)}`)
+      .map(
+        (r) =>
+          `"${r.sku}","${r.name.replace(/"/g, '""')}","${r.weightLabel}",${r.quantity},${r.unitPrice},"${r.currencyCode}",${(r.unitPrice * r.quantity).toFixed(2)}`,
+      )
       .join("\n");
-    const blob = new Blob([headers + body], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([headers + body], {
+      type: "text/csv;charset=utf-8;",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -298,17 +392,27 @@ export function BulkOrder() {
   const submitOrderMutation = useMutation({
     mutationFn: async () => {
       const company = user?.companyMembers?.[0]?.company;
-      const contactPerson = user?.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Procurement Manager";
+      const contactPerson = user?.firstName
+        ? `${user.firstName} ${user.lastName || ""}`.trim()
+        : "Procurement Manager";
       return Api.b2b.createBulkOrder({
         countryCode: targetCountryCode,
         shippingCharges: 0,
         tax: 0,
         notes: notes || "Wholesale Purchase Order",
-        items: rows.map((r) => ({ productId: r.productId, variantId: r.variantId, quantity: r.quantity, unitPrice: r.unitPrice })),
+        items: rows.map((r) => ({
+          productId: r.productId,
+          variantId: r.variantId,
+          quantity: r.quantity,
+          unitPrice: r.unitPrice,
+        })),
         shippingAddress: {
           contactName: contactPerson,
           phone: user?.phone || "+1-555-0199",
-          addressLine1: typeof company?.address === "string" ? company.address : "Corporate Fulfillment Hub",
+          addressLine1:
+            typeof company?.address === "string"
+              ? company.address
+              : "Corporate Fulfillment Hub",
           city: company?.city || "HQ",
           state: company?.state || "State",
           postalCode: company?.postalCode || "00000",
@@ -319,11 +423,18 @@ export function BulkOrder() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["b2b-bulk-orders-list"] });
       queryClient.invalidateQueries({ queryKey: ["b2b-orders"] });
-      toast.success("Order Placed", `PO ${data?.orderNumber || "—"} submitted.`);
+      toast.success(
+        "Order Placed",
+        `PO ${data?.orderNumber || "—"} submitted.`,
+      );
       clearOrderSheet();
       navigate(ROUTES.B2B.ORDERS);
     },
-    onError: (err) => toast.error("Submission Failed", err.message || "Failed to submit order."),
+    onError: (err) =>
+      toast.error(
+        "Submission Failed",
+        err.message || "Failed to submit order.",
+      ),
   });
 
   const totalUnits = rows.reduce((s, r) => s + r.quantity, 0);
@@ -333,15 +444,18 @@ export function BulkOrder() {
   return (
     <div className="min-h-screen">
       <div className="max-w-screen-xl mx-auto space-y-4">
-
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">B2B Wholesale</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-700">
+                B2B Wholesale
+              </span>
               <span className="text-slate-300">·</span>
               <CountryBadge code={targetCountryCode} />
-              <span className="text-[10px] text-slate-400 font-mono">{currencyCode}</span>
+              <span className="text-[10px] text-slate-400 font-mono">
+                {currencyCode}
+              </span>
             </div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
               <FileSpreadsheet className="w-6 h-6 text-emerald-600 shrink-0" />
@@ -372,12 +486,13 @@ export function BulkOrder() {
 
         {/* Order Table Card */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-
           {/* Table Toolbar */}
           <div className="border-b border-slate-100 px-5 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-xs font-bold text-slate-700 uppercase tracking-widest">Order Lines</span>
+              <span className="text-xs font-bold text-slate-700 uppercase tracking-widest">
+                Order Lines
+              </span>
               {rows.length > 0 && (
                 <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
                   {rows.length}
@@ -387,12 +502,17 @@ export function BulkOrder() {
             {rows.length > 0 && (
               <div className="flex items-center gap-3">
                 <span className="text-[10px] text-slate-400 font-mono">
-                  {totalUnits.toLocaleString()} units · {formatPrice(totalSubtotal, currencyCode, currencySymbol)}
+                  {totalUnits.toLocaleString()} units ·{" "}
+                  {formatPrice(totalSubtotal, currencyCode, currencySymbol)}
                 </span>
                 <button
                   type="button"
                   onClick={() => {
-                    if (window.confirm("Are you sure you want to clear all items from your order sheet?")) {
+                    if (
+                      window.confirm(
+                        "Are you sure you want to clear all items from your order sheet?",
+                      )
+                    ) {
                       clearOrderSheet();
                       toast.info("Cleared", "Wholesale order sheet cleared.");
                     }
@@ -429,8 +549,13 @@ export function BulkOrder() {
                           <Package className="w-5 h-5 text-slate-400" />
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-slate-700">No items added yet</p>
-                          <p className="text-xs text-slate-400 mt-0.5">Use the row below to select a product and start building your wholesale purchase order.</p>
+                          <p className="text-sm font-semibold text-slate-700">
+                            No items added yet
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            Use the row below to select a product and start
+                            building your wholesale purchase order.
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -440,10 +565,18 @@ export function BulkOrder() {
                 {/* Data Rows */}
                 {rows.map((row, idx) => {
                   const lineTotal = row.unitPrice * row.quantity;
-                  const parentProd = bulkProducts.find((p) => p.id === row.productId);
-                  const variant = parentProd?.variants?.find((v) => v.id === row.variantId);
-                  const prices = variant ? variant.countryPrices : parentProd?.countryPrices;
-                  const cp = prices?.find((p) => p.countryCode?.toUpperCase() === targetCountryCode);
+                  const parentProd = bulkProducts.find(
+                    (p) => p.id === row.productId,
+                  );
+                  const variant = parentProd?.variants?.find(
+                    (v) => v.id === row.variantId,
+                  );
+                  const prices = variant
+                    ? variant.countryPrices
+                    : parentProd?.countryPrices;
+                  const cp = prices?.find(
+                    (p) => p.countryCode?.toUpperCase() === targetCountryCode,
+                  );
                   const isUnavailable = cp?.isAvailable === false;
 
                   return (
@@ -456,12 +589,19 @@ export function BulkOrder() {
                               src={row.imageUrl || FALLBACK_PRODUCT_IMAGE}
                               alt={row.name}
                               className="w-9 h-9 rounded-lg object-cover border border-slate-100 shrink-0 bg-slate-50"
-                              onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_PRODUCT_IMAGE; }}
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = FALLBACK_PRODUCT_IMAGE;
+                              }}
                             />
                             <div className="min-w-0">
-                              <div className="text-sm font-semibold text-slate-900 truncate leading-snug">{row.name}</div>
+                              <div className="text-sm font-semibold text-slate-900 truncate leading-snug">
+                                {row.name}
+                              </div>
                               <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-[10px] text-slate-400">Wholesale Line Item</span>
+                                <span className="text-[10px] text-slate-400">
+                                  Wholesale Line Item
+                                </span>
                                 {isUnavailable && (
                                   <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
                                     <AlertTriangle className="w-2.5 h-2.5 text-amber-500" />
@@ -475,7 +615,9 @@ export function BulkOrder() {
 
                         {/* SKU */}
                         <td className="px-4 py-3">
-                          <span className="text-xs font-mono text-slate-400">{row.sku}</span>
+                          <span className="text-xs font-mono text-slate-400">
+                            {row.sku}
+                          </span>
                         </td>
 
                         {/* Weight (selected, non-clickable) */}
@@ -489,7 +631,9 @@ export function BulkOrder() {
                             type="number"
                             min="1"
                             value={row.quantity}
-                            onChange={(e) => handleQuantityChange(idx, e.target.value)}
+                            onChange={(e) =>
+                              handleQuantityChange(idx, e.target.value)
+                            }
                             className="w-20 px-2 py-1.5 text-sm font-bold text-center rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                           />
                         </td>
@@ -497,14 +641,22 @@ export function BulkOrder() {
                         {/* Unit Price */}
                         <td className="px-4 py-3 text-right">
                           <span className="text-xs font-mono font-semibold text-slate-500">
-                            {formatPrice(row.unitPrice, currencyCode, currencySymbol)}
+                            {formatPrice(
+                              row.unitPrice,
+                              currencyCode,
+                              currencySymbol,
+                            )}
                           </span>
                         </td>
 
                         {/* Line Total */}
                         <td className="px-4 py-3 text-right">
                           <span className="text-sm font-black font-mono text-slate-900">
-                            {formatPrice(lineTotal, currencyCode, currencySymbol)}
+                            {formatPrice(
+                              lineTotal,
+                              currencyCode,
+                              currencySymbol,
+                            )}
                           </span>
                         </td>
 
@@ -555,13 +707,18 @@ export function BulkOrder() {
                               <div className="relative flex-1 min-w-[200px]">
                                 <select
                                   value={insertProductToAdd}
-                                  onChange={(e) => { setInsertProductToAdd(e.target.value); setInsertVariantToAdd(""); }}
+                                  onChange={(e) => {
+                                    setInsertProductToAdd(e.target.value);
+                                    setInsertVariantToAdd("");
+                                  }}
                                   className="appearance-none w-full pl-3 pr-8 py-1.5 rounded-lg border border-emerald-300 bg-white text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer"
                                   autoFocus
                                 >
                                   <option value="">— Select Product —</option>
                                   {bulkProducts.map((p) => (
-                                    <option key={p.id} value={p.id}>{p.name} · {p.sku}</option>
+                                    <option key={p.id} value={p.id}>
+                                      {p.name} · {p.sku}
+                                    </option>
                                   ))}
                                 </select>
                                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -570,7 +727,10 @@ export function BulkOrder() {
                           </td>
                           <td className="px-4 py-2.5">
                             <span className="text-xs font-mono text-slate-400">
-                              {insertChosenProduct ? (insertChosenVariant?.sku || insertChosenProduct.sku) : "—"}
+                              {insertChosenProduct
+                                ? insertChosenVariant?.sku ||
+                                  insertChosenProduct.sku
+                                : "—"}
                             </span>
                           </td>
                           <td className="px-4 py-2.5">
@@ -578,20 +738,38 @@ export function BulkOrder() {
                               <div className="relative min-w-[130px]">
                                 <select
                                   value={insertVariantToAdd}
-                                  onChange={(e) => setInsertVariantToAdd(e.target.value)}
+                                  onChange={(e) =>
+                                    setInsertVariantToAdd(e.target.value)
+                                  }
                                   className="appearance-none w-full pl-2.5 pr-7 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 text-xs font-bold text-emerald-900 focus:outline-none focus:border-emerald-500 cursor-pointer"
                                 >
                                   <option value="">— Weight —</option>
                                   {insertVariants.map((v) => {
-                                    const vLabel = v.name || `${v.weight}${v.weightUnit || "kg"}`;
-                                    const vPrice = resolveUnitPrice(insertChosenProduct, v);
-                                    return <option key={v.id} value={v.id}>{vLabel} · {formatPrice(vPrice, currencyCode, currencySymbol)}</option>;
+                                    const vLabel =
+                                      v.name ||
+                                      `${v.weight}${v.weightUnit || "kg"}`;
+                                    const vPrice = resolveUnitPrice(
+                                      insertChosenProduct,
+                                      v,
+                                    );
+                                    return (
+                                      <option key={v.id} value={v.id}>
+                                        {vLabel} ·{" "}
+                                        {formatPrice(
+                                          vPrice,
+                                          currencyCode,
+                                          currencySymbol,
+                                        )}
+                                      </option>
+                                    );
                                   })}
                                 </select>
                                 <ChevronDown className="w-3 h-3 text-emerald-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                               </div>
                             ) : (
-                              <span className="text-xs text-slate-400 italic">{insertChosenProduct ? "Standard" : "—"}</span>
+                              <span className="text-xs text-slate-400 italic">
+                                {insertChosenProduct ? "Standard" : "—"}
+                              </span>
                             )}
                           </td>
                           <td className="px-4 py-2.5 text-right">
@@ -599,18 +777,37 @@ export function BulkOrder() {
                               type="number"
                               min="1"
                               value={insertQuantity}
-                              onChange={(e) => setInsertQuantity(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                              onChange={(e) =>
+                                setInsertQuantity(
+                                  Math.max(
+                                    1,
+                                    parseInt(e.target.value, 10) || 1,
+                                  ),
+                                )
+                              }
                               className="w-20 px-2 py-1.5 text-sm font-bold text-center rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-emerald-500"
                             />
                           </td>
                           <td className="px-4 py-2.5 text-right">
                             <span className="text-xs font-mono text-slate-400">
-                              {insertChosenProduct ? formatPrice(insertUnitPrice, currencyCode, currencySymbol) : "—"}
+                              {insertChosenProduct
+                                ? formatPrice(
+                                    insertUnitPrice,
+                                    currencyCode,
+                                    currencySymbol,
+                                  )
+                                : "—"}
                             </span>
                           </td>
                           <td className="px-4 py-2.5 text-right">
                             <span className="text-xs font-mono font-bold text-emerald-700">
-                              {insertChosenProduct ? formatPrice(insertUnitPrice * insertQuantity, currencyCode, currencySymbol) : "—"}
+                              {insertChosenProduct
+                                ? formatPrice(
+                                    insertUnitPrice * insertQuantity,
+                                    currencyCode,
+                                    currencySymbol,
+                                  )
+                                : "—"}
                             </span>
                           </td>
                           <td className="px-4 py-2.5 text-center">
@@ -650,12 +847,17 @@ export function BulkOrder() {
                       <div className="relative flex-1">
                         <select
                           value={bottomProductToAdd}
-                          onChange={(e) => { setBottomProductToAdd(e.target.value); setBottomVariantToAdd(""); }}
+                          onChange={(e) => {
+                            setBottomProductToAdd(e.target.value);
+                            setBottomVariantToAdd("");
+                          }}
                           className="appearance-none w-full pl-3 pr-7 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 focus:outline-none focus:border-emerald-500 cursor-pointer transition-all"
                         >
                           <option value="">— Add product row —</option>
                           {bulkProducts.map((p) => (
-                            <option key={p.id} value={p.id}>{p.name} · {p.sku}</option>
+                            <option key={p.id} value={p.id}>
+                              {p.name} · {p.sku}
+                            </option>
                           ))}
                         </select>
                         <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -665,7 +867,9 @@ export function BulkOrder() {
 
                   <td className="px-4 py-2.5">
                     <span className="text-[11px] font-mono text-slate-400">
-                      {bottomChosenProduct ? (bottomChosenVariant?.sku || bottomChosenProduct.sku) : "—"}
+                      {bottomChosenProduct
+                        ? bottomChosenVariant?.sku || bottomChosenProduct.sku
+                        : "—"}
                     </span>
                   </td>
 
@@ -675,14 +879,29 @@ export function BulkOrder() {
                         <div className="relative min-w-[130px]">
                           <select
                             value={bottomVariantToAdd}
-                            onChange={(e) => setBottomVariantToAdd(e.target.value)}
+                            onChange={(e) =>
+                              setBottomVariantToAdd(e.target.value)
+                            }
                             className="appearance-none w-full pl-2.5 pr-7 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 text-xs font-bold text-emerald-900 focus:outline-none focus:border-emerald-500 cursor-pointer transition-all"
                           >
                             <option value="">— Weight —</option>
                             {bottomVariants.map((v) => {
-                              const vLabel = v.name || `${v.weight}${v.weightUnit || "kg"}`;
-                              const vPrice = resolveUnitPrice(bottomChosenProduct, v);
-                              return <option key={v.id} value={v.id}>{vLabel} · {formatPrice(vPrice, currencyCode, currencySymbol)}</option>;
+                              const vLabel =
+                                v.name || `${v.weight}${v.weightUnit || "kg"}`;
+                              const vPrice = resolveUnitPrice(
+                                bottomChosenProduct,
+                                v,
+                              );
+                              return (
+                                <option key={v.id} value={v.id}>
+                                  {vLabel} ·{" "}
+                                  {formatPrice(
+                                    vPrice,
+                                    currencyCode,
+                                    currencySymbol,
+                                  )}
+                                </option>
+                              );
                             })}
                           </select>
                           <ChevronDown className="w-3 h-3 text-emerald-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -690,7 +909,14 @@ export function BulkOrder() {
                         {bottomVariants.length > 1 && (
                           <button
                             type="button"
-                            onClick={() => { handleAddAllVariants(bottomChosenProduct, bottomQuantity); setBottomProductToAdd(""); setBottomVariantToAdd(""); }}
+                            onClick={() => {
+                              handleAddAllVariants(
+                                bottomChosenProduct,
+                                bottomQuantity,
+                              );
+                              setBottomProductToAdd("");
+                              setBottomVariantToAdd("");
+                            }}
                             className="text-[10px] text-emerald-600 hover:text-emerald-800 font-bold cursor-pointer underline-offset-2 hover:underline"
                           >
                             + All {bottomVariants.length} weights
@@ -698,7 +924,9 @@ export function BulkOrder() {
                         )}
                       </div>
                     ) : (
-                      <span className="text-xs text-slate-300 italic">{bottomChosenProduct ? "Standard" : "—"}</span>
+                      <span className="text-xs text-slate-300 italic">
+                        {bottomChosenProduct ? "Standard" : "—"}
+                      </span>
                     )}
                   </td>
 
@@ -707,32 +935,48 @@ export function BulkOrder() {
                       type="number"
                       min="1"
                       value={bottomQuantity}
-                      onChange={(e) => setBottomQuantity(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                      onChange={(e) =>
+                        setBottomQuantity(
+                          Math.max(1, parseInt(e.target.value, 10) || 1),
+                        )
+                      }
                       className="w-20 px-2 py-1.5 text-sm font-bold text-center rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-emerald-500 transition-all"
                     />
                   </td>
 
                   <td className="px-4 py-2.5 text-right">
                     <span className="text-xs font-mono text-slate-400">
-                      {bottomChosenProduct ? formatPrice(bottomUnitPrice, currencyCode, currencySymbol) : "—"}
+                      {bottomChosenProduct
+                        ? formatPrice(
+                            bottomUnitPrice,
+                            currencyCode,
+                            currencySymbol,
+                          )
+                        : "—"}
                     </span>
                   </td>
 
                   <td className="px-4 py-2.5 text-right">
                     <span className="text-xs font-mono font-bold text-emerald-700">
-                      {bottomChosenProduct ? formatPrice(bottomUnitPrice * bottomQuantity, currencyCode, currencySymbol) : "—"}
+                      {bottomChosenProduct
+                        ? formatPrice(
+                            bottomUnitPrice * bottomQuantity,
+                            currencyCode,
+                            currencySymbol,
+                          )
+                        : "—"}
                     </span>
                   </td>
 
-                  <td className="px-4 py-2.5 text-center">
+                  <td className="p-1 text-center">
                     <button
                       type="button"
                       onClick={handleBottomAdd}
                       disabled={!bottomProductToAdd}
-                      className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-sm"
+                      className="flex items-center justify-center gap-1.5 w-full h-8 px-3 rounded-lg bg-emerald-600 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-sm"
                       title="Add row"
                     >
-                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add</span>
                     </button>
                   </td>
                 </tr>
@@ -773,23 +1017,31 @@ export function BulkOrder() {
               <div className="flex items-center gap-5 text-xs">
                 <div>
                   <span className="text-slate-400">Lines</span>
-                  <span className="ml-1.5 font-bold text-slate-800">{rows.length}</span>
+                  <span className="ml-1.5 font-bold text-slate-800">
+                    {rows.length}
+                  </span>
                 </div>
                 <div className="h-3 w-px bg-slate-200" />
                 <div>
                   <span className="text-slate-400">Units</span>
-                  <span className="ml-1.5 font-bold text-slate-800">{totalUnits.toLocaleString()}</span>
+                  <span className="ml-1.5 font-bold text-slate-800">
+                    {totalUnits.toLocaleString()}
+                  </span>
                 </div>
                 <div className="h-3 w-px bg-slate-200" />
                 <div>
                   <span className="text-slate-400">Country</span>
-                  <span className="ml-1.5 font-bold text-slate-800">{targetCountryCode} · {currencyCode}</span>
+                  <span className="ml-1.5 font-bold text-slate-800">
+                    {targetCountryCode} · {currencyCode}
+                  </span>
                 </div>
               </div>
 
               <div className="flex items-center gap-4">
                 <div className="text-right">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Subtotal</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    Subtotal
+                  </div>
                   <div className="text-2xl font-black text-slate-900 tracking-tight font-mono leading-none mt-0.5">
                     {formatPrice(totalSubtotal, currencyCode, currencySymbol)}
                   </div>
@@ -802,16 +1054,21 @@ export function BulkOrder() {
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-sm"
                 >
                   {submitOrderMutation.isPending ? (
-                    <><RefreshCw className="w-4 h-4 animate-spin" />Submitting…</>
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Submitting…
+                    </>
                   ) : (
-                    <><Send className="w-4 h-4" />Submit Order</>
+                    <>
+                      <Send className="w-4 h-4" />
+                      Submit Order
+                    </>
                   )}
                 </button>
               </div>
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

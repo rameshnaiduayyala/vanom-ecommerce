@@ -7,9 +7,13 @@ import { DashboardCategoryChart } from "./components/DashboardCategoryChart.jsx"
 import { DashboardRecentActivity } from "./components/DashboardRecentActivity.jsx";
 
 const DATE_RANGE_OPTIONS = [
+  { label: "All", value: "all" },
   { label: "Today", value: "today" },
+  { label: "3 Days", value: "3d" },
   { label: "7 Days", value: "7d" },
+  { label: "15 Days", value: "15d" },
   { label: "30 Days", value: "30d" },
+  { label: "60 Days", value: "60d" },
   { label: "90 Days", value: "90d" },
   { label: "1 Year", value: "1y" },
 ];
@@ -42,8 +46,8 @@ export function AdminDashboardPage() {
         </div>
 
         {/* ── Date Range Filters ── */}
-        <div className="flex items-center gap-2">
-          <div className="inline-flex items-center gap-1 bg-white border border-slate-200/90 rounded-xl p-1 shadow-2xs text-xs">
+        <div className="flex items-center gap-2 overflow-x-auto max-w-full pb-1 sm:pb-0">
+          <div className="inline-flex items-center gap-1 bg-white border border-slate-200/90 rounded-xl p-1 shadow-2xs text-xs shrink-0">
             <span className="hidden md:flex items-center pl-2 pr-1 text-slate-400">
               <Calendar className="w-3.5 h-3.5" />
             </span>
@@ -54,7 +58,7 @@ export function AdminDashboardPage() {
                   key={opt.value}
                   type="button"
                   onClick={() => setTimeRange(opt.value)}
-                  className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap transition-all cursor-pointer ${
                     active
                       ? "bg-[#006B3C] text-white shadow-xs"
                       : "text-slate-600 hover:text-slate-950 hover:bg-slate-100/70"
