@@ -10,6 +10,10 @@ export async function adminRoutes(fastify) {
     preHandler: [authenticate, authorize("SUPERADMIN")]
   }, controller.getReports);
 
+  fastify.get("/admin/reports/profit-loss", {
+    preHandler: [authenticate, authorize("SUPERADMIN")]
+  }, controller.getProfitLoss);
+
   fastify.get("/admin/audit-logs", {
     preHandler: [authenticate, authorize("SUPERADMIN")]
   }, controller.getAuditLogs);

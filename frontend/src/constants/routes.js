@@ -1,4 +1,4 @@
-﻿export const ROUTES = {
+export const ROUTES = {
   // Public B2C
   HOME: "/",
   PRODUCTS: "/products",
@@ -67,6 +67,7 @@
     QUOTES: "/admin/quotes",
     PAYMENTS: "/admin/payments",
     AUDIT_LOGS: "/admin/audit-logs",
+    REPORTS: "/admin/reports",
     SHIPMENTS: "/admin/shipments",
     STORE: "/admin/store",
     MESSAGES: "/admin/messages",

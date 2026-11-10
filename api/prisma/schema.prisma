@@ -299,6 +299,12 @@ model Product {
   basePrice Decimal? @db.Decimal(12, 2)
 
   /**
+   * Buying / Acquisition / Supplier Cost per unit.
+   * Used for calculating Cost of Goods Sold (COGS) and Profit & Loss.
+   */
+  costPrice Decimal? @db.Decimal(12, 2)
+
+  /**
    * Used for SIMPLE products.
    *
    * For VARIABLE products, stock should normally
@@ -479,6 +485,11 @@ model ProductVariant {
   attributes Json?
 
   stock Int @default(0)
+
+  /**
+   * Buying / Acquisition / Supplier Cost per variant unit.
+   */
+  costPrice Decimal? @db.Decimal(12, 2)
 
   weight        Decimal? @db.Decimal(10, 2)
   weightUnit    String?  @default("lb")
