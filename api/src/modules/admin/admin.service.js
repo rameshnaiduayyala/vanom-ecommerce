@@ -535,6 +535,30 @@ export async function getAuditLogs(params = {}) {
       where.entityType = params.entityType;
     }
 
+    // Date Range Filtering (Custom Start/End Dates or Presets)
+    if (params.startDate || params.endDate) {
+      where.createdAt = {};
+      if (params.startDate) {
+        where.createdAt.gte = new Date(params.startDate);
+      }
+      if (params.endDate) {
+        const end = new Date(params.endDate);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt.lte = end;
+      }
+    } else if (params.timeRange) {
+      const now = new Date();
+      if (params.timeRange === "today") {
+        const startOfToday = new Date(now);
+        startOfToday.setHours(0, 0, 0, 0);
+        where.createdAt = { gte: startOfToday };
+      } else if (params.timeRange === "7d" || params.timeRange === "1w") {
+        where.createdAt = { gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) };
+      } else if (params.timeRange === "30d" || params.timeRange === "1m") {
+        where.createdAt = { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) };
+      }
+    }
+
     if (typeof prisma.auditLog?.findMany === "function") {
       const [logs, total] = await Promise.all([
         prisma.auditLog.findMany({
@@ -557,13 +581,24 @@ export async function getAuditLogs(params = {}) {
         prisma.auditLog.count({ where })
       ]);
 
-      const items = logs.map((l) => ({
-        ...l,
-        device: l.device || l.metadata?.device || null,
-        location: l.location || l.metadata?.location || null,
-        ipAddress: l.ipAddress || l.metadata?.ipAddress || null,
-        actor: l.user || (l.actorEmail ? { email: l.actorEmail, role: l.actorRole } : null)
-      }));
+      const sanitizeLocation = (loc, ip) => {
+        if (loc === "US" && (!ip || ip === "127.0.0.1" || ip === "::1" || ip.startsWith("192.168.") || ip.startsWith("10."))) {
+          return "India (Localhost)";
+        }
+        return loc;
+      };
+
+      const items = logs.map((l) => {
+        const ip = l.ipAddress || l.metadata?.ipAddress || null;
+        const loc = sanitizeLocation(l.location || l.metadata?.location || null, ip);
+        return {
+          ...l,
+          device: l.device || l.metadata?.device || null,
+          location: loc,
+          ipAddress: ip,
+          actor: l.user || (l.actorEmail ? { email: l.actorEmail, role: l.actorRole } : null)
+        };
+      });
 
       return {
         items,
@@ -586,21 +621,28 @@ export async function getAuditLogs(params = {}) {
       LIMIT $1 OFFSET $2
     `, limit, skip);
 
-    const items = rawLogs.map((l) => ({
-      ...l,
-      device: l.device || l.metadata?.device || null,
-      location: l.location || l.metadata?.location || null,
-      ipAddress: l.ipAddress || l.metadata?.ipAddress || null,
-      actor: l.userEmail
-        ? {
-            id: l.actorId,
-            email: l.userEmail,
-            firstName: l.firstName,
-            lastName: l.lastName,
-            role: l.userRole
-          }
-        : (l.actorEmail ? { email: l.actorEmail, role: l.actorRole } : null)
-    }));
+    const items = rawLogs.map((l) => {
+      const ip = l.ipAddress || l.metadata?.ipAddress || null;
+      let loc = l.location || l.metadata?.location || null;
+      if (loc === "US" && (!ip || ip === "127.0.0.1" || ip === "::1" || ip.startsWith("192.168.") || ip.startsWith("10."))) {
+        loc = "India (Localhost)";
+      }
+      return {
+        ...l,
+        device: l.device || l.metadata?.device || null,
+        location: loc,
+        ipAddress: ip,
+        actor: l.userEmail
+          ? {
+              id: l.actorId,
+              email: l.userEmail,
+              firstName: l.firstName,
+              lastName: l.lastName,
+              role: l.userRole
+            }
+          : (l.actorEmail ? { email: l.actorEmail, role: l.actorRole } : null)
+      };
+    });
 
     return {
       items,

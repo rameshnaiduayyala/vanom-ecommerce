@@ -10,6 +10,18 @@ export async function authenticate(request) {
   }
 }
 
+/**
+ * Gracefully verifies JWT token if present. If missing or expired,
+ * sets request.user = null without throwing a 401 error.
+ */
+export async function optionalAuthenticate(request) {
+  try {
+    await request.jwtVerify();
+  } catch {
+    request.user = null;
+  }
+}
+
 export function authorize(...roles) {
   return async function authorizationGuard(request) {
     if (!roles.includes(request.user?.role)) {

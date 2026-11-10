@@ -40,6 +40,7 @@ export async function registerCors(fastify) {
       "Origin",
       "x-country-code",
       "x-currency-code",
+      "x-client-timezone",
       "idempotency-key",
       "Idempotency-Key",
       "stripe-signature",

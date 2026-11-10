@@ -1,5 +1,5 @@
 import * as controller from "./auth.controller.js";
-import { authenticate } from "../../common/guards/auth.guard.js";
+import { authenticate, optionalAuthenticate } from "../../common/guards/auth.guard.js";
 
 const credentials = {
   email: { type: "string", format: "email", maxLength: 320 },
@@ -29,7 +29,7 @@ export async function authRoutes(fastify) {
     }
   }, controller.login);
 
-  fastify.post("/auth/logout", { preHandler: authenticate }, controller.logout);
+  fastify.post("/auth/logout", { preHandler: optionalAuthenticate }, controller.logout);
 
   fastify.get("/auth/verify-email", {
     schema: {

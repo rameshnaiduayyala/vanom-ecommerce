@@ -45,24 +45,29 @@ export async function login(request, reply) {
 }
 
 export async function logout(request, reply) {
-  const role = String(request.user?.role || "USER").toUpperCase();
-  const isStaff = role !== "USER";
-  const userEmail = request.user?.email || request.user?.sub || "User";
+  // If user context exists, record an audit trail event
+  if (request.user) {
+    const role = String(request.user.role || "USER").toUpperCase();
+    const isStaff = role !== "USER";
+    const userEmail = request.user.email || request.user.sub || "User";
 
-  // Audit logout with IP, Device, and Location tracking
-  await logAuditEvent({
-    request,
-    action: isStaff ? "ADMIN_LOGOUT" : "USER_LOGOUT",
-    entityType: "Session",
-    entityId: request.user?.sub || null,
-    description: isStaff
-      ? `Staff / Admin ${userEmail} (${role}) logged out`
-      : `User ${userEmail} logged out`,
-    metadata: {
-      role,
-      logoutAt: new Date().toISOString()
-    }
-  });
+    await logAuditEvent({
+      request,
+      actorId: request.user.sub || request.user.id || null,
+      actorEmail: userEmail,
+      actorRole: role,
+      action: isStaff ? "ADMIN_LOGOUT" : "USER_LOGOUT",
+      entityType: "Session",
+      entityId: request.user.sub || null,
+      description: isStaff
+        ? `Staff / Admin ${userEmail} (${role}) logged out`
+        : `User ${userEmail} logged out`,
+      metadata: {
+        role,
+        logoutAt: new Date().toISOString()
+      }
+    });
+  }
 
   return sendSuccess(reply, { message: "Logged out successfully", data: null });
 }
