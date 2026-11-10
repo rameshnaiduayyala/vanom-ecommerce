@@ -1599,6 +1599,8 @@ model AuditLog {
   description String?
   ipAddress   String?
   userAgent   String?
+  device      String?
+  location    String?
   beforeData  Json?
   afterData   Json?
   metadata    Json?
