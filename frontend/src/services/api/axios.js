@@ -35,6 +35,16 @@ apiClient.interceptors.request.use(
       config.headers["x-currency-code"] = country.currency;
     }
 
+    // Attach client timezone for audit logging and geolocation
+    try {
+      const clientTz = Intl.DateTimeFormat?.().resolvedOptions?.().timeZone;
+      if (clientTz) {
+        config.headers["x-client-timezone"] = clientTz;
+      }
+    } catch {
+      // Ignore if Intl is unavailable in environment
+    }
+
     return config;
   },
   (error) => {

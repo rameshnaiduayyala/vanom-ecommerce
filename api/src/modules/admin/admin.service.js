@@ -581,13 +581,24 @@ export async function getAuditLogs(params = {}) {
         prisma.auditLog.count({ where })
       ]);
 
-      const items = logs.map((l) => ({
-        ...l,
-        device: l.device || l.metadata?.device || null,
-        location: l.location || l.metadata?.location || null,
-        ipAddress: l.ipAddress || l.metadata?.ipAddress || null,
-        actor: l.user || (l.actorEmail ? { email: l.actorEmail, role: l.actorRole } : null)
-      }));
+      const sanitizeLocation = (loc, ip) => {
+        if (loc === "US" && (!ip || ip === "127.0.0.1" || ip === "::1" || ip.startsWith("192.168.") || ip.startsWith("10."))) {
+          return "India (Localhost)";
+        }
+        return loc;
+      };
+
+      const items = logs.map((l) => {
+        const ip = l.ipAddress || l.metadata?.ipAddress || null;
+        const loc = sanitizeLocation(l.location || l.metadata?.location || null, ip);
+        return {
+          ...l,
+          device: l.device || l.metadata?.device || null,
+          location: loc,
+          ipAddress: ip,
+          actor: l.user || (l.actorEmail ? { email: l.actorEmail, role: l.actorRole } : null)
+        };
+      });
 
       return {
         items,
@@ -610,21 +621,28 @@ export async function getAuditLogs(params = {}) {
       LIMIT $1 OFFSET $2
     `, limit, skip);
 
-    const items = rawLogs.map((l) => ({
-      ...l,
-      device: l.device || l.metadata?.device || null,
-      location: l.location || l.metadata?.location || null,
-      ipAddress: l.ipAddress || l.metadata?.ipAddress || null,
-      actor: l.userEmail
-        ? {
-            id: l.actorId,
-            email: l.userEmail,
-            firstName: l.firstName,
-            lastName: l.lastName,
-            role: l.userRole
-          }
-        : (l.actorEmail ? { email: l.actorEmail, role: l.actorRole } : null)
-    }));
+    const items = rawLogs.map((l) => {
+      const ip = l.ipAddress || l.metadata?.ipAddress || null;
+      let loc = l.location || l.metadata?.location || null;
+      if (loc === "US" && (!ip || ip === "127.0.0.1" || ip === "::1" || ip.startsWith("192.168.") || ip.startsWith("10."))) {
+        loc = "India (Localhost)";
+      }
+      return {
+        ...l,
+        device: l.device || l.metadata?.device || null,
+        location: loc,
+        ipAddress: ip,
+        actor: l.userEmail
+          ? {
+              id: l.actorId,
+              email: l.userEmail,
+              firstName: l.firstName,
+              lastName: l.lastName,
+              role: l.userRole
+            }
+          : (l.actorEmail ? { email: l.actorEmail, role: l.actorRole } : null)
+      };
+    });
 
     return {
       items,

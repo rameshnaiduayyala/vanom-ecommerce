@@ -35,6 +35,61 @@ export function parseDeviceFromUserAgent(ua) {
   return `${browser} on ${os} (${deviceType})`;
 }
 
+// Mapping common ISO country codes to readable names
+const COUNTRY_NAMES = {
+  IN: "India",
+  US: "United States",
+  CA: "Canada",
+  GB: "United Kingdom",
+  UK: "United Kingdom",
+  AU: "Australia",
+  DE: "Germany",
+  FR: "France",
+  AE: "UAE",
+  SG: "Singapore",
+  JP: "Japan",
+  CN: "China",
+  NL: "Netherlands",
+  CH: "Switzerland",
+  BR: "Brazil",
+};
+
+// Known timezone to physical country / location mapping
+const TIMEZONE_TO_LOCATION = {
+  "Asia/Calcutta": "India",
+  "Asia/Kolkata": "India",
+  "Asia/Dubai": "Dubai, UAE",
+  "Asia/Singapore": "Singapore",
+  "Asia/Tokyo": "Tokyo, Japan",
+  "Asia/Hong_Kong": "Hong Kong",
+  "Asia/Bangkok": "Bangkok, Thailand",
+  "Asia/Dhaka": "Dhaka, Bangladesh",
+  "Asia/Karachi": "Karachi, Pakistan",
+  "Asia/Colombo": "Colombo, Sri Lanka",
+  "Asia/Kathmandu": "Kathmandu, Nepal",
+  "America/New_York": "New York, US",
+  "America/Chicago": "Chicago, US",
+  "America/Los_Angeles": "California, US",
+  "America/Denver": "Denver, US",
+  "America/Toronto": "Toronto, Canada",
+  "America/Vancouver": "Vancouver, Canada",
+  "Europe/London": "London, UK",
+  "Europe/Berlin": "Berlin, Germany",
+  "Europe/Paris": "Paris, France",
+  "Australia/Sydney": "Sydney, Australia",
+  "Australia/Melbourne": "Melbourne, Australia",
+};
+
+function formatLocationFromTimezone(tz) {
+  if (!tz) return null;
+  if (TIMEZONE_TO_LOCATION[tz]) return TIMEZONE_TO_LOCATION[tz];
+  if (tz.includes("/")) {
+    const [continent, city] = tz.split("/");
+    return `${city.replace(/_/g, " ")}, ${continent}`;
+  }
+  return tz;
+}
+
 /**
  * Extracts geographical location from incoming request headers or IP.
  */
@@ -42,23 +97,50 @@ export function parseLocationFromRequest(request, ip) {
   if (!request) return "Unknown Location";
 
   const headers = request.headers || {};
-  const city = headers["cf-ipcity"] || headers["x-vercel-ip-city"] || headers["cloudfront-viewer-city"];
-  const region = headers["cf-region"] || headers["x-vercel-ip-country-region"] || headers["cloudfront-viewer-country-region-name"];
-  const country = headers["cf-ipcountry"] || headers["x-vercel-ip-country"] || headers["cloudfront-viewer-country"] || headers["x-country-code"];
+
+  // 1. Check real CDN / Cloud proxy headers (Cloudflare, Vercel, AWS CloudFront)
+  const city =
+    headers["cf-ipcity"] ||
+    headers["x-vercel-ip-city"] ||
+    headers["cloudfront-viewer-city"];
+  const region =
+    headers["cf-region"] ||
+    headers["x-vercel-ip-country-region"] ||
+    headers["cloudfront-viewer-country-region-name"];
+  const rawCountry =
+    headers["cf-ipcountry"] ||
+    headers["x-vercel-ip-country"] ||
+    headers["cloudfront-viewer-country"];
+
+  // Format readable country if CDN header is present
+  const country = rawCountry
+    ? (COUNTRY_NAMES[String(rawCountry).toUpperCase()] || rawCountry)
+    : null;
 
   const parts = [city, region, country].filter(Boolean);
-  if (parts.length > 0) return parts.join(", ");
+  if (parts.length > 0) {
+    return parts.join(", ");
+  }
+
+  // 2. Client-provided timezone header (e.g. Asia/Calcutta -> India)
+  const clientTz = headers["x-client-timezone"];
+  const tzLocation = formatLocationFromTimezone(clientTz);
 
   const cleanIp = (ip || "").trim();
-  if (
+  const isLocalOrPrivate =
     !cleanIp ||
     cleanIp === "127.0.0.1" ||
     cleanIp === "::1" ||
     cleanIp === "localhost" ||
     cleanIp.startsWith("192.168.") ||
     cleanIp.startsWith("10.") ||
-    cleanIp.startsWith("172.")
-  ) {
+    cleanIp.startsWith("172.");
+
+  if (tzLocation) {
+    return isLocalOrPrivate ? `${tzLocation} (Localhost)` : tzLocation;
+  }
+
+  if (isLocalOrPrivate) {
     return "Localhost / Internal";
   }
 
