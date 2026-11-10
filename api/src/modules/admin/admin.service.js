@@ -249,16 +249,53 @@ export async function getReports() {
 }
 
 export async function getAuditLogs() {
-  return [
-    {
-      id: "log_1",
-      createdAt: new Date(),
-      actorId: "admin@vanom.com",
-      action: "CATALOG_UPDATE",
-      entityType: "Product",
-      entityId: "prod_bulk"
+  try {
+    if (typeof prisma.auditLog?.findMany === "function") {
+      const logs = await prisma.auditLog.findMany({
+        take: 200,
+        orderBy: { createdAt: "desc" },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              role: true
+            }
+          }
+        }
+      });
+      return logs.map((l) => ({
+        ...l,
+        actor: l.user || (l.actorEmail ? { email: l.actorEmail, role: l.actorRole } : null)
+      }));
     }
-  ];
+
+    const rawLogs = await prisma.$queryRawUnsafe(`
+      SELECT a.*, u.email as "userEmail", u."firstName", u."lastName", u.role as "userRole"
+      FROM "AuditLog" a
+      LEFT JOIN "User" u ON a."actorId" = u.id
+      ORDER BY a."createdAt" DESC
+      LIMIT 200
+    `);
+
+    return rawLogs.map((l) => ({
+      ...l,
+      actor: l.userEmail
+        ? {
+            id: l.actorId,
+            email: l.userEmail,
+            firstName: l.firstName,
+            lastName: l.lastName,
+            role: l.userRole
+          }
+        : (l.actorEmail ? { email: l.actorEmail, role: l.actorRole } : null)
+    }));
+  } catch (error) {
+    console.error("[GET_AUDIT_LOGS_ERROR]:", error.message);
+    return [];
+  }
 }
 
 export async function getPayments() {

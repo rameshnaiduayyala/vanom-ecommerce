@@ -1,9 +1,10 @@
-﻿import * as productService from "./product.service.js";
+import * as productService from "./product.service.js";
 import { sendSuccess } from "../../common/response/api-response.js";
 import { getPagination, getPaginationMeta } from "../../common/utils/pagination.js";
 import { HTTP_STATUS } from "../../constants/http-status.js";
 import { MESSAGES } from "../../constants/messages.js";
 import { AppError } from "../../common/errors/app-error.js";
+import { logAuditEvent } from "../../common/services/audit.service.js";
 
 async function getProductInput(request) {
   if (!request.isMultipart?.()) return request.body;
@@ -36,7 +37,26 @@ async function getProductInput(request) {
 }
 
 export async function create(request, reply) {
-  const product = await productService.createProduct(await getProductInput(request));
+  const input = await getProductInput(request);
+  const product = await productService.createProduct(input);
+
+  // Record Audit Trail
+  await logAuditEvent({
+    request,
+    action: "PRODUCT_CREATED",
+    entityType: "Product",
+    entityId: product.id,
+    description: `Created product "${product.name}" (${product.sku || product.id})`,
+    afterData: {
+      id: product.id,
+      name: product.name,
+      sku: product.sku,
+      type: product.type,
+      categoryId: product.categoryId,
+      basePrice: product.basePrice,
+      stock: product.stock
+    }
+  });
 
   return sendSuccess(reply, {
     statusCode: HTTP_STATUS.CREATED,
@@ -83,10 +103,40 @@ export async function getById(request, reply) {
 }
 
 export async function update(request, reply) {
+  let existing = null;
+  try {
+    existing = await productService.getProductById(request.params.id);
+  } catch {
+    // continue
+  }
+
   const product = await productService.updateProduct(
     request.params.id,
     request.body
   );
+
+  // Record Audit Trail
+  await logAuditEvent({
+    request,
+    action: "PRODUCT_UPDATED",
+    entityType: "Product",
+    entityId: product.id,
+    description: `Updated product "${product.name}" (${product.sku || product.id})`,
+    beforeData: existing ? {
+      name: existing.name,
+      sku: existing.sku,
+      basePrice: existing.basePrice,
+      stock: existing.stock,
+      isActive: existing.isActive
+    } : null,
+    afterData: {
+      name: product.name,
+      sku: product.sku,
+      basePrice: product.basePrice,
+      stock: product.stock,
+      isActive: product.isActive
+    }
+  });
 
   return sendSuccess(reply, {
     message: MESSAGES.PRODUCT_UPDATED,
@@ -95,7 +145,28 @@ export async function update(request, reply) {
 }
 
 export async function remove(request, reply) {
+  let existing = null;
+  try {
+    existing = await productService.getProductById(request.params.id);
+  } catch {
+    // continue
+  }
+
   await productService.deleteProduct(request.params.id);
+
+  // Record Audit Trail
+  await logAuditEvent({
+    request,
+    action: "PRODUCT_DELETED",
+    entityType: "Product",
+    entityId: request.params.id,
+    description: `Deleted product "${existing?.name || request.params.id}"`,
+    beforeData: existing ? {
+      id: existing.id,
+      name: existing.name,
+      sku: existing.sku
+    } : null
+  });
 
   return sendSuccess(reply, {
     message: MESSAGES.PRODUCT_DELETED,

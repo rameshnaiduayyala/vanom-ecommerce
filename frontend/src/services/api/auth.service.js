@@ -24,4 +24,12 @@ export const authService = {
   getMe: async () => {
     return apiClient.get("/auth/me");
   },
+
+  logout: async () => {
+    try {
+      return await apiClient.post("/auth/logout");
+    } catch {
+      return null;
+    }
+  },
 };

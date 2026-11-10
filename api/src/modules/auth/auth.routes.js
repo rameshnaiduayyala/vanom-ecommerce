@@ -29,6 +29,8 @@ export async function authRoutes(fastify) {
     }
   }, controller.login);
 
+  fastify.post("/auth/logout", { preHandler: authenticate }, controller.logout);
+
   fastify.get("/auth/verify-email", {
     schema: {
       querystring: {
