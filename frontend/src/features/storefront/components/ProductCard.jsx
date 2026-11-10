@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   Heart,
@@ -8,6 +8,7 @@ import {
   Check,
   ShoppingCart,
   PackageX,
+  Sparkles,
 } from "lucide-react";
 import { useProductCard } from "../hooks/useProductCard.js";
 import { formatPrice } from "@/utils/formatters.js";
@@ -37,6 +38,53 @@ export function ProductCard({
     handleAddToCart,
     handleWishlist,
   } = useProductCard({ ...product, badge: product?.badge || badge });
+
+  const [isVariantOpen, setIsVariantOpen] = useState(false);
+  const variantDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (variantDropdownRef.current && !variantDropdownRef.current.contains(e.target)) {
+        setIsVariantOpen(false);
+      }
+    };
+    if (isVariantOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isVariantOpen]);
+
+  const activeVariant = useMemo(() => {
+    if (!Array.isArray(product.variants) || product.variants.length === 0) return null;
+    return product.variants.find((v) => v.id === selectedVariantId) || product.variants[0];
+  }, [product.variants, selectedVariantId]);
+
+  const getVariantLabel = (v) => {
+    if (!v) return "Option";
+    return (
+      v.name ||
+      v.variant_name ||
+      (v.attributes && typeof v.attributes === "object"
+        ? Object.values(v.attributes).filter(Boolean).join(" / ")
+        : "Option")
+    );
+  };
+
+  const getVariantPrice = (v) => {
+    if (!v) return null;
+    const isCanada = country?.code === "CA";
+    const vCountryEntry = Array.isArray(v.countries)
+      ? v.countries.find(
+          (c) =>
+            c.country?.code === country?.code ||
+            c.currency === country?.currency
+        )
+      : null;
+    const p = vCountryEntry?.price ?? (isCanada ? v.price_cad : v.price_usd) ?? v.price;
+    return p ? Number(p) : null;
+  };
 
   if (!product) return null;
 
@@ -233,34 +281,84 @@ export function ProductCard({
           )}
         </div>
 
-        {/* Variant Dropdown (if product has variants) */}
+        {/* ── Premium Rich Variant Selector Dropdown ── */}
         {isVariable && Array.isArray(product.variants) && product.variants.length > 0 && (
-          <div className="pt-1 space-y-0.5">
-            <div className="relative">
-              <select
-                value={selectedVariantId || product.variants[0]?.id || ""}
-                onChange={(e) => {
-                  setSelectedVariantId(e.target.value);
-                }}
-                className="w-full bg-[#F8FAF9] hover:bg-white text-gray-800 text-[11px] font-medium py-1.5 px-2.5 pr-7 rounded-xl border border-gray-200 hover:border-[#358B5B] focus:border-[#358B5B] focus:ring-1 focus:ring-[#358B5B] transition-all appearance-none cursor-pointer outline-none truncate"
-              >
+          <div className="pt-0.5 relative" ref={variantDropdownRef}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsVariantOpen((prev) => !prev);
+              }}
+              className={`w-full group/btn flex items-center justify-between gap-1.5 py-1.5 px-2.5 rounded-xl border text-[11px] font-semibold transition-all duration-200 cursor-pointer shadow-2xs ${
+                isVariantOpen
+                  ? "bg-white border-[#2E7D52] ring-2 ring-[#2E7D52]/15 text-[#172B2A]"
+                  : "bg-slate-50/70 hover:bg-white border-slate-200/90 hover:border-slate-300 text-slate-700"
+              }`}
+            >
+              <div className="flex items-center gap-1.5 min-w-0">
+                {/* <span className="w-1.5 h-1.5 rounded-full bg-[#2E7D52] shrink-0" /> */}
+                <span className="truncate text-slate-800 font-bold">
+                  {getVariantLabel(activeVariant)}
+                </span>
+              </div>
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-slate-400 group-hover/btn:text-[#2E7D52] transition-transform duration-200 shrink-0 ${
+                  isVariantOpen ? "rotate-180 text-[#2E7D52]" : ""
+                }`}
+              />
+            </button>
+
+            {/* Custom Floating Menu */}
+            {isVariantOpen && (
+              <div className="absolute left-0 right-0 bottom-full mb-1.5 z-40 bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-1 space-y-0.5 max-h-48 overflow-y-auto">
+                <div className="px-2 py-1 text-[9px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 flex items-center justify-between">
+                  <span>Select Variant</span>
+                  <span className="text-[9px] text-[#2E7D52] font-bold">
+                    {product.variants.length} available
+                  </span>
+                </div>
                 {product.variants.map((v) => {
-                  const label =
-                    v.name ||
-                    v.variant_name ||
-                    (v.attributes && typeof v.attributes === "object"
-                      ? Object.values(v.attributes).filter(Boolean).join(" / ")
-                      : "Option");
+                  const isSelected = (selectedVariantId || product.variants[0]?.id) === v.id;
+                  const vPrice = getVariantPrice(v);
+                  const isOutOfStockV = v.stock !== undefined && v.stock <= 0;
 
                   return (
-                    <option key={v.id} value={v.id}>
-                      {label}
-                    </option>
+                    <button
+                      key={v.id}
+                      type="button"
+                      disabled={isOutOfStockV}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSelectedVariantId(v.id);
+                        setIsVariantOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-left transition-colors cursor-pointer ${
+                        isSelected
+                          ? "bg-[#EBF7F0] text-[#1E5C3A] font-bold"
+                          : "text-slate-700 hover:bg-slate-50"
+                      } ${isOutOfStockV ? "opacity-40 cursor-not-allowed" : ""}`}
+                    >
+                      <div className="flex items-center gap-1.5 truncate">
+                        {isSelected ? (
+                          <Check className="w-3.5 h-3.5 text-[#2E7D52] shrink-0" strokeWidth={2.5} />
+                        ) : (
+                          <span className="w-3.5 h-3.5 shrink-0" />
+                        )}
+                        <span className="truncate">{getVariantLabel(v)}</span>
+                      </div>
+                      {vPrice && (
+                        <span className={`text-[10px] font-bold shrink-0 ${isSelected ? "text-[#1E5C3A]" : "text-slate-500"}`}>
+                          {formatPrice(vPrice, country.currency, country.symbol)}
+                        </span>
+                      )}
+                    </button>
                   );
                 })}
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 text-gray-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
+              </div>
+            )}
           </div>
         )}
 
