@@ -119,14 +119,22 @@ export function ProductsTable({
                   p.pricing?.CA?.retailPrice ??
                   (priceUsd ? (Number(priceUsd) * 1.35).toFixed(2) : 0);
                 const stockUs =
-                  usCountry?.stock ?? Math.round((p.stock ?? 100) * 0.6);
+                  usCountry?.stock ?? Math.round((p.stock ?? 0) * 0.6);
                 const stockCa =
                   caCountry?.stock ??
-                  Math.max(0, (p.stock ?? 100) - Math.round((p.stock ?? 100) * 0.6));
-                const totalStock = p.stock ?? p.stock_quantity ?? 100;
+                  Math.max(0, (p.stock ?? 0) - Math.round((p.stock ?? 0) * 0.6));
                 const isVariable =
                   p.type === "VARIABLE" ||
                   (Array.isArray(p.variants) && p.variants.length > 0);
+                const totalStock = isVariable
+                  ? p.variants.reduce((acc, v) => {
+                      const vCountries = v.countries?.reduce((cs, c) => cs + (Number(c.stock) || 0), 0) || 0;
+                      return acc + (vCountries > 0 ? vCountries : (Number(v.stock) || 0));
+                    }, 0)
+                  : ((usCountry?.stock != null || caCountry?.stock != null)
+                      ? ((usCountry?.stock ?? 0) + (caCountry?.stock ?? 0))
+                      : (p.stock ?? p.stock_quantity ?? 0));
+                const isDeleted = Boolean(p.deletedAt) || p.isActive === false;
 
                 const primaryImg =
                   Array.isArray(p.images) && p.images.length > 0
@@ -137,7 +145,10 @@ export function ProductsTable({
                     "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=400&q=80";
 
                 return (
-                  <tr key={p.id} className="hover:bg-surface-muted/50 transition-colors">
+                  <tr
+                    key={p.id}
+                    className={`hover:bg-surface-muted/50 transition-colors ${isDeleted ? "bg-rose-50/20 opacity-85" : ""}`}
+                  >
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <img
@@ -181,6 +192,11 @@ export function ProductsTable({
                         >
                           {isVariable ? "Variable" : "Simple"}
                         </span>
+                        {isDeleted && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 border border-rose-200">
+                            Deleted
+                          </span>
+                        )}
                         {p.isBestSeller && (
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
                             Bestseller
@@ -220,10 +236,15 @@ export function ProductsTable({
                     </td>
                     <td className="p-4">
                       <span
-                        className={`font-bold ${totalStock < 20 ? "text-amber-600" : "text-emerald-700"
-                          }`}
+                        className={`font-bold ${
+                          totalStock <= 0
+                            ? "text-rose-600"
+                            : totalStock <= 10
+                              ? "text-amber-600"
+                              : "text-emerald-700"
+                        }`}
                       >
-                        {totalStock} units
+                        {totalStock <= 0 ? "Out of stock (0)" : `${totalStock} units`}
                       </span>
                     </td>
                     <td className="p-4 text-right">
@@ -243,14 +264,16 @@ export function ProductsTable({
                         >
                           <Edit2 className="w-4 h-4" />
                         </Link>
-                        <button
-                          type="button"
-                          onClick={() => onDeleteProduct(p)}
-                          className="p-1.5 text-text-muted hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
-                          title="Delete Product"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {!isDeleted && (
+                          <button
+                            type="button"
+                            onClick={() => onDeleteProduct(p)}
+                            className="p-1.5 text-text-muted hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                            title="Delete Product"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

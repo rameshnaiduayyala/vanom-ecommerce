@@ -36,6 +36,7 @@ export function useProducts() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("active");
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [viewingProduct, setViewingProduct] = useState(null);
@@ -51,6 +52,13 @@ export function useProducts() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  // Smart catalog statistics (total, active, deleted, outOfStock, lowStock, etc.)
+  const { data: productStats, isLoading: loadingStats } = useQuery({
+    queryKey: ["admin-product-stats"],
+    queryFn: () => Api.admin.getProductStats(),
+    staleTime: 30000,
+  });
+
   // Server-side paginated product query with real total count
   const {
     data: productsData = [],
@@ -64,6 +72,7 @@ export function useProducts() {
         limit: pageSize,
         search: debouncedSearch,
         categoryId: selectedCategory !== "ALL" ? selectedCategory : undefined,
+        status: statusFilter,
       },
     ],
     queryFn: () =>
@@ -72,6 +81,7 @@ export function useProducts() {
         limit: pageSize,
         search: debouncedSearch || undefined,
         categoryId: selectedCategory !== "ALL" ? selectedCategory : undefined,
+        status: statusFilter,
       }),
   });
 
@@ -95,6 +105,7 @@ export function useProducts() {
     mutationFn: (newProd) => Api.admin.createProduct(newProd),
     onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-product-stats"] });
       queryClient.invalidateQueries({ queryKey: ["home-products"] });
       toast.success("Product Created", `${created.name || "Product"} has been added to the master catalog.`);
       setIsProductModalOpen(false);
@@ -107,6 +118,7 @@ export function useProducts() {
     mutationFn: ({ id, data }) => Api.admin.updateProduct(id, data),
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-product-stats"] });
       queryClient.invalidateQueries({ queryKey: ["home-products"] });
       toast.success("Product Updated", `${updated.name || "Product"} changes have been saved.`);
       setIsProductModalOpen(false);
@@ -119,6 +131,7 @@ export function useProducts() {
     mutationFn: (id) => Api.admin.deleteProduct(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-product-stats"] });
       queryClient.invalidateQueries({ queryKey: ["home-products"] });
       toast.success("Product Deleted", "The product has been removed from the platform.");
       setDeletingProduct(null);
@@ -275,11 +288,20 @@ export function useProducts() {
     setCurrentPage(1);
   };
 
+  const handleStatusChange = (nextStatus) => {
+    setStatusFilter(nextStatus);
+    setCurrentPage(1);
+  };
+
   return {
     products: productList,
     filteredProducts: productList,
     paginatedProducts: productList,
     totalFilteredCount,
+    productStats,
+    loadingStats,
+    statusFilter,
+    setStatusFilter: handleStatusChange,
     currentPage,
     setCurrentPage: (p) => {
       setCurrentPage(p);

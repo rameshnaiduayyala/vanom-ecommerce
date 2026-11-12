@@ -98,6 +98,10 @@ export const adminService = {
     return formatAdminProducts(res);
   },
 
+  getProductStats: async () => {
+    return apiClient.get("/products/stats", { silent: true });
+  },
+
   getProductsDropdown: async (params = {}) => {
     const res = await apiClient.get("/products/dropdown", { params });
     return Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];

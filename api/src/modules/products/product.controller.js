@@ -65,6 +65,14 @@ export async function create(request, reply) {
   });
 }
 
+export async function getStats(request, reply) {
+  const stats = await productService.getProductStats();
+  return sendSuccess(reply, {
+    message: "Product catalog stats fetched successfully",
+    data: stats
+  });
+}
+
 export async function list(request, reply) {
   const pagination = getPagination(request.query);
 
@@ -73,6 +81,7 @@ export async function list(request, reply) {
     search: request.query.search,
     categoryId: request.query.categoryId,
     type: request.query.type,
+    status: request.query.status,
     isActive: request.query.isActive,
     isNew: request.query.isNew,
     isFeatured: request.query.isFeatured,

@@ -46,7 +46,10 @@ export function formatAdminProducts(res) {
       isBestSeller: Boolean(p.isBestSeller),
       isNewProduct: Boolean(isNewAttr),
       isFeatured: Boolean(p.isFeatured),
-      stock: p.variants?.[0]?.inventoryItems?.reduce((sum, item) => sum + (item.onHand || 0), 0) || p.stock || 500,
+      stock:
+        p.variants?.[0]?.inventoryItems?.length > 0
+          ? p.variants[0].inventoryItems.reduce((sum, item) => sum + (item.onHand || 0), 0)
+          : (p.stock ?? 0),
       packaging: p.variants?.[0]?.packaging?.[0]
         ? {
             unitName: p.variants[0].packaging[0].unit?.name || "Unit",
