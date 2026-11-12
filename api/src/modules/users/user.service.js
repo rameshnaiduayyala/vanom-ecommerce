@@ -103,7 +103,9 @@ export async function createUser(input) {
 
     if (user?.fullUser?.email && user?.token) {
       try {
-        await sendVerificationEmail(user.fullUser.email, user.token, {
+        await sendVerificationEmail({
+          email: user.fullUser.email,
+          token: user.token,
           firstName: user.fullUser.firstName,
           isB2B: user.fullUser.role === "B2B_USER" || !!user.fullUser.bulkBusiness,
           businessName: user.fullUser.bulkBusiness?.businessName,

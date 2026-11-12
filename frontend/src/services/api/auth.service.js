@@ -13,7 +13,8 @@ export const authService = {
     return apiClient.get(`/auth/verify-email?token=${encodeURIComponent(token)}`);
   },
 
-  forgotPassword: async (email) => {
+  forgotPassword: async (payloadOrEmail) => {
+    const email = typeof payloadOrEmail === "string" ? payloadOrEmail : payloadOrEmail?.email;
     return apiClient.post("/auth/forgot-password", { email });
   },
 

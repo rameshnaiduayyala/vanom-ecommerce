@@ -54,7 +54,9 @@ export async function register(input) {
       return createdUser;
     }, { timeout: 20000 });
 
-    await sendVerificationEmail(user.email, token, {
+    await sendVerificationEmail({
+      email: user.email,
+      token,
       firstName: user.firstName,
       isB2B: user.role === "B2B_USER" || !!user.bulkBusiness,
       businessName: user.bulkBusiness?.businessName,
@@ -142,7 +144,11 @@ export async function requestPasswordReset(email) {
       expiresAt: new Date(Date.now() + env.passwordResetExpiresMinutes * 60 * 1000)
     }
   });
-  await sendPasswordResetEmail(user.email, token);
+  await sendPasswordResetEmail({
+    email: user.email,
+    token,
+    firstName: user.firstName,
+  });
   return { success: true };
 }
 

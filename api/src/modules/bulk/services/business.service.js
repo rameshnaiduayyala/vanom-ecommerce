@@ -95,7 +95,9 @@ export async function register(input, userId) {
 
     if (targetUserEmail && verificationToken) {
       try {
-        await sendVerificationEmail(targetUserEmail, verificationToken, {
+        await sendVerificationEmail({
+          email: targetUserEmail,
+          token: verificationToken,
           firstName: targetFirstName,
           isB2B: true,
           businessName: result.businessName,

@@ -19,6 +19,7 @@ export const ROUTES = {
   REGISTER_BUSINESS_SUCCESS: "/register-business/pending-approval",
   VERIFY_EMAIL: "/verify-email",
   FORGOT_PASSWORD: "/forgot-password",
+  RESET_PASSWORD: "/reset-password",
   CONTACT: "/contact",
   CAREERS: "/careers",
   ABOUT: "/about",

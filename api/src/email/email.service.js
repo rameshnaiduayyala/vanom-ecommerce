@@ -36,10 +36,18 @@ export async function sendWelcomeEmail({ email, firstName }) {
   });
 }
 
+function normalizeAuthEmailArgs(emailOrPayload, token, options = {}) {
+  if (emailOrPayload && typeof emailOrPayload === "object") {
+    return emailOrPayload;
+  }
+  return { email: emailOrPayload, token, ...options };
+}
+
 /**
  * Auth: Email Verification
  */
-export async function sendVerificationEmail({ email, token, firstName, ...options }) {
+export async function sendVerificationEmail(emailOrPayload, tokenArg, optionsArg) {
+  const { email, token, firstName, ...options } = normalizeAuthEmailArgs(emailOrPayload, tokenArg, optionsArg);
   const verifyUrl = `${(env.clientUrl || "http://localhost:5173").replace(/\/$/, "")}/verify-email?token=${encodeURIComponent(token)}`;
   const subject = options.isB2B
     ? `Verify your Vanom Wholesale Account - ${options.businessName || "Business"}`
@@ -61,7 +69,8 @@ export async function sendVerificationEmail({ email, token, firstName, ...option
 /**
  * Auth: Password Reset / Forgot Password
  */
-export async function sendPasswordResetEmail({ email, token, firstName, requestedFrom }) {
+export async function sendPasswordResetEmail(emailOrPayload, tokenArg, optionsArg) {
+  const { email, token, firstName, requestedFrom } = normalizeAuthEmailArgs(emailOrPayload, tokenArg, optionsArg);
   const resetUrl = `${(env.clientUrl || "http://localhost:5173").replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
   const subject = "Reset your Vanom password";
 
