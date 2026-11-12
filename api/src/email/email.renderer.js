@@ -8,6 +8,16 @@ import { env } from "../config/env.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const templatesDir = path.join(__dirname, "templates");
+const logoFilePath = path.resolve(__dirname, "../../assets/logo.png");
+
+function resolveLogoUrl() {
+  const assetBase = (env.assetPublicUrl || "").replace(/\/$/, "");
+  const isLocalhost = !assetBase || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(assetBase);
+  if (isLocalhost && fs.existsSync(logoFilePath)) {
+    return "cid:vanom-logo";
+  }
+  return `${assetBase}/logo.png`;
+}
 
 // Cache compiled template functions for fast in-memory execution
 const templateCache = new Map();
@@ -61,7 +71,7 @@ export async function renderEmail(relativeTemplatePath, data = {}) {
   // Merge default globals
   const viewData = {
     currentYear: new Date().getFullYear(),
-    logoUrl: `${(env.assetPublicUrl || "").replace(/\/$/, "")}/logo.png`,
+    logoUrl: resolveLogoUrl(),
     storeUrl: env.clientUrl || "http://localhost:5173",
     ...data,
   };

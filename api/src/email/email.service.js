@@ -194,3 +194,166 @@ export async function sendContactNotificationEmails({ name, email, phone, subjec
 
   return Promise.all(promises);
 }
+
+function getClientOrderUrl(orderId, isBulk = false) {
+  const base = (env.clientUrl || "http://localhost:5173").replace(/\/$/, "");
+  if (!orderId) return base;
+  return isBulk ? `${base}/b2b/orders/${orderId}` : `${base}/orders/${orderId}`;
+}
+
+function formatOrderRef(orderId, orderNumber) {
+  if (orderNumber) return orderNumber;
+  return orderId ? `ORD-${String(orderId).slice(0, 8).toUpperCase()}` : "N/A";
+}
+
+/**
+ * Orders: Order Booked / Placed (B2C & B2B Bulk)
+ */
+export async function sendOrderBookedEmail({ email, firstName, order, isBulk = false }) {
+  if (!email || !order) return null;
+  const orderNumber = formatOrderRef(order.id, order.orderNumber);
+  const orderUrl = getClientOrderUrl(order.id, isBulk);
+  const subject = isBulk
+    ? `Wholesale Order #${orderNumber} Booked`
+    : `Your Vanom Order #${orderNumber} is Booked`;
+
+  return sendEmail({
+    to: email,
+    subject,
+    template: "orders/order-booked.html",
+    data: {
+      firstName,
+      orderNumber,
+      status: order.status || null,
+      order,
+      isBulk,
+      orderUrl,
+      preview: subject,
+    },
+  });
+}
+
+const ORDER_STATUS_MESSAGES = {
+  CONFIRMED: "Your order has been confirmed and is being prepared.",
+  PROCESSING: "Your order is currently being processed by our fulfillment team.",
+  PACKED: "Your items have been packed and are awaiting carrier pickup.",
+  SHIPPED: "Your order is on its way!",
+  DELIVERED: "Your order has been delivered. We hope you enjoy your purchase!",
+  CANCELLED: "Your order has been cancelled. Any reserved stock or pending charges have been released.",
+  REFUNDED: "Your order has been refunded.",
+};
+
+/**
+ * Orders: Order Status Updated (B2C & B2B Bulk)
+ */
+export async function sendOrderStatusChangedEmail({
+  email,
+  firstName,
+  orderId,
+  orderNumber: explicitOrderNumber,
+  status,
+  previousStatus = null,
+  paymentStatus = null,
+  shippingStatus = null,
+  trackingNumber = null,
+  trackingUrl = null,
+  reason = null,
+  isBulk = false,
+}) {
+  if (!email || !status) return null;
+  const orderNumber = formatOrderRef(orderId, explicitOrderNumber);
+  const orderUrl = getClientOrderUrl(orderId, isBulk);
+  const normalizedStatus = String(status).toUpperCase();
+  const subject = `Order #${orderNumber} Status: ${normalizedStatus}`;
+
+  return sendEmail({
+    to: email,
+    subject,
+    template: "orders/order-status-updated.html",
+    data: {
+      firstName,
+      orderNumber,
+      status: normalizedStatus,
+      previousStatus: previousStatus ? String(previousStatus).toUpperCase() : null,
+      paymentStatus: paymentStatus ? String(paymentStatus).toUpperCase() : null,
+      shippingStatus: shippingStatus ? String(shippingStatus).toUpperCase() : null,
+      trackingNumber,
+      trackingUrl,
+      reason,
+      statusMessage: ORDER_STATUS_MESSAGES[normalizedStatus] || null,
+      isBulk,
+      orderUrl,
+      preview: subject,
+    },
+  });
+}
+
+const PAYMENT_STATUS_META = {
+  SUCCEEDED: {
+    subjectPrefix: "Payment Confirmed",
+    headline: "Payment Confirmed",
+    statusLabel: "PAID",
+    introText: "your payment has been successfully processed.",
+    accentColor: "#0B4627",
+    noticeTitle: "Payment Note",
+    ctaLabel: "View Order Details",
+  },
+  FAILED: {
+    subjectPrefix: "Payment Failed",
+    headline: "Payment Could Not Be Processed",
+    statusLabel: "FAILED",
+    introText: "we were unable to process your payment for this order.",
+    accentColor: "#C53030",
+    noticeTitle: "Failure Details",
+    ctaLabel: "Review Order",
+  },
+  REFUNDED: {
+    subjectPrefix: "Refund Processed",
+    headline: "Refund Processed",
+    statusLabel: "REFUNDED",
+    introText: "your refund has been initiated and will appear on your statement shortly.",
+    accentColor: "#1E40AF",
+    noticeTitle: "Refund Reason",
+    ctaLabel: "View Order Details",
+  },
+};
+
+/**
+ * Payments: Payment Succeeded / Failed / Refunded
+ */
+export async function sendPaymentStatusEmail({
+  email,
+  firstName,
+  orderId,
+  orderNumber: explicitOrderNumber,
+  status = "SUCCEEDED",
+  amount = null,
+  currencyCode = "USD",
+  paymentId = null,
+  reason = null,
+  isBulk = false,
+}) {
+  if (!email) return null;
+  const key = String(status).toUpperCase();
+  const meta = PAYMENT_STATUS_META[key] || PAYMENT_STATUS_META.SUCCEEDED;
+  const orderNumber = formatOrderRef(orderId, explicitOrderNumber);
+  const ctaUrl = getClientOrderUrl(orderId, isBulk);
+  const subject = `${meta.subjectPrefix} — Order #${orderNumber}`;
+
+  return sendEmail({
+    to: email,
+    subject,
+    template: "payments/payment-status.html",
+    data: {
+      firstName,
+      orderNumber,
+      amount: amount != null ? Number(amount).toFixed(2) : null,
+      currencyCode,
+      paymentId,
+      reason,
+      ...meta,
+      ctaUrl,
+      preview: subject,
+    },
+  });
+}

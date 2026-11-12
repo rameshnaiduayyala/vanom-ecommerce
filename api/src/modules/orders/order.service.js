@@ -277,6 +277,16 @@ export async function createOrder(userId, {
     console.warn("Auto-invoice generation on order creation deferred:", err.message);
   }
 
+  import("../../email/email.service.js")
+    .then(({ sendOrderBookedEmail }) =>
+      sendOrderBookedEmail({
+        email: result.user?.email,
+        firstName: result.user?.firstName,
+        order: result,
+      })
+    )
+    .catch((emailErr) => console.warn("[Email] Order booked email failed:", emailErr.message));
+
   return formatOrder(result);
 }
 
@@ -324,6 +334,25 @@ export async function updateStatus(id, status) {
     });
   } catch (invErr) {
     console.warn("[Invoice] Could not sync invoice status on order update:", invErr.message);
+  }
+
+  if (existingOrder.status !== status) {
+    const recipientEmail = updated.user?.email || existingOrder.user?.email;
+    const recipientName = updated.user?.firstName || existingOrder.user?.firstName;
+    import("../../email/email.service.js")
+      .then(({ sendOrderStatusChangedEmail }) =>
+        sendOrderStatusChangedEmail({
+          email: recipientEmail,
+          firstName: recipientName,
+          orderId: id,
+          orderNumber: updated.orderNumber,
+          status,
+          previousStatus: existingOrder.status,
+          trackingNumber: updated.trackingNumber || null,
+          trackingUrl: updated.trackingUrl || null,
+        })
+      )
+      .catch((emailErr) => console.warn("[Email] Order status email failed:", emailErr.message));
   }
 
   return formatOrder(updated);
