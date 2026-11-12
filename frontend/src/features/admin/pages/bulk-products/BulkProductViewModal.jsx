@@ -88,6 +88,7 @@ export function BulkProductViewModal({
                     <th className="p-3">Variant SKU</th>
                     <th className="p-3">USA Price (USD)</th>
                     <th className="p-3">Canada Price (CAD)</th>
+                    <th className="p-3">MOQ</th>
                     <th className="p-3 text-right">Status</th>
                   </tr>
                 </thead>
@@ -95,6 +96,7 @@ export function BulkProductViewModal({
                   {variants.map((v, idx) => {
                     const us = v.countryPrices?.find((cp) => cp.countryCode?.toUpperCase() === "US");
                     const ca = v.countryPrices?.find((cp) => cp.countryCode?.toUpperCase() === "CA");
+                    const moq = us?.moq ?? ca?.moq ?? v.countryPrices?.find((cp) => cp.moq != null)?.moq ?? product.moq ?? 1;
                     const weightStr = v.name || `${v.weight ?? idx + 1}${v.weightUnit || "kg"}`;
 
                     return (
@@ -106,6 +108,9 @@ export function BulkProductViewModal({
                         </td>
                         <td className="p-3 font-mono font-bold text-emerald-800">
                           {ca?.unitPrice !== undefined ? `CA$${Number(ca.unitPrice).toFixed(2)}` : "—"}
+                        </td>
+                        <td className="p-3 font-mono font-bold text-slate-700">
+                          {moq} units
                         </td>
                         <td className="p-3 text-right">
                           <Badge variant={v.isActive !== false ? "green" : "neutral"} size="sm">

@@ -9,6 +9,7 @@ export const DEFAULT_WEIGHT_VARIANTS = [
     weightUnit: "g",
     label: "500g",
     skuSuffix: "500G",
+    moq: 1,
     isActive: true,
     prices: {
       US: { countryCode: "US", currencyCode: "USD", unitPrice: 4.50 },
@@ -20,6 +21,7 @@ export const DEFAULT_WEIGHT_VARIANTS = [
     weightUnit: "kg",
     label: "1kg",
     skuSuffix: "1KG",
+    moq: 1,
     isActive: true,
     prices: {
       US: { countryCode: "US", currencyCode: "USD", unitPrice: 8.00 },
@@ -31,6 +33,7 @@ export const DEFAULT_WEIGHT_VARIANTS = [
     weightUnit: "kg",
     label: "2kg",
     skuSuffix: "2KG",
+    moq: 1,
     isActive: true,
     prices: {
       US: { countryCode: "US", currencyCode: "USD", unitPrice: 15.00 },

@@ -119,6 +119,15 @@ export function BulkOrder() {
     return Number(prod.basePriceUSD || 0);
   }
 
+  function resolveMoq(prod, variant, countryCode = targetCountryCode) {
+    if (!prod) return 1;
+    const cCode = (countryCode || "US").toUpperCase();
+    const prices = variant ? variant.countryPrices : prod.countryPrices;
+    const cp = prices?.find((p) => p.countryCode?.toUpperCase() === cCode);
+    const moqVal = cp?.moq ?? prod.minOrderQuantity ?? prod.moq ?? 1;
+    return Math.max(1, Number(moqVal) || 1);
+  }
+
   /* ─── Derived ─── */
   const bottomChosenProduct = bulkProducts.find(
     (p) => p.id === bottomProductToAdd,
@@ -129,6 +138,9 @@ export function BulkOrder() {
   const bottomChosenVariant = bottomVariantToAdd
     ? bottomVariants.find((v) => v.id === bottomVariantToAdd)
     : bottomVariants[0] || null;
+  const bottomMoq = bottomChosenProduct
+    ? resolveMoq(bottomChosenProduct, bottomChosenVariant, targetCountryCode)
+    : 1;
   const bottomUnitPrice = bottomChosenProduct
     ? resolveUnitPrice(
         bottomChosenProduct,
@@ -147,6 +159,9 @@ export function BulkOrder() {
   const insertChosenVariant = insertVariantToAdd
     ? insertVariants.find((v) => v.id === insertVariantToAdd)
     : insertVariants[0] || null;
+  const insertMoq = insertChosenProduct
+    ? resolveMoq(insertChosenProduct, insertChosenVariant, targetCountryCode)
+    : 1;
   const insertUnitPrice = insertChosenProduct
     ? resolveUnitPrice(
         insertChosenProduct,
@@ -237,13 +252,22 @@ export function BulkOrder() {
     initialQuantity = 10,
     insertAtIndex = null,
   ) => {
+    const minMoq = resolveMoq(prod, variant, targetCountryCode);
+    const effectiveQty = Math.max(minMoq, Number(initialQuantity) || minMoq);
+    if (initialQuantity < minMoq) {
+      toast.info(
+        "Adjusted to MOQ",
+        `${prod.name} requires a minimum of ${minMoq} units.`,
+      );
+    }
+
     const variantId = variant?.id || null;
     const rowKey = `${prod.id}_${variantId || "default"}`;
     const existingIndex = rows.findIndex((r) => r.rowKey === rowKey);
 
     if (existingIndex >= 0) {
       const newRows = [...rows];
-      newRows[existingIndex].quantity += initialQuantity;
+      newRows[existingIndex].quantity += effectiveQty;
       newRows[existingIndex].unitPrice = resolveUnitPrice(
         prod,
         variant,
@@ -259,7 +283,7 @@ export function BulkOrder() {
       prod,
       variant,
       targetCountryCode,
-      initialQuantity,
+      effectiveQty,
     );
     const weightLabel =
       variant?.name ||
@@ -277,7 +301,7 @@ export function BulkOrder() {
       weight: variant?.weight ?? null,
       weightUnit: variant?.weightUnit || "kg",
       weightLabel,
-      quantity: initialQuantity,
+      quantity: effectiveQty,
       unitPrice,
       currencyCode,
       countryCode: targetCountryCode,
@@ -302,6 +326,14 @@ export function BulkOrder() {
 
   const handleBottomAdd = () => {
     if (!bottomChosenProduct) return;
+    if (bottomQuantity < bottomMoq) {
+      toast.error(
+        "Minimum Order Quantity",
+        `${bottomChosenProduct.name} requires at least ${bottomMoq} units.`,
+      );
+      setBottomQuantity(bottomMoq);
+      return;
+    }
     handleAddLine(bottomChosenProduct, bottomChosenVariant, bottomQuantity);
     setBottomProductToAdd("");
     setBottomVariantToAdd("");
@@ -310,6 +342,14 @@ export function BulkOrder() {
 
   const handleInsertAdd = (index) => {
     if (!insertChosenProduct) return;
+    if (insertQuantity < insertMoq) {
+      toast.error(
+        "Minimum Order Quantity",
+        `${insertChosenProduct.name} requires at least ${insertMoq} units.`,
+      );
+      setInsertQuantity(insertMoq);
+      return;
+    }
     handleAddLine(
       insertChosenProduct,
       insertChosenVariant,
@@ -361,6 +401,16 @@ export function BulkOrder() {
     });
   };
 
+  const handleQuantityBlur = (index, minMoq = 1) => {
+    const r = rows[index];
+    if (!r || r.quantity >= minMoq) return;
+    handleQuantityChange(index, minMoq);
+    toast.info(
+      "Adjusted to MOQ",
+      `${r.name} requires a minimum of ${minMoq} units.`,
+    );
+  };
+
   const handleRemoveRow = (index) =>
     setRows(rows.filter((_, i) => i !== index));
 
@@ -392,6 +442,17 @@ export function BulkOrder() {
   /* ─── Submit ─── */
   const submitOrderMutation = useMutation({
     mutationFn: async () => {
+      for (const r of rows) {
+        const prod = bulkProducts.find((p) => p.id === r.productId);
+        const variant = prod?.variants?.find((v) => v.id === r.variantId);
+        const minMoq = resolveMoq(prod, variant, targetCountryCode);
+        if (r.quantity < minMoq) {
+          throw new Error(
+            `${r.name} (${r.weightLabel}) requires a minimum order quantity of ${minMoq} units.`,
+          );
+        }
+      }
+
       const company = user?.companyMembers?.[0]?.company;
       const contactPerson = user?.firstName
         ? `${user.firstName} ${user.lastName || ""}`.trim()
@@ -579,6 +640,8 @@ export function BulkOrder() {
                     (p) => p.countryCode?.toUpperCase() === targetCountryCode,
                   );
                   const isUnavailable = cp?.isAvailable === false;
+                  const rowMoq = resolveMoq(parentProd, variant, targetCountryCode);
+                  const isBelowMoq = row.quantity < rowMoq;
 
                   return (
                     <React.Fragment key={row.rowKey || idx}>
@@ -628,15 +691,31 @@ export function BulkOrder() {
 
                         {/* Qty */}
                         <td className="px-4 py-3 text-right">
-                          <input
-                            type="number"
-                            min="1"
-                            value={row.quantity}
-                            onChange={(e) =>
-                              handleQuantityChange(idx, e.target.value)
-                            }
-                            className="w-20 px-2 py-1.5 text-sm font-bold text-center rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                          />
+                          <div className="inline-flex flex-col items-center">
+                            <input
+                              type="number"
+                              min={rowMoq}
+                              value={row.quantity}
+                              onChange={(e) =>
+                                handleQuantityChange(idx, e.target.value)
+                              }
+                              onBlur={() => handleQuantityBlur(idx, rowMoq)}
+                              className={`w-20 px-2 py-1.5 text-sm font-bold text-center rounded-lg border bg-white text-slate-900 focus:outline-none focus:ring-2 transition-all ${
+                                isBelowMoq
+                                  ? "border-rose-400 focus:ring-rose-500/20 focus:border-rose-500"
+                                  : "border-slate-200 focus:ring-emerald-500/20 focus:border-emerald-500"
+                              }`}
+                            />
+                            {rowMoq > 1 && (
+                              <span
+                                className={`text-[10px] font-mono mt-0.5 ${
+                                  isBelowMoq ? "text-rose-600 font-bold" : "text-slate-400"
+                                }`}
+                              >
+                                Min: {rowMoq}
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* Unit Price */}
@@ -711,6 +790,13 @@ export function BulkOrder() {
                                   onChange={(val) => {
                                     setInsertProductToAdd(val);
                                     setInsertVariantToAdd("");
+                                    const prod = bulkProducts.find((p) => p.id === val);
+                                    const firstVar = Array.isArray(prod?.variants)
+                                      ? prod.variants.find((v) => v.isActive !== false)
+                                      : null;
+                                    setInsertQuantity(
+                                      prod ? resolveMoq(prod, firstVar, targetCountryCode) : 10,
+                                    );
                                   }}
                                   products={bulkProducts}
                                   placeholder="— Select Product —"
@@ -771,20 +857,40 @@ export function BulkOrder() {
                             )}
                           </td>
                           <td className="px-4 py-2.5 text-right">
-                            <input
-                              type="number"
-                              min="1"
-                              value={insertQuantity}
-                              onChange={(e) =>
-                                setInsertQuantity(
-                                  Math.max(
-                                    1,
-                                    parseInt(e.target.value, 10) || 1,
-                                  ),
-                                )
-                              }
-                              className="w-20 px-2 py-1.5 text-sm font-bold text-center rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-emerald-500"
-                            />
+                            <div className="inline-flex flex-col items-center">
+                              <input
+                                type="number"
+                                min={insertMoq}
+                                value={insertQuantity}
+                                onChange={(e) =>
+                                  setInsertQuantity(
+                                    Math.max(
+                                      1,
+                                      parseInt(e.target.value, 10) || 1,
+                                    ),
+                                  )
+                                }
+                                onBlur={() => {
+                                  if (insertChosenProduct && insertQuantity < insertMoq) {
+                                    setInsertQuantity(insertMoq);
+                                  }
+                                }}
+                                className={`w-20 px-2 py-1.5 text-sm font-bold text-center rounded-lg border bg-white text-slate-900 focus:outline-none ${
+                                  insertChosenProduct && insertQuantity < insertMoq
+                                    ? "border-rose-400 focus:border-rose-500"
+                                    : "border-slate-200 focus:border-emerald-500"
+                                }`}
+                              />
+                              {insertChosenProduct && insertMoq > 1 && (
+                                <span
+                                  className={`text-[10px] font-mono mt-0.5 ${
+                                    insertQuantity < insertMoq ? "text-rose-600 font-bold" : "text-slate-400"
+                                  }`}
+                                >
+                                  Min: {insertMoq}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-2.5 text-right">
                             <span className="text-xs font-mono text-slate-400">
@@ -848,6 +954,13 @@ export function BulkOrder() {
                           onChange={(val) => {
                             setBottomProductToAdd(val);
                             setBottomVariantToAdd("");
+                            const prod = bulkProducts.find((p) => p.id === val);
+                            const firstVar = Array.isArray(prod?.variants)
+                              ? prod.variants.find((v) => v.isActive !== false)
+                              : null;
+                            setBottomQuantity(
+                              prod ? resolveMoq(prod, firstVar, targetCountryCode) : 10,
+                            );
                           }}
                           products={bulkProducts}
                           placeholder="— Add product row —"
@@ -927,17 +1040,37 @@ export function BulkOrder() {
                   </td>
 
                   <td className="px-4 py-2.5 text-right">
-                    <input
-                      type="number"
-                      min="1"
-                      value={bottomQuantity}
-                      onChange={(e) =>
-                        setBottomQuantity(
-                          Math.max(1, parseInt(e.target.value, 10) || 1),
-                        )
-                      }
-                      className="w-20 px-2 py-1.5 text-sm font-bold text-center rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-emerald-500 transition-all"
-                    />
+                    <div className="inline-flex flex-col items-center">
+                      <input
+                        type="number"
+                        min={bottomMoq}
+                        value={bottomQuantity}
+                        onChange={(e) =>
+                          setBottomQuantity(
+                            Math.max(1, parseInt(e.target.value, 10) || 1),
+                          )
+                        }
+                        onBlur={() => {
+                          if (bottomChosenProduct && bottomQuantity < bottomMoq) {
+                            setBottomQuantity(bottomMoq);
+                          }
+                        }}
+                        className={`w-20 px-2 py-1.5 text-sm font-bold text-center rounded-lg border bg-white text-slate-900 focus:outline-none transition-all ${
+                          bottomChosenProduct && bottomQuantity < bottomMoq
+                            ? "border-rose-400 focus:border-rose-500"
+                            : "border-slate-200 focus:border-emerald-500"
+                        }`}
+                      />
+                      {bottomChosenProduct && bottomMoq > 1 && (
+                        <span
+                          className={`text-[10px] font-mono mt-0.5 ${
+                            bottomQuantity < bottomMoq ? "text-rose-600 font-bold" : "text-slate-400"
+                          }`}
+                        >
+                          Min: {bottomMoq}
+                        </span>
+                      )}
+                    </div>
                   </td>
 
                   <td className="px-4 py-2.5 text-right">

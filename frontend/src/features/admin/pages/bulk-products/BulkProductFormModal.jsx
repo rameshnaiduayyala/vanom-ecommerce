@@ -58,12 +58,20 @@ export function BulkProductFormModal({
           const weightUnit = v.weightUnit || v.attributes?.unit || "kg";
           const label = v.name || `${weightVal >= 1 ? weightVal : weightVal * 1000}${weightVal >= 1 ? weightUnit : "g"}`;
 
+          const resolvedMoq =
+            (Array.isArray(v.countryPrices)
+              ? v.countryPrices.find((cp) => cp.moq != null)?.moq
+              : null) ??
+            initialData.moq ??
+            1;
+
           return {
             id: v.id,
             weight: weightVal,
             weightUnit,
             label,
             skuSuffix: v.sku ? v.sku.replace(initialData.sku || "", "").replace(/^-/, "") : `${label.toUpperCase()}`,
+            moq: Math.max(1, Number(resolvedMoq) || 1),
             isActive: v.isActive !== false,
             prices
           };
@@ -134,6 +142,7 @@ export function BulkProductFormModal({
         weightUnit: "kg",
         label: `${newIdx}kg`,
         skuSuffix: `${newIdx}KG`,
+        moq: 1,
         isActive: true,
         prices: {
           US: { countryCode: "US", currencyCode: "USD", unitPrice: 10.00 },
@@ -166,11 +175,12 @@ export function BulkProductFormModal({
       const suffix = v.skuSuffix ? v.skuSuffix.trim().toUpperCase() : `${weightNum}${unit.toUpperCase()}`;
       const variantSku = `${baseSku}-${suffix}`;
 
+      const variantMoq = Math.max(1, parseInt(v.moq, 10) || 1);
       const countryPrices = Object.values(v.prices).map((p) => ({
         countryCode: p.countryCode.toUpperCase(),
         currencyCode: p.currencyCode.toUpperCase(),
         unitPrice: parseFloat(p.unitPrice) || 0,
-        moq: 1,
+        moq: variantMoq,
         stock: 5000,
         isAvailable: true,
         tiers: []
@@ -445,6 +455,7 @@ export function BulkProductFormModal({
                       <span>🇨🇦</span> Canada Price (CAD)
                     </span>
                   </th>
+                  <th className="p-3">MOQ</th>
                   <th className="p-3 text-center">Status</th>
                   <th className="p-3 text-right">Actions</th>
                 </tr>
@@ -534,6 +545,24 @@ export function BulkProductFormModal({
                           required
                         />
                       </div>
+                    </td>
+
+                    {/* MOQ */}
+                    <td className="p-3">
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={v.moq ?? 1}
+                        onChange={(e) => handleVariantChange(idx, "moq", e.target.value)}
+                        onBlur={(e) => {
+                          const val = Math.max(1, parseInt(e.target.value, 10) || 1);
+                          handleVariantChange(idx, "moq", val);
+                        }}
+                        placeholder="1"
+                        className="w-20 px-2 py-1 rounded border border-border text-xs bg-surface font-mono font-bold text-center focus:outline-none focus:border-[#00875A]"
+                        required
+                      />
                     </td>
 
                     {/* Status Toggle */}
