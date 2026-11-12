@@ -5,6 +5,7 @@ import { sendVerificationEmail } from "../../../common/utils/email.js";
 import { createHash, randomBytes } from "node:crypto";
 import { env } from "../../../config/env.js";
 import { getBusinessForUser } from "../lib/business.repository.js";
+import { productInclude } from "../lib/db-includes.js";
 import { fail } from "../lib/errors.js";
 
 function tokenHash(token) {
@@ -142,7 +143,7 @@ export async function getDashboardSummary(userId) {
     };
   }
 
-  const [orders, cart, featuredProducts] = await Promise.all([
+  const [orders, cart, featuredProducts, catalogCount] = await Promise.all([
     prisma.bulkOrder.findMany({
       where: { businessId: business.id },
       orderBy: { createdAt: "desc" },
@@ -172,25 +173,27 @@ export async function getDashboardSummary(userId) {
       where: { isActive: true, deletedAt: null },
       take: 6,
       orderBy: { createdAt: "desc" },
-      include: {
-        images: { orderBy: { sortOrder: "asc" } },
-        countryPrices: {
-          include: {
-            tiers: { orderBy: { minQuantity: "asc" } }
-          }
-        }
-      }
+      include: productInclude
+    }),
+    prisma.bulkProduct.count({
+      where: { isActive: true, deletedAt: null }
     })
   ]);
 
   const totalOrders = orders.length;
-  const totalSpend = orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+  const cancelledOrders = orders.filter((o) => o.status === "CANCELLED").length;
+  const totalSpend = orders
+    .filter((o) => o.status !== "CANCELLED")
+    .reduce((sum, o) => sum + Number(o.total || 0), 0);
   const activeOrders = orders.filter(
     (o) => o.status !== "CANCELLED" && o.status !== "DELIVERED"
   ).length;
   const completedOrders = orders.filter((o) => o.status === "DELIVERED").length;
   const cartItemsCount =
     cart?.items?.reduce((sum, it) => sum + (it.quantity || 0), 0) || 0;
+  const cartLineItemsCount = cart?.items?.length || 0;
+  const fallbackCurrency =
+    business.countryCode === "IN" ? "INR" : business.countryCode === "CA" ? "CAD" : "USD";
 
   return {
     business,
@@ -199,8 +202,11 @@ export async function getDashboardSummary(userId) {
       totalSpend,
       activeOrders,
       completedOrders,
+      cancelledOrders,
       cartItemsCount,
-      currencyCode: orders[0]?.currencyCode || business.countryCode === "IN" ? "INR" : business.countryCode === "CA" ? "CAD" : "USD"
+      cartLineItemsCount,
+      catalogCount,
+      currencyCode: orders[0]?.currencyCode || fallbackCurrency
     },
     recentOrders: orders.slice(0, 5),
     featuredProducts,
