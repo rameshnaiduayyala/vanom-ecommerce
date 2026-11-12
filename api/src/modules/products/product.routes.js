@@ -1,4 +1,5 @@
 import * as controller from "./product.controller.js";
+import { optionalAuthenticate } from "../../common/guards/auth.guard.js";
 
 const idParams = {
   type: "object",
@@ -109,6 +110,7 @@ export async function productRoutes(fastify) {
           search: { type: "string" },
           categoryId: { type: "string" },
           type: { type: "string", enum: ["SIMPLE", "VARIABLE"] },
+          status: { type: "string", enum: ["all", "active", "deleted", "inactive", "featured", "variable", "out_of_stock", "low_stock"] },
           isActive: { type: "boolean" },
           isNew: { type: "boolean" },
           isFeatured: { type: "boolean" },
@@ -182,7 +184,10 @@ export async function productRoutes(fastify) {
     }
   }, controller.getDropdown);
 
+  fastify.get("/products/stats", controller.getStats);
+
   fastify.get("/products/:id", {
+    preHandler: optionalAuthenticate,
     schema: { params: idParams }
   }, controller.getById);
 

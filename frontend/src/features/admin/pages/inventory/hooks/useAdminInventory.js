@@ -16,7 +16,7 @@ export function useAdminInventory() {
     refetch: refetchInventory,
   } = useQuery({
     queryKey: ["admin-inventory"],
-    queryFn: () => Api.admin.getInventory(),
+    queryFn: () => Api.admin.getInventory({ limit: 500 }),
   });
 
   // 2. Warehouses Query

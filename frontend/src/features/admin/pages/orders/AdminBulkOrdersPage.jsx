@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { openDirectInvoicePdf } from "@/utils/invoice.js";
 import { exportOrdersToExcel } from "@/utils/excel.js";
+import { Pagination } from "@/components/common/Pagination.jsx";
+import { useTablePagination } from "@/hooks/useTablePagination.js";
 
 export function AdminBulkOrdersPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -80,6 +82,15 @@ export function AdminBulkOrdersPage() {
       return num.includes(q) || company.includes(q) || user.includes(q) || email.includes(q);
     }
     return true;
+  });
+
+  const {
+    paginatedData: paginatedOrders,
+    paginationProps,
+    resetPage,
+  } = useTablePagination({
+    data: filteredOrders,
+    initialPageSize: 10,
   });
 
   const totalWholesaleValue = rawBulkOrders
@@ -224,7 +235,10 @@ export function AdminBulkOrdersPage() {
           <input
             type="text"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              resetPage();
+            }}
             placeholder="Search PO #, company name, buyer..."
             className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-amber-600 focus:bg-white transition-all text-slate-800 placeholder-slate-400"
           />
@@ -235,7 +249,10 @@ export function AdminBulkOrdersPage() {
           <span className="text-xs font-medium text-slate-500">Status:</span>
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              resetPage();
+            }}
             className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-slate-700 font-semibold focus:outline-none focus:border-amber-600"
           >
             <option value="ALL">All Statuses</option>
@@ -272,8 +289,8 @@ export function AdminBulkOrdersPage() {
                   Loading B2B bulk purchase orders...
                 </td>
               </tr>
-            ) : filteredOrders.length > 0 ? (
-              filteredOrders.map((b) => {
+            ) : paginatedOrders.length > 0 ? (
+              paginatedOrders.map((b) => {
                 const companyName =
                   b.company?.legalName ||
                   b.company?.name ||
@@ -392,6 +409,8 @@ export function AdminBulkOrdersPage() {
           </tbody>
         </table>
       </div>
+
+      <Pagination {...paginationProps} itemName="bulk orders" />
 
       {/* Detail Modal / Drawer */}
       {selectedBulkOrder && (

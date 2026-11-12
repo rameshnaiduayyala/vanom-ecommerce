@@ -852,6 +852,24 @@ export async function ensureCatalogInventory(organizationId, tx = prisma) {
 /**
  * ─── 8. QUERY & REPORTING FUNCTIONS ─────────────────────────────────────────
  */
+function buildActiveInventoryFilter() {
+  return {
+    OR: [
+      {
+        productId: { not: null },
+        product: { isActive: true, deletedAt: null }
+      },
+      {
+        variantId: { not: null },
+        variant: {
+          isActive: true,
+          product: { isActive: true, deletedAt: null }
+        }
+      }
+    ]
+  };
+}
+
 export async function listInventory(organizationId, {
   warehouseId,
   productId,
@@ -868,27 +886,33 @@ export async function listInventory(organizationId, {
     await ensureCatalogInventory(organizationId);
   }
 
-  const skip = (Math.max(1, page) - 1) * Math.min(100, Math.max(1, limit));
-  const take = Math.min(100, Math.max(1, limit));
+  const safeLimit = Math.min(500, Math.max(1, Number(limit) || 50));
+  const skip = (Math.max(1, Number(page) || 1) - 1) * safeLimit;
+  const take = safeLimit;
+
+  const andClauses = [buildActiveInventoryFilter()];
+
+  if (search) {
+    andClauses.push({
+      OR: [
+        { product: { name: { contains: search, mode: "insensitive" } } },
+        { product: { sku: { contains: search, mode: "insensitive" } } },
+        { variant: { name: { contains: search, mode: "insensitive" } } },
+        { variant: { sku: { contains: search, mode: "insensitive" } } },
+        { variant: { product: { name: { contains: search, mode: "insensitive" } } } },
+        { warehouse: { name: { contains: search, mode: "insensitive" } } }
+      ]
+    });
+  }
 
   const where = {
     organizationId,
     ...(warehouseId ? { warehouseId } : {}),
     ...(productId ? { productId } : {}),
     ...(variantId ? { variantId } : {}),
-    ...(outOfStock ? { quantity: { lte: 0 } } : {})
+    ...(outOfStock ? { quantity: { lte: 0 } } : {}),
+    AND: andClauses
   };
-
-  if (search) {
-    where.OR = [
-      { product: { name: { contains: search, mode: "insensitive" } } },
-      { product: { sku: { contains: search, mode: "insensitive" } } },
-      { variant: { name: { contains: search, mode: "insensitive" } } },
-      { variant: { sku: { contains: search, mode: "insensitive" } } },
-      { variant: { product: { name: { contains: search, mode: "insensitive" } } } },
-      { warehouse: { name: { contains: search, mode: "insensitive" } } }
-    ];
-  }
 
   const [rawItems, total] = await prisma.$transaction([
     prisma.inventory.findMany({
@@ -999,15 +1023,20 @@ export async function getOutOfStockItems(organizationId) {
 }
 
 export async function getInventorySummary(organizationId) {
+  const activeWhere = {
+    organizationId,
+    ...buildActiveInventoryFilter()
+  };
+
   const [totalInventories, stockAgg, warehouseCount, lowStockRaw] = await prisma.$transaction([
-    prisma.inventory.count({ where: { organizationId } }),
+    prisma.inventory.count({ where: activeWhere }),
     prisma.inventory.aggregate({
-      where: { organizationId },
+      where: activeWhere,
       _sum: { quantity: true, reservedQuantity: true }
     }),
     prisma.warehouse.count({ where: { organizationId, isActive: true } }),
     prisma.inventory.findMany({
-      where: { organizationId },
+      where: activeWhere,
       select: { quantity: true, reservedQuantity: true, reorderLevel: true }
     })
   ]);
@@ -1046,7 +1075,7 @@ export async function getInventorySummary(organizationId) {
 
 export async function getInventoryValuation(organizationId) {
   const inventories = await prisma.inventory.findMany({
-    where: { organizationId, quantity: { gt: 0 } },
+    where: { organizationId, quantity: { gt: 0 }, ...buildActiveInventoryFilter() },
     include: {
       product: { select: { basePrice: true } },
       variant: true,

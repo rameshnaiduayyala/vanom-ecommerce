@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -8,6 +8,8 @@ import {
   Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button.jsx";
+import { Pagination } from "@/components/common/Pagination.jsx";
+import { useTablePagination } from "@/hooks/useTablePagination.js";
 import { InventoryTable } from "../InventoryTable.jsx";
 
 export function CatalogView({
@@ -52,6 +54,21 @@ export function CatalogView({
       return true;
     });
   }, [filteredInventory, stockStatusFilter]);
+
+  const {
+    paginatedData: paginatedItems,
+    resetPage,
+    paginationProps,
+  } = useTablePagination({
+    data: displayedItems,
+    initialPage: 1,
+    initialPageSize: 15,
+    pageSizeOptions: [10, 15, 25, 50, 100],
+  });
+
+  useEffect(() => {
+    resetPage();
+  }, [stockStatusFilter, searchTerm, selectedCategory, selectedWarehouse, resetPage]);
 
   return (
     <div className="space-y-4">
@@ -188,7 +205,7 @@ export function CatalogView({
 
       {/* ─── Table Component ─── */}
       <InventoryTable
-        items={displayedItems}
+        items={paginatedItems}
         isLoading={isLoading}
         onAdjust={onOpenAdjust}
         onReceive={onOpenReceive}
@@ -197,14 +214,11 @@ export function CatalogView({
         onShowQR={onShowQR}
       />
 
-      {/* ─── Footer Details ─── */}
-      <div className="flex items-center justify-between text-xs text-text-muted px-2">
-        <span>
-          Showing <span className="font-semibold text-text-primary">{displayedItems.length}</span> of{" "}
-          <span className="font-semibold text-text-primary">{inventoryItems.length}</span> catalog items across{" "}
-          <span className="font-semibold text-text-primary">{warehouses.length}</span> depot hub(s)
-        </span>
-      </div>
+      {/* ─── Reusable Table Pagination ─── */}
+      <Pagination
+        {...paginationProps}
+        itemName="inventory items"
+      />
     </div>
   );
 }

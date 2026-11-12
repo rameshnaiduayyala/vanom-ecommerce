@@ -282,10 +282,120 @@ export async function listHighlightedProducts(type, { page, limit, skip }) {
   };
 }
 
-export async function listProducts({ page, limit, skip, cursor, search, categoryId, type, isActive, isNew, isFeatured, isTrending, isBestSeller }) {
-  const where = {
+/**
+ * Smart product catalog statistics for admin header cards
+ */
+export async function getProductStats() {
+  const [
+    total,
+    active,
+    deleted,
+    inactive,
+    featured,
+    variable,
+    simple,
+    activeStockRows
+  ] = await prisma.$transaction([
+    prisma.product.count(),
+    prisma.product.count({ where: { isActive: true, deletedAt: null } }),
+    prisma.product.count({ where: { deletedAt: { not: null } } }),
+    prisma.product.count({ where: { isActive: false, deletedAt: null } }),
+    prisma.product.count({ where: { isActive: true, deletedAt: null, isFeatured: true } }),
+    prisma.product.count({ where: { isActive: true, deletedAt: null, type: "VARIABLE" } }),
+    prisma.product.count({ where: { isActive: true, deletedAt: null, type: "SIMPLE" } }),
+    prisma.product.findMany({
+      where: { isActive: true, deletedAt: null },
+      select: {
+        id: true,
+        type: true,
+        stock: true,
+        countries: { select: { stock: true } },
+        variants: {
+          where: { isActive: true },
+          select: {
+            stock: true,
+            countries: { select: { stock: true } }
+          }
+        }
+      }
+    })
+  ]);
+
+  let outOfStock = 0;
+  let lowStock = 0;
+  let totalUnits = 0;
+  let totalVariants = 0;
+  let catalogItems = 0;
+
+  for (const p of activeStockRows) {
+    const activeVariantCount = p.variants?.length || 0;
+    totalVariants += activeVariantCount;
+    catalogItems += activeVariantCount > 0 ? activeVariantCount : 1;
+
+    let effectiveStock = 0;
+    if (p.type === "VARIABLE" && activeVariantCount > 0) {
+      effectiveStock = p.variants.reduce((acc, v) => {
+        const vCountryStock = v.countries?.reduce((cs, c) => cs + (Number(c.stock) || 0), 0) || 0;
+        return acc + (vCountryStock > 0 ? vCountryStock : (Number(v.stock) || 0));
+      }, 0);
+    } else {
+      const pCountryStock = p.countries?.reduce((cs, c) => cs + (Number(c.stock) || 0), 0) || 0;
+      effectiveStock = pCountryStock > 0 ? pCountryStock : (Number(p.stock) || 0);
+    }
+
+    totalUnits += effectiveStock;
+    if (effectiveStock <= 0) outOfStock += 1;
+    else if (effectiveStock <= 10) lowStock += 1;
+  }
+
+  return {
+    total,
+    active,
+    deleted,
+    inactive,
+    featured,
+    variable,
+    simple,
+    totalVariants,
+    catalogItems,
+    outOfStock,
+    lowStock,
+    totalUnits
+  };
+}
+
+export async function listProducts({ page, limit, skip, cursor, search, categoryId, type, status, isActive, isNew, isFeatured, isTrending, isBestSeller }) {
+  // Status filter handling (defaults to active non-deleted products for storefront compatibility)
+  let statusFilter = {
     isActive: isActive !== undefined ? isActive : true,
-    deletedAt: null,
+    deletedAt: null
+  };
+
+  if (status === "deleted") {
+    statusFilter = { deletedAt: { not: null } };
+  } else if (status === "inactive") {
+    statusFilter = { isActive: false, deletedAt: null };
+  } else if (status === "all") {
+    statusFilter = {};
+  }
+
+  const where = {
+    ...statusFilter,
+    ...(status === "featured" ? { isFeatured: true } : {}),
+    ...(status === "variable" ? { type: "VARIABLE" } : {}),
+    ...(status === "out_of_stock" ? {
+      OR: [
+        { type: "SIMPLE", stock: { lte: 0 }, countries: { none: { stock: { gt: 0 } } } },
+        { type: "VARIABLE", variants: { every: { stock: { lte: 0 }, countries: { none: { stock: { gt: 0 } } } } } }
+      ]
+    } : {}),
+    ...(status === "low_stock" ? {
+      OR: [
+        { type: "SIMPLE", stock: { gt: 0, lte: 10 } },
+        { type: "SIMPLE", countries: { some: { stock: { gt: 0, lte: 10 } } } },
+        { type: "VARIABLE", variants: { some: { isActive: true, stock: { gt: 0, lte: 10 } } } }
+      ]
+    } : {}),
     ...(search ? {
       OR: [
         { name:        { contains: search, mode: "insensitive" } },
@@ -439,15 +549,14 @@ export async function getProductsDropdown(params = {}) {
   }));
 }
 
-export async function getProductById(idOrSlug) {
+export async function getProductById(idOrSlug, { includeInactive = false } = {}) {
   const product = await prisma.product.findFirst({
     where: {
       OR: [
         { id: idOrSlug },
         { slug: idOrSlug }
       ],
-      isActive: true,
-      deletedAt: null,
+      ...(includeInactive ? {} : { isActive: true, deletedAt: null }),
     },
     include: productInclude
   });
@@ -464,7 +573,7 @@ export async function getProductById(idOrSlug) {
 }
 
 export async function updateProduct(id, input) {
-  const current = await getProductById(id);
+  const current = await getProductById(id, { includeInactive: true });
 
   const productType = input.type ?? current.type;
   if (productType === "SIMPLE" && input.variants?.length) {
@@ -475,6 +584,13 @@ export async function updateProduct(id, input) {
     return await prisma.$transaction(async (tx) => {
       if (productType === "SIMPLE" && current.type === "VARIABLE" && !input.variants) {
         await tx.productVariant.deleteMany({ where: { productId: id } });
+      }
+
+      if (input.isActive === true && !input.variants) {
+        await tx.productVariant.updateMany({
+          where: { productId: id },
+          data: { isActive: true }
+        });
       }
 
       const product = await tx.product.update({
