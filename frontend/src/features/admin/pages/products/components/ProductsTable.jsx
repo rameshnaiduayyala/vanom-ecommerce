@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Eye, Edit2, Trash2, Loader2, PackageSearch } from "lucide-react";
+import { Eye, Edit2, Trash2, Loader2, PackageSearch, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/Badge.jsx";
 
 export function ProductsTable({
@@ -10,6 +10,8 @@ export function ProductsTable({
   onViewProduct,
   onEditProduct,
   onDeleteProduct,
+  onActivateProduct,
+  activatingProductId = null,
 }) {
   return (
     <div className="relative rounded-2xl bg-white border border-border overflow-hidden shadow-2xs">
@@ -276,6 +278,21 @@ export function ProductsTable({
                         >
                           <Edit2 className="w-4 h-4" />
                         </Link>
+                        {(isDeleted || isInactive) && onActivateProduct && (
+                          <button
+                            type="button"
+                            onClick={() => onActivateProduct(p)}
+                            disabled={activatingProductId === p.id}
+                            className="p-1.5 text-emerald-600 hover:text-emerald-700 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer disabled:opacity-50"
+                            title={isDeleted ? "Restore & Activate Product" : "Activate Product"}
+                          >
+                            {activatingProductId === p.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <RotateCcw className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
                         {!isDeleted && (
                           <button
                             type="button"

@@ -549,15 +549,14 @@ export async function getProductsDropdown(params = {}) {
   }));
 }
 
-export async function getProductById(idOrSlug) {
+export async function getProductById(idOrSlug, { includeInactive = false } = {}) {
   const product = await prisma.product.findFirst({
     where: {
       OR: [
         { id: idOrSlug },
         { slug: idOrSlug }
       ],
-      isActive: true,
-      deletedAt: null,
+      ...(includeInactive ? {} : { isActive: true, deletedAt: null }),
     },
     include: productInclude
   });
@@ -574,7 +573,7 @@ export async function getProductById(idOrSlug) {
 }
 
 export async function updateProduct(id, input) {
-  const current = await getProductById(id);
+  const current = await getProductById(id, { includeInactive: true });
 
   const productType = input.type ?? current.type;
   if (productType === "SIMPLE" && input.variants?.length) {
@@ -585,6 +584,13 @@ export async function updateProduct(id, input) {
     return await prisma.$transaction(async (tx) => {
       if (productType === "SIMPLE" && current.type === "VARIABLE" && !input.variants) {
         await tx.productVariant.deleteMany({ where: { productId: id } });
+      }
+
+      if (input.isActive === true && !input.variants) {
+        await tx.productVariant.updateMany({
+          where: { productId: id },
+          data: { isActive: true }
+        });
       }
 
       const product = await tx.product.update({

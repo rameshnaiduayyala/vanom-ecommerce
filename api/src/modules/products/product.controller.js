@@ -110,7 +110,15 @@ export async function getDropdown(request, reply) {
 }
 
 export async function getById(request, reply) {
-  const product = await productService.getProductById(request.params.id);
+  const isStaff = Boolean(request.user && String(request.user.role).toUpperCase() !== "USER");
+  const includeInactive =
+    isStaff ||
+    request.query?.includeInactive === "true" ||
+    request.query?.includeInactive === true;
+
+  const product = await productService.getProductById(request.params.id, {
+    includeInactive
+  });
 
   return sendSuccess(reply, {
     message: MESSAGES.PRODUCT_FETCHED,
@@ -121,7 +129,9 @@ export async function getById(request, reply) {
 export async function update(request, reply) {
   let existing = null;
   try {
-    existing = await productService.getProductById(request.params.id);
+    existing = await productService.getProductById(request.params.id, {
+      includeInactive: true
+    });
   } catch {
     // continue
   }

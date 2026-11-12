@@ -139,6 +139,17 @@ export function useProducts() {
     onError: (err) => toast.error("Deletion Failed", err.message),
   });
 
+  const activateProductMutation = useMutation({
+    mutationFn: (id) => Api.admin.updateProduct(id, { isActive: true }),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-product-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["home-products"] });
+      toast.success("Product Activated", `${updated?.name || "Product"} is now active.`);
+    },
+    onError: (err) => toast.error("Activation Failed", err.message),
+  });
+
   const openAddProduct = () => {
     setEditingProduct(null);
     const defaultWh = warehouses.find((w) => w.isDefault) || warehouses[0];
@@ -339,6 +350,7 @@ export function useProducts() {
     openEditProduct,
     handleProductSubmit,
     deleteProductMutation,
+    activateProductMutation,
     warehouses,
     isSubmitting: createProductMutation.isPending || updateProductMutation.isPending,
   };

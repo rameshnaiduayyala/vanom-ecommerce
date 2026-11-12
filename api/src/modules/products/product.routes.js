@@ -1,4 +1,5 @@
 import * as controller from "./product.controller.js";
+import { optionalAuthenticate } from "../../common/guards/auth.guard.js";
 
 const idParams = {
   type: "object",
@@ -186,6 +187,7 @@ export async function productRoutes(fastify) {
   fastify.get("/products/stats", controller.getStats);
 
   fastify.get("/products/:id", {
+    preHandler: optionalAuthenticate,
     schema: { params: idParams }
   }, controller.getById);
 

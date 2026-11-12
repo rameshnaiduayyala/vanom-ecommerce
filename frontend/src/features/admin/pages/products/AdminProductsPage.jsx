@@ -53,6 +53,7 @@ export function AdminProductsPage() {
     openEditProduct,
     handleProductSubmit,
     deleteProductMutation,
+    activateProductMutation,
     warehouses,
     isSubmitting,
     loadingProducts,
@@ -230,6 +231,10 @@ export function AdminProductsPage() {
           onViewProduct={setViewingProduct}
           onEditProduct={openEditProduct}
           onDeleteProduct={setDeletingProduct}
+          onActivateProduct={(p) => activateProductMutation.mutate(p.id)}
+          activatingProductId={
+            activateProductMutation.isPending ? activateProductMutation.variables : null
+          }
         />
 
         {/* Reusable Table Pagination */}
