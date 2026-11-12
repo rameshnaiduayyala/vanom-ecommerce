@@ -324,10 +324,16 @@ export async function getProductStats() {
   let outOfStock = 0;
   let lowStock = 0;
   let totalUnits = 0;
+  let totalVariants = 0;
+  let catalogItems = 0;
 
   for (const p of activeStockRows) {
+    const activeVariantCount = p.variants?.length || 0;
+    totalVariants += activeVariantCount;
+    catalogItems += activeVariantCount > 0 ? activeVariantCount : 1;
+
     let effectiveStock = 0;
-    if (p.type === "VARIABLE" && p.variants?.length > 0) {
+    if (p.type === "VARIABLE" && activeVariantCount > 0) {
       effectiveStock = p.variants.reduce((acc, v) => {
         const vCountryStock = v.countries?.reduce((cs, c) => cs + (Number(c.stock) || 0), 0) || 0;
         return acc + (vCountryStock > 0 ? vCountryStock : (Number(v.stock) || 0));
@@ -350,6 +356,8 @@ export async function getProductStats() {
     featured,
     variable,
     simple,
+    totalVariants,
+    catalogItems,
     outOfStock,
     lowStock,
     totalUnits

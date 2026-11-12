@@ -2,9 +2,11 @@ import React from "react";
 import { Link } from "react-router-dom";
 import {
   Package,
+  Boxes,
   Plus,
   Layers,
   CheckCircle2,
+  EyeOff,
   Trash2,
   AlertTriangle,
 } from "lucide-react";
@@ -82,6 +84,30 @@ export function AdminProductsPage() {
       title: `Active products (${stats.variable ?? 0} variable, ${stats.simple ?? 0} simple)`,
     },
     {
+      key: "catalog_items",
+      label: "Catalog Items",
+      value: stats.catalogItems ?? 0,
+      icon: Boxes,
+      iconColor: "text-purple-600",
+      bgColor: "bg-purple-100/80",
+      activeClass: "border-purple-400 bg-purple-50/60 ring-1 ring-purple-300",
+      hoverClass: "hover:border-purple-300 hover:bg-purple-50/40",
+      title: `Total sellable SKUs: ${stats.simple ?? 0} simple products (1 each) + ${stats.totalVariants ?? 0} variants = ${stats.catalogItems ?? 0} catalog items`,
+      badge: `${stats.totalVariants ?? 0} var`,
+      isInfoOnly: true,
+    },
+    {
+      key: "inactive",
+      label: "Inactive",
+      value: stats.inactive ?? 0,
+      icon: EyeOff,
+      iconColor: "text-zinc-600",
+      bgColor: "bg-zinc-200/70",
+      activeClass: "border-zinc-400 bg-zinc-50 ring-1 ring-zinc-300",
+      hoverClass: "hover:border-zinc-300 hover:bg-zinc-50/70",
+      title: "Inactive / unpublished products (not deleted)",
+    },
+    {
       key: "deleted",
       label: "Deleted",
       value: stats.deleted ?? 0,
@@ -122,19 +148,22 @@ export function AdminProductsPage() {
           <div className="flex flex-wrap items-center gap-2 xl:ml-auto">
             {statCards.map((card) => {
               const Icon = card.icon;
-              const isSelected = statusFilter === card.key;
+              const isSelected = !card.isInfoOnly && statusFilter === card.key;
               return (
                 <button
                   key={card.key}
                   type="button"
                   title={card.title}
-                  onClick={() =>
-                    setStatusFilter(isSelected && card.key !== "active" ? "active" : card.key)
-                  }
-                  className={`group flex items-center gap-2 px-2.5 py-1.5 rounded-xl border bg-white text-left transition-all cursor-pointer shadow-2xs ${
+                  onClick={() => {
+                    if (card.isInfoOnly) return;
+                    setStatusFilter(isSelected && card.key !== "active" ? "active" : card.key);
+                  }}
+                  className={`group flex items-center gap-2 px-2.5 py-1.5 rounded-xl border bg-white text-left transition-all shadow-2xs ${
+                    card.isInfoOnly ? "cursor-default" : "cursor-pointer"
+                  } ${
                     isSelected
                       ? card.activeClass
-                      : `border-slate-200 ${card.hoverClass}`
+                      : `border-slate-200 ${card.isInfoOnly ? "" : card.hoverClass}`
                   }`}
                 >
                   <div

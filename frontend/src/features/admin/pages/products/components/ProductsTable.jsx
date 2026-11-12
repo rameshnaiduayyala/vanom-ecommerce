@@ -134,7 +134,8 @@ export function ProductsTable({
                   : ((usCountry?.stock != null || caCountry?.stock != null)
                       ? ((usCountry?.stock ?? 0) + (caCountry?.stock ?? 0))
                       : (p.stock ?? p.stock_quantity ?? 0));
-                const isDeleted = Boolean(p.deletedAt) || p.isActive === false;
+                const isDeleted = Boolean(p.deletedAt);
+                const isInactive = !isDeleted && p.isActive === false;
 
                 const primaryImg =
                   Array.isArray(p.images) && p.images.length > 0
@@ -147,7 +148,13 @@ export function ProductsTable({
                 return (
                   <tr
                     key={p.id}
-                    className={`hover:bg-surface-muted/50 transition-colors ${isDeleted ? "bg-rose-50/20 opacity-85" : ""}`}
+                    className={`hover:bg-surface-muted/50 transition-colors ${
+                      isDeleted
+                        ? "bg-rose-50/20 opacity-85"
+                        : isInactive
+                          ? "bg-zinc-50/70 opacity-85"
+                          : ""
+                    }`}
                   >
                     <td className="p-4">
                       <div className="flex items-center gap-3">
@@ -195,6 +202,11 @@ export function ProductsTable({
                         {isDeleted && (
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 border border-rose-200">
                             Deleted
+                          </span>
+                        )}
+                        {isInactive && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-200 text-zinc-700 border border-zinc-300">
+                            Inactive
                           </span>
                         )}
                         {p.isBestSeller && (
