@@ -59,23 +59,28 @@ export async function sendVerificationEmail({ email, token, firstName, ...option
 }
 
 /**
- * Auth: Password Reset
+ * Auth: Password Reset / Forgot Password
  */
-export async function sendPasswordResetEmail({ email, token }) {
+export async function sendPasswordResetEmail({ email, token, firstName, requestedFrom }) {
   const resetUrl = `${(env.clientUrl || "http://localhost:5173").replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
-  const subject = "Reset your password";
+  const subject = "Reset your Vanom password";
 
   return sendEmail({
     to: email,
     subject,
     template: "auth/password-reset.html",
     data: {
+      email,
+      firstName,
       resetUrl,
+      requestedFrom,
       expiresInMinutes: env.passwordResetExpiresMinutes || 30,
       preview: "Reset your Vanom password",
     },
   });
 }
+
+export const sendForgotPasswordEmail = sendPasswordResetEmail;
 
 /**
  * Users: Team Invitation
