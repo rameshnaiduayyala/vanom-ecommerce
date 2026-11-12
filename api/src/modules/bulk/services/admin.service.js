@@ -150,7 +150,7 @@ export const listOrders = (adminId, query) => orderService.list(adminId, query, 
 export const getOrder = (adminId, id) => orderService.getById(adminId, id, true);
 
 export async function updateOrderStatus(id, input) {
-  await getOrder(null, id);
+  const existing = await getOrder(null, id);
 
   const updated = await prisma.bulkOrder.update({
     where: { id },
@@ -172,6 +172,23 @@ export async function updateOrderStatus(id, input) {
   } catch (invErr) {
     console.warn("[Invoice] Bulk order invoice sync error:", invErr.message);
   }
+
+  import("../../../email/email.service.js")
+    .then(({ sendOrderStatusChangedEmail }) =>
+      sendOrderStatusChangedEmail({
+        email: updated.business?.businessEmail,
+        firstName: updated.business?.contactPersonName,
+        orderId: id,
+        orderNumber: updated.orderNumber,
+        status: updated.status,
+        previousStatus: existing?.status || null,
+        paymentStatus: updated.paymentStatus,
+        shippingStatus: updated.shippingStatus,
+        trackingNumber: updated.trackingNumber || null,
+        isBulk: true,
+      })
+    )
+    .catch((emailErr) => console.warn("[Email] Bulk order status email failed:", emailErr.message));
 
   return updated;
 }

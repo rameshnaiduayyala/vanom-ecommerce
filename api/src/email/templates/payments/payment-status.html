@@ -1,0 +1,45 @@
+<mj-text font-size="22px" font-weight="bold" color="{{accentColor}}" padding="0 0 12px 0">
+  {{headline}}
+</mj-text>
+
+<mj-text padding="0 0 16px 0">
+  Hi {{#if firstName}}{{firstName}}{{else}}there{{/if}}, {{introText}}
+</mj-text>
+
+<mj-raw>
+  <div class="info-box">
+    <table style="width: 100%; font-size: 14px; color: #4A5568; border-collapse: collapse;">
+      <tbody>
+        <tr>
+          <td style="padding: 6px 0; color: #718096;">Order Reference</td>
+          <td style="text-align: right; padding: 6px 0; font-weight: 600; color: #1A202C;">#{{orderNumber}}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #718096;">Payment Status</td>
+          <td style="text-align: right; padding: 6px 0; font-weight: bold; color: {{accentColor}};">{{statusLabel}}</td>
+        </tr>
+        {{#if amount}}
+          <tr>
+            <td style="padding: 6px 0; color: #718096;">Amount</td>
+            <td style="text-align: right; padding: 6px 0; font-weight: bold; color: #1A202C;">{{currencyCode}} {{amount}}</td>
+          </tr>
+        {{/if}}
+        {{#if paymentId}}
+          <tr>
+            <td style="padding: 6px 0; color: #718096;">Transaction ID</td>
+            <td style="text-align: right; padding: 6px 0; font-family: monospace; font-size: 13px;">{{paymentId}}</td>
+          </tr>
+        {{/if}}
+      </tbody>
+    </table>
+  </div>
+</mj-raw>
+
+{{#if reason}}
+  {{> commonSecurityNotice title=noticeTitle message=reason}}
+{{/if}}
+
+{{#if ctaUrl}}
+  {{> commonCtaButton url=ctaUrl label=ctaLabel color=accentColor}}
+  {{> commonFallbackLink url=ctaUrl}}
+{{/if}}

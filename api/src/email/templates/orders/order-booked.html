@@ -1,0 +1,68 @@
+<mj-text font-size="22px" font-weight="bold" color="#0F2B1C" padding="0 0 12px 0">
+  {{#if isBulk}}Wholesale Order Booked{{else}}Order Booked Successfully{{/if}}
+</mj-text>
+
+<mj-text padding="0 0 16px 0">
+  Hi {{#if firstName}}{{firstName}}{{else}}there{{/if}}, we've received your {{#if isBulk}}wholesale {{/if}}order
+  <strong>#{{orderNumber}}</strong>{{#if status}} ({{status}}){{/if}}.
+</mj-text>
+
+<mj-raw>
+  <div class="info-box">
+    <table style="width: 100%; font-size: 14px; color: #4A5568; border-collapse: collapse;">
+      <thead>
+        <tr style="border-bottom: 2px solid #E2E8F0;">
+          <th style="text-align: left; padding: 8px 0;">Item</th>
+          <th style="text-align: right; padding: 8px 0;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each order.items}}
+          <tr style="border-bottom: 1px solid #EDF2F7;">
+            <td style="padding: 10px 0;">
+              {{productName}} &times; {{quantity}}
+            </td>
+            <td style="text-align: right; padding: 10px 0; font-weight: 500;">
+              {{../order.currencyCode}} {{total}}
+            </td>
+          </tr>
+        {{/each}}
+        {{#if order.subtotal}}
+          <tr>
+            <td style="padding: 10px 0 4px 0; color: #718096;">Subtotal</td>
+            <td style="text-align: right; padding: 10px 0 4px 0; color: #4A5568;">{{order.currencyCode}} {{order.subtotal}}</td>
+          </tr>
+        {{/if}}
+        {{#if order.shippingCharges}}
+          <tr>
+            <td style="padding: 4px 0; color: #718096;">Shipping</td>
+            <td style="text-align: right; padding: 4px 0; color: #4A5568;">{{order.currencyCode}} {{order.shippingCharges}}</td>
+          </tr>
+        {{/if}}
+        {{#if order.tax}}
+          <tr>
+            <td style="padding: 4px 0; color: #718096;">Tax</td>
+            <td style="text-align: right; padding: 4px 0; color: #4A5568;">{{order.currencyCode}} {{order.tax}}</td>
+          </tr>
+        {{/if}}
+        {{#if order.discount}}
+          <tr>
+            <td style="padding: 4px 0; color: #0B4627;">Discount</td>
+            <td style="text-align: right; padding: 4px 0; color: #0B4627;">-{{order.currencyCode}} {{order.discount}}</td>
+          </tr>
+        {{/if}}
+        <tr style="border-top: 2px solid #E2E8F0;">
+          <td style="padding: 12px 0 0 0; font-weight: bold; font-size: 15px; color: #1A202C;">Total</td>
+          <td style="text-align: right; padding: 12px 0 0 0; font-weight: bold; font-size: 15px; color: #0B4627;">
+            {{order.currencyCode}} {{order.total}}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</mj-raw>
+
+{{#if orderUrl}}
+  {{> commonCtaButton url=orderUrl label="View Order Details"}}
+  {{> commonFallbackLink url=orderUrl label="You can also view your order directly at:"}}
+{{/if}}

@@ -22,6 +22,10 @@ export async function register(input, userId) {
   let verificationToken = null;
   let targetUserEmail = null;
   let targetFirstName = null;
+  const precomputedPasswordHash =
+    !userId && userCredentials?.email && userCredentials?.password
+      ? await hashPassword(userCredentials.password)
+      : null;
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -51,7 +55,7 @@ export async function register(input, userId) {
           const user = await tx.user.create({
             data: {
               email,
-              passwordHash: await hashPassword(userCredentials.password),
+              passwordHash: precomputedPasswordHash,
               firstName: userCredentials.firstName || null,
               lastName: userCredentials.lastName || null,
               role: "B2B_USER",
@@ -87,11 +91,13 @@ export async function register(input, userId) {
         where: { id: business.id },
         include: { users: true }
       });
-    });
+    }, { timeout: 20000 });
 
     if (targetUserEmail && verificationToken) {
       try {
-        await sendVerificationEmail(targetUserEmail, verificationToken, {
+        await sendVerificationEmail({
+          email: targetUserEmail,
+          token: verificationToken,
           firstName: targetFirstName,
           isB2B: true,
           businessName: result.businessName,

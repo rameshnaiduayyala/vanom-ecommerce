@@ -418,6 +418,17 @@ export async function processCheckout({
     .then(({ issueInvoiceForOrder }) => issueInvoiceForOrder({ orderId: order.id }))
     .catch((invErr) => console.warn("[Invoice] Pre-issuing draft invoice on checkout:", invErr.message));
 
+  // Notify customer that their order has been booked (non-blocking)
+  import("../../email/email.service.js")
+    .then(({ sendOrderBookedEmail }) =>
+      sendOrderBookedEmail({
+        email: userRecord.email,
+        firstName: userRecord.firstName,
+        order,
+      })
+    )
+    .catch((emailErr) => console.warn("[Email] Order booked email failed:", emailErr.message));
+
   // ── 9. Return Stripe clientSecret & Order Reference ───────────────────────
   const orderNumber = `ORD-${order.id.slice(0, 8).toUpperCase()}`;
   const totalNum = Number(order.total || 0);

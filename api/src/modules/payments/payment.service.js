@@ -280,6 +280,24 @@ export async function capturePayment(paymentId, { amount, orderId = null, user =
     console.warn("[Shipping] Shipment creation on capture:", shipErr.message);
   }
 
+  // 6. Send payment confirmation email (non-blocking)
+  prisma.order
+    .findUnique({ where: { id: orderMatch.id }, include: { user: true } })
+    .then(async (fullOrder) => {
+      if (!fullOrder?.user?.email) return;
+      const { sendPaymentStatusEmail } = await import("../../email/email.service.js");
+      await sendPaymentStatusEmail({
+        email: fullOrder.user.email,
+        firstName: fullOrder.user.firstName,
+        orderId: fullOrder.id,
+        status: "SUCCEEDED",
+        amount: amount || Number(fullOrder.total) || 0,
+        currencyCode: fullOrder.currencyCode || "USD",
+        paymentId: intentId || paymentId,
+      });
+    })
+    .catch((emailErr) => console.warn("[Email] Payment capture email failed:", emailErr.message));
+
   return {
     id: intentId || paymentId,
     orderId: resolvedOrderId,
@@ -312,6 +330,24 @@ export async function refundPayment(paymentId, { amount, reason = "Customer requ
     } catch (invErr) {
       console.warn("[Invoice] Sync invoice on refund error:", invErr.message);
     }
+
+    prisma.order
+      .findUnique({ where: { id: orderId }, include: { user: true } })
+      .then(async (fullOrder) => {
+        if (!fullOrder?.user?.email) return;
+        const { sendPaymentStatusEmail } = await import("../../email/email.service.js");
+        await sendPaymentStatusEmail({
+          email: fullOrder.user.email,
+          firstName: fullOrder.user.firstName,
+          orderId: fullOrder.id,
+          status: "REFUNDED",
+          amount: amount || Number(fullOrder.total) || 0,
+          currencyCode: fullOrder.currencyCode || "USD",
+          paymentId: stripeRefund.id || paymentId,
+          reason,
+        });
+      })
+      .catch((emailErr) => console.warn("[Email] Refund email failed:", emailErr.message));
   }
 
   return {
@@ -420,6 +456,24 @@ export async function processWebhook(payload, signature = null, rawBody = null) 
       } catch (shipErr) {
         console.warn("[Shipping] Shipment creation on payment succeeded:", shipErr.message);
       }
+
+      // 6. Send payment confirmation email (non-blocking)
+      prisma.order
+        .findUnique({ where: { id: matchedOrder.id }, include: { user: true } })
+        .then(async (fullOrder) => {
+          if (!fullOrder?.user?.email) return;
+          const { sendPaymentStatusEmail } = await import("../../email/email.service.js");
+          await sendPaymentStatusEmail({
+            email: fullOrder.user.email,
+            firstName: fullOrder.user.firstName,
+            orderId: fullOrder.id,
+            status: "SUCCEEDED",
+            amount: Number(fullOrder.total) || 0,
+            currencyCode: fullOrder.currencyCode || "USD",
+            paymentId: dataObject.id || matchedOrder.stripePaymentIntentId,
+          });
+        })
+        .catch((emailErr) => console.warn("[Email] Webhook payment success email failed:", emailErr.message));
     }
     // ── PAYMENT FAILURE OR CANCELLATION ──────────────────────────────────
     else if (
@@ -450,6 +504,25 @@ export async function processWebhook(payload, signature = null, rawBody = null) 
       } catch (invErr) {
         console.warn("[Invoice] Webhook invoice sync on failure deferred:", invErr.message);
       }
+
+      // Send payment failed email (non-blocking)
+      prisma.order
+        .findUnique({ where: { id: matchedOrder.id }, include: { user: true } })
+        .then(async (fullOrder) => {
+          if (!fullOrder?.user?.email) return;
+          const { sendPaymentStatusEmail } = await import("../../email/email.service.js");
+          await sendPaymentStatusEmail({
+            email: fullOrder.user.email,
+            firstName: fullOrder.user.firstName,
+            orderId: fullOrder.id,
+            status: "FAILED",
+            amount: Number(fullOrder.total) || 0,
+            currencyCode: fullOrder.currencyCode || "USD",
+            paymentId: dataObject.id || matchedOrder.stripePaymentIntentId,
+            reason: dataObject.last_payment_error?.message || eventType,
+          });
+        })
+        .catch((emailErr) => console.warn("[Email] Webhook payment failed email failed:", emailErr.message));
     }
   }
 

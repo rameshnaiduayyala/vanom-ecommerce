@@ -42,6 +42,9 @@ function handleUniqueError(error) {
 
 export async function createUser(input) {
   try {
+    const passwordHash = await hashPassword(input.password);
+    const token = randomBytes(32).toString("hex");
+
     const user = await prisma.$transaction(async (tx) => {
       let bulkBusinessId = null;
 
@@ -72,10 +75,10 @@ export async function createUser(input) {
         ? "B2B_USER"
         : (input.role || "USER");
 
-      const newUser = await tx.user.create({
+      const fullUser = await tx.user.create({
         data: {
           email: normalizeEmail(input.email),
-          passwordHash: await hashPassword(input.password),
+          passwordHash,
           firstName: input.firstName ?? null,
           lastName: input.lastName ?? null,
           imageUrl: input.imageUrl ?? null,
@@ -83,30 +86,26 @@ export async function createUser(input) {
           role: determinedRole,
           countryId: input.countryId ?? null,
           bulkBusinessId: bulkBusinessId
-        }
+        },
+        include: userInclude
       });
-
-      const token = randomBytes(32).toString("hex");
 
       await tx.emailVerificationToken.create({
         data: {
-          userId: newUser.id,
+          userId: fullUser.id,
           tokenHash: tokenHash(token),
           expiresAt: new Date(Date.now() + (env.emailVerificationExpiresMinutes || 1440) * 60 * 1000)
         }
       });
 
-      const fullUser = await tx.user.findUnique({
-        where: { id: newUser.id },
-        include: userInclude
-      });
-
       return { fullUser, token };
-    });
+    }, { timeout: 20000 });
 
     if (user?.fullUser?.email && user?.token) {
       try {
-        await sendVerificationEmail(user.fullUser.email, user.token, {
+        await sendVerificationEmail({
+          email: user.fullUser.email,
+          token: user.token,
           firstName: user.fullUser.firstName,
           isB2B: user.fullUser.role === "B2B_USER" || !!user.fullUser.bulkBusiness,
           businessName: user.fullUser.bulkBusiness?.businessName,

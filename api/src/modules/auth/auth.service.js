@@ -31,11 +31,12 @@ function handleUniqueError(error) {
 export async function register(input) {
   try {
     const token = randomBytes(32).toString("hex");
+    const passwordHash = await hashPassword(input.password);
     const user = await prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
         data: {
           email: normalizeEmail(input.email),
-          passwordHash: await hashPassword(input.password),
+          passwordHash,
           firstName: input.firstName ?? null,
           lastName: input.lastName ?? null,
           countryId: input.countryId ?? null
@@ -51,9 +52,11 @@ export async function register(input) {
         }
       });
       return createdUser;
-    });
+    }, { timeout: 20000 });
 
-    await sendVerificationEmail(user.email, token, {
+    await sendVerificationEmail({
+      email: user.email,
+      token,
       firstName: user.firstName,
       isB2B: user.role === "B2B_USER" || !!user.bulkBusiness,
       businessName: user.bulkBusiness?.businessName,
@@ -141,7 +144,11 @@ export async function requestPasswordReset(email) {
       expiresAt: new Date(Date.now() + env.passwordResetExpiresMinutes * 60 * 1000)
     }
   });
-  await sendPasswordResetEmail(user.email, token);
+  await sendPasswordResetEmail({
+    email: user.email,
+    token,
+    firstName: user.firstName,
+  });
   return { success: true };
 }
 

@@ -1,0 +1,71 @@
+<mj-text font-size="22px" font-weight="bold" color="#0F2B1C" padding="0 0 12px 0">
+  Order Status Updated
+</mj-text>
+
+<mj-text padding="0 0 16px 0">
+  Hi {{#if firstName}}{{firstName}}{{else}}there{{/if}}, the status of your {{#if isBulk}}wholesale {{/if}}order
+  <strong>#{{orderNumber}}</strong> has been updated.
+</mj-text>
+
+<mj-raw>
+  <div class="info-box">
+    <table style="width: 100%; font-size: 14px; color: #4A5568; border-collapse: collapse;">
+      <tbody>
+        <tr>
+          <td style="padding: 6px 0; color: #718096;">Order Reference</td>
+          <td style="text-align: right; padding: 6px 0; font-weight: 600; color: #1A202C;">#{{orderNumber}}</td>
+        </tr>
+        {{#if previousStatus}}
+          <tr>
+            <td style="padding: 6px 0; color: #718096;">Previous Status</td>
+            <td style="text-align: right; padding: 6px 0;">{{previousStatus}}</td>
+          </tr>
+        {{/if}}
+        <tr>
+          <td style="padding: 6px 0; color: #718096;">New Status</td>
+          <td style="text-align: right; padding: 6px 0; font-weight: bold; color: #0B4627;">{{status}}</td>
+        </tr>
+        {{#if paymentStatus}}
+          <tr>
+            <td style="padding: 6px 0; color: #718096;">Payment Status</td>
+            <td style="text-align: right; padding: 6px 0; font-weight: 600;">{{paymentStatus}}</td>
+          </tr>
+        {{/if}}
+        {{#if shippingStatus}}
+          <tr>
+            <td style="padding: 6px 0; color: #718096;">Shipping Status</td>
+            <td style="text-align: right; padding: 6px 0; font-weight: 600;">{{shippingStatus}}</td>
+          </tr>
+        {{/if}}
+        {{#if trackingNumber}}
+          <tr>
+            <td style="padding: 6px 0; color: #718096;">Tracking Number</td>
+            <td style="text-align: right; padding: 6px 0; font-family: monospace; font-weight: 600;">{{trackingNumber}}</td>
+          </tr>
+        {{/if}}
+      </tbody>
+    </table>
+  </div>
+</mj-raw>
+
+{{#if statusMessage}}
+  <mj-text padding="8px 0 12px 0">
+    {{statusMessage}}
+  </mj-text>
+{{/if}}
+
+{{#if reason}}
+  {{> commonSecurityNotice title="Update Note" message=reason}}
+{{/if}}
+
+{{#if trackingUrl}}
+  {{> commonCtaButton url=trackingUrl label="Track Shipment"}}
+{{else}}
+  {{#if orderUrl}}
+    {{> commonCtaButton url=orderUrl label="View Order Details"}}
+  {{/if}}
+{{/if}}
+
+{{#if orderUrl}}
+  {{> commonFallbackLink url=orderUrl label="Or open your order page directly:"}}
+{{/if}}

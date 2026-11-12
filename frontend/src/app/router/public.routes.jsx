@@ -92,6 +92,11 @@ const ForgotPasswordPage = lazy(() =>
     default: m.ForgotPasswordPage || m.default,
   }))
 );
+const ResetPasswordPage = lazy(() =>
+  import("../../features/auth/pages/ResetPasswordPage.jsx").then((m) => ({
+    default: m.ResetPasswordPage || m.default,
+  }))
+);
 const VerifyEmailPage = lazy(() =>
   import("../../features/auth/pages/VerifyEmailPage.jsx").then((m) => ({
     default: m.VerifyEmailPage || m.default,
@@ -132,5 +137,6 @@ export const publicRoutes = {
     { path: "/register", element: <RegisterPage /> },
     { path: "/verify-email", element: <VerifyEmailPage /> },
     { path: "/forgot-password", element: <ForgotPasswordPage /> },
+    { path: "/reset-password", element: <ResetPasswordPage /> },
   ],
 };

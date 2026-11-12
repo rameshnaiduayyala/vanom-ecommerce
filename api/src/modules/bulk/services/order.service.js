@@ -163,6 +163,17 @@ export async function create(userId, input) {
     // Cart cleanup is best-effort — do not fail the order
   }
 
+  import("../../../email/email.service.js")
+    .then(({ sendOrderBookedEmail }) =>
+      sendOrderBookedEmail({
+        email: business.businessEmail,
+        firstName: business.contactPersonName,
+        order,
+        isBulk: true,
+      })
+    )
+    .catch((emailErr) => console.warn("[Email] Bulk order booked email failed:", emailErr.message));
+
   return order;
 }
 

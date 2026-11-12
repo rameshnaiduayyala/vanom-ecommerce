@@ -8,15 +8,31 @@ import { env } from "../config/env.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const templatesDir = path.join(__dirname, "templates");
+const logoFilePath = path.resolve(__dirname, "../../assets/logo.png");
+
+function resolveLogoUrl() {
+  const assetBase = (env.assetPublicUrl || "").replace(/\/$/, "");
+  const isLocalhost = !assetBase || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(assetBase);
+  if (isLocalhost && fs.existsSync(logoFilePath)) {
+    return "cid:vanom-logo";
+  }
+  return `${assetBase}/logo.png`;
+}
 
 // Cache compiled template functions for fast in-memory execution
 const templateCache = new Map();
 
-// Register footer partial once
-const footerPath = path.join(templatesDir, "common", "footer.html");
-if (fs.existsSync(footerPath)) {
-  const footerSource = fs.readFileSync(footerPath, "utf-8");
-  Handlebars.registerPartial("commonFooter", Handlebars.compile(footerSource));
+// Register all reusable partials under templates/common/ (e.g. cta-button.html -> commonCtaButton)
+const commonDir = path.join(templatesDir, "common");
+if (fs.existsSync(commonDir)) {
+  for (const fileName of fs.readdirSync(commonDir)) {
+    if (!fileName.endsWith(".html")) continue;
+    const baseName = fileName.replace(/\.html$/, "");
+    const camelName = baseName.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
+    const partialName = `common${camelName.charAt(0).toUpperCase()}${camelName.slice(1)}`;
+    const partialSource = fs.readFileSync(path.join(commonDir, fileName), "utf-8");
+    Handlebars.registerPartial(partialName, Handlebars.compile(partialSource));
+  }
 }
 
 // Load base layout
@@ -55,7 +71,7 @@ export async function renderEmail(relativeTemplatePath, data = {}) {
   // Merge default globals
   const viewData = {
     currentYear: new Date().getFullYear(),
-    logoUrl: `${(env.assetPublicUrl || "").replace(/\/$/, "")}/logo.png`,
+    logoUrl: resolveLogoUrl(),
     storeUrl: env.clientUrl || "http://localhost:5173",
     ...data,
   };

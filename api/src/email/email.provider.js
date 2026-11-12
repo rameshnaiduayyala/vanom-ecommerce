@@ -1,6 +1,22 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import nodemailer from "nodemailer";
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import { env } from "../config/env.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const logoFilePath = path.resolve(__dirname, "../../assets/logo.png");
+let cachedLogoBuffer = null;
+
+function getInlineLogoBuffer(html) {
+  if (!html || !html.includes("cid:vanom-logo")) return null;
+  if (!cachedLogoBuffer && fs.existsSync(logoFilePath)) {
+    cachedLogoBuffer = fs.readFileSync(logoFilePath);
+  }
+  return cachedLogoBuffer;
+}
 
 function requireEnv(value, name) {
   if (!value) throw new Error(`${name} is required for email sending`);
@@ -24,19 +40,31 @@ function getSmtpTransporter() {
  * Resend HTTP Provider
  */
 async function sendViaResend({ to, from, subject, html, text }) {
+  const logoBuffer = getInlineLogoBuffer(html);
+  const payload = {
+    from,
+    to: Array.isArray(to) ? to : [to],
+    subject,
+    html,
+    text,
+  };
+  if (logoBuffer) {
+    payload.attachments = [
+      {
+        filename: "logo.png",
+        content: logoBuffer.toString("base64"),
+        content_id: "vanom-logo",
+      },
+    ];
+  }
+
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${requireEnv(env.resendApiKey, "RESEND_API_KEY")}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      from,
-      to: Array.isArray(to) ? to : [to],
-      subject,
-      html,
-      text,
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
@@ -73,12 +101,24 @@ async function sendViaSes({ to, from, subject, html, text }) {
  */
 async function sendViaSmtp({ to, from, subject, html, text }) {
   const transporter = getSmtpTransporter();
+  const logoBuffer = getInlineLogoBuffer(html);
   return transporter.sendMail({
     from,
     to: Array.isArray(to) ? to.join(", ") : to,
     subject,
     html,
     text,
+    ...(logoBuffer
+      ? {
+          attachments: [
+            {
+              filename: "logo.png",
+              content: logoBuffer,
+              cid: "vanom-logo",
+            },
+          ],
+        }
+      : {}),
   });
 }
 
