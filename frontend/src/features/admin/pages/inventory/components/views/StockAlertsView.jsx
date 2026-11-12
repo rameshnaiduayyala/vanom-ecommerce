@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   AlertTriangle,
   ArrowDownToLine,
@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button.jsx";
 import { Badge } from "@/components/ui/Badge.jsx";
+import { Pagination } from "@/components/common/Pagination.jsx";
+import { useTablePagination } from "@/hooks/useTablePagination.js";
 
 function getProductImageUrl(prod, variant) {
   if (variant?.image) return variant.image;
@@ -56,6 +58,21 @@ export function StockAlertsView({
     : severityFilter === "LOW"
       ? lowStockItems
       : alertItems;
+
+  const {
+    paginatedData: paginatedAlerts,
+    resetPage,
+    paginationProps,
+  } = useTablePagination({
+    data: displayedItems,
+    initialPage: 1,
+    initialPageSize: 15,
+    pageSizeOptions: [10, 15, 25, 50, 100],
+  });
+
+  useEffect(() => {
+    resetPage();
+  }, [severityFilter, resetPage]);
 
   return (
     <div className="space-y-4">
@@ -155,14 +172,14 @@ export function StockAlertsView({
                     Scanning inventory levels for alerts...
                   </td>
                 </tr>
-              ) : displayedItems.length === 0 ? (
+              ) : paginatedAlerts.length === 0 ? (
                 <tr>
                   <td colSpan="10" className="p-8 text-center text-text-muted">
                     No items match the selected stock alert criteria. All items are adequately stocked!
                   </td>
                 </tr>
               ) : (
-                displayedItems.map((row) => {
+                paginatedAlerts.map((row) => {
                   const prod = row.product || row.variant?.product || row;
                   const variant = row.variant;
                   const wh = row.warehouse;
@@ -311,6 +328,11 @@ export function StockAlertsView({
           </table>
         </div>
       </div>
+
+      <Pagination
+        {...paginationProps}
+        itemName="alert items"
+      />
     </div>
   );
 }

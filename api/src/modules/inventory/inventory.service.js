@@ -868,8 +868,9 @@ export async function listInventory(organizationId, {
     await ensureCatalogInventory(organizationId);
   }
 
-  const skip = (Math.max(1, page) - 1) * Math.min(100, Math.max(1, limit));
-  const take = Math.min(100, Math.max(1, limit));
+  const safeLimit = Math.min(500, Math.max(1, Number(limit) || 50));
+  const skip = (Math.max(1, Number(page) || 1) - 1) * safeLimit;
+  const take = safeLimit;
 
   const where = {
     organizationId,

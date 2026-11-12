@@ -26,6 +26,7 @@ import {
 import { apiClient } from "@/services/api/axios.js";
 import { Badge } from "@/components/ui/Badge.jsx";
 import { Button } from "@/components/ui/Button.jsx";
+import { Pagination } from "@/components/common/Pagination.jsx";
 
 const TRANSACTION_BADGES = {
   PURCHASE: { label: "Purchase (Inward)", variant: "success", color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
@@ -45,14 +46,15 @@ export function InventoryHistoryView({ inventoryId = null, filterType = "ALL" })
   const [selectedType, setSelectedType] = useState(filterType);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [selectedTxn, setSelectedTxn] = useState(null);
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ["inventory-transactions", inventoryId, selectedType, page],
+    queryKey: ["inventory-transactions", inventoryId, selectedType, page, pageSize],
     queryFn: async () => {
       const params = {
         page,
-        limit: 20,
+        limit: pageSize,
         ...(inventoryId ? { inventoryId } : {}),
         ...(selectedType !== "ALL" ? { type: selectedType } : {}),
       };
@@ -279,34 +281,22 @@ export function InventoryHistoryView({ inventoryId = null, filterType = "ALL" })
             </tbody>
           </table>
         </div>
-
-        {/* Pagination */}
-        {meta.totalPages > 1 && (
-          <div className="p-3 bg-surface-muted border-t border-border flex items-center justify-between text-xs">
-            <span className="text-text-muted">
-              Page {page} of {meta.totalPages} ({meta.total} records)
-            </span>
-            <div className="flex gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= meta.totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Reusable Table Pagination */}
+      <Pagination
+        currentPage={page}
+        totalPages={meta.totalPages || 1}
+        totalItems={meta.total ?? filtered.length}
+        pageSize={pageSize}
+        pageSizeOptions={[10, 20, 50, 100]}
+        onPageChange={setPage}
+        onPageSizeChange={(newSize) => {
+          setPageSize(newSize);
+          setPage(1);
+        }}
+        itemName="transactions"
+      />
 
       {/* ─── Detailed Audit Trail Modal / Inspector ─── */}
       {selectedTxn && (
