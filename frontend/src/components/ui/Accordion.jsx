@@ -71,6 +71,7 @@ export function Accordion({
   searchable = false,
   searchPlaceholder = "Filter sections...",
   allowToggleAll = false,
+  headerContent = null,
   keepMounted = false,
   className,
 }) {
@@ -137,8 +138,9 @@ export function Accordion({
       value={{ openSet, toggleItem, vStyle, sStyle, keepMounted }}
     >
       <div className={cn("w-full space-y-3", className)}>
-        {(searchable || (allowToggleAll && multiple && Array.isArray(items))) && (
-          <div className="flex items-center justify-between gap-2.5 flex-wrap">
+        {(headerContent || searchable || (allowToggleAll && multiple && Array.isArray(items))) && (
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            {headerContent}
             {searchable && (
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />

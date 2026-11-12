@@ -1,78 +1,79 @@
 import React from "react";
 import { useSearchParams } from "react-router-dom";
-import { ShoppingCart, Boxes } from "lucide-react";
+import { ShoppingCart, Boxes, Layers } from "lucide-react";
+import { Accordion, Badge } from "@/components/ui";
 import { AdminRetailOrdersPage } from "./AdminRetailOrdersPage.jsx";
 import { AdminBulkOrdersPage } from "./AdminBulkOrdersPage.jsx";
-
-const ORDER_TABS = [
-  {
-    id: "B2C",
-    label: "Retail Orders",
-    description: "B2C storefront consumer orders",
-    icon: ShoppingCart,
-  },
-  {
-    id: "B2B",
-    label: "Bulk Orders",
-    description: "Wholesale B2B purchase orders",
-    icon: Boxes,
-  },
-];
 
 export function AdminOrdersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const rawType = (searchParams.get("type") || "B2C").toUpperCase();
-  const activeTab = rawType === "B2B" || rawType === "BULK" ? "B2B" : "B2C";
+  const defaultOpen = rawType === "B2B" || rawType === "BULK" ? ["B2B"] : ["B2C"];
 
-  const handleTabChange = (tabId) => {
-    setSearchParams({ type: tabId });
+  const orderSections = [
+    {
+      id: "B2C",
+      title: "Retail Orders",
+      subtitle: "B2C storefront consumer orders, fulfillment & invoices",
+      icon: ShoppingCart,
+      badge: (
+        <Badge variant="green" size="sm" className="font-semibold">
+          B2C
+        </Badge>
+      ),
+      content: (
+        <div className="pt-2">
+          <AdminRetailOrdersPage />
+        </div>
+      ),
+    },
+    {
+      id: "B2B",
+      title: "Bulk Orders",
+      subtitle: "Wholesale B2B purchase orders, pallet dispatches & tax invoices",
+      icon: Boxes,
+      badge: (
+        <Badge variant="amber" size="sm" className="font-semibold">
+          B2B
+        </Badge>
+      ),
+      content: (
+        <div className="pt-2">
+          <AdminBulkOrdersPage />
+        </div>
+      ),
+    },
+  ];
+
+  const handleAccordionChange = (openIds) => {
+    if (Array.isArray(openIds) && openIds.length === 1) {
+      setSearchParams({ type: openIds[0] });
+    }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Orders Hub Switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-2 rounded-2xl border border-slate-200 shadow-xs">
-        <div className="px-3 py-1">
-          <h2 className="text-sm font-bold text-slate-900">Orders Hub</h2>
-          <p className="text-[11px] text-slate-500">
-            Switch between Retail (B2C) and Bulk (B2B) order workspaces
-          </p>
+    <Accordion
+      items={orderSections}
+      multiple
+      allowToggleAll
+      defaultValue={defaultOpen}
+      onChange={handleAccordionChange}
+      variant="card"
+      size="md"
+      headerContent={
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-xs">
+            <Layers className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">Orders Hub</h1>
+            <p className="text-xs text-slate-500">
+              Manage Retail (B2C) and Bulk (B2B) order workspaces from one place
+            </p>
+          </div>
         </div>
-
-        <div className="inline-flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
-          {ORDER_TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => handleTabChange(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  isActive
-                    ? "bg-white text-slate-900 shadow-xs"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <Icon
-                  className={`w-4 h-4 ${
-                    isActive
-                      ? tab.id === "B2B"
-                        ? "text-amber-600"
-                        : "text-emerald-600"
-                      : "text-slate-400"
-                  }`}
-                />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Render the selected existing page directly */}
-      {activeTab === "B2B" ? <AdminBulkOrdersPage /> : <AdminRetailOrdersPage />}
-    </div>
+      }
+    />
   );
 }
 
