@@ -100,11 +100,19 @@ function validateBufferMagicNumbers(buffer, mimeType) {
 
 function buildKey(part, folder = "general", extension = null) {
   const cleanFolder = String(folder).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 50) || "general";
+  const rawExt = extname(part.filename || "");
   const ext = extension || safeExtension(part.filename);
   if (!ext) {
     throw new AppError("Invalid or missing file extension", HTTP_STATUS.BAD_REQUEST, "INVALID_EXTENSION");
   }
-  return `${cleanFolder}/${randomUUID()}${ext}`;
+  const rawBase = rawExt ? String(part.filename || "").slice(0, -rawExt.length) : String(part.filename || "");
+  const baseSlug = rawBase
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 50);
+  const shortId = randomUUID().slice(0, 8);
+  return `${cleanFolder}/${baseSlug ? `${baseSlug}-` : ""}${shortId}${ext}`;
 }
 
 async function readFileStream(stream) {
