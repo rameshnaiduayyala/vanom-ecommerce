@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
@@ -77,6 +77,34 @@ export function B2BProductDetails() {
     return list;
   }, [product]);
 
+  const targetCountryCode = (country.code || "US").toUpperCase();
+  const variants =
+    product && Array.isArray(product.variants) && product.variants.length > 0
+      ? product.variants.filter((v) => v.isActive !== false)
+      : [];
+  const activeVariant =
+    variants.find((v) => v.id === selectedVariantId) || variants[0] || null;
+
+  const activeCp = activeVariant
+    ? activeVariant.countryPrices?.find(
+        (p) => p.countryCode?.toUpperCase() === targetCountryCode && p.isAvailable !== false
+      ) || activeVariant.countryPrices?.[0]
+    : product?.countryPrices?.find(
+        (p) => p.countryCode?.toUpperCase() === targetCountryCode && p.isAvailable !== false
+      ) || product?.countryPrices?.[0];
+
+  const activeMoq = Math.max(
+    1,
+    Number(activeCp?.moq ?? product?.minOrderQuantity ?? product?.moq ?? 1) || 1
+  );
+
+  // Sync default quantity to the active variant/product MOQ when product or variant changes
+  useEffect(() => {
+    if (product) {
+      setQuantity(activeMoq);
+    }
+  }, [product?.id, activeVariant?.id, activeMoq]);
+
   if (isLoading) {
     return (
       <div className="py-16 flex justify-center">
@@ -97,42 +125,35 @@ export function B2BProductDetails() {
     );
   }
 
-  const targetCountryCode = (country.code || "US").toUpperCase();
   const currencyCode = targetCountryCode === "CA" ? "CAD" : "USD";
   const currencySymbol = targetCountryCode === "CA" ? "CA$" : "$";
 
-  // Resolve weight variants
-  const variants = Array.isArray(product.variants) && product.variants.length > 0
-    ? product.variants.filter((v) => v.isActive !== false)
-    : [];
+  // Resolve unit price for the active variant or simple product
+  const unitPrice = activeVariant
+    ? activeCp?.unitPrice !== undefined && activeCp?.unitPrice !== null
+      ? Number(activeCp.unitPrice)
+      : Number(activeCp?.tiers?.[0]?.price || 0)
+    : activeCp?.unitPrice !== undefined
+    ? Number(activeCp.unitPrice)
+    : Number(activeCp?.tiers?.[0]?.price || product.basePriceUSD || 0);
 
-  // Active Variant Selection (defaults to first variant)
-  const activeVariant = variants.find((v) => v.id === selectedVariantId) || variants[0] || null;
-
-  // Resolve country price for the active variant
-  let unitPrice = 0;
-  if (activeVariant) {
-    const cp = activeVariant.countryPrices?.find(
-      (p) => p.countryCode?.toUpperCase() === targetCountryCode && p.isAvailable !== false
-    ) || activeVariant.countryPrices?.[0];
-
-    unitPrice = cp?.unitPrice !== undefined && cp?.unitPrice !== null
-      ? Number(cp.unitPrice)
-      : Number(cp?.tiers?.[0]?.price || 0);
-  } else {
-    // Legacy fallback for simple product without variants
-    const cp = product.countryPrices?.find(
-      (p) => p.countryCode?.toUpperCase() === targetCountryCode && p.isAvailable !== false
-    ) || product.countryPrices?.[0];
-    unitPrice = cp?.unitPrice !== undefined ? Number(cp.unitPrice) : Number(cp?.tiers?.[0]?.price || product.basePriceUSD || 0);
-  }
-
-  const safeQuantity = Math.max(1, parseInt(quantity, 10) || 1);
+  const parsedQty = parseInt(quantity, 10);
+  const safeQuantity = Number.isNaN(parsedQty) ? 0 : Math.max(0, parsedQty);
+  const isBelowMoq = safeQuantity < activeMoq;
   const lineTotal = unitPrice * safeQuantity;
   const activeWeightLabel = activeVariant?.name || (activeVariant?.weight ? `${activeVariant.weight}${activeVariant.weightUnit || "kg"}` : "Standard");
   const activeSku = activeVariant?.sku || product.sku;
 
   const handleAddToOrderMatrix = () => {
+    if (safeQuantity < activeMoq) {
+      setQuantity(activeMoq);
+      addToast({
+        title: "Minimum Order Quantity",
+        message: `${product.name} (${activeWeightLabel}) requires at least ${activeMoq} units.`,
+        type: "error"
+      });
+      return;
+    }
     // Navigate to Bulk Order Matrix with preselected product and variant
     const variantParam = activeVariant?.id ? `&variantId=${activeVariant.id}` : "";
     const qtyParam = `&quantity=${safeQuantity}`;
@@ -242,7 +263,12 @@ export function B2BProductDetails() {
                           {formatPrice(vPrice, currencyCode, currencySymbol)}
                         </span>
                       </div>
-                      <span className="text-[10px] text-slate-400 font-mono mt-0.5">SKU: {v.sku}</span>
+                      <div className="flex items-center justify-between gap-2 mt-1 text-[10px] text-slate-400 font-mono">
+                        <span className="truncate">SKU: {v.sku}</span>
+                        <span className="font-bold text-emerald-700 shrink-0">
+                          MOQ: {Math.max(1, Number(cp?.moq ?? product.minOrderQuantity ?? product.moq ?? 1) || 1)}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
@@ -300,16 +326,33 @@ export function B2BProductDetails() {
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-700 flex justify-between">
                 <span>Wholesale Quantity:</span>
-                <span className="text-emerald-700 font-mono font-bold">{safeQuantity} units</span>
+                <span className="text-emerald-700 font-mono font-bold">
+                  MOQ: {activeMoq} units
+                </span>
               </label>
               <input
                 type="number"
-                min="1"
+                min={activeMoq}
                 step="1"
                 value={quantity}
-                onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                className="w-full p-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 font-bold text-base focus:border-[#006B3C] focus:outline-none"
+                onChange={(e) =>
+                  setQuantity(
+                    e.target.value === ""
+                      ? ""
+                      : Math.max(0, parseInt(e.target.value, 10) || 0)
+                  )
+                }
+                className={`w-full p-2.5 rounded-xl border bg-white text-slate-900 font-bold text-base focus:outline-none ${
+                  isBelowMoq
+                    ? "border-rose-400 focus:border-rose-500"
+                    : "border-slate-300 focus:border-[#006B3C]"
+                }`}
               />
+              {isBelowMoq && (
+                <p className="text-[11px] font-semibold text-rose-600">
+                  Minimum order quantity for {activeWeightLabel} is {activeMoq} units.
+                </p>
+              )}
             </div>
 
             {/* Pricing Calculation Box */}
@@ -319,6 +362,10 @@ export function B2BProductDetails() {
                 <span className="font-bold text-slate-900 font-mono text-sm">
                   {formatPrice(unitPrice, currencyCode, currencySymbol)}
                 </span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Minimum Order (MOQ)</span>
+                <span className="font-mono font-semibold text-slate-700">{activeMoq} units</span>
               </div>
               <div className="flex justify-between text-slate-600">
                 <span>Order Quantity</span>
@@ -337,8 +384,9 @@ export function B2BProductDetails() {
               <Button
                 variant="primary"
                 size="lg"
+                disabled={isBelowMoq}
                 onClick={handleAddToOrderMatrix}
-                className="w-full font-bold shadow-xs cursor-pointer bg-emerald-700 hover:bg-emerald-600 text-white"
+                className="w-full font-bold shadow-xs cursor-pointer bg-emerald-700 hover:bg-emerald-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 icon={ShoppingCart}
               >
                 Add {activeWeightLabel} to Order
