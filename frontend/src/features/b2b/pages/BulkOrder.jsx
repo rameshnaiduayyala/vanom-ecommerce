@@ -9,6 +9,7 @@ import { formatPrice } from "../../../utils/formatters.js";
 import { ROUTES } from "../../../constants/routes.js";
 import { toast } from "../../../components/ui/Toast.jsx";
 import { B2BCurrencyPicker } from "@/layouts/b2b/B2BCurrencyPicker.jsx";
+import { ProductSearchableDropdown } from "@/components/common/ProductSearchableDropdown.jsx";
 import {
   Boxes,
   Plus,
@@ -704,24 +705,21 @@ export function BulkOrder() {
                               <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider bg-emerald-100 px-1.5 py-0.5 rounded shrink-0">
                                 Insert
                               </span>
-                              <div className="relative flex-1 min-w-[200px]">
-                                <select
+                              <div className="relative flex-1 min-w-[220px]">
+                                <ProductSearchableDropdown
                                   value={insertProductToAdd}
-                                  onChange={(e) => {
-                                    setInsertProductToAdd(e.target.value);
+                                  onChange={(val) => {
+                                    setInsertProductToAdd(val);
                                     setInsertVariantToAdd("");
                                   }}
-                                  className="appearance-none w-full pl-3 pr-8 py-1.5 rounded-lg border border-emerald-300 bg-white text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer"
-                                  autoFocus
-                                >
-                                  <option value="">— Select Product —</option>
-                                  {bulkProducts.map((p) => (
-                                    <option key={p.id} value={p.id}>
-                                      {p.name} · {p.sku}
-                                    </option>
-                                  ))}
-                                </select>
-                                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                  products={bulkProducts}
+                                  placeholder="— Select Product —"
+                                  searchPlaceholder="Search by name, SKU, or category..."
+                                  showPrice={false}
+                                  showStock={false}
+                                  size="sm"
+                                  portal
+                                />
                               </div>
                             </div>
                           </td>
@@ -844,23 +842,21 @@ export function BulkOrder() {
                       <div className="w-6 h-6 rounded-md bg-emerald-600 flex items-center justify-center shrink-0">
                         <Plus className="w-3.5 h-3.5 text-white" />
                       </div>
-                      <div className="relative flex-1">
-                        <select
+                      <div className="relative flex-1 min-w-[220px]">
+                        <ProductSearchableDropdown
                           value={bottomProductToAdd}
-                          onChange={(e) => {
-                            setBottomProductToAdd(e.target.value);
+                          onChange={(val) => {
+                            setBottomProductToAdd(val);
                             setBottomVariantToAdd("");
                           }}
-                          className="appearance-none w-full pl-3 pr-7 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-600 focus:outline-none focus:border-emerald-500 cursor-pointer transition-all"
-                        >
-                          <option value="">— Add product row —</option>
-                          {bulkProducts.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name} · {p.sku}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          products={bulkProducts}
+                          placeholder="— Add product row —"
+                          searchPlaceholder="Search by name, SKU, or category..."
+                          showPrice={false}
+                          showStock={false}
+                          size="sm"
+                          portal
+                        />
                       </div>
                     </div>
                   </td>

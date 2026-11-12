@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Api } from "@/services/api/api-client.js";
 import {
@@ -62,6 +63,7 @@ export function ProductSearchableDropdown({
   required = false,
   disabled = false,
   clearable = true,
+  portal = false,
   className = "",
   size = "md",
 }) {
@@ -77,8 +79,10 @@ export function ProductSearchableDropdown({
   const [highlightedIndex, setHighlightedIndex] = useState(0);
 
   const containerRef = useRef(null);
+  const popoverRef = useRef(null);
   const searchInputRef = useRef(null);
   const listRef = useRef(null);
+  const [menuStyle, setMenuStyle] = useState(null);
 
   // Auto-fetch products via the ultra-fast dropdown endpoint if products/items not provided
   const shouldFetch = !products && !items;
@@ -229,7 +233,9 @@ export function ProductSearchableDropdown({
   // Handle click outside to close dropdown
   useEffect(() => {
     function handleClickOutside(event) {
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
+      const inContainer = containerRef.current && containerRef.current.contains(event.target);
+      const inPopover = popoverRef.current && popoverRef.current.contains(event.target);
+      if (!inContainer && !inPopover) {
         setIsOpen(false);
       }
     }
@@ -240,6 +246,41 @@ export function ProductSearchableDropdown({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen]);
+
+  // Compute fixed coordinates when portal=true so table overflow containers never clip the menu
+  useEffect(() => {
+    if (!isOpen || !portal) {
+      setMenuStyle(null);
+      return;
+    }
+
+    const updatePosition = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const openUpwards = spaceBelow < 320 && rect.top > 320;
+      const width = Math.max(rect.width, 300);
+      const left = Math.min(rect.left, Math.max(8, window.innerWidth - width - 8));
+
+      setMenuStyle({
+        position: "fixed",
+        left,
+        width,
+        zIndex: 9999,
+        ...(openUpwards
+          ? { bottom: window.innerHeight - rect.top + 6 }
+          : { top: rect.bottom + 6 }),
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [isOpen, portal]);
 
   // Handle Keyboard navigation
   const handleKeyDown = (e) => {
@@ -399,8 +440,15 @@ export function ProductSearchableDropdown({
       ) : null}
 
       {/* ── Floating Popover List ── */}
-      {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white rounded-2xl border border-slate-200/95 shadow-xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-100">
+      {isOpen && (() => {
+        const popoverNode = (
+          <div
+            ref={popoverRef}
+            style={portal && menuStyle ? menuStyle : undefined}
+            className={`${
+              portal && menuStyle ? "" : "absolute left-0 right-0 top-full mt-1.5 z-50"
+            } bg-white rounded-2xl border border-slate-200/95 shadow-xl overflow-hidden animate-in fade-in-0 zoom-in-95 duration-100`}
+          >
           {/* Popover Header with Search Box */}
           <div className="p-2.5 border-b border-slate-100 bg-slate-50/70">
             <div className="relative">
@@ -551,7 +599,12 @@ export function ProductSearchableDropdown({
             )}
           </div>
         </div>
-      )}
+        );
+
+        return portal && menuStyle && typeof document !== "undefined"
+          ? createPortal(popoverNode, document.body)
+          : popoverNode;
+      })()}
     </div>
   );
 }
