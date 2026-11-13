@@ -136,14 +136,78 @@ async function sendViaConsole({ to, from, subject, text }) {
   return { id: "console-mock-id", status: "sent" };
 }
 
+let papercutTransporter = null;
+function getPapercutTransporter() {
+  if (!papercutTransporter) {
+    const host = env.papercutHost || env.smtpHost || "127.0.0.1";
+    const port = env.papercutPort || env.smtpPort || 25;
+    papercutTransporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: false,
+      ignoreTLS: true,
+      tls: {
+        rejectUnauthorized: false
+      }
+    });
+  }
+  return papercutTransporter;
+}
+
+/**
+ * Papercut Local SMTP Provider (Development Mode)
+ */
+async function sendViaPapercut({ to, from, subject, html, text }) {
+  const host = env.papercutHost || env.smtpHost || "127.0.0.1";
+  const port = env.papercutPort || env.smtpPort || 25;
+  const transporter = getPapercutTransporter();
+  const logoBuffer = getInlineLogoBuffer(html);
+
+  try {
+    const result = await transporter.sendMail({
+      from,
+      to: Array.isArray(to) ? to.join(", ") : to,
+      subject,
+      html,
+      text,
+      ...(logoBuffer
+        ? {
+            attachments: [
+              {
+                filename: "logo.png",
+                content: logoBuffer,
+                cid: "vanom-logo",
+              },
+            ],
+          }
+        : {}),
+    });
+
+    console.log(`[Email] 📬 Successfully delivered to local Papercut SMTP (${host}:${port}) -> ${Array.isArray(to) ? to.join(", ") : to} [Subject: "${subject}"]`);
+    return result;
+  } catch (err) {
+    console.error(`[Email] ⚠️ Could not connect to Papercut SMTP on ${host}:${port} (${err.message}).`);
+    console.log("[Email] Outputting email to console instead:");
+    await sendViaConsole({ to, from, subject, text });
+    return { id: "papercut-fallback-console", status: "logged", error: err.message };
+  }
+}
+
 /**
  * Dispatches an email through the provider configured in `EMAIL_PROVIDER`.
+ * In development mode, automatically routes all emails to the local Papercut SMTP server.
  *
  * @param {{ to: string|string[], subject: string, html: string, text?: string }} options
  */
 export async function dispatchEmail({ to, subject, html, text }) {
   const from = env.emailFrom || "noreply@vanom.com";
+  const isDevelopment = env.nodeEnv === "development";
   const provider = (env.emailProvider || "console").toLowerCase();
+
+  // In development mode (or when explicitly set to papercut), send to local Papercut SMTP
+  if (isDevelopment || provider === "papercut") {
+    return sendViaPapercut({ to, from, subject, html, text });
+  }
 
   switch (provider) {
     case "smtp":
