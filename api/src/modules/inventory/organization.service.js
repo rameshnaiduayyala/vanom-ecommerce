@@ -29,9 +29,11 @@ export async function resolveUserOrganization(user, tx = prisma) {
     }
   }
 
-  // Only SUPERADMIN is permitted to access or bootstrap the root organization
+  // 2. Resolve default store organization for SUPERADMIN, retail consumer customers (USER), or B2B shoppers
   const isSuperAdmin = dbUser?.role === "SUPERADMIN" || user?.role === "SUPERADMIN";
-  if (isSuperAdmin) {
+  const isConsumerOrShopper = !dbUser?.role || dbUser?.role === "USER" || dbUser?.role === "B2B_USER";
+
+  if (isSuperAdmin || isConsumerOrShopper) {
     let rootOrg = await tx.organization.findFirst({
       where: { isActive: true },
       orderBy: { createdAt: "asc" }

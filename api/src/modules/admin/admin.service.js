@@ -664,16 +664,41 @@ export async function getAuditLogs(params = {}) {
 }
 
 export async function getPayments() {
-  return [
-    {
-      id: "pay_1",
-      transactionId: "TXN_LIVE_98231",
-      provider: "Direct Stripe / Razorpay",
-      amount: 1450.00,
-      idempotencyKey: "idem_98231",
-      status: "CAPTURED"
-    }
-  ];
+  const orders = await prisma.order.findMany({
+    where: {
+      OR: [
+        { stripePaymentIntentId: { not: null } },
+        { status: { in: ["CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"] } }
+      ]
+    },
+    include: {
+      user: { select: { email: true, firstName: true, lastName: true } },
+      invoices: { select: { invoiceNumber: true } }
+    },
+    orderBy: { createdAt: "desc" },
+    take: 50
+  });
+
+  return orders.map((o) => {
+    const meta = o.metadata && typeof o.metadata === "object" ? o.metadata : {};
+    const orderNum = o.invoices?.[0]?.invoiceNumber
+      ? `ORD-${o.invoices[0].invoiceNumber.replace(/^INV-/, "")}`
+      : `ORD-${o.id.slice(0, 8).toUpperCase()}`;
+
+    return {
+      id: o.id,
+      transactionId: o.stripePaymentIntentId || `TXN-${o.id.slice(0, 8).toUpperCase()}`,
+      orderId: o.id,
+      orderNumber: orderNum,
+      provider: "Stripe",
+      amount: Number(o.total),
+      currency: o.currencyCode || "USD",
+      customerEmail: o.user?.email || "Customer",
+      idempotencyKey: `idem_${o.id.slice(0, 8)}`,
+      status: meta.paymentStatus || (o.status === "CONFIRMED" ? "CAPTURED" : o.status),
+      createdAt: o.createdAt
+    };
+  });
 }
 
 export async function getInventory() {

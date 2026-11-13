@@ -518,7 +518,8 @@ export async function capturePayment(
     if (!orderMatch.inventoryDeducted) {
       await inventoryService.deductInventory(orderMatch.id, {
         createdById: user?.sub || user?.id || orderMatch.userId || null,
-        notes: `Payment captured & verified (${intentId || paymentId})`
+        notes: `Payment captured & verified (${intentId || paymentId})`,
+        tx
       });
     }
 
@@ -566,6 +567,9 @@ export async function capturePayment(
         }
       }
     });
+  }, {
+    timeout: 30000,
+    maxWait: 10000
   });
 
   // 3. Commit Stripe Tax Transaction
@@ -927,7 +931,8 @@ export async function processWebhook(payload, signature = null, rawBody = null) 
     await prisma.$transaction(async (tx) => {
       if (!matchedOrder.inventoryDeducted) {
         await inventoryService.deductInventory(matchedOrder.id, {
-          notes: `Stripe Webhook: payment_intent.succeeded (${dataObject.id})`
+          notes: `Stripe Webhook: payment_intent.succeeded (${dataObject.id})`,
+          tx
         });
       }
 
@@ -1032,7 +1037,8 @@ export async function processWebhook(payload, signature = null, rawBody = null) 
     await prisma.$transaction(async (tx) => {
       if (matchedOrder.inventoryReserved && !matchedOrder.inventoryDeducted) {
         await inventoryService.releaseInventory(matchedOrder.id, {
-          reason: `Stripe webhook: ${eventType} (${dataObject.last_payment_error?.message || "Failed"})`
+          reason: `Stripe webhook: ${eventType} (${dataObject.last_payment_error?.message || "Failed"})`,
+          tx
         });
       }
 
@@ -1080,7 +1086,8 @@ export async function processWebhook(payload, signature = null, rawBody = null) 
       if (isPaid) {
         if (!matchedOrder.inventoryDeducted) {
           await inventoryService.deductInventory(matchedOrder.id, {
-            notes: `Stripe Webhook: checkout.session.completed (paid)`
+            notes: `Stripe Webhook: checkout.session.completed (paid)`,
+            tx
           });
         }
 

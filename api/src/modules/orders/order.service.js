@@ -37,9 +37,9 @@ const orderInclude = {
 
 function formatOrder(order) {
   if (!order) return order;
-  const orderNumber = order.invoices?.[0]?.invoiceNumber 
+  const orderNumber = order.metadata?.orderNumber || (order.invoices?.[0]?.invoiceNumber 
     ? `ORD-${order.invoices[0].invoiceNumber.replace(/^INV-/, "")}`
-    : `ORD-${order.id.slice(0, 8).toUpperCase()}`;
+    : `ORD-${order.id.slice(0, 8).toUpperCase()}`);
   const totalNum = Number(order.total || 0);
 
   const shippingAddressRecord = Array.isArray(order.addresses)

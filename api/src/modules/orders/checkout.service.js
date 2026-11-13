@@ -392,31 +392,43 @@ export async function processCheckout({
       timeout: 30000
     });
 
-  // ── 8. Create Stripe PaymentIntent ────────────────────────────────────────
+  // ── 8. Issue Draft Invoice & Create Stripe PaymentIntent ─────────────────
   const { order } = checkoutResult;
 
+  let invoice = null;
+  try {
+    const { issueInvoiceForOrder } = await import("../invoice/invoice.service.js");
+    invoice = await issueInvoiceForOrder({ orderId: order.id });
+  } catch (invErr) {
+    console.warn("[Invoice] Pre-issuing draft invoice on checkout:", invErr.message);
+  }
+
+  const orderNumber = invoice?.invoiceNumber
+    ? `ORD-${invoice.invoiceNumber.replace(/^INV-/, "")}`
+    : `ORD-${order.id.slice(0, 8).toUpperCase()}`;
+
   const paymentIntentResult = await createStripePaymentIntent({
-    order,
+    order: { ...order, orderNumber },
     customerEmail: userRecord.email,
     customerName: `${userRecord.firstName || ""} ${userRecord.lastName || ""}`.trim(),
     metadata: {
       orderId: order.id,
+      orderNumber,
       taxCalculationId: stripeTaxRes.taxCalculationId || ""
     }
   });
 
-  // Update order with payment intent ID
+  // Update order with payment intent ID and persistent orderNumber metadata
   await prisma.order.update({
     where: { id: order.id },
     data: {
-      stripePaymentIntentId: paymentIntentResult.id
+      stripePaymentIntentId: paymentIntentResult.id,
+      metadata: {
+        ...(order.metadata && typeof order.metadata === "object" ? order.metadata : {}),
+        orderNumber
+      }
     }
   });
-
-  // Pre-initialize draft invoice snapshot asynchronously in background so checkout response is instant
-  import("../invoice/invoice.service.js")
-    .then(({ issueInvoiceForOrder }) => issueInvoiceForOrder({ orderId: order.id }))
-    .catch((invErr) => console.warn("[Invoice] Pre-issuing draft invoice on checkout:", invErr.message));
 
   // Notify customer that their order has been booked (non-blocking)
   import("../../email/email.service.js")
@@ -424,13 +436,12 @@ export async function processCheckout({
       sendOrderBookedEmail({
         email: userRecord.email,
         firstName: userRecord.firstName,
-        order,
+        order: { ...order, orderNumber },
       })
     )
     .catch((emailErr) => console.warn("[Email] Order booked email failed:", emailErr.message));
 
   // ── 9. Return Stripe clientSecret & Order Reference ───────────────────────
-  const orderNumber = `ORD-${order.id.slice(0, 8).toUpperCase()}`;
   const totalNum = Number(order.total || 0);
 
   const formattedOrder = {
