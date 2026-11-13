@@ -14,7 +14,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "node prisma/seed.js",
     "seed": "node prisma/seed.js",
-    "seed:categories": "node prisma/seed-categories.js"
+    "seed:categories": "node prisma/seed-categories.js",
+    "db:clean-orders": "node scripts/clean-orders.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1133.0",
