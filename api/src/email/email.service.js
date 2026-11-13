@@ -214,8 +214,8 @@ export async function sendOrderBookedEmail({ email, firstName, order, isBulk = f
   const orderNumber = formatOrderRef(order.id, order.orderNumber);
   const orderUrl = getClientOrderUrl(order.id, isBulk);
   const subject = isBulk
-    ? `Wholesale Order #${orderNumber} Booked`
-    : `Your Vanom Order #${orderNumber} is Booked`;
+    ? `Wholesale Order #${orderNumber} Placed (Payment Pending)`
+    : `Your Vanom Order #${orderNumber} is Placed (Payment Pending)`;
 
   return sendEmail({
     to: email,

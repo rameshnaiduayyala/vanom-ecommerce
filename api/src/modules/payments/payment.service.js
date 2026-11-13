@@ -596,26 +596,30 @@ export async function capturePayment(
   }
 
   // 6. Send payment confirmation email + GA4 Measurement Protocol (non-blocking)
-  prisma.order
-    .findUnique({ where: { id: orderMatch.id }, include: { user: true, items: true } })
-    .then(async (fullOrder) => {
-      if (!fullOrder) return;
-      import("../analytics/analytics.service.js")
-        .then(({ trackServerPurchase }) => trackServerPurchase(fullOrder))
-        .catch((gaErr) => console.warn("[GA4] Server purchase tracking failed:", gaErr.message));
-      if (!fullOrder.user?.email) return;
-      const { sendPaymentStatusEmail } = await import("../../email/email.service.js");
-      await sendPaymentStatusEmail({
-        email: fullOrder.user.email,
-        firstName: fullOrder.user.firstName,
-        orderId: fullOrder.id,
-        status: "SUCCEEDED",
-        amount: amount || Number(fullOrder.total) || 0,
-        currencyCode: fullOrder.currencyCode || "USD",
-        paymentId: intentId || paymentId
-      });
-    })
-    .catch((emailErr) => console.warn("[Email] Payment capture email failed:", emailErr.message));
+  const customerEmail = orderMatch.user?.email;
+  const customerName = orderMatch.user?.firstName;
+  const resolvedOrderNumber = orderMatch.metadata?.orderNumber || (orderMatch.id ? `ORD-${orderMatch.id.slice(0, 8).toUpperCase()}` : "N/A");
+
+  import("../analytics/analytics.service.js")
+    .then(({ trackServerPurchase }) => trackServerPurchase(orderMatch))
+    .catch((gaErr) => console.warn("[GA4] Server purchase tracking failed:", gaErr.message));
+
+  if (customerEmail) {
+    import("../../email/email.service.js")
+      .then(({ sendPaymentStatusEmail }) =>
+        sendPaymentStatusEmail({
+          email: customerEmail,
+          firstName: customerName,
+          orderId: orderMatch.id,
+          orderNumber: resolvedOrderNumber,
+          status: "SUCCEEDED",
+          amount: amount || Number(orderMatch.total) || 0,
+          currencyCode: orderMatch.currencyCode || "USD",
+          paymentId: intentId || paymentId
+        })
+      )
+      .catch((emailErr) => console.warn("[Email] Payment capture email failed:", emailErr.message));
+  }
 
   return {
     id: intentId || paymentId,
@@ -987,12 +991,14 @@ export async function processWebhook(payload, signature = null, rawBody = null) 
 
     // Send confirmation email (non-blocking)
     if (matchedOrder.user?.email) {
+      const resolvedOrderNumber = matchedOrder.metadata?.orderNumber || (matchedOrder.id ? `ORD-${matchedOrder.id.slice(0, 8).toUpperCase()}` : "N/A");
       import("../../email/email.service.js")
         .then(({ sendPaymentStatusEmail }) =>
           sendPaymentStatusEmail({
             email: matchedOrder.user.email,
             firstName: matchedOrder.user.firstName,
             orderId: matchedOrder.id,
+            orderNumber: resolvedOrderNumber,
             status: "SUCCEEDED",
             amount: Number(matchedOrder.total) || 0,
             currencyCode: matchedOrder.currencyCode || "USD",
@@ -1142,6 +1148,29 @@ export async function processWebhook(payload, signature = null, rawBody = null) 
       } catch (invErr) {
         console.warn("[Invoice] Webhook invoice creation deferred:", invErr.message);
       }
+      try {
+        const { createShipmentForOrder } = await import("../shipping/shipping.service.js");
+        await createShipmentForOrder({ orderId: matchedOrder.id });
+      } catch (shipErr) {
+        console.warn("[Shipping] Shipment creation deferred:", shipErr.message);
+      }
+      if (matchedOrder.user?.email) {
+        const resolvedOrderNumber = matchedOrder.metadata?.orderNumber || (matchedOrder.id ? `ORD-${matchedOrder.id.slice(0, 8).toUpperCase()}` : "N/A");
+        import("../../email/email.service.js")
+          .then(({ sendPaymentStatusEmail }) =>
+            sendPaymentStatusEmail({
+              email: matchedOrder.user.email,
+              firstName: matchedOrder.user.firstName,
+              orderId: matchedOrder.id,
+              orderNumber: resolvedOrderNumber,
+              status: "SUCCEEDED",
+              amount: Number(matchedOrder.total) || 0,
+              currencyCode: matchedOrder.currencyCode || "USD",
+              paymentId: dataObject.payment_intent || matchedOrder.stripePaymentIntentId
+            })
+          )
+          .catch((emailErr) => console.warn("[Email] Payment success email failed:", emailErr.message));
+      }
     }
   }
 
@@ -1184,6 +1213,31 @@ export async function processWebhook(payload, signature = null, rawBody = null) 
       await issueInvoiceForOrder({ orderId: matchedOrder.id });
     } catch (invErr) {
       console.warn("[Invoice] Webhook invoice creation deferred:", invErr.message);
+    }
+
+    try {
+      const { createShipmentForOrder } = await import("../shipping/shipping.service.js");
+      await createShipmentForOrder({ orderId: matchedOrder.id });
+    } catch (shipErr) {
+      console.warn("[Shipping] Shipment creation deferred:", shipErr.message);
+    }
+
+    if (matchedOrder.user?.email) {
+      const resolvedOrderNumber = matchedOrder.metadata?.orderNumber || (matchedOrder.id ? `ORD-${matchedOrder.id.slice(0, 8).toUpperCase()}` : "N/A");
+      import("../../email/email.service.js")
+        .then(({ sendPaymentStatusEmail }) =>
+          sendPaymentStatusEmail({
+            email: matchedOrder.user.email,
+            firstName: matchedOrder.user.firstName,
+            orderId: matchedOrder.id,
+            orderNumber: resolvedOrderNumber,
+            status: "SUCCEEDED",
+            amount: Number(matchedOrder.total) || 0,
+            currencyCode: matchedOrder.currencyCode || "USD",
+            paymentId: dataObject.payment_intent || matchedOrder.stripePaymentIntentId
+          })
+        )
+        .catch((emailErr) => console.warn("[Email] Payment success email failed:", emailErr.message));
     }
   }
 
