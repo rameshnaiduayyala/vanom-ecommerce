@@ -97,7 +97,7 @@ export function CategoryIconStrip({
                 </div>
 
                 {/* Category Label */}
-                <span className="text-xs sm:text-[13px] tracking-tight truncate font-semibold pr-1">
+                <span className="text-xs sm:text-[13px] tracking-tight whitespace-nowrap font-semibold pr-1">
                   {cat.name}
                 </span>
               </Link>

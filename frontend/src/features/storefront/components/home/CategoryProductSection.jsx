@@ -38,9 +38,9 @@ export function CategoryProductSection({
   return (
     <div className={`py-6 sm:py-9 w-full ${className}`}>
       <div className="max-w-[1440px] mx-auto px-4 sm:px-8 space-y-6">
-        {/* ── 1. Main Category Header (Matching Uploaded Image) ── */}
+        {/* ── 1. Main Category Header ── */}
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
             {categoryImage ? (
               <img
                 src={categoryImage}
@@ -54,8 +54,8 @@ export function CategoryProductSection({
               </div>
             )}
 
-            <div>
-              <h3 className="text-xl sm:text-2xl font-black text-[#1E3B2B] tracking-tight">
+            <div className="min-w-0">
+              <h3 className="text-lg sm:text-2xl font-black text-[#1E3B2B] tracking-tight leading-snug">
                 {categoryName}
               </h3>
               {category.description && (
@@ -68,10 +68,10 @@ export function CategoryProductSection({
 
           <Link
             to={mainCategoryLink}
-            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#204B38] hover:text-[#358B5B] transition-colors"
+            className="group inline-flex items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-bold text-[#204B38] hover:text-[#358B5B] transition-colors shrink-0 whitespace-nowrap"
           >
-            <span>View All {categoryName}</span>
-            <ArrowRight className="w-4 h-4" />
+            <span>View All</span>
+            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
           </Link>
         </div>
 
