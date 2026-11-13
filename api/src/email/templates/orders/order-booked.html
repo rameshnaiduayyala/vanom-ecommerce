@@ -1,10 +1,10 @@
 <mj-text font-size="22px" font-weight="bold" color="#0F2B1C" padding="0 0 12px 0">
-  {{#if isBulk}}Wholesale Order Booked{{else}}Order Booked Successfully{{/if}}
+  {{#if isBulk}}Wholesale Order Placed{{else}}Order Placed — Pending Payment{{/if}}
 </mj-text>
 
 <mj-text padding="0 0 16px 0">
   Hi {{#if firstName}}{{firstName}}{{else}}there{{/if}}, we've received your {{#if isBulk}}wholesale {{/if}}order
-  <strong>#{{orderNumber}}</strong>{{#if status}} ({{status}}){{/if}}.
+  <strong>#{{orderNumber}}</strong>. We have reserved your items, and your order status is currently <strong>Pending Payment</strong>. Once your payment is verified, your order will be confirmed immediately.
 </mj-text>
 
 <mj-raw>

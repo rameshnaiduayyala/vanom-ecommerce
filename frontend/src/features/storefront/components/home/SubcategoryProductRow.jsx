@@ -78,62 +78,34 @@ export function SubcategoryProductRow({
 
   return (
     <div className="w-full space-y-3.5 pt-2">
-      {/* ── Subcategory Header Row (Matching Uploaded Mockup) ── */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
+      {/* ── Subcategory Header Row ── */}
+      <div className="flex items-center justify-between gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
           {subcategoryImage ? (
             <img
               src={subcategoryImage}
               alt={subcategoryName}
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover border border-[#204B38]/20 bg-white shadow-2xs shrink-0"
+              className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg object-cover border border-[#204B38]/20 bg-white shadow-2xs shrink-0"
               loading="lazy"
             />
           ) : (
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#EAF5EF] text-[#204B38] font-black text-xs flex items-center justify-center border border-[#B7E0CA] shrink-0">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-[#EAF5EF] text-[#204B38] font-bold text-[10px] sm:text-xs flex items-center justify-center border border-[#B7E0CA] shrink-0">
               {subcategoryName.charAt(0).toUpperCase()}
             </div>
           )}
 
-          <h4 className="text-base sm:text-lg lg:text-xl font-bold text-[#1E3B2B] tracking-tight">
+          <h4 className="text-xs sm:text-base lg:text-lg font-bold text-[#1E3B2B] tracking-tight truncate sm:whitespace-normal">
             {subcategoryName}
           </h4>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Link
-            to={viewAllLink}
-            className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-[#2F734A] hover:text-[#1E3B2B] transition-colors"
-          >
-            <span>View All</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-
-          {/* Carousel Arrows in Header */}
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => swiperRef.current?.slidePrev()}
-              disabled={isBeginning}
-              aria-label="Previous items"
-              className={`w-7 h-7 rounded-full flex items-center justify-center border border-gray-200 bg-white text-gray-700 shadow-2xs transition-all ${
-                isBeginning ? "opacity-35 cursor-not-allowed" : "hover:bg-[#204B38] hover:text-white cursor-pointer active:scale-95"
-              }`}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => swiperRef.current?.slideNext()}
-              disabled={isEnd}
-              aria-label="Next items"
-              className={`w-7 h-7 rounded-full flex items-center justify-center border border-gray-200 bg-white text-gray-700 shadow-2xs transition-all ${
-                isEnd ? "opacity-35 cursor-not-allowed" : "hover:bg-[#204B38] hover:text-white cursor-pointer active:scale-95"
-              }`}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        <Link
+          to={viewAllLink}
+          className="group inline-flex items-center gap-1 text-[11px] sm:text-sm font-semibold text-[#2F734A] hover:text-[#1E3B2B] transition-colors shrink-0 whitespace-nowrap"
+        >
+          <span>View All</span>
+          <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+        </Link>
       </div>
 
       {/* ── Product Carousel Container with Floating Side Arrow ── */}

@@ -2,6 +2,7 @@ import Stripe from "stripe";
 import { env } from "../../config/env.js";
 import { AppError } from "../../common/errors/app-error.js";
 import { HTTP_STATUS } from "../../constants/http-status.js";
+import { toStripeAmount, fromStripeAmount } from "./currency.utils.js";
 
 const isRealStripeKey =
   Boolean(env.stripeSecretKey) &&
@@ -115,10 +116,12 @@ export async function createStripePaymentIntent({
   order,
   customerEmail = null,
   customerName = null,
+  captureMethod = "automatic",
+  idempotencyKey = null,
   metadata = {}
 }) {
-  const amountCents = Math.round(Number(order.total) * 100);
   const currency = (order.currencyCode || "USD").toLowerCase();
+  const amountSmallestUnit = toStripeAmount(order.total, currency);
 
   if (!stripeClient) {
     throw new AppError(
@@ -128,12 +131,17 @@ export async function createStripePaymentIntent({
     );
   }
 
+  const effectiveIdempotencyKey =
+    idempotencyKey || `pi_create_${order.id}_${amountSmallestUnit}_${currency}`;
+
   const params = {
-    amount: amountCents,
+    amount: amountSmallestUnit,
     currency,
+    capture_method: captureMethod === "manual" ? "manual" : "automatic",
     metadata: {
       orderId: order.id,
       userId: order.userId || "",
+      orderNumber: order.orderNumber || `ORD-${order.id.slice(0, 8).toUpperCase()}`,
       ...(order.stripeTaxCalculationId ? { taxCalculationId: order.stripeTaxCalculationId } : {}),
       ...metadata
     },
@@ -146,7 +154,9 @@ export async function createStripePaymentIntent({
     params.receipt_email = customerEmail;
   }
 
-  const paymentIntent = await stripeClient.paymentIntents.create(params);
+  const paymentIntent = await stripeClient.paymentIntents.create(params, {
+    idempotencyKey: effectiveIdempotencyKey
+  });
 
   return {
     id: paymentIntent.id,
@@ -154,8 +164,48 @@ export async function createStripePaymentIntent({
     status: paymentIntent.status,
     amount: Number(order.total),
     currency: order.currencyCode,
+    livemode: paymentIntent.livemode,
     publishableKey: env.stripePublishableKey
   };
+}
+
+/**
+ * ─── STRIPE RETRIEVE PAYMENTINTENT ───────────────────────────────────────
+ */
+export async function retrieveStripePaymentIntent(paymentIntentId) {
+  if (!stripeClient || !paymentIntentId) {
+    return null;
+  }
+  return stripeClient.paymentIntents.retrieve(paymentIntentId);
+}
+
+/**
+ * ─── STRIPE CAPTURE PAYMENTINTENT ────────────────────────────────────────
+ */
+export async function captureStripePaymentIntent(
+  paymentIntentId,
+  { amount = null, currency = "USD" } = {},
+  { idempotencyKey = null } = {}
+) {
+  if (!stripeClient) {
+    throw new AppError(
+      "Stripe payment gateway is not configured.",
+      HTTP_STATUS.SERVICE_UNAVAILABLE,
+      "STRIPE_GATEWAY_UNAVAILABLE"
+    );
+  }
+
+  const params = {};
+  if (amount !== null && amount !== undefined) {
+    params.amount_to_capture = toStripeAmount(amount, currency);
+  }
+
+  const options = {};
+  if (idempotencyKey) {
+    options.idempotencyKey = idempotencyKey;
+  }
+
+  return stripeClient.paymentIntents.capture(paymentIntentId, params, options);
 }
 
 /**
@@ -167,6 +217,7 @@ export async function createStripeCheckoutSession({
   customerEmail = null,
   successUrl,
   cancelUrl,
+  idempotencyKey = null,
   metadata = {}
 }) {
   if (!stripeClient) {
@@ -182,7 +233,7 @@ export async function createStripeCheckoutSession({
   // Convert line items from order
   const lineItems = (order.items || []).map((item) => {
     const unitPrice = Number(item.unitPrice || 0);
-    const unitAmountCents = Math.round(unitPrice * 100);
+    const unitAmountSmallestUnit = toStripeAmount(unitPrice, currency);
 
     return {
       price_data: {
@@ -195,7 +246,7 @@ export async function createStripeCheckoutSession({
             variantId: String(item.variantId || "")
           }
         },
-        unit_amount: Math.max(0, unitAmountCents)
+        unit_amount: Math.max(0, unitAmountSmallestUnit)
       },
       quantity: Math.max(1, parseInt(item.quantity, 10) || 1)
     };
@@ -210,11 +261,14 @@ export async function createStripeCheckoutSession({
           name: `Shipping (${order.shippingCarrier || order.shippingMethod || "Standard"})`,
           metadata: { type: "shipping" }
         },
-        unit_amount: Math.round(Number(order.shippingCharges) * 100)
+        unit_amount: toStripeAmount(order.shippingCharges, currency)
       },
       quantity: 1
     });
   }
+
+  const effectiveIdempotencyKey =
+    idempotencyKey || `cs_create_${order.id}_${toStripeAmount(order.total, currency)}_${currency}`;
 
   const session = await stripeClient.checkout.sessions.create({
     mode: "payment",
@@ -238,6 +292,8 @@ export async function createStripeCheckoutSession({
       userId: order.userId || "",
       ...metadata
     }
+  }, {
+    idempotencyKey: effectiveIdempotencyKey
   });
 
   return {
@@ -270,21 +326,31 @@ export async function recordStripeTaxTransaction({ calculationId, reference }) {
 /**
  * ─── STRIPE REFUND: Refund Payment & Reversal ────────────────────────────
  */
-export async function refundStripePayment(paymentIntentId, { amount = null, reason = "requested_by_customer" } = {}) {
+export async function refundStripePayment(
+  paymentIntentId,
+  { amount = null, currency = "USD", reason = "requested_by_customer", idempotencyKey = null } = {}
+) {
   if (stripeClient && paymentIntentId && !paymentIntentId.startsWith("pi_dev_")) {
     const params = {
       payment_intent: paymentIntentId,
       reason: reason || "requested_by_customer"
     };
-    if (amount) {
-      params.amount = Math.round(Number(amount) * 100);
+    if (amount !== null && amount !== undefined) {
+      params.amount = toStripeAmount(amount, currency);
     }
-    const refund = await stripeClient.refunds.create(params);
+
+    const options = {};
+    if (idempotencyKey) {
+      options.idempotencyKey = idempotencyKey;
+    }
+
+    const refund = await stripeClient.refunds.create(params, options);
     return {
       id: refund.id,
       status: refund.status,
-      amount: refund.amount / 100,
-      currency: refund.currency
+      amount: fromStripeAmount(refund.amount, refund.currency),
+      currency: refund.currency,
+      reason: refund.reason
     };
   }
 
@@ -292,7 +358,8 @@ export async function refundStripePayment(paymentIntentId, { amount = null, reas
     id: `re_mock_${Date.now()}`,
     status: "succeeded",
     amount: amount || 0,
-    currency: "usd"
+    currency: (currency || "usd").toLowerCase(),
+    reason: reason || "requested_by_customer"
   };
 }
 

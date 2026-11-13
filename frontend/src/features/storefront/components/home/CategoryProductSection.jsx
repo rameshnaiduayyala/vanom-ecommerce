@@ -38,24 +38,24 @@ export function CategoryProductSection({
   return (
     <div className={`py-6 sm:py-9 w-full ${className}`}>
       <div className="max-w-[1440px] mx-auto px-4 sm:px-8 space-y-6">
-        {/* ── 1. Main Category Header (Matching Uploaded Image) ── */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+        {/* ── 1. Main Category Header ── */}
+        <div className="flex items-center justify-between gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             {categoryImage ? (
               <img
                 src={categoryImage}
                 alt={categoryName}
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl object-cover border border-[#204B38]/15 bg-white shadow-2xs shrink-0"
+                className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl object-cover border border-[#204B38]/15 bg-white shadow-2xs shrink-0"
                 loading="lazy"
               />
             ) : (
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#EAF5EF] text-[#204B38] font-black text-sm flex items-center justify-center border border-[#B7E0CA] shrink-0">
+              <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-[#EAF5EF] text-[#204B38] font-bold sm:font-black text-xs sm:text-base flex items-center justify-center border border-[#B7E0CA] shrink-0">
                 {categoryName.charAt(0).toUpperCase()}
               </div>
             )}
 
-            <div>
-              <h3 className="text-xl sm:text-2xl font-black text-[#1E3B2B] tracking-tight">
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-xl lg:text-2xl font-bold sm:font-black text-[#1E3B2B] tracking-tight leading-tight truncate sm:whitespace-normal">
                 {categoryName}
               </h3>
               {category.description && (
@@ -68,10 +68,10 @@ export function CategoryProductSection({
 
           <Link
             to={mainCategoryLink}
-            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#204B38] hover:text-[#358B5B] transition-colors"
+            className="group inline-flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-sm font-bold text-[#204B38] hover:text-[#358B5B] transition-colors shrink-0 whitespace-nowrap bg-white/70 hover:bg-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full border border-[#204B38]/15 shadow-2xs"
           >
-            <span>View All {categoryName}</span>
-            <ArrowRight className="w-4 h-4" />
+            <span>View All</span>
+            <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
           </Link>
         </div>
 

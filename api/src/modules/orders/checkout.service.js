@@ -265,32 +265,35 @@ export async function processCheckout({
     let resolvedMethod = shippingMethod || null;
     let selectedRateSnapshot = null;
 
-    try {
-      const ratesResult = await getShippingRates({
-        organizationId: userRecord?.organizationId || null,
-        warehouseId,
-        shippingAddress,
-        items: validatedItems,
-        subtotal: Number(subtotal)
-      });
+    // Only query live Shippo API if shipping method and charges were not already provided by customer
+    if (!resolvedMethod && !validatedShippingCharges) {
+      try {
+        const ratesResult = await getShippingRates({
+          organizationId: userRecord?.organizationId || null,
+          warehouseId,
+          shippingAddress,
+          items: validatedItems,
+          subtotal: Number(subtotal)
+        });
 
-      if (shippingRateId && ratesResult?.rates?.length) {
-        const matched = ratesResult.rates.find(r => r.id === shippingRateId || r.rateId === shippingRateId);
-        if (matched) {
-          validatedShippingCharges = Number(matched.amount);
-          resolvedCarrier = matched.carrier;
-          resolvedMethod = matched.service;
-          selectedRateSnapshot = matched;
+        if (shippingRateId && ratesResult?.rates?.length) {
+          const matched = ratesResult.rates.find(r => r.id === shippingRateId || r.rateId === shippingRateId);
+          if (matched) {
+            validatedShippingCharges = Number(matched.amount);
+            resolvedCarrier = matched.carrier;
+            resolvedMethod = matched.service;
+            selectedRateSnapshot = matched;
+          }
+        } else if (ratesResult?.rates?.length && !shippingRateId && !shippingCharges) {
+          const defaultRate = ratesResult.rates[0];
+          validatedShippingCharges = Number(defaultRate.amount);
+          resolvedCarrier = defaultRate.carrier;
+          resolvedMethod = defaultRate.service;
+          selectedRateSnapshot = defaultRate;
         }
-      } else if (ratesResult?.rates?.length && !shippingRateId && !shippingCharges) {
-        const defaultRate = ratesResult.rates[0];
-        validatedShippingCharges = Number(defaultRate.amount);
-        resolvedCarrier = defaultRate.carrier;
-        resolvedMethod = defaultRate.service;
-        selectedRateSnapshot = defaultRate;
+      } catch (rateErr) {
+        console.warn("[Shippo] Fallback shipping rate calculation note:", rateErr.message);
       }
-    } catch (rateErr) {
-      console.warn("[Shippo] Shipping rate calculation note:", rateErr.message);
     }
 
     // ── 5. Calculate Real-Time Stripe Sales Tax (Outside DB Transaction) ─────
@@ -317,6 +320,18 @@ export async function processCheckout({
     const shippingDecimal = new Prisma.Decimal(shippingNum);
     const finalTotal = subtotal.sub(discountNum).add(shippingDecimal).add(taxDecimal);
 
+    // Pre-generate sequential order number to ensure Stripe, invoice, and emails match 100%
+    let generatedOrderNumber = null;
+    try {
+      const year = new Date().getFullYear();
+      const count = await prisma.invoice.count({
+        where: { invoiceNumber: { contains: `-${year}-` } }
+      });
+      generatedOrderNumber = `ORD-VANOM-${year}-${String(count + 1).padStart(6, "0")}`;
+    } catch {
+      generatedOrderNumber = null;
+    }
+
     // ── 6. Create Order & Reserve Inventory Atomically ───────────────────────
     const checkoutResult = await prisma.$transaction(async (tx) => {
       const org = await resolveUserOrganization(userRecord, tx);
@@ -338,6 +353,7 @@ export async function processCheckout({
           total: finalTotal,
           stripeTaxCalculationId: stripeTaxRes.taxCalculationId || null,
           metadata: {
+            orderNumber: generatedOrderNumber,
             taxBreakdown: stripeTaxRes.taxBreakdown || [],
             isCalculatedViaStripe: stripeTaxRes.isCalculatedViaStripe,
             shippoRateSnapshot: selectedRateSnapshot || null
@@ -394,13 +410,15 @@ export async function processCheckout({
 
   // ── 8. Create Stripe PaymentIntent ────────────────────────────────────────
   const { order } = checkoutResult;
+  const orderNumber = order.metadata?.orderNumber || generatedOrderNumber || `ORD-${order.id.slice(0, 8).toUpperCase()}`;
 
   const paymentIntentResult = await createStripePaymentIntent({
-    order,
+    order: { ...order, orderNumber },
     customerEmail: userRecord.email,
     customerName: `${userRecord.firstName || ""} ${userRecord.lastName || ""}`.trim(),
     metadata: {
       orderId: order.id,
+      orderNumber,
       taxCalculationId: stripeTaxRes.taxCalculationId || ""
     }
   });
@@ -413,10 +431,10 @@ export async function processCheckout({
     }
   });
 
-  // Pre-initialize draft invoice snapshot asynchronously in background so checkout response is instant
+  // Pre-initialize draft invoice snapshot asynchronously in background (non-blocking)
   import("../invoice/invoice.service.js")
     .then(({ issueInvoiceForOrder }) => issueInvoiceForOrder({ orderId: order.id }))
-    .catch((invErr) => console.warn("[Invoice] Pre-issuing draft invoice on checkout:", invErr.message));
+    .catch((invErr) => console.warn("[Invoice] Background draft invoice creation:", invErr.message));
 
   // Notify customer that their order has been booked (non-blocking)
   import("../../email/email.service.js")
@@ -424,13 +442,12 @@ export async function processCheckout({
       sendOrderBookedEmail({
         email: userRecord.email,
         firstName: userRecord.firstName,
-        order,
+        order: { ...order, orderNumber },
       })
     )
     .catch((emailErr) => console.warn("[Email] Order booked email failed:", emailErr.message));
 
   // ── 9. Return Stripe clientSecret & Order Reference ───────────────────────
-  const orderNumber = `ORD-${order.id.slice(0, 8).toUpperCase()}`;
   const totalNum = Number(order.total || 0);
 
   const formattedOrder = {

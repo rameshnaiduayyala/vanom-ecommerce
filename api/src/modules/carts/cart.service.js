@@ -31,12 +31,12 @@ const cartInclude = {
   }
 };
 
-async function getOrCreateCart(userId, tx = prisma) {
+async function getOrCreateCart(userId, tx = prisma, includeItems = true) {
   return tx.cart.upsert({
     where: { userId },
     update: {},
     create: { userId },
-    include: cartInclude
+    ...(includeItems ? { include: cartInclude } : { select: { id: true, userId: true } })
   });
 }
 
@@ -138,7 +138,7 @@ export async function addItem(userId, { productId, variantId = null, quantity = 
   targetProductId = validatedProduct.id;
 
   const cart = await prisma.$transaction(async (tx) => {
-    const userCart = await getOrCreateCart(userId, tx);
+    const userCart = await getOrCreateCart(userId, tx, false);
     const existing = await tx.cartItem.findFirst({
       where: {
         cartId: userCart.id,
@@ -161,6 +161,9 @@ export async function addItem(userId, { productId, variantId = null, quantity = 
       });
     }
     return tx.cart.findUnique({ where: { id: userCart.id }, include: cartInclude });
+  }, {
+    timeout: 30000,
+    maxWait: 10000
   });
 
   return formatCart(cart);

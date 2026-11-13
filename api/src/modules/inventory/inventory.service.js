@@ -227,7 +227,7 @@ export async function reserveInventory({ organizationId, items, orderId, userId 
     return { success: true, orderId, reservations };
   };
 
-  return tx ? runner(tx) : prisma.$transaction(runner);
+  return tx ? runner(tx) : prisma.$transaction(runner, { timeout: 30000, maxWait: 10000 });
 }
 
 /**
@@ -309,7 +309,7 @@ export async function releaseInventory(orderIdOrOptions, maybeOptions = {}) {
     return { success: true, orderId, released: true };
   };
 
-  return tx ? runner(tx) : prisma.$transaction(runner);
+  return tx ? runner(tx) : prisma.$transaction(runner, { timeout: 30000, maxWait: 10000 });
 }
 
 /**
@@ -417,7 +417,7 @@ export async function deductInventory(orderIdOrOptions, maybeOptions = {}) {
     return { success: true, orderId, deducted: true };
   };
 
-  return tx ? runner(tx) : prisma.$transaction(runner);
+  return tx ? runner(tx) : prisma.$transaction(runner, { timeout: 30000, maxWait: 10000 });
 }
 
 /**

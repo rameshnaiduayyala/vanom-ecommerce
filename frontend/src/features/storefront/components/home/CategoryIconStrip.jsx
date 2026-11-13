@@ -78,10 +78,10 @@ export function CategoryIconStrip({
               <Link
                 key={cat.id || cat.slug || idx}
                 to={`${ROUTES.PRODUCTS}?category=${cat.id || cat.slug}`}
-                className="group shrink-0 flex items-center gap-2.5 py-1.5 px-3 rounded-full transition-all duration-200 cursor-pointer border hover:bg-[#F1F5D6] hover:border-[#2E6B4A]/50 text-gray-700 hover:text-[#1E4D34] hover:shadow-xs hover:-translate-y-0.5"
+                className="group shrink-0 flex items-center gap-2 sm:gap-2.5 py-1 sm:py-1.5 px-2.5 sm:px-3 rounded-full transition-all duration-200 cursor-pointer border hover:bg-[#F1F5D6] hover:border-[#2E6B4A]/50 text-gray-700 hover:text-[#1E4D34] hover:shadow-xs hover:-translate-y-0.5"
               >
                 {/* Clean Micro Image */}
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center border border-gray-100">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center border border-gray-100">
                   {image ? (
                     <img
                       src={image}
@@ -90,14 +90,14 @@ export function CategoryIconStrip({
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                     />
                   ) : (
-                    <div className="w-full h-full bg-[#EAF5EF] flex items-center justify-center text-[#264D3B] text-[11px] font-bold">
+                    <div className="w-full h-full bg-[#EAF5EF] flex items-center justify-center text-[#264D3B] text-[10px] sm:text-[11px] font-bold">
                       {cat.name?.charAt(0)?.toUpperCase()}
                     </div>
                   )}
                 </div>
 
                 {/* Category Label */}
-                <span className="text-xs sm:text-[13px] tracking-tight truncate font-semibold pr-1">
+                <span className="text-[11px] sm:text-[13px] tracking-tight whitespace-nowrap font-semibold pr-0.5 sm:pr-1">
                   {cat.name}
                 </span>
               </Link>
@@ -107,12 +107,12 @@ export function CategoryIconStrip({
           {/* Quick "All" Button */}
           <Link
             to={ROUTES.PRODUCTS}
-            className="group shrink-0 flex items-center gap-2 py-1.5 px-3 rounded-full border border-dashed border-gray-300 hover:border-[#2E6B4A] bg-white/70 hover:bg-white text-gray-600 hover:text-[#1E4D34] transition-all duration-200 hover:shadow-xs hover:-translate-y-0.5"
+            className="group shrink-0 flex items-center gap-1.5 sm:gap-2 py-1 sm:py-1.5 px-2.5 sm:px-3 rounded-full border border-dashed border-gray-300 hover:border-[#2E6B4A] bg-white/70 hover:bg-white text-gray-600 hover:text-[#1E4D34] transition-all duration-200 hover:shadow-xs hover:-translate-y-0.5"
           >
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-50 flex items-center justify-center text-[#264D3B] group-hover:bg-[#264D3B] group-hover:text-white transition-colors shrink-0">
-              <Grid className="w-3.5 h-3.5" />
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-emerald-50 flex items-center justify-center text-[#264D3B] group-hover:bg-[#264D3B] group-hover:text-white transition-colors shrink-0">
+              <Grid className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </div>
-            <span className="text-xs sm:text-[13px] font-bold tracking-tight pr-1">
+            <span className="text-[11px] sm:text-[13px] font-bold tracking-tight pr-0.5 sm:pr-1">
               All
             </span>
           </Link>
