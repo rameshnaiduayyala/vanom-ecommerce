@@ -77,7 +77,7 @@ export function SubcategoryProductRow({
   const viewAllLink = `/products?category=${encodeURIComponent(subcategoryId)}`;
 
   return (
-    <div className="w-full space-y-3.5 pt-2">
+    <div className="w-full space-y-2.5 sm:space-y-3.5 pt-1 sm:pt-2">
       {/* ── Subcategory Header Row ── */}
       <div className="flex items-center justify-between gap-2.5 sm:gap-3">
         <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">

@@ -42,9 +42,9 @@ export function CategoryIconStrip({
   return (
     <nav
       aria-label="Category Navigation"
-      className={`w-full bg-[#F1F5D6] select-none py-2 ${className}`}
+      className={`w-full bg-[#F1F5D6] select-none py-1 sm:py-1.5 ${className}`}
     >
-      <div className="relative max-w-[1440px] mx-auto px-2 sm:px-6 flex items-center">
+      <div className="relative max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 flex items-center">
 
         {/* Scroll Left Button (for mobile / tablet) */}
         <button

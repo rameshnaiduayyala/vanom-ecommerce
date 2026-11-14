@@ -32,13 +32,13 @@ export function TestimonialsSection({ reviews = REVIEWS, className = "" }) {
   const items = reviews.length > 0 ? reviews : REVIEWS;
 
   return (
-    <section className={`py-10 bg-white/60 border-t border-[#ebdcb0]/50 ${className}`}>
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+    <section className={`py-6 sm:py-8 lg:py-10 bg-white/60 border-t border-[#ebdcb0]/50 ${className}`}>
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between gap-3 mb-3.5 sm:mb-5 lg:mb-6">
+          <h2 className="text-lg sm:text-2xl font-black text-gray-900 tracking-tight">
             What Our Customers Say
           </h2>
-          <button className="text-xs font-bold text-[#006B3C] hover:text-[#003D2B] transition-colors cursor-pointer">
+          <button className="text-xs sm:text-sm font-bold text-[#006B3C] hover:text-[#003D2B] transition-colors cursor-pointer shrink-0 whitespace-nowrap">
             View All →
           </button>
         </div>
