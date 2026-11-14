@@ -15,26 +15,26 @@ export function ComboProductsSection({
   }
 
   return (
-    <section className={`py-10 sm:py-14 w-full max-w-full overflow-hidden ${className}`}>
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-8 w-full min-w-0">
+    <section className={`py-6 sm:py-8 lg:py-10 w-full max-w-full overflow-hidden ${className}`}>
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 w-full min-w-0">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 sm:gap-4 mb-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 sm:gap-4 mb-3.5 sm:mb-5 lg:mb-6">
           <div>
-            <div className="inline-flex items-center gap-1.5 bg-[#7C3AED]/15 text-[#5B21B6] text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full mb-2 border border-[#7C3AED]/25 shadow-2xs">
+            <div className="inline-flex items-center gap-1.5 bg-[#7C3AED]/15 text-[#5B21B6] text-[11px] font-black uppercase tracking-wider px-3 py-1 rounded-full mb-1.5 border border-[#7C3AED]/25 shadow-2xs">
               <BadgePercent className="w-3.5 h-3.5 text-[#7C3AED]" />
               Super Saver Bundles
             </div>
-            <h2 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight">
+            <h2 className="text-lg sm:text-2xl lg:text-3xl font-black text-gray-900 tracking-tight">
               Curated Combos & Value Packs
             </h2>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1 max-w-xl">
+            <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1 max-w-xl">
               Hand-picked pantry & superfood pairings designed for daily healthy living and up to 40% bundle savings.
             </p>
           </div>
 
           <Link
             to={`${ROUTES.PRODUCTS}?category=combos`}
-            className="flex items-center gap-1.5 text-xs sm:text-sm font-black text-[#7C3AED] hover:text-[#5B21B6] transition-colors whitespace-nowrap shrink-0 group"
+            className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#7C3AED] hover:text-[#5B21B6] transition-colors whitespace-nowrap shrink-0 group self-start md:self-auto"
           >
             <span>View All Combos</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

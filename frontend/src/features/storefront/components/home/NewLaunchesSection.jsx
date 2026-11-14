@@ -19,12 +19,12 @@ export function NewLaunchesSection({ products = [], className = "" }) {
   }
 
   return (
-    <section className={`py-8 sm:py-10 px-4 sm:px-8 lg:px-12 select-none w-full max-w-full overflow-hidden ${className}`}>
+    <section className={`py-6 sm:py-8 lg:py-10 px-4 sm:px-6 lg:px-8 select-none w-full max-w-full overflow-hidden ${className}`}>
       <div className="max-w-[1440px] mx-auto w-full min-w-0">
         {/* Section Header */}
-        <div className="flex items-end justify-between gap-4 mb-6">
+        <div className="flex items-end justify-between gap-3 sm:gap-4 mb-3.5 sm:mb-5 lg:mb-6">
           <div>
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#204B38] tracking-tight">
+            <h2 className="text-lg sm:text-2xl lg:text-3xl font-black text-[#204B38] tracking-tight">
               New Launches
             </h2>
             <p className="text-xs text-[#345547] mt-0.5">
@@ -33,10 +33,10 @@ export function NewLaunchesSection({ products = [], className = "" }) {
           </div>
 
           {/* Controls & View All */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               to={`${ROUTES.PRODUCTS}?filter=new`}
-              className="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-[#358B5B] hover:text-[#204B38] hover:underline transition-colors"
+              className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-bold text-[#358B5B] hover:text-[#204B38] transition-colors whitespace-nowrap"
             >
               <span>View All</span>
               <ArrowRight className="w-3.5 h-3.5" />

@@ -119,13 +119,13 @@ export function HomePage() {
       </section>
 
       {/* ── 2. Quick Category Pills Strip (Soft Warm Cream / Vanilla BG) ── */}
-      <section className="bg-[#D5EBD5] border-y border-[#ebdcb0]/50 py-3.5">
+      <section className="bg-[#D5EBD5] border-y border-[#ebdcb0]/50 py-1 sm:py-1.5">
         <CategoryIconStrip className="bg-transparent" categories={categoryList} />
       </section>
 
       {/* ── 3. Category Products One by One (Category-wise with Pagination) ── */}
       <HomeCategoryProductSections
-        className="bg-[#D5EBD5] border-b border-gray-100/90 py-4"
+        className="bg-[#D5EBD5] border-b border-gray-100/90 sm:py-2"
         categories={categoryList}
         featuredProducts={featuredProducts}
         isLoading={loadingProducts}
@@ -133,7 +133,7 @@ export function HomePage() {
       />
 
       {/* ── 4. Promo Banner 3-Grid (Candy White BG) ── */}
-      <section className="py-8 bg-[#FAF9F6] border-b border-gray-200/60">
+      <section className="py-5 sm:py-8 bg-[#FAF9F6] border-b border-gray-200/60">
         <PromoBannerGrid />
       </section>
 

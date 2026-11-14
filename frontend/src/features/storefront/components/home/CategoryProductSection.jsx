@@ -36,8 +36,8 @@ export function CategoryProductSection({
   const mainCategoryLink = `/products?category=${encodeURIComponent(categoryId)}`;
 
   return (
-    <div className={`py-6 sm:py-9 w-full ${className}`}>
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-8 space-y-6">
+    <div className={`py-2 sm:py-4 lg:py-6 w-full ${className}`}>
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 space-y-4 sm:space-y-6">
         {/* ── 1. Main Category Header ── */}
         <div className="flex items-center justify-between gap-2.5 sm:gap-3">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -82,7 +82,7 @@ export function CategoryProductSection({
 
         {/* ── 3. Subcategory Wise Products ── */}
         {subcategories.length > 0 ? (
-          <div className="space-y-6 pt-1">
+          <div className="space-y-4 sm:space-y-6 pt-1">
             {subcategories.map((sub) => (
               <SubcategoryProductRow
                 key={sub.id || sub.slug}

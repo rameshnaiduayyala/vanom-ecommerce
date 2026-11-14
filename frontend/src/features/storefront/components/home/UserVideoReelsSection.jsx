@@ -130,16 +130,16 @@ export function UserVideoReelsSection() {
   };
 
   return (
-    <section className="py-8 sm:py-10 px-4 sm:px-8 lg:px-12 bg-transparent select-none w-full max-w-full overflow-hidden">
+    <section className="py-6 sm:py-8 lg:py-10 px-4 sm:px-6 lg:px-8 bg-transparent select-none w-full max-w-full overflow-hidden">
       <div className="max-w-[1440px] mx-auto w-full min-w-0">
         {/* Header Strip */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4 mb-3.5 sm:mb-5 lg:mb-6">
           <div>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#358B5B]/10 text-[#358B5B] text-[11px] font-extrabold uppercase tracking-wider mb-1.5 border border-[#358B5B]/20">
               <Video className="w-3 h-3 text-[#D9A514]" />
               <span>Customer Reviews & Unboxings</span>
             </div>
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-[#204B38] tracking-tight">
+            <h2 className="text-lg sm:text-2xl lg:text-3xl font-black text-[#204B38] tracking-tight">
               Real Experiences in Action
             </h2>
             <p className="text-xs text-[#345547] mt-0.5">

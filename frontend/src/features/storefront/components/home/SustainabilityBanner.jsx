@@ -11,17 +11,17 @@ const PILLARS = [
 export function SustainabilityBanner() {
   return (
     <section
-      className="py-10 relative overflow-hidden"
+      className="py-7 sm:py-10 relative overflow-hidden"
       style={{ background: "linear-gradient(135deg, #003D2B 0%, #006B3C 100%)" }}
     >
       {/* Decorative circles */}
       <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/2 pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-40 h-40 rounded-full bg-white/5 translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-8 relative z-10">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-black text-white mb-2">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-white mb-1.5 sm:mb-2">
               Sustainable Choices<br />
               <span className="text-[#D9A514]">for a Better Tomorrow</span>
             </h2>

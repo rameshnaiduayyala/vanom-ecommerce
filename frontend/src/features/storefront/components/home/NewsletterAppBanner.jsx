@@ -15,18 +15,18 @@ export function NewsletterAppBanner() {
   };
 
   return (
-    <section className="py-10 bg-white border-t border-gray-100">
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+    <section className="py-6 sm:py-8 lg:py-10 bg-white border-t border-gray-100">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
 
           {/* Left: Newsletter Subscription Box (7 Cols) */}
-          <div className="lg:col-span-6 bg-[#f7faf8] rounded-2xl p-6 sm:p-8 flex flex-col justify-center border border-[#e2ece5] relative overflow-hidden">
+          <div className="lg:col-span-6 bg-[#f7faf8] rounded-2xl p-5 sm:p-8 flex flex-col justify-center border border-[#e2ece5] relative overflow-hidden">
             {/* Subtle leaf watermark */}
             <div className="relative z-10 max-w-md">
-              <h3 className="text-xl sm:text-2xl font-black text-[#0f2b1d] tracking-tight">
+              <h3 className="text-lg sm:text-2xl font-black text-[#0f2b1d] tracking-tight">
                 Get the Latest Updates
               </h3>
-              <p className="text-xs sm:text-sm text-gray-600 mt-1 mb-5">
+              <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1 mb-3.5 sm:mb-5">
                 New arrivals, exclusive offers and more.
               </p>
 
